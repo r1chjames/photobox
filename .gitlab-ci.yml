@@ -1,0 +1,17 @@
+build:
+  image: docker:latest
+  stage: build
+  services:
+    - docker:dind
+  script:
+
+deploy:
+  only:
+    - master
+  image: gitlab/dind:latest
+  stage: deploy
+  before_script:
+  script:
+    - make build-all
+
+    

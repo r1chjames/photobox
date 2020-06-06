@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    "removeComments": true,
+    "preserveConstEnums": true,
+    "jsx": "react",
+    "module": "esnext",
+    "noImplicitAny": true,
+    "typeRoots": [
+      "definitions/typescript",
+      "node_modules/@types"
+    ],
+    "allowJs": true,
+    "target": "es6",
+    "lib": [
+      "es6",
+      "dom"
+    ],
+    "skipLibCheck": true,
+    "noUnusedLocals": true,
+    "moduleResolution": "node",
+//    "jsxFactory": "h",
+    "esModuleInterop": true,
+    "strict": true,
+    "sourceMap": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true
+  },
+  "include": [
+    "./src/**/*.tsx",
+    "./src/**/*.ts",
+    "./src/**/*.css"
+  ],
+  "exclude": [
+    "node_modules",
+    "./src/**/*.scss"
+  ]
+}
