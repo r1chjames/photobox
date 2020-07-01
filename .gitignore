@@ -27,9 +27,8 @@ yarn-error.log*
 
 # artifacts
 *.tar.gz# golang output binary directory
-bin/
-src/
-vendor/
+api/bin/
+api/vendor/
 
 # Binaries for programs and plugins
 *.exe

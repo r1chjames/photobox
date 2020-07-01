@@ -1,0 +1,43 @@
+.titleBar__mainBar {
+    color: rgb(0, 188, 212);
+}
+
+.titleBar__appBar {
+    color: #00bcd4;
+    transition: margin ease-in-out 0.5s;
+}
+
+.titleBar__menuButton {
+    margin-right: 20px;
+}
+
+.titleBar__iconButtonHide {
+    display: none;
+}
+
+.titleBar__drawer {
+    width: 240px;
+    flex-shrink: 0;
+}
+
+.titleBar__drawerPaper {
+    width: 240px;
+}
+
+.titleBar__drawerHeader {
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    justify-content: flex-end;
+    min-height: 64px;
+}
+
+.titleBar__drawerHeader__title {
+    position: absolute;
+    left: 20px;
+}
+
+.titleBar__logoutButton {
+    position: absolute;
+    right: 20px;
+}
