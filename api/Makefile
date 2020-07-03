@@ -52,6 +52,7 @@ go-generate:
 go-get:
 	@echo "  >  Checking if there are any missing dependencies..."
 	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go get $(get)
+	go mod tidy
 	go mod vendor
 
 go-install:
@@ -66,7 +67,10 @@ go-test:
 	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go test ./...
 
 docker-build:
-	docker build -t photobox .
+	docker build -t registry.gitlab.com/r1chjames/photobox .
+
+docker-push: docker-build
+	docker push registry.gitlab.com/r1chjames/photobox
 
 .PHONY: help
 all: help
