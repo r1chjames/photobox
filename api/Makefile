@@ -27,7 +27,7 @@ build: clean install
 compile:
 	@-touch $(STDERR)
 	@-rm $(STDERR)
-	@-$(MAKE) -s go-compile 2> $(STDERR)
+	@-$(MAKE) -s go-build 2> $(STDERR)
 	@cat $(STDERR) | sed -e '1s/.*/\nError:\n/'  | sed 's/make\[.*/ /' | sed "/^/s/^/     /" 1>&2
 
 ## exec: Run given command, wrapped with custom GOPATH. e.g; make exec run="go test ./..."
@@ -39,7 +39,6 @@ clean:
 	@-rm $(GOBIN)/$(PROJECTNAME) 2> /dev/null
 	@-$(MAKE) go-clean
 
-go-compile: go-get go-build
 
 go-build:
 	@echo "  >  Building binary..."
@@ -51,9 +50,8 @@ go-generate:
 
 go-get:
 	@echo "  >  Checking if there are any missing dependencies..."
-	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go get $(get)
-	go mod tidy
-	go mod vendor
+	GOPATH=$(GOPATH) GOBIN=$(GOBIN) env
+	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go mod vendor
 
 go-install:
 	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go install $(GOFILES)
