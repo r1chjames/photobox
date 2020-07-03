@@ -1,0 +1,27 @@
+{
+  "extends": [
+    "tslint:recommended",
+    "tslint-react",
+    "tslint-eslint-rules",
+    "tslint-config-airbnb"
+  ],
+  "rules": {
+    "trailing-comma": true,
+    "no-console": false,
+    "import-name": false,
+    "max-line-length": [true, 120],
+    "jsx-no-lambda": false,
+    "no-empty-interface": false,
+    "no-string-literal": false,
+    "object-shorthand-properties-first": false,
+    "ordered-imports": [
+      true,
+      {
+        "import-sources-order": "any",
+        "named-imports-order": "case-insensitive"
+      }
+    ],
+    "object-literal-sort-keys": false,
+    "member-ordering": [false]
+  }
+}

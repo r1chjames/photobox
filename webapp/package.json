@@ -1,0 +1,65 @@
+{
+  "name": "photo-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@egjs/react-infinitegrid": "^3.0.5",
+    "@material-ui/core": "^4.9.7",
+    "@material-ui/icons": "^4.9.1",
+    "@testing-library/jest-dom": "^4.2.4",
+    "@testing-library/react": "^9.5.0",
+    "@testing-library/user-event": "^7.2.1",
+    "@types/material-ui": "^0.21.7",
+    "@types/react-router-dom": "^5.1.2",
+    "axios": "^0.19.2",
+    "material-ui": "^0.20.2",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
+    "react-router-dom": "^5.1.2",
+    "react-scripts": "3.4.1",
+    "rollup": "^1.1.2",
+    "rollup-plugin-async": "^1.2.0",
+    "rollup-plugin-babel": "^4.3.3",
+    "rollup-plugin-css-only": "^1.0.0",
+    "strict-event-emitter-types": "^2.0.0"
+  },
+  "devDependencies": {
+    "regenerator-runtime": "^0.13.5",
+    "rollup-plugin-copy": "^0.2.3",
+    "rollup-plugin-livereload": "^1.0.0",
+    "rollup-plugin-node-builtins": "^2.1.2",
+    "rollup-plugin-node-globals": "^1.4.0",
+    "rollup-plugin-serve": "^1.0.1",
+    "rollup-plugin-terser": "^4.0.4",
+    "rollup-plugin-typescript2": "^0.27.0",
+    "ts-jest": "~24.0.2",
+    "tslib": "^1.9.3",
+    "tslint": "^5.12.1",
+    "tslint-config-airbnb": "^5.11.1",
+    "tslint-react": "^3.6.0",
+    "typescript": "^3.3.1"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "lint": "./node_modules/.bin/tslint --project tsconfig.json",
+    "lint-fix": "./node_modules/.bin/tslint --project tsconfig.json --fix"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

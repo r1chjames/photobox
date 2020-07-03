@@ -1,0 +1,8 @@
+.albumItem__cardWapper {
+    max-width: 345px;
+    border: 50px;
+}
+
+.albumItem__cardImage {
+    height: 200px
+}

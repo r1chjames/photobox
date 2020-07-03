@@ -1,0 +1,9 @@
+.dashboard__mainPage {
+    display: flex;
+    margin-top: 200px;
+    justify-content: space-evenly;
+}
+
+.dashboard__greeting {
+    font-size: 20pt;
+}
