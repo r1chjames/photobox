@@ -22,7 +22,7 @@ func parseAppVariables() AppConfig {
 
 	return AppConfig{
 		PhotoDir: utils.GetEnv("PHOTO_DIR", "/photos"),
-		ApiBasePath: utils.GetEnv("API_BASE_PATH", "/api"),
+		ApiBasePath: utils.GetEnv("gitlab.com/r1chjames/photobox/api_BASE_PATH", "/api"),
 		DbUrl: dbUrl,
 	}
 }
@@ -34,5 +34,3 @@ func stopAllRunningJobs(appConfig AppConfig) {
 func startApiServer(appConfig AppConfig) {
 	apiServer.Start(appConfig)
 }
-
-
