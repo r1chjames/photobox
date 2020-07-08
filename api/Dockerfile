@@ -1,4 +1,4 @@
-# BUILD STAGE
+# BASE DEP BUILD STAGE
 FROM golang:alpine3.12 as build
 LABEL maintainer="Richard James<richjames11@gmail.com>"
 ENV GO111MODULE=on
@@ -7,20 +7,18 @@ RUN apk add make git
 
 WORKDIR /app
 
-COPY go.mod .
-COPY go.sum .
+COPY go.mod go.sum Makefile ./
 RUN go mod download
 
-COPY * ./
+COPY . ./
 
-RUN CGO_ENABLED=0 go build
+RUN GO111MODULE=on go build -o /app/bin
 
 
-# IMAGE BUILD STAGE
+# APP IMAGE BUILD STAGE
 FROM golang:alpine3.12
 
 COPY --from=build /app /app
 
 EXPOSE 8080
 ENTRYPOINT ["/app/bin", "gitlab.com/r1chjames/photobox/api"]
-

@@ -39,10 +39,9 @@ clean:
 	@-rm $(GOBIN)/$(PROJECTNAME) 2> /dev/null
 	@-$(MAKE) go-clean
 
-
 go-build:
 	@echo "  >  Building binary..."
-	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go build $(LDFLAGS) -o $(GOBIN)/$(PROJECTNAME) $(GOFILES)
+	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) CGO_ENABLED=0 go build $(LDFLAGS) -o $(GOBIN)/$(PROJECTNAME) $(GOFILES)
 
 go-generate:
 	@echo "  >  Generating dependency files..."
@@ -50,8 +49,7 @@ go-generate:
 
 go-get:
 	@echo "  >  Checking if there are any missing dependencies..."
-	GOPATH=$(GOPATH) GOBIN=$(GOBIN) env
-	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go mod vendor
+	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go mod download
 
 go-install:
 	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go install $(GOFILES)

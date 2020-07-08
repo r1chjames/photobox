@@ -18,11 +18,12 @@ func parseAppVariables() AppConfig {
 	dbHost := utils.GetEnv("DB_HOST", "localhost")
 	dbUser := utils.GetEnv("DB_USER", "photobox")
 	dbPassword := utils.GetEnv("DB_PASSWORD", "photobox")
-	dbUrl := fmt.Sprintf("%s:%s@tcp(%s:3306)/PHOTOS", dbUser, dbPassword, dbHost)
+	dbName := utils.GetEnv("DB_NAME", "photobox")
+	dbUrl := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s", dbUser, dbPassword, dbHost, dbName)
 
 	return AppConfig{
 		PhotoDir: utils.GetEnv("PHOTO_DIR", "/photos"),
-		ApiBasePath: utils.GetEnv("gitlab.com/r1chjames/photobox/api_BASE_PATH", "/api"),
+		ApiBasePath: utils.GetEnv("API_BASE_PATH", "/api"),
 		DbUrl: dbUrl,
 	}
 }

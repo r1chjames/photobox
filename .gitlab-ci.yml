@@ -4,14 +4,6 @@ build:
   services:
     - docker:dind
   script:
-
-deploy:
-  only:
-    - master
-  image: gitlab/dind:latest
-  stage: deploy
-  before_script:
-  script:
-    - make build-all
+    - cd api && make docker-push
 
     
