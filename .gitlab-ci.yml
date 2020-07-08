@@ -3,6 +3,8 @@ build:
   stage: build
   services:
     - docker:dind
+  before_script:
+    - apk add make
   script:
     - cd api && make docker-push
 
