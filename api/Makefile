@@ -63,7 +63,11 @@ go-test:
 	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go test ./...
 
 docker-build:
+ifneq (,$(wildcard /etc/fedora-release))
+	podman build -t registry.gitlab.com/r1chjames/photobox .
+else
 	docker build -t registry.gitlab.com/r1chjames/photobox .
+endif
 
 docker-push: docker-build
 	docker push registry.gitlab.com/r1chjames/photobox

@@ -1,1 +1,2 @@
-helm upgrade --install photobox --namespace smart-home -f values.yaml . --atomic $1
+helm dependency update
+helm upgrade --install photobox --namespace $1 -f values.yaml . --atomic $2

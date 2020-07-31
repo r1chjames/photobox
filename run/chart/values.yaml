@@ -11,25 +11,24 @@ image:
 
 imagePullSecrets:
   - name: gitlab-login
-nameOverride: ""
-fullnameOverride: ""
+nameOverride: "photobox"
+fullnameOverride: "photobox"
 
 service:
   type: LoadBalancer
-  loadBalancerIP: 192.168.1.210
   port: 8080
 
 env:
-  DB_HOST: mysql.infra
-  DB_USER: photobox
-  DB_PASSWORD: photobox
-  DB_NAME: photobox
+  DB_HOST: photobox-mysql
+  DB_USER: photobox_usr
+  DB_PASSWORD: password
+  DB_NAME: photobox_db
   PHOTO_DIR: /photos
   API_BASE_PATH: /api
 
 hostMounts:
   - name: photos
-    hostPath: /media/data/Users/Rich/Pictures/Photos
+    hostPath: /home/Rich/Pictures
     mountPath: /photos
 
 serviceAccount:
@@ -53,3 +52,51 @@ resources:
   requests:
     cpu: "50m"
     memory: "64Mi"
+
+mysql:
+  enabled: true
+  initdbScripts:
+    photobox.sql: |
+      CREATE DATABASE photobox_db;
+      CREATE USER 'photobox_usr'@'%' IDENTIFIED BY 'password';
+      GRANT USAGE ON *.* TO 'photobox_usr'@'%';
+      GRANT ALL privileges ON photobox_db.* TO 'photobox_usr'@'%';
+      USE photobox_db;
+      CREATE TABLE albums (
+          id                      VARCHAR(36) PRIMARY KEY,
+          name                    VARCHAR(255) NOT NULL,
+          description             VARCHAR(255),
+          tags                    VARCHAR(255),
+          metadata                JSON
+      );
+      CREATE TABLE photos (
+          id                      VARCHAR(100) PRIMARY KEY,
+          name                    VARCHAR(255) NOT NULL,
+          filesystemPath          VARCHAR(255) NOT NULL,
+          albumId                 VARCHAR(36) NOT NULL,
+          tags                    VARCHAR(255),
+          metadata                JSON,
+
+          FOREIGN KEY (albumId) REFERENCES albums(id)
+      );
+      CREATE TABLE settings (
+          setting                 VARCHAR(255) NOT NULL,
+          value                   VARCHAR(255) NOT NULL
+      );
+      CREATE TABLE jobs (
+          job                     VARCHAR(255) NOT NULL,
+          running                 BOOLEAN,
+          lastRun                 VARCHAR(50)
+      );
+      INSERT INTO jobs VALUES ('Photo_index', false, null);
+
+  replication:
+    enabled: false
+  master:
+    readinessProbe:
+      enabled: false
+  slave:
+    replicas: 0
+  root:
+    password: password
+    forcePassword: true
