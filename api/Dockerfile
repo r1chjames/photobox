@@ -21,4 +21,4 @@ FROM golang:alpine3.12
 COPY --from=build /app /app
 
 EXPOSE 8080
-ENTRYPOINT ["/app/bin", "gitlab.com/r1chjames/photobox/api"]
+ENTRYPOINT ["/app/bin", "api"]
