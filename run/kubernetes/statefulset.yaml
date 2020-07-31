@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  generation: 1
+  labels:
+    app: mysql
+    chart: mysql-6.14.7
+    component: master
+    release: photobox
+  managedFields:
+  name: photobox-mysql-master
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+      component: master
+      release: photobox
+  serviceName: photobox-mysql-master
+  template:
+    metadata:
+      labels:
+        app: mysql
+        chart: mysql-6.14.7
+        component: master
+        release: photobox
+    spec:
+      containers:
+      - env:
+        - name: BITNAMI_DEBUG
+          value: "false"
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: mysql-root-password
+              name: photobox-mysql
+        - name: MYSQL_DATABASE
+          value: my_database
+        image: docker.io/bitnami/mysql:8.0.21-debian-10-r4
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - |
+              password_aux="${MYSQL_ROOT_PASSWORD:-}"
+              if [ -f "${MYSQL_ROOT_PASSWORD_FILE:-}" ]; then
+                  password_aux=$(cat $MYSQL_ROOT_PASSWORD_FILE)
+              fi
+              mysqladmin status -uroot -p$password_aux
+          failureThreshold: 3
+          initialDelaySeconds: 120
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: mysql
+        ports:
+        - containerPort: 3306
+          name: mysql
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /bitnami/mysql
+          name: data
+        - mountPath: /docker-entrypoint-initdb.d
+          name: custom-init-scripts
+        - mountPath: /opt/bitnami/mysql/conf/my.cnf
+          name: config
+          subPath: my.cnf
+      securityContext:
+        fsGroup: 1001
+        runAsUser: 1001
+      serviceAccount: photobox-mysql
+      serviceAccountName: photobox-mysql
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: photobox-mysql-master
+        name: config
+      - configMap:
+          defaultMode: 420
+          name: photobox-mysql-master-init-scripts
+        name: custom-init-scripts
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: mysql
+        component: master
+        release: photobox
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+      volumeMode: Filesystem

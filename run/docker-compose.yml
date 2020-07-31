@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+  mysql:
+    image: 'docker.io/bitnami/mysql:8.0-debian-10'
+    ports:
+      - '3306:3306'
+    volumes:
+      - 'mysql_data:/bitnami/mysql/data'
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+
+  photobox:
+    image: registry.gitlab.com/r1chjames/photobox:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - /home/rich/Pictures:/photos
+    environment:
+      - DB_HOST: mysql
+      - DB_USER: photobox_usr
+      - DB_PASSWORD: password
+      - DB_NAME: photobox_db
+      - PHOTO_DIR: /photos
+      - API_BASE_PATH: /api
+
+volumes:
+  mysql_data:
+    driver: local
+    

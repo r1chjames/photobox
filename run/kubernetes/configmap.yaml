@@ -1,0 +1,82 @@
+apiVersion: v1
+data:
+  my.cnf: |-
+    [mysqld]
+    default_authentication_plugin=mysql_native_password
+    skip-name-resolve
+    explicit_defaults_for_timestamp
+    basedir=/opt/bitnami/mysql
+    plugin_dir=/opt/bitnami/mysql/plugin
+    port=3306
+    socket=/opt/bitnami/mysql/tmp/mysql.sock
+    datadir=/bitnami/mysql/data
+    tmpdir=/opt/bitnami/mysql/tmp
+    max_allowed_packet=16M
+    bind-address=0.0.0.0
+    pid-file=/opt/bitnami/mysql/tmp/mysqld.pid
+    log-error=/opt/bitnami/mysql/logs/mysqld.log
+    character-set-server=UTF8
+    collation-server=utf8_general_ci
+
+    [client]
+    port=3306
+    socket=/opt/bitnami/mysql/tmp/mysql.sock
+    default-character-set=UTF8
+    plugin_dir=/opt/bitnami/mysql/plugin
+
+    [manager]
+    port=3306
+    socket=/opt/bitnami/mysql/tmp/mysql.sock
+    pid-file=/opt/bitnami/mysql/tmp/mysqld.pid
+kind: ConfigMap
+metadata:
+  labels:
+    app: mysql
+    chart: mysql-6.14.7
+    component: master
+    release: photobox
+  name: photobox-mysql-master
+---
+apiVersion: v1
+data:
+  photobox.sql: |
+    CREATE DATABASE photobox_db;
+    CREATE USER 'photobox_usr'@'%' IDENTIFIED BY 'password';
+    GRANT USAGE ON *.* TO 'photobox_usr'@'%';
+    GRANT ALL privileges ON photobox_db.* TO 'photobox_usr'@'%';
+    USE photobox_db;
+    CREATE TABLE albums (
+        id                      VARCHAR(36) PRIMARY KEY,
+        name                    VARCHAR(255) NOT NULL,
+        description             VARCHAR(255),
+        tags                    VARCHAR(255),
+        metadata                JSON
+    );
+    CREATE TABLE photos (
+        id                      VARCHAR(100) PRIMARY KEY,
+        name                    VARCHAR(255) NOT NULL,
+        filesystemPath          VARCHAR(255) NOT NULL,
+        albumId                 VARCHAR(36) NOT NULL,
+        tags                    VARCHAR(255),
+        metadata                JSON,
+
+        FOREIGN KEY (albumId) REFERENCES albums(id)
+    );
+    CREATE TABLE settings (
+        setting                 VARCHAR(255) NOT NULL,
+        value                   VARCHAR(255) NOT NULL
+    );
+    CREATE TABLE jobs (
+        job                     VARCHAR(255) NOT NULL,
+        running                 BOOLEAN,
+        lastRun                 VARCHAR(50)
+    );
+    INSERT INTO jobs VALUES ('Photo_index', false, null);
+kind: ConfigMap
+metadata:
+  labels:
+    app: mysql
+    chart: mysql-6.14.7
+    component: master
+    release: photobox
+  name: photobox-mysql-master-init-scripts
