@@ -18,7 +18,9 @@ RUN GO111MODULE=on go build -o /app/bin
 # APP IMAGE BUILD STAGE
 FROM golang:alpine3.12
 
-COPY --from=build /app /app
+RUN apk add file
+
+COPY --from=build /app/bin/api /app
 
 EXPOSE 8080
-ENTRYPOINT ["/app/bin", "api"]
+ENTRYPOINT ["/app"]

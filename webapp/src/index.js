@@ -5,7 +5,7 @@ import './index.css';
 import * as serviceWorker from './serviceWorker';
 import Routes from './Routing/Routes';
 
-const baseApiUrl = "http://192.168.0.123:8080/api";
+const baseApiUrl = "http://192.168.39.199:32311/api";
 
 ReactDOM.render(
     <Router>

@@ -11,11 +11,11 @@ services:
       - ALLOW_EMPTY_PASSWORD=yes
 
   photobox:
-    image: registry.gitlab.com/r1chjames/photobox:latest
+    image: 'registry.gitlab.com/r1chjames/photobox:latest'
     ports:
-      - "8080:8080"
+      - '8080:8080'
     volumes:
-      - /home/rich/Pictures:/photos
+      - '/home/rich/Pictures:/photos'
     environment:
       - DB_HOST: mysql
       - DB_USER: photobox_usr

@@ -7,7 +7,7 @@ replicaCount: 1
 image:
   repository: registry.gitlab.com/r1chjames/photobox
   tag: latest
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 imagePullSecrets:
   - name: gitlab-login
@@ -28,7 +28,7 @@ env:
 
 hostMounts:
   - name: photos
-    hostPath: /home/Rich/Pictures
+    hostPath: /home/rich/Pictures
     mountPath: /photos
 
 serviceAccount:
