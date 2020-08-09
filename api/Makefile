@@ -62,7 +62,7 @@ go-test:
 	@echo "Running tests"
 	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go test ./...
 
-docker-build:
+docker-build: build
 ifneq (,$(wildcard /etc/fedora-release))
 	podman build -t registry.gitlab.com/r1chjames/photobox .
 else
@@ -71,10 +71,10 @@ endif
 
 docker-push: docker-build
 ifneq (,$(wildcard /etc/fedora-release))
-#	podman login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
+	CI_BUILD_TOKEN=$CI_BUILD_TOKEN podman login -u gitlab-ci-token -p ${CI_BUILD_TOKEN} registry.gitlab.com
 	podman push registry.gitlab.com/r1chjames/photobox
 else
-	docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
+	CI_BUILD_TOKEN=$CI_BUILD_TOKEN docker login -u gitlab-ci-token -p ${CI_BUILD_TOKEN} registry.gitlab.com
 	docker push registry.gitlab.com/r1chjames/photobox
 endif
 

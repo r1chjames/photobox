@@ -6,31 +6,40 @@ import './PhotoIndexView.css';
 import { ImageItem } from '../ImageItem/ImageItem';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import { TitleBar } from '../TitleBar/TitleBar';
-import {AlbumsAdapter} from '../../Adapters/AlbumsAdapter';
-import {Album} from '../../Models/Album';
+import { AlbumsAdapter } from '../../Adapters/AlbumsAdapter';
+import { Album } from '../../Models/Album';
+import { RouteComponentProps } from 'react-router-dom';
+
+interface IRouteInfo {
+  id: string;
+}
+
+interface IComponentProps extends RouteComponentProps<IRouteInfo> {
+}
 
 interface IProps {
   baseApiUrl: string;
-  albumId: string | null;
 }
 
 interface IState {
   images: ReactElement[];
   albumTitle: string;
+  albumId: string;
 }
 
-export class PhotoIndexView extends Component<IProps, IState> {
+export class PhotoIndexView extends Component<IProps, IState, IComponentProps> {
 
-  constructor(props: IProps) {
+  constructor(props: IProps, compProps: IComponentProps) {
     super(props);
-    this.state = { images: [], albumTitle: 'Photos' };
+    const albumId = compProps.match.params.id;
+    this.state = { images: [], albumTitle: 'Photos', albumId };
   }
 
   private async getAllPhotos() {
     const photosAdapter = new PhotosAdapter(this.props.baseApiUrl);
     let photos: Photo[];
-    if (this.props.albumId != null) {
-      photos = await photosAdapter.getPhotosInfoInAlbum(this.props.albumId);
+    if (this.state.albumId != null) {
+      photos = await photosAdapter.getPhotosInfoInAlbum(this.state.albumId);
     } else {
       photos = await photosAdapter.getAllPhotosInfo();
     }
@@ -60,8 +69,8 @@ export class PhotoIndexView extends Component<IProps, IState> {
 
   public async componentDidMount() {
     const albumsAdapter = new AlbumsAdapter(this.props.baseApiUrl);
-    if (this.props.albumId != null) {
-      const album: Album = await albumsAdapter.getAlbumInfoById(this.props.albumId);
+    if (this.state.albumId != null) {
+      const album: Album = await albumsAdapter.getAlbumInfoById(this.state.albumId);
       this.setState({ albumTitle: album.name });
     }
   }

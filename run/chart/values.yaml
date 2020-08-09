@@ -16,6 +16,7 @@ fullnameOverride: "photobox"
 
 service:
   type: LoadBalancer
+  loadBalancerIP: 192.168.1.255
   port: 8080
 
 env:
@@ -89,6 +90,7 @@ mysql:
           lastRun                 VARCHAR(50)
       );
       INSERT INTO jobs VALUES ('Photo_index', false, null);
+      INSERT INTO settings VALUES ('api_base_path', '/api');
 
   replication:
     enabled: false

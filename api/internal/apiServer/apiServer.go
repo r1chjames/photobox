@@ -13,6 +13,7 @@ func Start(appConfig AppConfig) {
 
 	defineAlbumsResources(r, appConfig)
 	definePhotosResources(r, appConfig)
+	defineHealthCheckResources(r, appConfig)
 	defineServerResources(r, appConfig)
 	defineSettingsResources(r, appConfig)
 

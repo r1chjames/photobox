@@ -10,6 +10,19 @@ import (
 )
 import "net/http"
 
+func defineHealthCheckResources(r *gin.Engine, appConfig AppConfig) {
+	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
+
+	r.GET(fmt.Sprintf("%s/health", urlBasePath), func(c *gin.Context) {
+		_, err := database.GetAllSettings(appConfig)
+		if err != nil {
+			c.JSON(http.StatusBadGateway, err.Error())
+		} else {
+			c.Status(http.StatusOK)
+		}
+	})
+}
+
 func defineServerResources(r *gin.Engine, appConfig AppConfig) {
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
 

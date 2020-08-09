@@ -74,7 +74,7 @@ export class AlbumIndexView extends Component<IProps, IState> {
         </RaisedButton>
         <PhotoIndexView
           baseApiUrl={this.props.baseApiUrl}
-          albumId={this.state.renderedAlbumId}
+          // albumId={this.state.renderedAlbumId}
         />
       </div>
     );

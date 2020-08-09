@@ -40,16 +40,16 @@ spec:
             {{- end }}
           ports:
             - name: http
-              containerPort: 8080
+              containerPort: {{ .Values.service.port }}
               protocol: TCP
-          # livenessProbe:
-          #   httpGet:
-          #     path: /
-          #     port: http
-          # readinessProbe:
-          #   httpGet:
-          #     path: /
-          #     port: http
+          livenessProbe:
+            httpGet:
+              path: "{{ .Values.env.API_BASE_PATH }}/health"
+              port: {{ .Values.service.port }}
+          readinessProbe:
+            httpGet:
+              path: "{{ .Values.env.API_BASE_PATH }}/health"
+              port: {{ .Values.service.port }}
           volumeMounts:
           {{- range .Values.hostMounts }}
           {{- if .mountPath }}
