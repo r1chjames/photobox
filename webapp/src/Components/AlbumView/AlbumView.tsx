@@ -24,7 +24,7 @@ export class AlbumView extends Component<IProps> {
         </RaisedButton>
         <PhotoIndexView
           baseApiUrl={this.props.baseApiUrl}
-          albumId={this.props.albumId}
+          // albumId={this.props.albumId}
         />
       </div>
     );

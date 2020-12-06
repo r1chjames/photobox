@@ -7,6 +7,7 @@ import { AlbumItem } from '../AlbumItem/AlbumItem';
 import { PhotoIndexView } from '../PhotoIndexView/PhotoIndexView';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import RaisedButton from 'material-ui/RaisedButton';
+import history from '../../Routing/History';
 
 interface IProps {
   baseApiUrl: string;
@@ -35,7 +36,7 @@ export class AlbumIndexView extends Component<IProps, IState> {
   }
 
   private handleAlbumViewClick(albumId: string) {
-    this.setState({ renderedAlbumId: albumId });
+    history.push(`albums/${albumId}`);
   }
 
   private clearRenderedAlbumId() {
