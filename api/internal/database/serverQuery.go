@@ -10,7 +10,6 @@ import (
 )
 
 func SavePhotoRecordsToDatabase(appConfig AppConfig, photoRecords []PhotoFile) {
-	defer jobCompleted(appConfig, "Photo_index")
 	for _, photo := range photoRecords {
 		albumId := GetAlbumByName(appConfig, photo.Directory).Id
 		if albumId == "" {

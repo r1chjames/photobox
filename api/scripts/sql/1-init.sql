@@ -1,6 +1,6 @@
-CREATE DATABASE PHOTOS;
+CREATE DATABASE photobox;
 
-USE PHOTOS;
+USE photobox;
 CREATE TABLE albums (
     id                      VARCHAR(36) PRIMARY KEY,
     name                    VARCHAR(255) NOT NULL,
@@ -33,3 +33,7 @@ CREATE TABLE jobs (
 
 # Create base data
 INSERT INTO jobs VALUES ('Photo_index', false, null);
+
+CREATE USER 'photobox'@'%' IDENTIFIED BY 'photobox';
+GRANT USAGE ON *.* TO 'photobox'@'%';
+GRANT ALL privileges ON photobox.* TO 'photobox'@'%';

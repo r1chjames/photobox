@@ -54,7 +54,7 @@ func JobStarting(appConfig AppConfig, jobName string) {
 	updateJobStatus(appConfig, jobName, true)
 }
 
-func jobCompleted(appConfig AppConfig, jobName string) {
+func JobCompleted(appConfig AppConfig, jobName string) {
 	updateJobStatus(appConfig, jobName, false)
 }
 

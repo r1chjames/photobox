@@ -32,8 +32,11 @@ func defineServerResources(r *gin.Engine, appConfig AppConfig) {
 		} else {
 			c.Status(http.StatusAccepted)
 			database.JobStarting(appConfig, "Photo_index")
+			defer database.JobCompleted(appConfig, "Photo_index")
+
 			photoRecords := components.ScanFilesystem(appConfig)
 			database.SavePhotoRecordsToDatabase(appConfig, photoRecords)
+			database.JobCompleted(appConfig, "Photo_index")
 		}
 	})
 }
