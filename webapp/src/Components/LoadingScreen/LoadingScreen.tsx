@@ -1,25 +1,23 @@
-import React, { Component } from 'react';
+import React from 'react';
 import './LoadingScreen.css';
 
-export class LoadingScreen extends Component {
+export const LoadingScreen: React.FunctionComponent = () => {
 
-  public render = () => {
-    const loadingScreen = (
+  const loadingScreen = (
             <div className="loadingScreen__outerWrapper">
                 <div className="loadingScreen__innerWrapper">
                     <div className="loadingScreen__animation">
-                        <div></div>
-                        <div></div>
+                        <div />
+                        <div />
                         <div>
-                            <div></div>
+                            <div />
                         </div>
                         <div>
-                            <div></div>
+                            <div />
                         </div>
                     </div>
                 </div>
             </div>
         );
-    return (loadingScreen);
-  }
-}
+  return (loadingScreen);
+};

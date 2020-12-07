@@ -4,7 +4,7 @@ import { Album } from '../../Models/Album';
 import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
 import { Photo } from '../../Models/Photo';
 import { LoadingScreen } from '../LoadingScreen/LoadingScreen';
-import { Button, Card, CardActionArea, CardActions, CardContent, CardMedia, Typography } from '@material-ui/core';
+import { Card, CardActionArea, CardContent, CardMedia, Typography } from '@material-ui/core';
 
 interface IProps {
   baseApiUrl: string;
@@ -41,7 +41,11 @@ export class AlbumItem extends React.Component<IProps, IState> {
   public render() {
     if (this.state && this.state.thumbnailUrl) {
       return (
-        <Card className="albumItem__cardWapper">
+          // tslint:disable-next-line:jsx-alignment
+        <Card className="albumItem__cardWrapper"
+              onClick={this.albumViewCallback}
+              elevation={0}
+        >
           <CardActionArea>
             <CardMedia
               className="albumItem__cardImage"
@@ -49,23 +53,14 @@ export class AlbumItem extends React.Component<IProps, IState> {
               title={this.props.source.name}
             />
             <CardContent>
-              <Typography variant="h5" component="h2">
+              <Typography variant="subtitle1" component="body">
                 {this.props.source.name}
+              </Typography>
+              <Typography variant="caption" component="body">
+                50 Photos
               </Typography>
             </CardContent>
           </CardActionArea>
-          <CardActions>
-            <Button size="small" color="primary">
-              Share
-            </Button>
-            <Button
-              size="small"
-              color="primary"
-              onClick={() => this.albumViewCallback()}
-            >
-              View
-            </Button>
-          </CardActions>
         </Card>
       );
     }

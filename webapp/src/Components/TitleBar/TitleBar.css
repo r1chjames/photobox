@@ -3,8 +3,7 @@
 }
 
 .titleBar__appBar {
-    color: #00bcd4;
-    transition: margin ease-in-out 0.5s;
+    margin-left: 240px;
 }
 
 .titleBar__menuButton {
@@ -16,7 +15,7 @@
 }
 
 .titleBar__drawer {
-    width: 240px;
+    width: 200px;
     flex-shrink: 0;
 }
 

@@ -1,18 +1,15 @@
-import React, { Component } from 'react';
+import React from 'react';
 import { TitleBar } from '../TitleBar/TitleBar';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import './Dashboard.css';
 
-export class Dashboard extends Component {
+export const Dashboard: React.FunctionComponent = (props) => {
 
-  public render = () => {
-    return (
+  return (
         <div>
             <MuiThemeProvider>
-                <TitleBar title="Dashboard"/>
+                <TitleBar />
             </MuiThemeProvider>
         </div>
-    );
-
-  }
-}
+  );
+};

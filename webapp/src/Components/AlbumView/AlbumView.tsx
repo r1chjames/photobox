@@ -1,40 +1,34 @@
-import React, { Component } from 'react';
+import React from 'react';
 import './AlbumView.css';
 import { PhotoIndexView } from '../PhotoIndexView/PhotoIndexView';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import RaisedButton from 'material-ui/RaisedButton';
 import history from '../../Routing/History';
+import { MainContent } from '../MainContent/MainContent';
 
 interface IProps {
   baseApiUrl: string;
   albumId: string | null;
 }
 
-export class AlbumView extends Component<IProps> {
+export const AlbumView: React.FunctionComponent<IProps> = (props) => {
 
-  constructor(props: IProps) {
-    super(props);
-  }
-
-  private renderAlbumPhotoView() {
+  const renderAlbumPhotoView = () => {
     return (
-      <div>
+      <MainContent>
         <RaisedButton onClick={() => history.push('/albums')} className="albumIndexView__button">
           Back
         </RaisedButton>
         <PhotoIndexView
-          baseApiUrl={this.props.baseApiUrl}
-          // albumId={this.props.albumId}
+          baseApiUrl={props.baseApiUrl}
         />
-      </div>
+      </MainContent>
     );
-  }
+  };
 
-  public render() {
-    return (
+  return (
       <MuiThemeProvider>
-        {this.renderAlbumPhotoView()}
+        {renderAlbumPhotoView()}
       </MuiThemeProvider>
-    );
-  }
-}
+  );
+};

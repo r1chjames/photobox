@@ -8,6 +8,8 @@ import { ImageItem } from '../ImageItem/ImageItem';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import { TitleBar } from '../TitleBar/TitleBar';
 import { AlbumsAdapter } from '../../Adapters/AlbumsAdapter';
+import { MainContent } from '../MainContent/MainContent';
+import { Typography } from '@material-ui/core';
 // import { Album } from '../../Models/Album';
 // import { useParams } from 'react-router-dom';
 
@@ -89,22 +91,25 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
   const { id } = useParams();
 
   useEffect(() => {
+    (async function retrieveAlbumName() {
+      const retrievedAlbumName = await getAlbumName(props.baseApiUrl, id);
+      setAlbumName(retrievedAlbumName);
+    })();
+
     (async function retrievePhotos() {
       const retrievedPhotos = await getAllPhotos(props.baseApiUrl, id);
       const photoItems = loadItems(0, retrievedPhotos, props.baseApiUrl);
       setPhotos(photoItems);
     })();
-
-    (async function retrieveAlbumName() {
-      const retrievedAlbumName = await getAlbumName(props.baseApiUrl, id);
-      setAlbumName(retrievedAlbumName);
-    })();
-  });
+  },        [setPhotos, id, props.baseApiUrl]);
 
   return (
     <MuiThemeProvider>
-      <div>
-        <TitleBar title={albumName} />
+      <MainContent>
+        <TitleBar />
+        <Typography variant="h1" component="h1">
+          {albumName}
+        </Typography>
         <div className="photoIndexView__photoIndex">
           <JustifiedLayout
             options={{ isConstantSize: false, transitionDuration: 0.2, useFit: true }}
@@ -115,7 +120,7 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
             {photos}
           </JustifiedLayout>
         </div>
-      </div>
+      </MainContent>
     </MuiThemeProvider>
   );
 };

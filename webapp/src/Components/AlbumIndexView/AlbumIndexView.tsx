@@ -8,6 +8,8 @@ import { PhotoIndexView } from '../PhotoIndexView/PhotoIndexView';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import RaisedButton from 'material-ui/RaisedButton';
 import history from '../../Routing/History';
+import { MainContent } from '../MainContent/MainContent';
+import { Typography } from '@material-ui/core';
 
 interface IProps {
   baseApiUrl: string;
@@ -46,8 +48,11 @@ export class AlbumIndexView extends Component<IProps, IState> {
   private renderAlbumIndex() {
     return (
       <div>
-        <TitleBar title="Albums"/>
-          <div>
+        <TitleBar />
+          <MainContent>
+            <Typography variant="h4" component="h1">
+              Albums
+            </Typography>
             <section className="albumIndexView__cardContainer">
               {/* tslint:disable-next-line:jsx-no-multiline-js */}
               {this.state.albums.map((album: Album) => {
@@ -62,7 +67,7 @@ export class AlbumIndexView extends Component<IProps, IState> {
                 );
               })}
             </section>
-          </div>
+          </MainContent>
         </div>
     );
   }
@@ -75,7 +80,6 @@ export class AlbumIndexView extends Component<IProps, IState> {
         </RaisedButton>
         <PhotoIndexView
           baseApiUrl={this.props.baseApiUrl}
-          // albumId={this.state.renderedAlbumId}
         />
       </div>
     );
