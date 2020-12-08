@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React, { useEffect, useState } from 'react';
 import './AlbumItem.css';
 import { Album } from '../../Models/Album';
 import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
@@ -12,49 +12,40 @@ interface IProps {
   albumViewCallback: (albumId: string) => void;
 }
 
-interface IState {
-  thumbnailUrl: string;
-}
+const getUrlOfFirstImageInAlbum = async(baseApiUrl: string, albumId: string) => {
+  const photosAdapter = new PhotosAdapter(baseApiUrl);
+  const photos: Photo[] = await photosAdapter.getPhotosInfoInAlbum(albumId);
+  return `${baseApiUrl}/photo/bin?photoId=${photos[0].id}`;
+};
 
-export class AlbumItem extends React.Component<IProps, IState> {
+export const AlbumItem: React.FunctionComponent<IProps> = (props) => {
 
-  constructor(props: IProps) {
-    super(props);
-    this.albumViewCallback = this.albumViewCallback.bind(this);
-  }
+  const [thumbnailUrl, setThumbnailUrl] = useState('');
 
-  private async getUrlOfFirstImageInAlbum() {
-    const photosAdapter = new PhotosAdapter(this.props.baseApiUrl);
-    const photos: Photo[] = await photosAdapter.getPhotosInfoInAlbum(this.props.source.id);
-    return `${this.props.baseApiUrl}/photo/bin?photoId=${photos[0].id}`;
-  }
+  useEffect(() => {
+    (async function retrieveThumbnailUrl() {
+      const retrievedThumbnailUrl = await getUrlOfFirstImageInAlbum(props.baseApiUrl, props.source.id);
+      setThumbnailUrl(retrievedThumbnailUrl);
+    })();
+  });
 
-  public async componentDidMount() {
-    const url = await this.getUrlOfFirstImageInAlbum();
-    this.setState({ thumbnailUrl: url });
-  }
-
-  private albumViewCallback() {
-    this.props.albumViewCallback(this.props.source.id);
-  }
-
-  public render() {
-    if (this.state && this.state.thumbnailUrl) {
+  const content = () => {
+    if (thumbnailUrl !== '') {
       return (
-          // tslint:disable-next-line:jsx-alignment
-        <Card className="albumItem__cardWrapper"
-              onClick={this.albumViewCallback}
-              elevation={0}
+        <Card
+          className="albumItem__cardWrapper"
+          onClick={() => props.albumViewCallback(props.source.id)}
+          elevation={0}
         >
           <CardActionArea>
             <CardMedia
               className="albumItem__cardImage"
-              image={this.state.thumbnailUrl}
-              title={this.props.source.name}
+              image={thumbnailUrl}
+              title={props.source.name}
             />
             <CardContent>
               <Typography variant="subtitle1" component="body">
-                {this.props.source.name}
+                {props.source.name}
               </Typography>
               <Typography variant="caption" component="body">
                 50 Photos
@@ -67,5 +58,7 @@ export class AlbumItem extends React.Component<IProps, IState> {
     return (
       <LoadingScreen />
     );
-  }
-}
+  };
+
+  return content();
+};
