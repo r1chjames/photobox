@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useEffect, useState } from 'react';
 import './AlbumIndexView.css';
 import { TitleBar } from '../TitleBar/TitleBar';
 import { AlbumsAdapter } from '../../Adapters/AlbumsAdapter';
@@ -15,37 +15,25 @@ interface IProps {
   baseApiUrl: string;
 }
 
-interface IState {
-  albums: Album[];
-  renderedAlbumId: string | null;
-}
+const getAllAlbums = async(baseApiUrl: string) => {
+  const albumsAdapter = new AlbumsAdapter(baseApiUrl);
+  const albumSources: Album[] = await albumsAdapter.getAllAlbumsInfo();
+  return albumSources;
+};
 
-export class AlbumIndexView extends Component<IProps, IState> {
+export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
 
-  constructor(props: IProps) {
-    super(props);
-    this.state = { albums: [], renderedAlbumId: null };
-  }
+  const [albums, setAlbums] = useState<Album[]>([]);
+  const [renderedAlbumId, setRenderedAlbumId] = useState('');
 
-  private async getAllAlbums() {
-    const albumsAdapter = new AlbumsAdapter(this.props.baseApiUrl);
-    const albumSources: Album[] = await albumsAdapter.getAllAlbumsInfo();
-    this.setState({ albums: albumSources });
-  }
+  useEffect(() => {
+    (async function retrieveAllAlbums() {
+      const retrievedAlbums = await getAllAlbums(props.baseApiUrl);
+      setAlbums(retrievedAlbums);
+    })();
+  },        [setAlbums, setRenderedAlbumId, props.baseApiUrl]);
 
-  public async componentDidMount() {
-    await this.getAllAlbums();
-  }
-
-  private handleAlbumViewClick(albumId: string) {
-    history.push(`albums/${albumId}`);
-  }
-
-  private clearRenderedAlbumId() {
-    this.setState({ renderedAlbumId: null });
-  }
-
-  private renderAlbumIndex() {
+  const renderAlbumIndex = () => {
     return (
       <div>
         <TitleBar />
@@ -55,13 +43,13 @@ export class AlbumIndexView extends Component<IProps, IState> {
             </Typography>
             <section className="albumIndexView__cardContainer">
               {/* tslint:disable-next-line:jsx-no-multiline-js */}
-              {this.state.albums.map((album: Album) => {
+              {albums.map((album: Album) => {
                 return(
                   <article key={album.id} className="albumIndexView__card">
                     <AlbumItem
-                      baseApiUrl={this.props.baseApiUrl}
+                      baseApiUrl={props.baseApiUrl}
                       source={album}
-                      albumViewCallback={this.handleAlbumViewClick.bind(this)}
+                      albumViewCallback={() => history.push(`albums/${album.id}`)}
                     />
                   </article>
                 );
@@ -70,33 +58,31 @@ export class AlbumIndexView extends Component<IProps, IState> {
           </MainContent>
         </div>
     );
-  }
+  };
 
-  private renderAlbumPhotoView() {
+  const renderAlbumPhotoView = () => {
     return (
       <div>
-        <RaisedButton onClick={() => this.clearRenderedAlbumId()} className="albumIndexView__button">
+        <RaisedButton onClick={() => setRenderedAlbumId('')} className="albumIndexView__button">
           Back
         </RaisedButton>
         <PhotoIndexView
-          baseApiUrl={this.props.baseApiUrl}
+          baseApiUrl={props.baseApiUrl}
         />
       </div>
     );
-  }
+  };
 
-  public render() {
-    let content;
-    if (this.state && this.state.renderedAlbumId != null) {
-      content = this.renderAlbumPhotoView();
-    } else {
-      content = this.renderAlbumIndex();
+  const content = () => {
+    if (renderedAlbumId !== '') {
+      return renderAlbumPhotoView();
     }
+    return renderAlbumIndex();
+  };
 
-    return (
-      <MuiThemeProvider>
-        {content}
-      </MuiThemeProvider>
-    );
-  }
-}
+  return (
+    <MuiThemeProvider>
+      {content()}
+    </MuiThemeProvider>
+  );
+};

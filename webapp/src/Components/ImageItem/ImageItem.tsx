@@ -1,5 +1,4 @@
-// @ts-ignore
-import * as React from 'react';
+import React, { useState } from 'react';
 import './ImageItem.css';
 import { Dialog, DialogActions, DialogContent, DialogTitle } from '@material-ui/core';
 import Button from '@material-ui/core/Button';
@@ -12,43 +11,28 @@ interface IProps {
   source: Photo;
 }
 
-interface IState {
-  isOpen: boolean;
-  url: string;
-}
+export const ImageItem: React.FunctionComponent<IProps> = (props) => {
 
-export class ImageItem extends React.Component<IProps, IState> {
+  const [isImageModalOpen, setImageModalOpen] = useState(false);
+  const [photoUrl] = useState(`${props.baseApiUrl}/photo/bin?photoId=${props.source.id}`);
 
-  constructor(props: IProps) {
-    super(props);
-    this.state = {
-      isOpen: false,
-      url: `${props.baseApiUrl}/photo/bin?photoId=${props.source.id}`};
-  }
-
-  private handleShowImageModal = () => {
-    this.setState({ isOpen: !this.state.isOpen });
-    return this.state.isOpen;
-  }
-
-  private gridImage() {
+  const gridImage = () => {
     return(
         <div className="imageItem__item">
           <div className="imageItem__thumbnail">
             <img
-              src={this.state.url}
-              alt={this.props.source.name}
-              onClick={this.handleShowImageModal}
+              src={photoUrl}
+              alt={props.source.name}
+              onClick={() => setImageModalOpen(!isImageModalOpen)}
             />
           </div>
-          <div className="imageItem__info">{`egjs ${this.props.num}`}</div>
+          <div className="imageItem__info">{`egjs ${props.num}`}</div>
         </div>
     );
-  }
+  };
 
-  public render() {
-
-    if (this.state && this.state.isOpen) {
+  const content = () => {
+    if (isImageModalOpen) {
       return (
         <div>
           <div>
@@ -56,36 +40,38 @@ export class ImageItem extends React.Component<IProps, IState> {
               className="imageItem__dialog"
               open={true}
               aria-labelledby="customized-dialog-title"
-              onClose={this.handleShowImageModal}
+              onClose={() => setImageModalOpen(false)}
             >
               <DialogTitle id="customized-dialog-title">
-                {this.props.source.name}
+                {props.source.name}
               </DialogTitle>
               <DialogContent>
-                <a href={this.state.url} >
+                <a href={photoUrl} >
                   <img
                     className="imageItem__dialog__image"
-                    src={this.state.url}
-                    alt={this.props.source.name}
+                    src={photoUrl}
+                    alt={props.source.name}
                   />
                 </a>
               </DialogContent>
               <DialogActions>
-                <Button onClick={this.handleShowImageModal} color="primary">
+                <Button onClick={() => setImageModalOpen(!isImageModalOpen)} color="primary">
                   Close
                 </Button>
               </DialogActions>
             </Dialog>
           </div>
-          {this.gridImage()}
+          {gridImage}
         </div>
       );
     }
 
     return (
       <div>
-        {this.gridImage()}
+        {gridImage}
       </div>
     );
-  }
-}
+  };
+
+  return content();
+};
