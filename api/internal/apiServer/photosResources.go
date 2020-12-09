@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gitlab.com/r1chjames/photobox/api/internal/database"
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
+	"strconv"
 	"strings"
 )
 import "net/http"
@@ -15,6 +16,8 @@ func definePhotosResources(router *gin.Engine, appConfig AppConfig) {
 	router.GET(fmt.Sprintf("%s/photos", urlBasePath), func(c *gin.Context) {
 		albumId := c.Query("albumId")
 		photoId := c.Query("id")
+		pageNumber, _ := strconv.Atoi(c.Query("page_number"))
+		pageSize, _ := strconv.Atoi(c.Query("page_size"))
 
 		if photoId != "" {
 			response, err := database.GetPhotoInfoById(albumId)
@@ -24,14 +27,14 @@ func definePhotosResources(router *gin.Engine, appConfig AppConfig) {
 				c.JSON(http.StatusOK, response)
 			}
 		} else if albumId != "" {
-			response, err := database.GetAllPhotosInfoInAlbum(albumId)
+			response, err := database.GetAllPhotosInfoInAlbum(albumId, pageNumber, pageSize)
 			if err != nil {
 				c.JSON(http.StatusNotFound, "Requested album not found")
 			} else {
 				c.JSON(http.StatusOK, response)
 			}
 		} else {
-			response, err := database.GetAllPhotos()
+			response, err := database.GetAllPhotos(pageNumber, pageSize)
 			if err != nil {
 				c.JSON(http.StatusNotFound, "No photos found")
 			} else {

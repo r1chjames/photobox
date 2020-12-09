@@ -10,15 +10,15 @@ func GetPhotoInfoById(photoId string) (Photo, error) {
 	return photo, result.Error
 }
 
-func GetAllPhotos() ([]Photo, error) {
+func GetAllPhotos(pageNumber int, pageSize int) ([]Photo, error) {
 	var photos []Photo
-	result := dbConn.Find(&photos)
+	result := dbConn.Scopes(Paginate(pageNumber, pageSize)).Find(&photos)
 	return photos, result.Error
 }
 
-func GetAllPhotosInfoInAlbum(albumId string) ([]Photo, error) {
+func GetAllPhotosInfoInAlbum(albumId string, pageNumber int, pageSize int) ([]Photo, error) {
 	var photos []Photo
-	result := dbConn.Find(&photos, "AlbumID = ?", albumId)
+	result := dbConn.Scopes(Paginate(pageNumber, pageSize)).Find(&photos, "AlbumID = ?", albumId)
 	return photos, result.Error
 }
 

@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gitlab.com/r1chjames/photobox/api/internal/database"
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
+	"strconv"
 	"strings"
 )
 import "net/http"
@@ -21,7 +22,9 @@ func defineAlbumsResources(r *gin.Engine, appConfig AppConfig) {
 			}
 			c.Status(http.StatusNotFound)
 		} else {
-			albums, err := database.GetAllAlbums()
+			pageNumber, _ := strconv.Atoi(c.Query("page_number"))
+			pageSize, _ := strconv.Atoi(c.Query("page_size"))
+			albums, err := database.GetAllAlbums(pageNumber, pageSize)
 			if err != nil {
 				c.JSON(http.StatusOK, albums)
 			}

@@ -16,9 +16,9 @@ func GetAlbumByName(albumName string) (Album, error) {
 	return album, result.Error
 }
 
-func GetAllAlbums() ([]Album, error) {
+func GetAllAlbums(pageNumber int, pageSize int) ([]Album, error) {
 	var albums []Album
-	result := dbConn.Find(&albums)
+	result := dbConn.Scopes(Paginate(pageNumber, pageSize)).Find(&albums)
 	return albums, result.Error
 }
 
