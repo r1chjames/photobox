@@ -14,18 +14,25 @@ func defineAlbumsResources(r *gin.Engine, appConfig AppConfig) {
 
 	r.GET(fmt.Sprintf("%s/albums", urlBasePath), func(c *gin.Context) {
 		albumId := c.Query("albumId")
-		var response interface{}
 		if albumId != "" {
-			response = database.GetAlbumById(appConfig, albumId)
+			album, err := database.GetAlbumById(albumId)
+			if err != nil {
+				c.JSON(http.StatusOK, album)
+			}
+			c.Status(http.StatusNotFound)
 		} else {
-			response = database.GetAllAlbums(appConfig)
+			albums, err := database.GetAllAlbums()
+			if err != nil {
+				c.JSON(http.StatusOK, albums)
+			}
+			c.Status(http.StatusNotFound)
 		}
-		c.JSON(http.StatusOK, response)
 	})
 
 	r.GET(fmt.Sprintf("%s/albums/count", urlBasePath), func(c *gin.Context) {
+		albumCount, _ := database.GetAlbumCount()
 		c.JSON(http.StatusOK, gin.H{
-			"albumCount": database.GetAlbumCount(appConfig),
+			"albumCount": albumCount,
 		})
 	})
 }

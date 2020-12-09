@@ -1,61 +1,37 @@
 package database
 
 import (
-	"database/sql"
-	"fmt"
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
-	"log"
 	"time"
 )
 
-func transformRowsIntoBooleanArray(results *sql.Rows) interface{} {
-	defer results.Close()
-	var records []bool
-	for results.Next() {
-		var record bool
-		err := results.Scan(
-			&record)
-		if err != nil {
-			log.Fatal(fmt.Sprintf("An error parsing settings record: %s", err))
-		}
-		records = append(records, record)
+func IsJobRunning(jobName string) (bool, error) {
+	var job Job
+	result := dbConn.First(&job, jobName)
+	if job.Status == "RUNNING" {
+		return true, result.Error
 	}
-	return records
+	return false, result.Error
 }
 
-func IsJobRunning(appConfig AppConfig, jobName string) bool {
-	allJobsFields := "RUNNING"
-	query := fmt.Sprintf("SELECT %s FROM jobs WHERE job = '%s'", allJobsFields, jobName)
-
-	queryResults := executeTransformDbQuery(appConfig, query, transformRowsIntoBooleanArray).([]bool)
-	if len(queryResults) > 0 {
-		return queryResults[0]
-	}
-
-	return true
+func updateJobStatus(jobName string, status string) error {
+	var job Job
+	job.Name = jobName
+	result := dbConn.Model(&job).Updates(Job{Status: status, LastRun: time.Now()})
+	return result.Error
 }
 
-func updateJobStatus(appConfig AppConfig, jobName string, status bool) {
-	insertStatement := fmt.Sprintf("UPDATE jobs SET running = %t, lastRun = '%s' where job = '%s'",
-		status,
-		time.Now().Format("2006-01-02 15:04:05"),
-		jobName)
-
-	executeDbInsert(appConfig, insertStatement)
+func UpdateAllJobStatus(status string) error {
+	result := dbConn.Model(Job{}).Updates(Job{Status: status})
+	return result.Error
 }
 
-func UpdateAllJobStatus(appConfig AppConfig, status bool) {
-	insertStatement := fmt.Sprintf("UPDATE jobs SET running = %t",
-		status)
-	executeDbInsert(appConfig, insertStatement)
+func JobStarting(jobName string) error {
+	return updateJobStatus(jobName, "RUNNING")
 }
 
-func JobStarting(appConfig AppConfig, jobName string) {
-	updateJobStatus(appConfig, jobName, true)
-}
-
-func JobCompleted(appConfig AppConfig, jobName string) {
-	updateJobStatus(appConfig, jobName, false)
+func JobCompleted(jobName string) error {
+	return updateJobStatus(jobName, "NOT_RUNNING")
 }
 
 

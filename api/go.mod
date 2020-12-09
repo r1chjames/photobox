@@ -14,4 +14,7 @@ require (
 	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
 	golang.org/x/sys v0.0.0-20200519105757-fe76b779f299 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
+	gorm.io/datatypes v1.0.0
+	gorm.io/driver/mysql v1.0.3
+	gorm.io/gorm v1.20.8
 )

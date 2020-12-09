@@ -14,7 +14,7 @@ func defineHealthCheckResources(r *gin.Engine, appConfig AppConfig) {
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
 
 	r.GET(fmt.Sprintf("%s/health", urlBasePath), func(c *gin.Context) {
-		_, err := database.GetAllSettings(appConfig)
+		_, err := database.GetAllSettings()
 		if err != nil {
 			c.JSON(http.StatusBadGateway, err.Error())
 		} else {
@@ -27,16 +27,20 @@ func defineServerResources(r *gin.Engine, appConfig AppConfig) {
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
 
 	r.POST(fmt.Sprintf("%s/index", urlBasePath), func(c *gin.Context) {
-		if database.IsJobRunning(appConfig,"Photo_index") {
+		isRunning, err := database.IsJobRunning("Photo_index")
+		if err != nil {
+			c.JSON(http.StatusBadRequest, "Requested setting not found")
+		}
+		if isRunning {
 			c.JSON(http.StatusConflict, "Photo Index already running")
 		} else {
 			c.Status(http.StatusAccepted)
-			database.JobStarting(appConfig, "Photo_index")
-			defer database.JobCompleted(appConfig, "Photo_index")
+			database.JobStarting("Photo_index")
+			defer database.JobCompleted("Photo_index")
 
 			photoRecords := components.ScanFilesystem(appConfig)
-			database.SavePhotoRecordsToDatabase(appConfig, photoRecords)
-			database.JobCompleted(appConfig, "Photo_index")
+			database.SavePhotoRecordsToDatabase(photoRecords)
+			database.JobCompleted("Photo_index")
 		}
 	})
 }
@@ -45,20 +49,20 @@ func defineSettingsResources(r *gin.Engine, appConfig AppConfig) {
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
 
 	r.GET(fmt.Sprintf("%s/settings", urlBasePath), func(c *gin.Context) {
-		response, err := database.GetAllSettings(appConfig)
+		response, err := database.GetAllSettings()
 		if err != nil {
-			c.JSON(http.StatusNotFound, err.Error())
+			c.JSON(http.StatusNotFound, "Requested setting not found")
 		} else {
 			c.JSON(http.StatusOK, response)
 		}
 	})
 
-	r.POST(fmt.Sprintf("%s/settings", urlBasePath), func(c *gin.Context) {
-		err := database.UpdateAllSettings(appConfig, c)
-		if err != nil {
-			c.JSON(http.StatusNotFound, err.Error())
-		} else {
-			c.Status(http.StatusAccepted)
-		}
-	})
+	//r.POST(fmt.Sprintf("%s/setting", urlBasePath), func(c *gin.Context) {
+	//	err := database.UpdateAllSettings(c)
+	//	if err != nil {
+	//		c.JSON(http.StatusNotFound, err.Error())
+	//	} else {
+	//		c.Status(http.StatusAccepted)
+	//	}
+	//})
 }

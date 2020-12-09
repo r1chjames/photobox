@@ -107,7 +107,7 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
     <MuiThemeProvider>
       <MainContent>
         <TitleBar />
-        <Typography variant="h1" component="h1">
+        <Typography variant="h4" component="h1">
           {albumName}
         </Typography>
         <div className="photoIndexView__photoIndex">

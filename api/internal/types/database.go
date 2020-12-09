@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type PhotoRecord struct {
+type PhotoOld struct {
 	Id string `json:"id"`
 	Name string `json:"name"`
 	FilesystemPath string `json:"filesystemPath"`
@@ -14,11 +14,11 @@ type PhotoRecord struct {
 	Metadata string `json:"metadata"`
 }
 
-type photoMetadataRecord struct {
+type photoMetadata struct {
 	Exif exif.Exif `json:"exif,omitempty"`
 }
 
-type AlbumRecord struct {
+type AlbumOld struct {
 	Id string `json:"id"`
 	Name string `json:"name"`
 	Description string `json:"description"`
@@ -26,7 +26,7 @@ type AlbumRecord struct {
 	Metadata string `json:"metadata"`
 }
 
-type albumMetadataRecord struct {
+type albumMetadata struct {
 	Created	time.Duration `json:"created"`
 	LastUpdated time.Duration `json:"lastUpdated"`
 }
@@ -38,12 +38,12 @@ type ServerTask struct {
 	LastRun string `json:"lastRun"`
 }
 
-type SettingRecord struct {
-	Setting string `json:"setting"`
+type SettingOld struct {
+	Key string `json:"key"`
 	Value string `json:"value"`
 }
 
-type JobsRecord struct {
+type JobOld struct {
 	Job	string `json:"job"`
 	Running bool `json:"running"`
 	LastRun string `json:"lastRun"`

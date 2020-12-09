@@ -10,7 +10,9 @@ import (
 
 func main() {
 	appConfig := parseAppVariables()
-	stopAllRunningJobs(appConfig)
+	database.InitDbConnection(appConfig)
+	database.PerformDbSetup()
+	stopAllRunningJobs()
 	startApiServer(appConfig)
 }
 
@@ -28,8 +30,8 @@ func parseAppVariables() AppConfig {
 	}
 }
 
-func stopAllRunningJobs(appConfig AppConfig) {
-	database.UpdateAllJobStatus(appConfig, false)
+func stopAllRunningJobs() {
+	database.UpdateAllJobStatus("NOT_RUNNING")
 }
 
 func startApiServer(appConfig AppConfig) {
