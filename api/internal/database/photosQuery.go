@@ -7,7 +7,8 @@ import (
 
 func GetPhotoInfoById(photoId string) (Photo, error) {
 	var photo Photo
-	result := dbConn.First(&photo, photoId)
+	photo.ID = photoId
+	result := dbConn.First(&photo)
 	return photo, result.Error
 }
 

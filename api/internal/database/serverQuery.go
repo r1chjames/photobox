@@ -2,9 +2,9 @@ package database
 
 import (
 	b64 "encoding/base64"
+	"encoding/json"
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
 	"gitlab.com/r1chjames/photobox/api/internal/utils"
-	"gorm.io/datatypes"
 	"log"
 )
 
@@ -20,12 +20,13 @@ func SavePhotoRecordsToDatabase(photoRecords []PhotoFile) {
 		}
 		log.Printf("Adding photo: %s to album: %s", photo.Name, photo.Directory)
 		photoHash := b64.StdEncoding.EncodeToString([]byte(photo.Path))
+		photoMetadata, _ := json.Marshal(&photo)
 		photo := Photo{
 			Name: utils.EscapeInvalidCharacters(photo.Name),
 			FilesystemPath: utils.EscapeInvalidCharacters(photo.Path),
 			AlbumId: albumId,
 			Tags: "",
-			Metadata: datatypes.JSON(`{}`),
+			Metadata: photoMetadata,
 		}
 		photo.ID = photoHash
 		err = CreatePhoto(photo)

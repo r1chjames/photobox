@@ -1,6 +1,7 @@
 package apiServer
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"gitlab.com/r1chjames/photobox/api/internal/database"
@@ -51,9 +52,35 @@ func definePhotosResources(router *gin.Engine, appConfig AppConfig) {
 
 	router.GET(fmt.Sprintf("%s/photo/bin", urlBasePath), func(c *gin.Context) {
 		photoId := c.Query("photoId")
-		photoInfo, _ := database.GetPhotoInfoById(photoId)
-		photoPath := photoInfo.FilesystemPath
-		c.File(photoPath)
+		if photoId == "" {
+			c.JSON(http.StatusBadRequest, "Missing photo ID")
+		}
+		photoInfo, err := database.GetPhotoInfoById(photoId)
+		if err != nil {
+			c.Status(http.StatusNotFound)
+		} else {
+			photoPath := photoInfo.FilesystemPath
+			c.File(photoPath)
+		}
+	})
+
+	router.GET(fmt.Sprintf("%s/photo/thumbnail", urlBasePath), func(c *gin.Context) {
+		photoId := c.Query("photoId")
+		if photoId == "" {
+			c.JSON(http.StatusBadRequest, "Missing photo ID")
+		}
+		photoInfo, err := database.GetPhotoInfoById(photoId)
+		if err != nil {
+			c.Status(http.StatusNotFound)
+		} else {
+			var photoMetadata PhotoFile
+			retrievedPhotoMetadata := photoInfo.Metadata
+			err := json.Unmarshal(retrievedPhotoMetadata, &photoMetadata)
+			if err != nil {
+				c.JSON(http.StatusNotFound, "No thumbnail found")
+			}
+			c.Data(http.StatusOK, "application/octet-stream" ,photoMetadata.Thumbnail)
+		}
 	})
 
 }

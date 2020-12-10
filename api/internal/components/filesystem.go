@@ -52,7 +52,7 @@ func walkDir(dir string, photoChan chan PhotoFile) {
 
 		if f.Mode().IsRegular() && isImageFile(f.Name()) {
 			log.Printf("Processing file: %s", path)
-			data := GetMetaData(path, f)
+			data := getMetaData(path, f)
 			photoChan <- data
 		}
 		return nil
@@ -70,28 +70,42 @@ func isImageFile(fileName string) bool {
 	return utils.Exists(imageFileTypes, fileType)
 }
 
-func GetMetaData(path string, info os.FileInfo) PhotoFile {
+func getMetaData(path string, info os.FileInfo) PhotoFile {
 	slashIndices := utils.AllIndicesOfChar(path, "/")
 	photoDirectory := path[slashIndices[len(slashIndices)-2]+1:slashIndices[len(slashIndices)-1]]
-
+	exifData, thumbnail := getExifDataAndThumbnail(path)
 	return PhotoFile{
-		MD5: GetSum(path),
-		Path: path,
+		MD5:       getSum(path),
+		Path:      path,
 		Directory: photoDirectory,
-		Size: GetSize(info),
-		Extension: GetExtension(path),
-		Name: info.Name(), //GetFileName(path)
-		Exif: GetExifData(path),
-		Mime: GetFileType(path),
+		Size:      getSize(info),
+		Extension: getExtension(path),
+		Name:      info.Name(), //GetFileName(path)
+		Exif:      exifData,
+		Mime:      getFileType(path),
+		Thumbnail: thumbnail,
 	}
 }
 
-func GetExifData(path string) exif.Exif {
+func getExifDataAndThumbnail(path string) (exif.Exif, []byte) {
 	f, err := os.Open(path)
 	if err != nil {
-		return exif.Exif{}
+		return exif.Exif{}, []byte{}
 	}
-	x, err := exif.Decode(f)
+	return getExifData(f), getThumbnail(f)
+}
+
+func getThumbnail(file *os.File) []byte {
+	x, err := exif.Decode(file)
+	if err != nil {
+		return []byte{}
+	}
+	thumbnail, _ := x.JpegThumbnail()
+	return thumbnail
+}
+
+func getExifData(file *os.File) exif.Exif {
+	x, err := exif.Decode(file)
 	if err != nil {
 		return exif.Exif{}
 	}
@@ -103,7 +117,7 @@ func getFileExtension(path string) string {
 	return path[dotIndex+1:]
 }
 
-func GetFileType(path string) string {
+func getFileType(path string) string {
 	out, err := exec.Command("file", "--brief", "--mime-type", path).Output()
 	if err != nil {
 		log.Fatal(err)
@@ -111,15 +125,15 @@ func GetFileType(path string) string {
 	return strings.TrimSpace(string(out))
 }
 
-func GetExtension(path string) string {
+func getExtension(path string) string {
 	return filepath.Ext(path)
 }
 
-func GetSize(info os.FileInfo) int64 {
+func getSize(info os.FileInfo) int64 {
 	return info.Size()
 }
 
-func GetSum(path string) string {
+func getSum(path string) string {
 	f, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
