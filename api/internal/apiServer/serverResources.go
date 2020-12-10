@@ -11,10 +11,10 @@ import (
 )
 import "net/http"
 
-func defineHealthCheckResources(r *gin.Engine, appConfig AppConfig) {
+func defineHealthCheckResources(router *gin.Engine, appConfig AppConfig) {
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
 
-	r.GET(fmt.Sprintf("%s/health", urlBasePath), func(c *gin.Context) {
+	router.GET(fmt.Sprintf("%s/health", urlBasePath), func(c *gin.Context) {
 		_, err := database.GetAllSettings()
 		if err != nil {
 			c.JSON(http.StatusBadGateway, err.Error())
@@ -24,10 +24,10 @@ func defineHealthCheckResources(r *gin.Engine, appConfig AppConfig) {
 	})
 }
 
-func defineServerResources(r *gin.Engine, appConfig AppConfig) {
+func defineServerResources(router *gin.Engine, appConfig AppConfig) {
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
 
-	r.POST(fmt.Sprintf("%s/index", urlBasePath), func(c *gin.Context) {
+	router.POST(fmt.Sprintf("%s/index", urlBasePath), func(c *gin.Context) {
 		isRunning, _ := database.IsJobRunning("Photo_index")
 
 		if isRunning {
@@ -44,10 +44,10 @@ func defineServerResources(r *gin.Engine, appConfig AppConfig) {
 	})
 }
 
-func defineSettingsResources(r *gin.Engine, appConfig AppConfig) {
+func defineSettingsResources(router *gin.Engine, appConfig AppConfig) {
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
 
-	r.GET(fmt.Sprintf("%s/settings", urlBasePath), func(c *gin.Context) {
+	router.GET(fmt.Sprintf("%s/settings", urlBasePath), func(c *gin.Context) {
 		response, err := database.GetAllSettings()
 		if err != nil {
 			c.JSON(http.StatusNotFound, "Requested setting not found")
@@ -56,7 +56,7 @@ func defineSettingsResources(r *gin.Engine, appConfig AppConfig) {
 		}
 	})
 
-	r.POST(fmt.Sprintf("%s/setting", urlBasePath), func(c *gin.Context) {
+	router.POST(fmt.Sprintf("%s/setting", urlBasePath), func(c *gin.Context) {
 		var settings []Setting
 		err := c.ShouldBindJSON(&settings)
 		if err != nil {
