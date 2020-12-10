@@ -31,7 +31,7 @@ func parseAppVariables() AppConfig {
 }
 
 func stopAllRunningJobs() {
-	database.UpdateAllJobStatus("NOT_RUNNING")
+	database.StopAllRunningJobs("NOT_RUNNING")
 }
 
 func startApiServer(appConfig AppConfig) {

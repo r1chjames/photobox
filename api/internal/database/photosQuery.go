@@ -2,6 +2,7 @@ package database
 
 import (
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
+	"gorm.io/gorm/clause"
 )
 
 func GetPhotoInfoById(photoId string) (Photo, error) {
@@ -29,6 +30,18 @@ func GetPhotosInAlbumCount(albumId string) (int64, error) {
 }
 
 func CreatePhoto(photo Photo) error {
-	result := dbConn.Save(photo)
+	result := dbConn.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&photo)
 	return result.Error
 }
+
+//result := dbConn.Clauses(clause.OnConflict{
+//Columns:   []clause.Column{{Name: "id"}},
+//DoUpdates: clause.Assignments(map[string]interface{}{
+//"name": photo.Name,
+//"filesystem_path": photo.FilesystemPath,
+//"album_id": photo.AlbumId,
+//"tags": photo.Tags,
+//"metadata": photo.Metadata,
+//}),

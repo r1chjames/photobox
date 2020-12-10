@@ -6,6 +6,7 @@ import (
 	"gitlab.com/r1chjames/photobox/api/internal/components"
 	"gitlab.com/r1chjames/photobox/api/internal/database"
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
+	"log"
 	"strings"
 )
 import "net/http"
@@ -27,10 +28,8 @@ func defineServerResources(r *gin.Engine, appConfig AppConfig) {
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
 
 	r.POST(fmt.Sprintf("%s/index", urlBasePath), func(c *gin.Context) {
-		isRunning, err := database.IsJobRunning("Photo_index")
-		if err != nil {
-			c.JSON(http.StatusBadRequest, "Requested setting not found")
-		}
+		isRunning, _ := database.IsJobRunning("Photo_index")
+
 		if isRunning {
 			c.JSON(http.StatusConflict, "Photo Index already running")
 		} else {
@@ -57,12 +56,19 @@ func defineSettingsResources(r *gin.Engine, appConfig AppConfig) {
 		}
 	})
 
-	//r.POST(fmt.Sprintf("%s/setting", urlBasePath), func(c *gin.Context) {
-	//	err := database.UpdateAllSettings(c)
-	//	if err != nil {
-	//		c.JSON(http.StatusNotFound, err.Error())
-	//	} else {
-	//		c.Status(http.StatusAccepted)
-	//	}
-	//})
+	r.POST(fmt.Sprintf("%s/setting", urlBasePath), func(c *gin.Context) {
+		var settings []Setting
+		err := c.ShouldBindJSON(&settings)
+		if err != nil {
+			log.Println(err.Error())
+			c.JSON(http.StatusBadRequest, "Payload not valid")
+		}
+
+		err = database.UpdateAllSettings(settings)
+		if err != nil {
+			c.JSON(http.StatusNotFound, err.Error())
+		} else {
+			c.Status(http.StatusAccepted)
+		}
+	})
 }

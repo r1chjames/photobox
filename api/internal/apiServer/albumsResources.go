@@ -18,17 +18,17 @@ func defineAlbumsResources(r *gin.Engine, appConfig AppConfig) {
 		if albumId != "" {
 			album, err := database.GetAlbumById(albumId)
 			if err != nil {
-				c.JSON(http.StatusOK, album)
+				c.Status(http.StatusNotFound)
 			}
-			c.Status(http.StatusNotFound)
+			c.JSON(http.StatusOK, album)
 		} else {
-			pageNumber, _ := strconv.Atoi(c.Query("page_number"))
-			pageSize, _ := strconv.Atoi(c.Query("page_size"))
-			albums, err := database.GetAllAlbums(pageNumber, pageSize)
+			page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+			limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+			albums, err := database.GetAllAlbums(page, limit)
 			if err != nil {
-				c.JSON(http.StatusOK, albums)
+				c.Status(http.StatusNotFound)
 			}
-			c.Status(http.StatusNotFound)
+			c.JSON(http.StatusOK, albums)
 		}
 	})
 

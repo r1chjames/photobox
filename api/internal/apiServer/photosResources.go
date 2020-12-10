@@ -16,8 +16,8 @@ func definePhotosResources(router *gin.Engine, appConfig AppConfig) {
 	router.GET(fmt.Sprintf("%s/photos", urlBasePath), func(c *gin.Context) {
 		albumId := c.Query("albumId")
 		photoId := c.Query("id")
-		pageNumber, _ := strconv.Atoi(c.Query("page_number"))
-		pageSize, _ := strconv.Atoi(c.Query("page_size"))
+		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 
 		if photoId != "" {
 			response, err := database.GetPhotoInfoById(albumId)
@@ -27,14 +27,14 @@ func definePhotosResources(router *gin.Engine, appConfig AppConfig) {
 				c.JSON(http.StatusOK, response)
 			}
 		} else if albumId != "" {
-			response, err := database.GetAllPhotosInfoInAlbum(albumId, pageNumber, pageSize)
+			response, err := database.GetAllPhotosInfoInAlbum(albumId, page, limit)
 			if err != nil {
 				c.JSON(http.StatusNotFound, "Requested album not found")
 			} else {
 				c.JSON(http.StatusOK, response)
 			}
 		} else {
-			response, err := database.GetAllPhotos(pageNumber, pageSize)
+			response, err := database.GetAllPhotos(page, limit)
 			if err != nil {
 				c.JSON(http.StatusNotFound, "No photos found")
 			} else {

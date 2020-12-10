@@ -6,14 +6,15 @@ import (
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"log"
+	"time"
 )
 
 var dbConn *gorm.DB
 
 func InitDbConnection(appConfig AppConfig) {
 	db, err := gorm.Open(mysql.New(mysql.Config{
-		//DriverName: "mysql_driver",
 		DSN:        fmt.Sprintf("%s?charset=utf8&parseTime=True&loc=Local", appConfig.DbUrl),
 	}), &gorm.Config{})
 	if err != nil {
@@ -30,27 +31,35 @@ func PerformDbSetup() {
 		log.Fatal("failed to perform database migration")
 	}
 
-	dbConn.Create(&Job{Name: "Photo_index", Status: "NOT_RUNNING"})
+	dbConn.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&Job{Name: "Photo_index", Status: "NOT_RUNNING", LastRun: time.Now()})
 }
 
 func checkNotFoundError(err error) bool {
 	return errors.Is(err, gorm.ErrRecordNotFound)
 }
 
-func Paginate(pageNumber int, pageSize int) func(db *gorm.DB) *gorm.DB {
+func Paginate(page int, limit int) func(db *gorm.DB) *gorm.DB {
 	return func (db *gorm.DB) *gorm.DB {
-		if pageNumber == 0 {
-			pageNumber = 1
+		if page == 0 {
+			page = 1
 		}
 
 		switch {
-		case pageSize > 100:
-			pageSize = 100
-		case pageSize <= 0:
-			pageSize = 10
+			case limit > 100:
+				limit = 100
+			case limit <= 0:
+				limit = 10
 		}
 
-		offset := (pageSize - 1) * pageSize
-		return db.Offset(offset).Limit(pageSize)
+		var offset int
+		if page == 1 {
+			offset = 0
+		} else {
+			offset = (page - 1) * limit
+		}
+
+		return db.Offset(offset).Limit(limit)
 	}
 }

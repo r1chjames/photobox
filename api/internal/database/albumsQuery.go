@@ -1,12 +1,14 @@
 package database
 
 import (
+	"github.com/google/uuid"
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
 )
 
 func GetAlbumById(albumId string) (Album, error) {
 	var album Album
-	result := dbConn.First(&album, albumId)
+	album.ID = albumId
+	result := dbConn.First(&album)
 	return album, result.Error
 }
 
@@ -16,9 +18,9 @@ func GetAlbumByName(albumName string) (Album, error) {
 	return album, result.Error
 }
 
-func GetAllAlbums(pageNumber int, pageSize int) ([]Album, error) {
+func GetAllAlbums(page int, limit int) ([]Album, error) {
 	var albums []Album
-	result := dbConn.Scopes(Paginate(pageNumber, pageSize)).Find(&albums)
+	result := dbConn.Scopes(Paginate(page, limit)).Find(&albums)
 	return albums, result.Error
 }
 
@@ -28,9 +30,10 @@ func GetAlbumCount() (int64, error) {
 	return result.RowsAffected, result.Error
 }
 
-func CreateAlbum(name string) error {
+func CreateAlbum(name string) (string, error) {
 	var album Album
+	album.ID = uuid.New().String()
 	album.Name = name
-	result := dbConn.Save(album)
-	return result.Error
+	result := dbConn.Create(&album)
+	return album.ID, result.Error
 }

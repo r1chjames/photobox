@@ -7,7 +7,8 @@ import (
 
 func IsJobRunning(jobName string) (bool, error) {
 	var job Job
-	result := dbConn.First(&job, jobName)
+	job.Name = jobName
+	result := dbConn.First(&job)
 	if job.Status == "RUNNING" {
 		return true, result.Error
 	}
@@ -17,12 +18,12 @@ func IsJobRunning(jobName string) (bool, error) {
 func updateJobStatus(jobName string, status string) error {
 	var job Job
 	job.Name = jobName
-	result := dbConn.Model(&job).Updates(Job{Status: status, LastRun: time.Now()})
+	result := dbConn.Model(&job).Where("name = ?", jobName).Updates(Job{Status: status, LastRun: time.Now()})
 	return result.Error
 }
 
-func UpdateAllJobStatus(status string) error {
-	result := dbConn.Model(Job{}).Updates(Job{Status: status})
+func StopAllRunningJobs(status string) error {
+	result := dbConn.Model(Job{}).Where("status = ?", "RUNNING").Update("Status", status)
 	return result.Error
 }
 

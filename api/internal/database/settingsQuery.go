@@ -2,6 +2,7 @@ package database
 
 import (
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
+	"gorm.io/gorm/clause"
 )
 
 func GetAllSettings() ([]Setting, error) {
@@ -10,10 +11,16 @@ func GetAllSettings() ([]Setting, error) {
 	return setting, result.Error
 }
 
-func UpdateAllSettings(key string, value string) error {
-	var setting Setting
-	setting.Key = key
-	setting.Value = value
-	result := dbConn.Save(setting)
+func UpdateSetting(setting Setting) error {
+	result := dbConn.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&setting)
+	return result.Error
+}
+
+func UpdateAllSettings(settings []Setting) error {
+	result := dbConn.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&settings)
 	return result.Error
 }

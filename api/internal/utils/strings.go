@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 func AllIndicesOfChar(str string, charToFind string) []int {
@@ -34,4 +35,8 @@ func Exists(slice []string, val string) bool {
 		}
 	}
 	return false
+}
+
+func EscapeInvalidCharacters(field string) string {
+	return strings.ReplaceAll(field, "'", "\\'")
 }
