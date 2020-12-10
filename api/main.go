@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"gitlab.com/r1chjames/photobox/api/internal/apiServer"
 	"gitlab.com/r1chjames/photobox/api/internal/database"
-	. "gitlab.com/r1chjames/photobox/api/internal/types"
+	"gitlab.com/r1chjames/photobox/api/internal/types"
 	"gitlab.com/r1chjames/photobox/api/internal/utils"
 )
 
@@ -13,20 +13,20 @@ func main() {
 	database.InitDbConnection(appConfig)
 	database.PerformDbSetup()
 	stopAllRunningJobs()
-	startApiServer(appConfig)
+	startAPIServer(appConfig)
 }
 
-func parseAppVariables() AppConfig {
+func parseAppVariables() types.AppConfig {
 	dbHost := utils.GetEnv("DB_HOST", "localhost")
 	dbUser := utils.GetEnv("DB_USER", "photobox")
 	dbPassword := utils.GetEnv("DB_PASSWORD", "photobox")
 	dbName := utils.GetEnv("DB_NAME", "photobox")
-	dbUrl := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s", dbUser, dbPassword, dbHost, dbName)
+	dbURL := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s", dbUser, dbPassword, dbHost, dbName)
 
-	return AppConfig{
-		PhotoDir: utils.GetEnv("PHOTO_DIR", "/photos"),
+	return types.AppConfig{
+		PhotoDir:    utils.GetEnv("PHOTO_DIR", "/photos"),
 		ApiBasePath: utils.GetEnv("API_BASE_PATH", "/api"),
-		DbUrl: dbUrl,
+		DbUrl:       dbURL,
 	}
 }
 
@@ -34,6 +34,6 @@ func stopAllRunningJobs() {
 	database.StopAllRunningJobs("NOT_RUNNING")
 }
 
-func startApiServer(appConfig AppConfig) {
+func startAPIServer(appConfig types.AppConfig) {
 	apiServer.Start(appConfig)
 }

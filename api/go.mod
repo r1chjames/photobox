@@ -12,7 +12,8 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
-	golang.org/x/sys v0.0.0-20200519105757-fe76b779f299 // indirect
+	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
+	golang.org/x/tools v0.0.0-20201208233053-a543418bbed2 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 	gorm.io/datatypes v1.0.0
 	gorm.io/driver/mysql v1.0.3
