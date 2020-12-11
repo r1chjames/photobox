@@ -28,7 +28,7 @@ const getAllPhotos = async(baseApiUrl: string, albumId: string) => {
   const photosAdapter = new PhotosAdapter(baseApiUrl);
   let photos: Photo[];
   // if (albumId != null) {
-  photos = await photosAdapter.getPhotosInfoInAlbum(albumId);
+  photos = await photosAdapter.getPhotosInfoInAlbum(albumId, 1, 100);
   // } else {
   //   photos = await photosAdapter.getAllPhotosInfo();
   // }

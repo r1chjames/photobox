@@ -14,8 +14,8 @@ interface IProps {
 
 const getUrlOfFirstImageInAlbum = async(baseApiUrl: string, albumId: string) => {
   const photosAdapter = new PhotosAdapter(baseApiUrl);
-  const photos: Photo[] = await photosAdapter.getPhotosInfoInAlbum(albumId);
-  return `${baseApiUrl}/photo/bin?photoId=${photos[0].id}`;
+  const photos: Photo[] = await photosAdapter.getPhotosInfoInAlbum(albumId, 1, 1);
+  return `${baseApiUrl}/photo/thumbnail?photoId=${photos[0].id}`;
 };
 
 export const AlbumItem: React.FunctionComponent<IProps> = (props) => {

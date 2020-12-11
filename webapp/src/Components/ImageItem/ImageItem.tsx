@@ -14,7 +14,7 @@ interface IProps {
 export const ImageItem: React.FunctionComponent<IProps> = (props) => {
 
   const [isImageModalOpen, setImageModalOpen] = useState(false);
-  const [photoUrl] = useState(`${props.baseApiUrl}/photo/bin?photoId=${props.source.id}`);
+  const [photoUrl] = useState(`${props.baseApiUrl}/photo/thumbnail?photoId=${props.source.id}`);
 
   const gridImage = () => {
     return(
@@ -61,14 +61,14 @@ export const ImageItem: React.FunctionComponent<IProps> = (props) => {
               </DialogActions>
             </Dialog>
           </div>
-          {gridImage}
+          {gridImage()}
         </div>
       );
     }
 
     return (
       <div>
-        {gridImage}
+        {gridImage()}
       </div>
     );
   };
