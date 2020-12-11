@@ -15,7 +15,7 @@ func defineAlbumsResources(router *gin.Engine, appConfig AppConfig) {
 
 	albums := router.Group(fmt.Sprintf("%s/albums", urlBasePath))
 	{
-		albums.GET("/", func(c *gin.Context) {
+		albums.GET("", func(c *gin.Context) {
 			albumId := c.Query("albumId")
 			if albumId != "" {
 				album, err := database.GetAlbumById(albumId)

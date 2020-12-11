@@ -1,6 +1,7 @@
 package database
 
 import (
+	"encoding/json"
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
 	"gorm.io/gorm/clause"
 )
@@ -12,21 +13,27 @@ func GetPhotoInfoById(photoId string) (Photo, error) {
 	return photo, result.Error
 }
 
-func GetAllPhotos(pageNumber int, pageSize int) ([]Photo, error) {
+func GetAllPhotos(pageNumber int, pageSize int, includeThumbnails bool) ([]Photo, error) {
 	var photos []Photo
 	result := dbConn.Scopes(Paginate(pageNumber, pageSize)).Find(&photos)
+	if !includeThumbnails {
+		return removeThumbnails(photos), result.Error
+	}
 	return photos, result.Error
 }
 
-func GetAllPhotosInfoInAlbum(albumId string, pageNumber int, pageSize int) ([]Photo, error) {
+func GetAllPhotosInfoInAlbum(albumId string, pageNumber int, pageSize int, includeThumbnails bool) ([]Photo, error) {
 	var photos []Photo
-	result := dbConn.Scopes(Paginate(pageNumber, pageSize)).Find(&photos, "AlbumID = ?", albumId)
+	result := dbConn.Scopes(Paginate(pageNumber, pageSize)).Find(&photos, "album_id = ?", albumId)
+	if !includeThumbnails {
+		return removeThumbnails(photos), result.Error
+	}
 	return photos, result.Error
 }
 
 func GetPhotosInAlbumCount(albumId string) (int64, error) {
 	var photos []Photo
-	result := dbConn.Find(&photos, "AlbumID = ?", albumId)
+	result := dbConn.Find(&photos, "album_id = ?", albumId)
 	return result.RowsAffected, result.Error
 }
 
@@ -37,12 +44,20 @@ func CreatePhoto(photo Photo) error {
 	return result.Error
 }
 
-//result := dbConn.Clauses(clause.OnConflict{
-//Columns:   []clause.Column{{Name: "id"}},
-//DoUpdates: clause.Assignments(map[string]interface{}{
-//"name": photo.Name,
-//"filesystem_path": photo.FilesystemPath,
-//"album_id": photo.AlbumId,
-//"tags": photo.Tags,
-//"metadata": photo.Metadata,
-//}),
+func removeThumbnail(photo Photo) Photo {
+	var photoMetadata PhotoFile
+	retrievedPhotoMetadata := photo.Metadata
+	_ = json.Unmarshal(retrievedPhotoMetadata, &photoMetadata)
+	photoMetadata.Thumbnail = nil
+	parsedMetadata, _ := json.Marshal(&photoMetadata)
+	photo.Metadata = parsedMetadata
+	return photo
+}
+
+func removeThumbnails(photos []Photo) []Photo {
+	var processedPhotos []Photo
+	for _, photo := range photos {
+		processedPhotos = append(processedPhotos, removeThumbnail(photo))
+	}
+	return processedPhotos
+}

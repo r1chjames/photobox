@@ -16,11 +16,12 @@ func definePhotosResources(router *gin.Engine, appConfig AppConfig) {
 
 	photos := router.Group(fmt.Sprintf("%s/photos", urlBasePath))
 	{
-		photos.GET("/", func(c *gin.Context) {
+		photos.GET("", func(c *gin.Context) {
 			albumId := c.Query("albumId")
 			photoId := c.Query("id")
 			page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 			limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+			includeThumbnails, _ := strconv.ParseBool(c.DefaultQuery("include_thumbnails", "false"))
 
 			if photoId != "" {
 				response, err := database.GetPhotoInfoById(albumId)
@@ -30,14 +31,14 @@ func definePhotosResources(router *gin.Engine, appConfig AppConfig) {
 					c.JSON(http.StatusOK, response)
 				}
 			} else if albumId != "" {
-				response, err := database.GetAllPhotosInfoInAlbum(albumId, page, limit)
+				response, err := database.GetAllPhotosInfoInAlbum(albumId, page, limit, includeThumbnails)
 				if err != nil {
 					c.JSON(http.StatusNotFound, "Requested album not found")
 				} else {
 					c.JSON(http.StatusOK, response)
 				}
 			} else {
-				response, err := database.GetAllPhotos(page, limit)
+				response, err := database.GetAllPhotos(page, limit, includeThumbnails)
 				if err != nil {
 					c.JSON(http.StatusNotFound, "No photos found")
 				} else {
@@ -51,8 +52,12 @@ func definePhotosResources(router *gin.Engine, appConfig AppConfig) {
 			response, _ := database.GetPhotosInAlbumCount(albumId)
 			c.JSON(http.StatusOK, response)
 		})
+	}
 
-		photos.GET("/bin", func(c *gin.Context) {
+
+	photo := router.Group(fmt.Sprintf("%s/photo", urlBasePath))
+	{
+		photo.GET("/bin", func(c *gin.Context) {
 			photoId := c.Query("photoId")
 			if photoId == "" {
 				c.JSON(http.StatusBadRequest, "Missing photo ID")
@@ -66,7 +71,7 @@ func definePhotosResources(router *gin.Engine, appConfig AppConfig) {
 			}
 		})
 
-		photos.GET("/thumbnail", func(c *gin.Context) {
+		photo.GET("/thumbnail", func(c *gin.Context) {
 			photoId := c.Query("photoId")
 			if photoId == "" {
 				c.JSON(http.StatusBadRequest, "Missing photo ID")
@@ -78,7 +83,7 @@ func definePhotosResources(router *gin.Engine, appConfig AppConfig) {
 				var photoMetadata PhotoFile
 				retrievedPhotoMetadata := photoInfo.Metadata
 				err := json.Unmarshal(retrievedPhotoMetadata, &photoMetadata)
-				if err != nil {
+				if err != nil || len(photoMetadata.Thumbnail) == 0 {
 					c.JSON(http.StatusNotFound, "No thumbnail found")
 				}
 				c.Data(http.StatusOK, "application/octet-stream" ,photoMetadata.Thumbnail)

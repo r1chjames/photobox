@@ -3,6 +3,7 @@ package components
 import (
 	"crypto/md5"
 	"fmt"
+	"github.com/disintegration/imaging"
 	"github.com/rwcarlsen/goexif/exif"
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
 	"gitlab.com/r1chjames/photobox/api/internal/utils"
@@ -88,28 +89,38 @@ func getMetaData(path string, info os.FileInfo) PhotoFile {
 }
 
 func getExifDataAndThumbnail(path string) (exif.Exif, []byte) {
-	f, err := os.Open(path)
+	file, err := os.Open(path)
 	if err != nil {
+		log.Print("Unable to open file")
 		return exif.Exif{}, []byte{}
 	}
-	return getExifData(f), getThumbnail(f)
+	var exifData *exif.Exif
+	var parsedThumbnail []byte
+
+	exifData, err = exif.Decode(file)
+	if err != nil {
+		exifData = &exif.Exif{}
+	}
+
+	parsedThumbnail = getThumbnail(exifData)
+	if len(parsedThumbnail) == 0 {
+		parsedThumbnail = generateMissingThumbnail(path)
+	}
+	return *exifData, parsedThumbnail
 }
 
-func getThumbnail(file *os.File) []byte {
-	x, err := exif.Decode(file)
-	if err != nil {
-		return []byte{}
-	}
-	thumbnail, _ := x.JpegThumbnail()
+func getThumbnail(exif *exif.Exif) []byte {
+	thumbnail, _ := exif.JpegThumbnail()
 	return thumbnail
 }
 
-func getExifData(file *os.File) exif.Exif {
-	x, err := exif.Decode(file)
+func generateMissingThumbnail(path string) []byte {
+	img, err := imaging.Open(path)
 	if err != nil {
-		return exif.Exif{}
+		panic(err)
 	}
-	return *x
+	thumb := imaging.Thumbnail(img, 100, 100, imaging.CatmullRom)
+	return thumb.Pix
 }
 
 func getFileExtension(path string) string {
