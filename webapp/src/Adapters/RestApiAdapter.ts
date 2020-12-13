@@ -1,3 +1,4 @@
+// tslint:disable-next-line:no-var-requires
 const axios = require('axios');
 
 export class RestApiAdapter {

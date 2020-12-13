@@ -14,14 +14,15 @@ interface IProps {
 export const ImageItem: React.FunctionComponent<IProps> = (props) => {
 
   const [isImageModalOpen, setImageModalOpen] = useState(false);
-  const [photoUrl] = useState(`${props.baseApiUrl}/photo/thumbnail?photoId=${props.source.id}`);
+  const thumbnailUrl = `${props.baseApiUrl}/photo/thumbnail?photoId=${props.source.id}`;
+  const photoUrl = `${props.baseApiUrl}/photo/bin?photoId=${props.source.id}`;
 
   const gridImage = () => {
     return(
         <div className="imageItem__item">
           <div className="imageItem__thumbnail">
             <img
-              src={photoUrl}
+              src={thumbnailUrl}
               alt={props.source.name}
               onClick={() => setImageModalOpen(!isImageModalOpen)}
             />

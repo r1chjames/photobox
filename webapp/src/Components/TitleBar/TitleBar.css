@@ -20,6 +20,7 @@
 }
 
 .titleBar__drawerPaper {
+    margin-top: 64px;
     width: 240px;
 }
 
@@ -29,14 +30,4 @@
     padding: 5px;
     justify-content: flex-end;
     min-height: 64px;
-}
-
-.titleBar__drawerHeader__title {
-    position: absolute;
-    left: 20px;
-}
-
-.titleBar__logoutButton {
-    position: absolute;
-    right: 20px;
 }

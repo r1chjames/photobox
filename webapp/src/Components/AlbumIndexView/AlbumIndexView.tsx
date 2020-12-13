@@ -9,7 +9,6 @@ import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import RaisedButton from 'material-ui/RaisedButton';
 import history from '../../Routing/History';
 import { MainContent } from '../MainContent/MainContent';
-import { Typography } from '@material-ui/core';
 
 interface IProps {
   baseApiUrl: string;
@@ -37,12 +36,8 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
     return (
       <div>
         <TitleBar />
-          <MainContent>
-            <Typography variant="h4" component="h1">
-              Albums
-            </Typography>
+          <MainContent title="Albums">
             <section className="albumIndexView__cardContainer">
-              {/* tslint:disable-next-line:jsx-no-multiline-js */}
               {albums.map((album: Album) => {
                 return(
                   <article key={album.id} className="albumIndexView__card">

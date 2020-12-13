@@ -1,14 +1,14 @@
 import React from 'react';
 import {
-    AppBar,
-    Divider,
-    Drawer,
-    List,
-    ListItem,
-    ListItemIcon,
-    ListItemText,
-    MuiThemeProvider,
-    Toolbar
+  AppBar,
+  Divider,
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  MuiThemeProvider,
+  Toolbar, Typography
 } from '@material-ui/core';
 import SettingsIcon from '@material-ui/icons/Settings';
 import VerticalSplitIcon from '@material-ui/icons/VerticalSplit';
@@ -51,6 +51,9 @@ export const TitleBar: React.FunctionComponent = (props) => {
                     elevation={0}
                 >
                     <Toolbar>
+                      <Typography variant="h6">
+                        Photobox
+                      </Typography>
                         {props.children}
                     </Toolbar>
                     <Divider/>
@@ -61,9 +64,6 @@ export const TitleBar: React.FunctionComponent = (props) => {
                     anchor="left"
                     classes={{ paper: 'titleBar__drawerPaper' }}
                 >
-                    <div className="titleBar__drawerHeader">
-                        <div className="titleBar__drawerHeader__title">Photobox</div>
-                    </div>
                     <Divider/>
                     <List>
                         {/* tslint:disable-next-line:jsx-no-multiline-js */}

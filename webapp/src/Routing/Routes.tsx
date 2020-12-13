@@ -4,6 +4,7 @@ import history from './History';
 import { PhotoIndexView } from '../Components/PhotoIndexView/PhotoIndexView';
 import { Dashboard } from '../Components/Dashboard/Dashboard';
 import { AlbumIndexView } from '../Components/AlbumIndexView/AlbumIndexView';
+import { SettingsView } from '../Components/SettingsView/SettingsView';
 
 interface IProps {
   baseApiUrl: string;
@@ -34,6 +35,11 @@ export default class Routes extends Component<IProps> {
             exact={true}
             path="/albums/:id"
             render={props => <PhotoIndexView {...props} baseApiUrl={this.props.baseApiUrl} />}
+          />
+          <Route
+            exact={true}
+            path="/settings"
+            render={props => <SettingsView {...props} baseApiUrl={this.props.baseApiUrl} />}
           />
         </Switch>
       </Router>

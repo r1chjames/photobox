@@ -23,6 +23,7 @@
     ],
     "object-literal-sort-keys": false,
     "member-ordering": [false],
-    "variable-name": [true, "allow-pascal-case"]
+    "variable-name": [true, "allow-pascal-case"],
+    "jsx-no-multiline-js": false
   }
 }

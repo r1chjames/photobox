@@ -1,10 +1,20 @@
 import React from 'react';
 import './MainContent.css';
+import { Typography } from '@material-ui/core';
 
-export const MainContent: React.FunctionComponent = (props) => {
+interface IProps {
+  title: string;
+}
+
+export const MainContent: React.FunctionComponent<IProps> = (props) => {
 
   return (
         <div className="mainContent__mainPage">
+          <div className="mainContent__title">
+            <Typography variant="h4" component="h1" >
+              {props.title}
+            </Typography>
+          </div>
             {props.children}
         </div>
   );
