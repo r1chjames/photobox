@@ -7,3 +7,7 @@
 .mainContent__title {
     margin: 15px;
 }
+
+.mainContent__contentWrapper {
+    margin: 20px;
+}

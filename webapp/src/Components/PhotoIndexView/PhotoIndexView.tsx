@@ -9,29 +9,15 @@ import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import { TitleBar } from '../TitleBar/TitleBar';
 import { AlbumsAdapter } from '../../Adapters/AlbumsAdapter';
 import { MainContent } from '../MainContent/MainContent';
-import { Typography } from '@material-ui/core';
-// import { Album } from '../../Models/Album';
-// import { useParams } from 'react-router-dom';
 
 interface IProps {
   baseApiUrl: string;
-  // albumId: string | null;
 }
-
-// interface IState {
-//   images: ReactElement[];
-//   albumTitle: string;
-//   albumId: string;
-// }
 
 const getAllPhotos = async(baseApiUrl: string, albumId: string) => {
   const photosAdapter = new PhotosAdapter(baseApiUrl);
   let photos: Photo[];
-  // if (albumId != null) {
   photos = await photosAdapter.getPhotosInfoInAlbum(albumId, 1, 100);
-  // } else {
-  //   photos = await photosAdapter.getAllPhotosInfo();
-  // }
   return photos;
 };
 
@@ -91,10 +77,14 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
   const { id } = useParams();
 
   useEffect(() => {
-    (async function retrieveAlbumName() {
-      const retrievedAlbumName = await getAlbumName(props.baseApiUrl, id);
-      setAlbumName(retrievedAlbumName);
-    })();
+    if (id !== undefined) {
+      (async function retrieveAlbumName() {
+        const retrievedAlbumName = await getAlbumName(props.baseApiUrl, id);
+        setAlbumName(retrievedAlbumName);
+      })();
+    } else {
+      setAlbumName('Photos');
+    }
 
     (async function retrievePhotos() {
       const retrievedPhotos = await getAllPhotos(props.baseApiUrl, id);
@@ -105,11 +95,8 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
 
   return (
     <MuiThemeProvider>
-      <MainContent title="Photos">
+      <MainContent title={albumName}>
         <TitleBar />
-        <Typography variant="h4" component="h1">
-          {albumName}
-        </Typography>
         <div className="photoIndexView__photoIndex">
           <JustifiedLayout
             options={{ isConstantSize: false, transitionDuration: 0.2, useFit: true }}

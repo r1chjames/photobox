@@ -1,42 +1,13 @@
-.albumIndexView__photoIndex {
-    margin-top: 100px;
-    margin-left: 50px;
-    margin-right: 50px
-}
-
 .albumIndexView__cardContainer {
+    width: 100%;
+    height: 100%;
+    max-width: 1000px;
+    margin: 10px 0;
     display: flex;
-    margin-top: 100px;
-    margin-left: 50px;
     flex-wrap: wrap;
-    justify-content: flex-start;
-    align-content: flex-start;
 }
 
 .albumIndexView__card {
-    flex: 0 1;
+    height: 50%;
     margin: 20px;
-}
-
-@media screen and (min-width: 40em) {
-    .albumIndexView__cardContainer {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: flex-start;
-    }
-
-    .albumIndexView__card {
-        flex: 0 1 calc(50% - 1em);
-        margin: 20px;
-    }
-}
-
-@media screen and (min-width: 60em) {
-    .albumIndexView__card {
-        flex: 0 1 calc(25% - 1em);
-    }
-}
-
-.albumIndexView__button {
-    margin-top: 80px;
 }

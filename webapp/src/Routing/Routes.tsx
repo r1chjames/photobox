@@ -19,7 +19,7 @@ export default class Routes extends Component<IProps> {
           <Route
               exact={true}
               path="/"
-              render={() => <Dashboard />}
+              render={props => <Dashboard {...props} baseApiUrl={this.props.baseApiUrl} />}
           />
           <Route
               exact={true}

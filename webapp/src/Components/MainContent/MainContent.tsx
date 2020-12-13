@@ -15,7 +15,9 @@ export const MainContent: React.FunctionComponent<IProps> = (props) => {
               {props.title}
             </Typography>
           </div>
+          <div className="mainContent__contentWrapper">
             {props.children}
+          </div>
         </div>
   );
 };
