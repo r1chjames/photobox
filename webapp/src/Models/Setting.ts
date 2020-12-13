@@ -2,7 +2,7 @@ export class Setting {
 
   // tslint:disable:variable-name
   private readonly _key: string;
-  private readonly _value: string;
+  private _value: string;
 
   constructor(key: string, value: string) {
     this._key = key;
@@ -15,5 +15,9 @@ export class Setting {
 
   get value(): string {
     return this._value;
+  }
+
+  set value(value: string) {
+    this._value = value;
   }
 }

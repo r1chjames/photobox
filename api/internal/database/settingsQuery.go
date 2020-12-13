@@ -18,9 +18,9 @@ func UpdateSetting(setting Setting) error {
 	return result.Error
 }
 
-func UpdateAllSettings(settings []Setting) error {
+func UpdateAllSettings(settings *Settings) error {
 	result := dbConn.Clauses(clause.OnConflict{
 		UpdateAll: true,
-	}).Create(&settings)
+	}).Create(&settings.Settings)
 	return result.Error
 }

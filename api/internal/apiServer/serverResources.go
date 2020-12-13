@@ -57,14 +57,14 @@ func defineSettingsResources(router *gin.Engine, appConfig AppConfig) {
 	})
 
 	router.POST(fmt.Sprintf("%s/setting", urlBasePath), func(c *gin.Context) {
-		var settings []Setting
-		err := c.ShouldBindJSON(&settings)
+		var settings Settings
+		err := c.BindJSON(&settings)
 		if err != nil {
 			log.Println(err.Error())
 			c.JSON(http.StatusBadRequest, "Payload not valid")
 		}
 
-		err = database.UpdateAllSettings(settings)
+		err = database.UpdateAllSettings(&settings)
 		if err != nil {
 			c.JSON(http.StatusNotFound, err.Error())
 		} else {

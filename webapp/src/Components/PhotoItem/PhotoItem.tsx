@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './ImageItem.css';
+import './PhotoItem.css';
 import { Dialog, DialogActions, DialogContent, DialogTitle } from '@material-ui/core';
 import Button from '@material-ui/core/Button';
 import { Photo } from '../../Models/Photo';
@@ -11,7 +11,7 @@ interface IProps {
   source: Photo;
 }
 
-export const ImageItem: React.FunctionComponent<IProps> = (props) => {
+export const PhotoItem: React.FunctionComponent<IProps> = (props) => {
 
   const [isImageModalOpen, setImageModalOpen] = useState(false);
   const thumbnailUrl = `${props.baseApiUrl}/photo/thumbnail?photoId=${props.source.id}`;

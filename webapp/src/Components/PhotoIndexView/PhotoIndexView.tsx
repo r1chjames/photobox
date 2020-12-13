@@ -4,7 +4,7 @@ import { JustifiedLayout, OnLayoutComplete } from '@egjs/react-infinitegrid';
 import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
 import { Photo } from '../../Models/Photo';
 import './PhotoIndexView.css';
-import { ImageItem } from '../ImageItem/ImageItem';
+import { PhotoItem } from '../PhotoItem/PhotoItem';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import { TitleBar } from '../TitleBar/TitleBar';
 import { AlbumsAdapter } from '../../Adapters/AlbumsAdapter';
@@ -29,7 +29,7 @@ const loadItems = (groupKey: number, imageSources: Photo[], baseApiUrl: string) 
     const imageSource = imageSources[start + i];
     if (typeof imageSource !== 'undefined') {
       items.push(
-        <ImageItem
+        <PhotoItem
           baseApiUrl={baseApiUrl}
           groupKey={groupKey}
           num={1 + start + i}

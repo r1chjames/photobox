@@ -33,10 +33,14 @@ type Setting struct {
 	UpdatedAt time.Time `json:"-"`
 }
 
+type Settings struct {
+	Settings []Setting `binding:"required"`
+}
+
 type Job struct {
 	Name string `gorm:"primarykey" json:"name"`
 	Status string `json:"status"`
-	LastRun time.Time `json:"lastRun"`
+	LastRun time.Time `json:"-"`
 	CreatedAt time.Time `json:"-"`
 	UpdatedAt time.Time `json:"-"`
 }
