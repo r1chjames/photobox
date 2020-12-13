@@ -1,6 +1,7 @@
 package components
 
 import (
+	"bytes"
 	"crypto/md5"
 	"fmt"
 	"github.com/disintegration/imaging"
@@ -115,12 +116,17 @@ func getThumbnail(exif *exif.Exif) []byte {
 }
 
 func generateMissingThumbnail(path string) []byte {
+	extension := getFileExtension(path)
 	img, err := imaging.Open(path)
 	if err != nil {
 		panic(err)
 	}
-	thumb := imaging.Thumbnail(img, 100, 100, imaging.CatmullRom)
-	return thumb.Pix
+	thumb := imaging.Thumbnail(img, 600, 600, imaging.CatmullRom)
+	var buffer bytes.Buffer
+	writer := io.MultiWriter(&buffer)
+	format, _ := imaging.FormatFromExtension(extension)
+	_ = imaging.Encode(writer, thumb, format)
+	return buffer.Bytes()
 }
 
 func getFileExtension(path string) string {
