@@ -64,7 +64,7 @@ func defineSettingsResources(router *gin.Engine, appConfig AppConfig) {
 			c.JSON(http.StatusBadRequest, "Payload not valid")
 		}
 
-		err = database.UpdateAllSettings(&settings)
+		err = database.UpdateAllSettings(&settings.Settings)
 		if err != nil {
 			c.JSON(http.StatusNotFound, err.Error())
 		} else {

@@ -22,11 +22,11 @@ func SavePhotoRecordsToDatabase(photoRecords []PhotoFile) {
 		photoHash := b64.StdEncoding.EncodeToString([]byte(photo.Path))
 		photoMetadata, _ := json.Marshal(&photo)
 		photo := Photo{
-			Name: utils.EscapeInvalidCharacters(photo.Name),
+			Name:           utils.EscapeInvalidCharacters(photo.Name),
 			FilesystemPath: utils.EscapeInvalidCharacters(photo.Path),
-			AlbumId: albumId,
-			Tags: "",
-			Metadata: photoMetadata,
+			AlbumId:        albumId,
+			Tags:           "",
+			Metadata:       photoMetadata,
 		}
 		photo.ID = photoHash
 		err = CreatePhoto(photo)

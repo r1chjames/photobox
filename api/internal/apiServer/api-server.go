@@ -18,7 +18,7 @@ func Start(appConfig AppConfig) {
 	defineSettingsResources(r, appConfig)
 
 	err := r.Run()
-	if err!= nil {
+	if err != nil {
 		log.Fatal("Error starting API Server")
 	}
 }

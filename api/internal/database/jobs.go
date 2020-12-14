@@ -2,6 +2,7 @@ package database
 
 import (
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
+	"gorm.io/gorm/clause"
 	"time"
 )
 
@@ -35,4 +36,8 @@ func JobCompleted(jobName string) error {
 	return updateJobStatus(jobName, "NOT_RUNNING")
 }
 
-
+func createBaseJobs() {
+	dbConn.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&Job{Name: "Photo_index", Status: "NOT_RUNNING", LastRun: time.Now()})
+}

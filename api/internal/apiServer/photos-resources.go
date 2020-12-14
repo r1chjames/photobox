@@ -54,7 +54,6 @@ func definePhotosResources(router *gin.Engine, appConfig AppConfig) {
 		})
 	}
 
-
 	photo := router.Group(fmt.Sprintf("%s/photo", urlBasePath))
 	{
 		photo.GET("/bin", func(c *gin.Context) {
@@ -86,7 +85,7 @@ func definePhotosResources(router *gin.Engine, appConfig AppConfig) {
 				if err != nil || len(photoMetadata.Thumbnail) == 0 {
 					c.JSON(http.StatusNotFound, "No thumbnail found")
 				}
-				c.Data(http.StatusOK, "application/octet-stream" ,photoMetadata.Thumbnail)
+				c.Data(http.StatusOK, "application/octet-stream", photoMetadata.Thumbnail)
 			}
 		})
 	}
