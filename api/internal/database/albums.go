@@ -5,16 +5,16 @@ import (
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
 )
 
-func GetAlbumById(albumId string) (Album, error) {
+func (env *Env) GetAlbumById(albumId string) (Album, error) {
 	var album Album
 	album.ID = albumId
-	result := dbConn.First(&album)
+	result := env.db.First(&album)
 	return album, result.Error
 }
 
-func GetAlbumByName(albumName string) (Album, error) {
+func (env *Env) GetAlbumByName(albumName string) (Album, error) {
 	var album Album
-	result := dbConn.First(&album, "name = ?", albumName)
+	result := env.db.First(&album, "name = ?", albumName)
 	return album, result.Error
 }
 

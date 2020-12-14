@@ -9,17 +9,22 @@ import (
 	"log"
 )
 
+type Env struct {
+	db *gorm.DB
+}
+
 var dbConn *gorm.DB
 
-func InitDbConnection(appConfig AppConfig) {
+func InitDbConnection(appConfig AppConfig) *Env {
 	db, err := gorm.Open(mysql.New(mysql.Config{
 		DSN: fmt.Sprintf("%s?charset=utf8&parseTime=True&loc=Local", appConfig.DbUrl),
 	}), &gorm.Config{})
+
 	if err != nil {
 		log.Fatal("failed to connect database")
 	}
-
 	dbConn = db
+	return &Env{db: db}
 }
 
 func PerformDbSetup(appConfig AppConfig) {

@@ -8,16 +8,14 @@ import (
 )
 
 func Start(appConfig AppConfig) {
-	r := gin.Default()
-	r.Use(cors.Default())
+	router := gin.Default()
+	router.Use(cors.Default())
 
-	defineAlbumsResources(r, appConfig)
-	definePhotosResources(r, appConfig)
-	defineHealthCheckResources(r, appConfig)
-	defineServerResources(r, appConfig)
-	defineSettingsResources(r, appConfig)
+	defineAlbumsResources(router, appConfig)
+	definePhotosResources(router, appConfig)
+	defineServerResources(router, appConfig)
 
-	err := r.Run()
+	err := router.Run()
 	if err != nil {
 		log.Fatal("Error starting API Server")
 	}

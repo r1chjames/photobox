@@ -1,34 +1,50 @@
 package database
 
 import (
-	"fmt"
-	. "gitlab.com/r1chjames/photobox/api/internal/types"
+	"database/sql"
+	"gopkg.in/DATA-DOG/go-sqlmock.v1"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"testing"
 )
 
-var testDb *gorm.DB
 
-func newAlbumRecord() Album {
-	return Album{
-		ID:          "a",
-		Name:        "b",
-		Description: "c",
+func mockDB(t *testing.T) (*Env, sqlmock.Sqlmock, *sql.DB) {
+	dbConn, mock, err := sqlmock.New()
+	db, err := gorm.Open(mysql.New(mysql.Config{DSN: "test_db", Conn: dbConn, SkipInitializeWithVersion: true}), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+
+	return &Env{db: db}, mock, dbConn
+}
+
+func TestShouldGetAlbumByID(t *testing.T) {
+	env, mock, dbConn := mockDB(t)
+	defer dbConn.Close()
+
+	mock.ExpectQuery("SELECT (.+) FROM `albums` WHERE `albums`.`id` = (.+) ORDER BY `albums`.`id` LIMIT 1").WillReturnRows(sqlmock.NewRows([]string{"id", "name", "description"}).AddRow("a", "b", "c"))
+
+	if _, err := env.GetAlbumById("1"); err != nil {
+		t.Errorf("error was not expected while getting albums: %s", err)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 }
 
-func albumMocker(n int64) []Album {
-	var offset int64
-	testDb.Model(&Album{}).Count(&offset)
-	var ret []Album
-	for i := offset + 1; i <= offset+n; i++ {
-		userModel := Album{
-			ID:          fmt.Sprintf("user%v", i),
-			Name:        fmt.Sprintf("user%v@linkedin.com", i),
-			Description: fmt.Sprintf("bio%v", i),
-		}
-		testDb.Create(&userModel)
-		ret = append(ret, userModel)
+func TestShouldGetAlbumByName(t *testing.T) {
+	env, mock, dbConn := mockDB(t)
+	defer dbConn.Close()
+
+	mock.ExpectQuery("SELECT (.+) FROM `albums` WHERE `albums`.`name` = (.+) ORDER BY `albums`.`id` LIMIT 1").WillReturnRows(sqlmock.NewRows([]string{"id", "name", "description"}).AddRow("a", "b", "c"))
+
+	if _, err := env.GetAlbumByName("Photos"); err != nil {
+		t.Errorf("error was not expected while getting albums: %s", err)
 	}
-	return ret
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
 }
