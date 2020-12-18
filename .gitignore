@@ -37,6 +37,7 @@ api/vendor/
 *.so
 *.dylib
 main
+api
 
 # Test binary, build with `go test -c`
 *.test

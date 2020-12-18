@@ -3,7 +3,6 @@ package apiServer
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"gitlab.com/r1chjames/photobox/api/internal/database"
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
 	"strconv"
 	"strings"
@@ -20,7 +19,7 @@ func defineAlbumsResources(router *gin.Engine, appConfig AppConfig) {
 }
 
 func countAllAlbums(c *gin.Context) {
-	albumCount, _ := database.GetAlbumCount()
+	albumCount, _ := dbEnv.GetAlbumCount()
 	c.JSON(http.StatusOK, gin.H{
 		"albumCount": albumCount,
 	})
@@ -35,11 +34,11 @@ func getAlbumById(c *gin.Context) {
 	var resp interface{}
 	var err error
 	if albumId != "" {
-		resp, err = database.GetAlbumById(albumId)
+		resp, err = dbEnv.GetAlbumById(albumId)
 	} else {
 		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-		resp, err = database.GetAllAlbums(page, limit)
+		resp, err = dbEnv.GetAllAlbums(page, limit)
 	}
 
 	if err != nil {

@@ -5,35 +5,35 @@ import (
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
 )
 
-func (env *Env) GetAlbumById(albumId string) (Album, error) {
+func (dbEnv *Env) GetAlbumById(albumId string) (Album, error) {
 	var album Album
 	album.ID = albumId
-	result := env.db.First(&album)
+	result := dbEnv.db.First(&album)
 	return album, result.Error
 }
 
-func (env *Env) GetAlbumByName(albumName string) (Album, error) {
+func (dbEnv *Env) GetAlbumByName(albumName string) (Album, error) {
 	var album Album
-	result := env.db.First(&album, "name = ?", albumName)
+	result := dbEnv.db.First(&album, "name = ?", albumName)
 	return album, result.Error
 }
 
-func GetAllAlbums(page int, limit int) ([]Album, error) {
+func (dbEnv *Env) GetAllAlbums(page int, limit int) ([]Album, error) {
 	var albums []Album
-	result := dbConn.Scopes(Paginate(page, limit)).Find(&albums)
+	result := dbEnv.db.Scopes(Paginate(page, limit)).Find(&albums)
 	return albums, result.Error
 }
 
-func GetAlbumCount() (int64, error) {
+func (dbEnv *Env) GetAlbumCount() (int64, error) {
 	var albums []Album
-	result := dbConn.Find(&albums)
+	result := dbEnv.db.Find(&albums)
 	return result.RowsAffected, result.Error
 }
 
-func CreateAlbum(name string) (string, error) {
+func (dbEnv *Env) CreateAlbum(name string) (string, error) {
 	var album Album
 	album.ID = uuid.New().String()
 	album.Name = name
-	result := dbConn.Create(&album)
+	result := dbEnv.db.Create(&album)
 	return album.ID, result.Error
 }

@@ -6,39 +6,39 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-func GetPhotoInfoById(photoId string) (Photo, error) {
+func (dbEnv *Env) GetPhotoInfoById(photoId string) (Photo, error) {
 	var photo Photo
 	photo.ID = photoId
-	result := dbConn.First(&photo)
+	result := dbEnv.db.First(&photo)
 	return photo, result.Error
 }
 
-func GetAllPhotos(pageNumber int, pageSize int, includeThumbnails bool) ([]Photo, error) {
+func (dbEnv *Env) GetAllPhotos(pageNumber int, pageSize int, includeThumbnails bool) ([]Photo, error) {
 	var photos []Photo
-	result := dbConn.Scopes(Paginate(pageNumber, pageSize)).Find(&photos)
+	result := dbEnv.db.Scopes(Paginate(pageNumber, pageSize)).Find(&photos)
 	if !includeThumbnails {
 		return removeThumbnails(photos), result.Error
 	}
 	return photos, result.Error
 }
 
-func GetAllPhotosInfoInAlbum(albumId string, pageNumber int, pageSize int, includeThumbnails bool) ([]Photo, error) {
+func (dbEnv *Env) GetAllPhotosInfoInAlbum(albumId string, pageNumber int, pageSize int, includeThumbnails bool) ([]Photo, error) {
 	var photos []Photo
-	result := dbConn.Scopes(Paginate(pageNumber, pageSize)).Find(&photos, "album_id = ?", albumId)
+	result := dbEnv.db.Scopes(Paginate(pageNumber, pageSize)).Find(&photos, "album_id = ?", albumId)
 	if !includeThumbnails {
 		return removeThumbnails(photos), result.Error
 	}
 	return photos, result.Error
 }
 
-func GetPhotosInAlbumCount(albumId string) (int64, error) {
+func (dbEnv *Env) GetPhotosInAlbumCount(albumId string) (int64, error) {
 	var photos []Photo
-	result := dbConn.Find(&photos, "album_id = ?", albumId)
+	result := dbEnv.db.Find(&photos, "album_id = ?", albumId)
 	return result.RowsAffected, result.Error
 }
 
-func CreatePhoto(photo Photo) error {
-	result := dbConn.Clauses(clause.OnConflict{
+func (dbEnv *Env) CreatePhoto(photo Photo) error {
+	result := dbEnv.db.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&photo)
 	return result.Error

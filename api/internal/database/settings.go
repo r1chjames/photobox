@@ -6,42 +6,42 @@ import (
 	"log"
 )
 
-func GetAllSettings() ([]Setting, error) {
+func (dbEnv *Env) GetAllSettings() ([]Setting, error) {
 	var setting []Setting
-	result := dbConn.Find(&setting)
+	result := dbEnv.db.Find(&setting)
 	return setting, result.Error
 }
 
-func UpdateSetting(setting Setting) error {
-	result := dbConn.Clauses(clause.OnConflict{
+func (dbEnv *Env) UpdateSetting(setting Setting) error {
+	result := dbEnv.db.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&setting)
 	return result.Error
 }
 
 
-func UpdateAllSettings(settings *[]Setting) error {
-	result := dbConn.Clauses(clause.OnConflict{
+func (dbEnv *Env) UpdateAllSettings(settings *[]Setting) error {
+	result := dbEnv.db.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&settings)
 	return result.Error
 }
 
-func overwriteAllSettings(settings *[]Setting) error {
-	result := dbConn.Clauses(clause.OnConflict{
+func (dbEnv *Env) overwriteAllSettings(settings *[]Setting) error {
+	result := dbEnv.db.Clauses(clause.OnConflict{
 		DoNothing: true,
 	}).Create(&settings)
 	return result.Error
 }
 
-func createBaseSettings(resetSettings bool) {
+func (dbEnv *Env) createBaseSettings(resetSettings bool) {
 	var settings = []Setting{
 		{
 			Key:          "thumbnail_width",
 			FriendlyName: "Thumbnail width",
 			Category:     "Photo",
 			Type:         "Choice",
-			Options:      []string{"400", "600", "800", "1000", "1200"},
+			Options:      "400,600,800,1000,1200",
 			Description:  "Thumbnail width used during thumbnail generation",
 			Value:        "600",
 		},
@@ -50,7 +50,7 @@ func createBaseSettings(resetSettings bool) {
 			FriendlyName: "Thumbnail height",
 			Category:     "Photo",
 			Type:         "Choice",
-			Options:      []string{"400", "600", "800", "1000", "1200"},
+			Options:      "400,600,800,1000,1200",
 			Description:  "Thumbnail height used during thumbnail generation",
 			Value:        "600",
 		},
@@ -72,12 +72,12 @@ func createBaseSettings(resetSettings bool) {
 		},
 	}
 	if resetSettings {
-		err := UpdateAllSettings(&settings)
+		err := dbEnv.UpdateAllSettings(&settings)
 		if err != nil {
 			log.Fatal("Unable to create initial settings")
 		}
 	} else {
-		err := overwriteAllSettings(&settings)
+		err := dbEnv.overwriteAllSettings(&settings)
 		if err != nil {
 			log.Fatal("Unable to create initial settings")
 		}

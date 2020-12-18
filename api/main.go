@@ -11,10 +11,12 @@ import (
 
 func main() {
 	appConfig := parseAppVariables()
-	database.InitDbConnection(appConfig)
-	database.PerformDbSetup(appConfig)
-	stopAllRunningJobs()
-	startAPIServer(appConfig)
+
+	dbEnv := database.InitDbConnection(appConfig)
+	dbEnv.PerformDbSetup(appConfig)
+	dbEnv.StopAllRunningJobs("NOT_RUNNING")
+
+	apiServer.Start(appConfig, dbEnv)
 }
 
 func parseAppVariables() types.AppConfig {
@@ -33,12 +35,4 @@ func parseAppVariables() types.AppConfig {
 		ResetSettings: resetSettings,
 		DebugMode:     debugMode,
 	}
-}
-
-func stopAllRunningJobs() {
-	database.StopAllRunningJobs("NOT_RUNNING")
-}
-
-func startAPIServer(appConfig types.AppConfig) {
-	apiServer.Start(appConfig)
 }

@@ -13,8 +13,6 @@ type Env struct {
 	db *gorm.DB
 }
 
-var dbConn *gorm.DB
-
 func InitDbConnection(appConfig AppConfig) *Env {
 	db, err := gorm.Open(mysql.New(mysql.Config{
 		DSN: fmt.Sprintf("%s?charset=utf8&parseTime=True&loc=Local", appConfig.DbUrl),
@@ -23,19 +21,18 @@ func InitDbConnection(appConfig AppConfig) *Env {
 	if err != nil {
 		log.Fatal("failed to connect database")
 	}
-	dbConn = db
 	return &Env{db: db}
 }
 
-func PerformDbSetup(appConfig AppConfig) {
+func (dbEnv *Env) PerformDbSetup(appConfig AppConfig) {
 	// Migrate the schema
-	err := dbConn.AutoMigrate(&Album{}, &Photo{}, &Setting{}, &Job{})
+	err := dbEnv.db.AutoMigrate(&Album{}, &Photo{}, &Setting{}, &Job{})
 	if err != nil {
 		log.Fatal("failed to perform database migration")
 	}
 
-	createBaseSettings(appConfig.ResetSettings)
-	createBaseJobs()
+	dbEnv.createBaseSettings(appConfig.ResetSettings)
+	dbEnv.createBaseJobs()
 }
 
 func checkNotFoundError(err error) bool {

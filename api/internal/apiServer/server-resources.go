@@ -2,7 +2,6 @@ package apiServer
 
 import (
 	"github.com/gin-gonic/gin"
-	"gitlab.com/r1chjames/photobox/api/internal/database"
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
 	"log"
 	"strings"
@@ -21,7 +20,7 @@ func defineServerResources(router *gin.Engine, appConfig AppConfig) {
 }
 
 func healthCheck(c *gin.Context) {
-	_, err := database.GetAllSettings()
+	_, err := dbEnv.GetAllSettings()
 	if err != nil {
 		c.JSON(http.StatusBadGateway, err.Error())
 	} else {
@@ -30,7 +29,7 @@ func healthCheck(c *gin.Context) {
 }
 
 func getAllSettings(c *gin.Context) {
-	response, err := database.GetAllSettings()
+	response, err := dbEnv.GetAllSettings()
 	if err != nil {
 		c.JSON(http.StatusNotFound, notFoundError("setting"))
 	} else {
@@ -46,7 +45,7 @@ func updateAllSettings(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, "Payload not valid")
 	}
 
-	err = database.UpdateAllSettings(&settings.Settings)
+	err = dbEnv.UpdateAllSettings(&settings.Settings)
 	if err != nil {
 		c.JSON(http.StatusNotFound, err.Error())
 	} else {

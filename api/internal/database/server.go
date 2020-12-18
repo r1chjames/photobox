@@ -8,12 +8,12 @@ import (
 	"log"
 )
 
-func SavePhotoRecordsToDatabase(photoRecords []PhotoFile) {
+func (dbEnv *Env) SavePhotoRecordsToDatabase(photoRecords []PhotoFile) {
 	for _, photo := range photoRecords {
-		result, err := GetAlbumByName(photo.Directory)
+		result, err := dbEnv.GetAlbumByName(photo.Directory)
 		albumId := result.ID
 		if checkNotFoundError(err) {
-			albumId, _ = CreateAlbum(photo.Directory)
+			albumId, _ = dbEnv.CreateAlbum(photo.Directory)
 			if err != nil {
 				log.Print("unable to insert album record")
 			}
@@ -29,7 +29,7 @@ func SavePhotoRecordsToDatabase(photoRecords []PhotoFile) {
 			Metadata:       photoMetadata,
 		}
 		photo.ID = photoHash
-		err = CreatePhoto(photo)
+		err = dbEnv.CreatePhoto(photo)
 		if err != nil {
 			log.Print("unable to insert photo record")
 		}

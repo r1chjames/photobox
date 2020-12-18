@@ -3,11 +3,15 @@ package apiServer
 import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"gitlab.com/r1chjames/photobox/api/internal/database"
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
 	"log"
 )
 
-func Start(appConfig AppConfig) {
+var dbEnv *database.Env
+
+func Start(appConfig AppConfig, env *database.Env) {
+	dbEnv = env
 	router := gin.Default()
 	router.Use(cors.Default())
 

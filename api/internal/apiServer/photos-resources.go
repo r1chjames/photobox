@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"gitlab.com/r1chjames/photobox/api/internal/components"
-	"gitlab.com/r1chjames/photobox/api/internal/database"
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
 	"strconv"
 	"strings"
@@ -33,17 +32,17 @@ func definePhotosResources(router *gin.Engine, appConfig AppConfig) {
 }
 
 func indexPhotos(c *gin.Context) {
-	isRunning, _ := database.IsJobRunning("Photo_index")
+	isRunning, _ := dbEnv.IsJobRunning("Photo_index")
 
 	if isRunning {
 		c.JSON(http.StatusConflict, "Photo Index already running")
 	} else {
 		c.Status(http.StatusAccepted)
-		database.JobStarting("Photo_index")
-		defer database.JobCompleted("Photo_index")
+		dbEnv.JobStarting("Photo_index")
+		defer dbEnv.JobCompleted("Photo_index")
 
 		photoRecords := components.ScanFilesystem(config)
-		database.SavePhotoRecordsToDatabase(photoRecords)
+		dbEnv.SavePhotoRecordsToDatabase(photoRecords)
 	}
 }
 
@@ -58,17 +57,17 @@ func getPhotosInAlbum(c *gin.Context) {
 	var err error
 
 	if photoId != "" {
-		resp, err = database.GetPhotoInfoById(albumId)
+		resp, err = dbEnv.GetPhotoInfoById(albumId)
 		if err != nil {
 			c.JSON(http.StatusNotFound, notFoundError("photo"))
 		}
 	} else if albumId != "" {
-		resp, err = database.GetAllPhotosInfoInAlbum(albumId, page, limit, includeThumbnails)
+		resp, err = dbEnv.GetAllPhotosInfoInAlbum(albumId, page, limit, includeThumbnails)
 		if err != nil {
 			c.JSON(http.StatusNotFound, notFoundError("album"))
 		}
 	} else {
-		resp, err = database.GetAllPhotos(page, limit, includeThumbnails)
+		resp, err = dbEnv.GetAllPhotos(page, limit, includeThumbnails)
 		if err != nil {
 			c.JSON(http.StatusNotFound, "No photos found")
 		}
@@ -82,7 +81,7 @@ func getPhotoCount(c *gin.Context) {
 	if albumId == "" {
 		c.JSON(http.StatusBadRequest, missingQueryParam("album ID"))
 	}
-	response, _ := database.GetPhotosInAlbumCount(albumId)
+	response, _ := dbEnv.GetPhotosInAlbumCount(albumId)
 	c.JSON(http.StatusOK, response)
 }
 
@@ -92,7 +91,7 @@ func getPhoto(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, missingQueryParam("photo ID"))
 	}
 
-	photoInfo, err := database.GetPhotoInfoById(photoId)
+	photoInfo, err := dbEnv.GetPhotoInfoById(photoId)
 	if err != nil {
 		c.JSON(http.StatusNotFound, notFoundError("photo"))
 	} else {
@@ -107,7 +106,7 @@ func getThumbnail(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, missingQueryParam("photo ID"))
 	}
 
-	photoInfo, err := database.GetPhotoInfoById(photoId)
+	photoInfo, err := dbEnv.GetPhotoInfoById(photoId)
 	if err != nil {
 		c.Status(http.StatusNotFound)
 	}
