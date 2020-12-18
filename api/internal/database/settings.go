@@ -8,12 +8,12 @@ import (
 
 func (dbEnv *Env) GetAllSettings() ([]Setting, error) {
 	var setting []Setting
-	result := dbEnv.db.Find(&setting)
+	result := dbEnv.Db.Find(&setting)
 	return setting, result.Error
 }
 
 func (dbEnv *Env) UpdateSetting(setting Setting) error {
-	result := dbEnv.db.Clauses(clause.OnConflict{
+	result := dbEnv.Db.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&setting)
 	return result.Error
@@ -21,14 +21,14 @@ func (dbEnv *Env) UpdateSetting(setting Setting) error {
 
 
 func (dbEnv *Env) UpdateAllSettings(settings *[]Setting) error {
-	result := dbEnv.db.Clauses(clause.OnConflict{
+	result := dbEnv.Db.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&settings)
 	return result.Error
 }
 
 func (dbEnv *Env) overwriteAllSettings(settings *[]Setting) error {
-	result := dbEnv.db.Clauses(clause.OnConflict{
+	result := dbEnv.Db.Clauses(clause.OnConflict{
 		DoNothing: true,
 	}).Create(&settings)
 	return result.Error

@@ -12,15 +12,25 @@ var dbEnv *database.Env
 
 func Start(appConfig AppConfig, env *database.Env) {
 	dbEnv = env
+
+	router := setupRouter(appConfig)
+
+	err := router.Run()
+	if err != nil {
+		log.Fatal("Error starting API Server")
+	}
+}
+
+func setupRouter(appConfig AppConfig) *gin.Engine {
 	router := gin.Default()
 	router.Use(cors.Default())
 
 	defineAlbumsResources(router, appConfig)
 	definePhotosResources(router, appConfig)
 	defineServerResources(router, appConfig)
+	return router
+}
 
-	err := router.Run()
-	if err != nil {
-		log.Fatal("Error starting API Server")
-	}
+func setDbEnv(env *database.Env) {
+	dbEnv = env
 }

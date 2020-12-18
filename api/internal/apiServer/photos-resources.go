@@ -19,9 +19,9 @@ func definePhotosResources(router *gin.Engine, appConfig AppConfig) {
 
 	photos := router.Group(fmt.Sprintf("%s/photos", urlBasePath))
 	{
-		photos.GET("", getPhotosInAlbum)
+		photos.GET("", getPhotos)
 		photos.GET("/count", getPhotoCount)
-		router.POST("/index", indexPhotos)
+		photos.POST("/index", indexPhotos)
 	}
 
 	photo := router.Group(fmt.Sprintf("%s/photo", urlBasePath))
@@ -35,7 +35,7 @@ func indexPhotos(c *gin.Context) {
 	isRunning, _ := dbEnv.IsJobRunning("Photo_index")
 
 	if isRunning {
-		c.JSON(http.StatusConflict, "Photo Index already running")
+		c.IndentedJSON(http.StatusConflict, "Photo Index already running")
 	} else {
 		c.Status(http.StatusAccepted)
 		dbEnv.JobStarting("Photo_index")
@@ -46,76 +46,83 @@ func indexPhotos(c *gin.Context) {
 	}
 }
 
-func getPhotosInAlbum(c *gin.Context) {
+func getPhotos(c *gin.Context) {
 	albumId := c.Query("albumId")
-	photoId := c.Query("id")
+	photoId := c.Query("photoId")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 	includeThumbnails, _ := strconv.ParseBool(c.DefaultQuery("include_thumbnails", "false"))
 
-	var resp interface{}
-	var err error
-
 	if photoId != "" {
-		resp, err = dbEnv.GetPhotoInfoById(albumId)
+		resp, err := dbEnv.GetPhotoInfoById(photoId)
 		if err != nil {
-			c.JSON(http.StatusNotFound, notFoundError("photo"))
+			c.AbortWithStatusJSON(http.StatusNotFound, apiError{http.StatusNotFound, notFoundError("photo")})
+		} else {
+			c.IndentedJSON(http.StatusOK, resp)
 		}
 	} else if albumId != "" {
-		resp, err = dbEnv.GetAllPhotosInfoInAlbum(albumId, page, limit, includeThumbnails)
+		resp, err := dbEnv.GetAllPhotosInfoInAlbum(albumId, page, limit, includeThumbnails)
 		if err != nil {
-			c.JSON(http.StatusNotFound, notFoundError("album"))
+			c.AbortWithStatusJSON(http.StatusNotFound, apiError{http.StatusNotFound, notFoundError("album")})
+		} else {
+			c.IndentedJSON(http.StatusOK, resp)
 		}
 	} else {
-		resp, err = dbEnv.GetAllPhotos(page, limit, includeThumbnails)
+		resp, err := dbEnv.GetAllPhotos(page, limit, includeThumbnails)
 		if err != nil {
-			c.JSON(http.StatusNotFound, "No photos found")
+			c.AbortWithStatusJSON(http.StatusNotFound, "No photos found")
+		} else {
+			c.IndentedJSON(http.StatusOK, resp)
 		}
 	}
-
-	c.JSON(http.StatusOK, resp)
 }
 
 func getPhotoCount(c *gin.Context) {
 	albumId := c.Query("albumId")
 	if albumId == "" {
-		c.JSON(http.StatusBadRequest, missingQueryParam("album ID"))
+		c.IndentedJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, missingQueryParam("album ID")})
+	} else {
+		photoCount, _ := dbEnv.GetPhotosInAlbumCount(albumId)
+		c.IndentedJSON(http.StatusOK, gin.H{
+			"photoCount": photoCount,
+		})
 	}
-	response, _ := dbEnv.GetPhotosInAlbumCount(albumId)
-	c.JSON(http.StatusOK, response)
 }
 
 func getPhoto(c *gin.Context) {
 	photoId := c.Query("photoId")
 	if photoId == "" {
-		c.JSON(http.StatusBadRequest, missingQueryParam("photo ID"))
-	}
-
-	photoInfo, err := dbEnv.GetPhotoInfoById(photoId)
-	if err != nil {
-		c.JSON(http.StatusNotFound, notFoundError("photo"))
+		c.IndentedJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, missingQueryParam("photo ID")})
 	} else {
-		photoPath := photoInfo.FilesystemPath
-		c.File(photoPath)
+
+		photoInfo, err := dbEnv.GetPhotoInfoById(photoId)
+		if err != nil {
+			c.IndentedJSON(http.StatusNotFound, notFoundError("photo"))
+		} else {
+			photoPath := photoInfo.FilesystemPath
+			c.File(photoPath)
+		}
 	}
 }
 
 func getThumbnail(c *gin.Context) {
 	photoId := c.Query("photoId")
 	if photoId == "" {
-		c.JSON(http.StatusBadRequest, missingQueryParam("photo ID"))
-	}
+		c.IndentedJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, missingQueryParam("photo ID")})
+	} else {
 
-	photoInfo, err := dbEnv.GetPhotoInfoById(photoId)
-	if err != nil {
-		c.Status(http.StatusNotFound)
+		photoInfo, err := dbEnv.GetPhotoInfoById(photoId)
+		if err != nil {
+			c.Status(http.StatusNotFound)
+		} else {
+			var photoMetadata PhotoFile
+			retrievedPhotoMetadata := photoInfo.Metadata
+			err = json.Unmarshal(retrievedPhotoMetadata, &photoMetadata)
+			if err != nil || len(photoMetadata.Thumbnail) == 0 {
+				c.IndentedJSON(http.StatusNotFound, notFoundError("thumbnail"))
+			} else {
+				c.Data(http.StatusOK, "application/octet-stream", photoMetadata.Thumbnail)
+			}
+		}
 	}
-
-	var photoMetadata PhotoFile
-	retrievedPhotoMetadata := photoInfo.Metadata
-	err = json.Unmarshal(retrievedPhotoMetadata, &photoMetadata)
-	if err != nil || len(photoMetadata.Thumbnail) == 0 {
-		c.JSON(http.StatusNotFound, notFoundError("thumbnail"))
-	}
-	c.Data(http.StatusOK, "application/octet-stream", photoMetadata.Thumbnail)
 }

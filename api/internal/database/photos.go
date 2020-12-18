@@ -9,13 +9,13 @@ import (
 func (dbEnv *Env) GetPhotoInfoById(photoId string) (Photo, error) {
 	var photo Photo
 	photo.ID = photoId
-	result := dbEnv.db.First(&photo)
+	result := dbEnv.Db.First(&photo)
 	return photo, result.Error
 }
 
 func (dbEnv *Env) GetAllPhotos(pageNumber int, pageSize int, includeThumbnails bool) ([]Photo, error) {
 	var photos []Photo
-	result := dbEnv.db.Scopes(Paginate(pageNumber, pageSize)).Find(&photos)
+	result := dbEnv.Db.Scopes(Paginate(pageNumber, pageSize)).Find(&photos)
 	if !includeThumbnails {
 		return removeThumbnails(photos), result.Error
 	}
@@ -24,7 +24,7 @@ func (dbEnv *Env) GetAllPhotos(pageNumber int, pageSize int, includeThumbnails b
 
 func (dbEnv *Env) GetAllPhotosInfoInAlbum(albumId string, pageNumber int, pageSize int, includeThumbnails bool) ([]Photo, error) {
 	var photos []Photo
-	result := dbEnv.db.Scopes(Paginate(pageNumber, pageSize)).Find(&photos, "album_id = ?", albumId)
+	result := dbEnv.Db.Scopes(Paginate(pageNumber, pageSize)).Find(&photos, "album_id = ?", albumId)
 	if !includeThumbnails {
 		return removeThumbnails(photos), result.Error
 	}
@@ -33,12 +33,12 @@ func (dbEnv *Env) GetAllPhotosInfoInAlbum(albumId string, pageNumber int, pageSi
 
 func (dbEnv *Env) GetPhotosInAlbumCount(albumId string) (int64, error) {
 	var photos []Photo
-	result := dbEnv.db.Find(&photos, "album_id = ?", albumId)
+	result := dbEnv.Db.Find(&photos, "album_id = ?", albumId)
 	return result.RowsAffected, result.Error
 }
 
 func (dbEnv *Env) CreatePhoto(photo Photo) error {
-	result := dbEnv.db.Clauses(clause.OnConflict{
+	result := dbEnv.Db.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&photo)
 	return result.Error

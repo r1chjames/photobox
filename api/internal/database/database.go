@@ -10,7 +10,7 @@ import (
 )
 
 type Env struct {
-	db *gorm.DB
+	Db *gorm.DB
 }
 
 func InitDbConnection(appConfig AppConfig) *Env {
@@ -21,12 +21,12 @@ func InitDbConnection(appConfig AppConfig) *Env {
 	if err != nil {
 		log.Fatal("failed to connect database")
 	}
-	return &Env{db: db}
+	return &Env{Db: db}
 }
 
 func (dbEnv *Env) PerformDbSetup(appConfig AppConfig) {
 	// Migrate the schema
-	err := dbEnv.db.AutoMigrate(&Album{}, &Photo{}, &Setting{}, &Job{})
+	err := dbEnv.Db.AutoMigrate(&Album{}, &Photo{}, &Setting{}, &Job{})
 	if err != nil {
 		log.Fatal("failed to perform database migration")
 	}

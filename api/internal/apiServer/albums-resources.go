@@ -20,7 +20,7 @@ func defineAlbumsResources(router *gin.Engine, appConfig AppConfig) {
 
 func countAllAlbums(c *gin.Context) {
 	albumCount, _ := dbEnv.GetAlbumCount()
-	c.JSON(http.StatusOK, gin.H{
+	c.IndentedJSON(http.StatusOK, gin.H{
 		"albumCount": albumCount,
 	})
 }
@@ -28,7 +28,7 @@ func countAllAlbums(c *gin.Context) {
 func getAlbumById(c *gin.Context) {
 	albumId := c.Query("albumId")
 	if albumId == "" {
-		c.JSON(http.StatusBadRequest, missingQueryParam("album ID"))
+		c.IndentedJSON(http.StatusBadRequest, &apiError{http.StatusNotFound, missingQueryParam("album ID")})
 	}
 
 	var resp interface{}
@@ -42,8 +42,8 @@ func getAlbumById(c *gin.Context) {
 	}
 
 	if err != nil {
-		c.JSON(http.StatusNotFound, notFoundError("album"))
+		c.AbortWithStatusJSON(http.StatusNotFound, &apiError{http.StatusNotFound, notFoundError("album")})
+	} else {
+		c.JSON(http.StatusOK, resp)
 	}
-	c.JSON(http.StatusOK, resp)
-
 }
