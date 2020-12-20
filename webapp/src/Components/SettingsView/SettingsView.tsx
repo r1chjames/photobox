@@ -3,6 +3,7 @@ import './SettingsView.css';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import EditIcon from '@material-ui/icons/Edit';
 import SaveIcon from '@material-ui/icons/Save';
+import AddIcon from '@material-ui/icons/Add';
 import { MainContent } from '../MainContent/MainContent';
 import {
   Fab,
@@ -22,15 +23,15 @@ interface IProps {
   baseApiUrl: string;
 }
 
-const getAllSettings = async(baseApiUrl: string) => {
+const getAllSettings = async (baseApiUrl: string) => {
   const settingsAdapter = new SettingsAdapter(baseApiUrl);
   const allSettings: Setting[] = await settingsAdapter.getALlSettings();
   return allSettings;
 };
 
-const handleSaveSettings = async(settings: Setting[], baseApiUrl: string) => {
+const handleSaveSettings = async (settings: Setting[], baseApiUrl: string) => {
   const settingsAdapter = new SettingsAdapter(baseApiUrl);
-  await settingsAdapter.updateSetting(settings);
+  await settingsAdapter.updateSettings(settings);
 };
 
 export const SettingsView: React.FunctionComponent<IProps> = (props) => {
@@ -48,6 +49,11 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
   const handleValueChange = (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>, setting: Setting) => {
     const i = settings.findIndex(k => k.key === setting.key);
     settings[i].value = event.target.value;
+  };
+
+  const handleAddSetting = () => {
+    setEditing(true);
+    settings.push(new Setting('Enter key', 'Enter value'));
   };
 
   const settingValue = (setting: Setting) => {
@@ -107,7 +113,12 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
             </TableBody>
           </Table>
         </TableContainer>
-        <Fab color="primary" aria-label="edit">
+        <Fab color="primary" aria-label="add" className="settingsView__addButton">
+          <AddIcon
+            onClick={() => handleAddSetting()}
+          />
+        </Fab>
+        <Fab color="primary" aria-label="edit" className="settingsView__saveEditButton">
           {editingButton()}
         </Fab>
       </MainContent>

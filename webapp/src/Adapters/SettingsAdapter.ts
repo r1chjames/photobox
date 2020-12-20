@@ -22,11 +22,19 @@ export class SettingsAdapter extends RestApiAdapter {
     return this.getApiCall(getAllSettingsPath, '', this.buildHeaders(), {});
   }
 
-  public async updateSetting(settings: Setting[]) {
-    const postAllSettingsPath = `${this.baseApiPath}/setting`;
+  public async updateSettings(settings: Setting[]) {
+    const postAllSettingsPath = `${this.baseApiPath}/settings`;
     const body = {
       settings
     };
     return this.postApiCall(postAllSettingsPath, body, this.buildHeaders());
+  }
+
+  public async updateSetting(setting: Setting) {
+    const postSettingPath = `${this.baseApiPath}/setting`;
+    const body = {
+      setting
+    };
+    return this.postApiCall(postSettingPath, body, this.buildHeaders());
   }
 }

@@ -15,7 +15,7 @@ func defineServerResources(router *gin.Engine, appConfig AppConfig) {
 	{
 		server.GET("/health", healthCheck)
 		server.GET("/settings", getAllSettings)
-		server.POST("/setting", updateAllSettings)
+		server.POST("/settings", updateAllSettings)
 	}
 }
 
