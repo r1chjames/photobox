@@ -6,7 +6,6 @@ import { Photo } from '../../Models/Photo';
 import './PhotoIndexView.css';
 import { PhotoItem } from '../PhotoItem/PhotoItem';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
-import { TitleBar } from '../TitleBar/TitleBar';
 import { AlbumsAdapter } from '../../Adapters/AlbumsAdapter';
 import { MainContent } from '../MainContent/MainContent';
 
@@ -96,7 +95,6 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
   return (
     <MuiThemeProvider>
       <MainContent title={albumName}>
-        <TitleBar />
         <div className="photoIndexView__photoIndex">
           <JustifiedLayout
             options={{ isConstantSize: false, transitionDuration: 0.2, useFit: true }}

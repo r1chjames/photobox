@@ -75,7 +75,7 @@ func (dbEnv *Env) createBaseSettings(resetSettings bool) {
 			Category:     "System",
 			Type:         "Text",
 			Description:  "CRON expression used to initiate indexing",
-			Value:        "0 0 23 1/1 * ? *",
+			Value:        "0 1 * * *",
 		},
 	}
 	if resetSettings {

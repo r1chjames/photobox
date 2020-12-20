@@ -54,10 +54,10 @@ export const AlbumItem: React.FunctionComponent<IProps> = (props) => {
               title={props.source.name}
             />
             <CardContent>
-              <Typography variant="subtitle1" component="body">
+              <Typography variant="subtitle1" component="div">
                 {props.source.name}
               </Typography>
-              <Typography variant="caption" component="body">
+              <Typography variant="caption" component="div">
                 {photoCount} photos
               </Typography>
             </CardContent>

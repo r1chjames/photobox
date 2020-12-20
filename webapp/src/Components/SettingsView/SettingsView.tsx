@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import './SettingsView.css';
-import { TitleBar } from '../TitleBar/TitleBar';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import EditIcon from '@material-ui/icons/Edit';
 import SaveIcon from '@material-ui/icons/Save';
@@ -87,7 +86,6 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
 
   return (
     <MuiThemeProvider>
-      <TitleBar />
       <MainContent title="Settings">
         <TableContainer component={Paper}>
           <Table aria-label="settings table">

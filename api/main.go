@@ -8,6 +8,7 @@ import (
 	"gitlab.com/r1chjames/photobox/api/internal/types"
 	"gitlab.com/r1chjames/photobox/api/internal/utils"
 	"strconv"
+	"time"
 )
 
 func main() {
@@ -16,7 +17,7 @@ func main() {
 	dbEnv := database.InitDbConnection(appConfig)
 	dbEnv.PerformDbSetup(appConfig)
 
-	components.InitScheduler()
+	components.InitScheduler(appConfig)
 	components.StopAllRunningJobs(dbEnv)
 	components.AddScheduledJobs(appConfig, dbEnv)
 
@@ -31,6 +32,7 @@ func parseAppVariables() types.AppConfig {
 	dbURL := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s", dbUser, dbPassword, dbHost, dbName)
 	resetSettings, _ := strconv.ParseBool(utils.GetEnv("RESET_SETTINGS", "false"))
 	debugMode, _ := strconv.ParseBool(utils.GetEnv("DEBUG_MODE", "false"))
+	timezone, _ := time.LoadLocation(utils.GetEnv("TIMEZONE", "Europe/London"))
 
 	return types.AppConfig{
 		PhotoDir:      utils.GetEnv("PHOTO_DIR", "/photos"),
@@ -38,5 +40,6 @@ func parseAppVariables() types.AppConfig {
 		DbUrl:         dbURL,
 		ResetSettings: resetSettings,
 		DebugMode:     debugMode,
+		Timezone:      timezone,
 	}
 }

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import './AlbumIndexView.css';
-import { TitleBar } from '../TitleBar/TitleBar';
 import { AlbumsAdapter } from '../../Adapters/AlbumsAdapter';
 import { Album } from '../../Models/Album';
 import { AlbumItem } from '../AlbumItem/AlbumItem';
@@ -31,7 +30,6 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
 
   return (
     <MuiThemeProvider>
-      <TitleBar />
       <MainContent title="Albums">
         <section className="albumIndexView__cardContainer">
           {albums.map((album: Album) => {

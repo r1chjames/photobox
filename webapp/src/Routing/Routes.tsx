@@ -19,27 +19,27 @@ export default class Routes extends Component<IProps> {
           <Route
               exact={true}
               path="/"
-              render={props => <Dashboard {...props} baseApiUrl={this.props.baseApiUrl} />}
+              render={() => <Dashboard baseApiUrl={this.props.baseApiUrl} />}
           />
           <Route
               exact={true}
               path="/photos"
-              render={props => <PhotoIndexView {...props} baseApiUrl={this.props.baseApiUrl} />}
+              render={() => <PhotoIndexView baseApiUrl={this.props.baseApiUrl} />}
           />
           <Route
             exact={true}
             path="/albums"
-            render={props => <AlbumIndexView {...props} baseApiUrl={this.props.baseApiUrl} />}
+            render={() => <AlbumIndexView baseApiUrl={this.props.baseApiUrl} />}
           />
           <Route
             exact={true}
             path="/albums/:id"
-            render={props => <PhotoIndexView {...props} baseApiUrl={this.props.baseApiUrl} />}
+            render={() => <PhotoIndexView baseApiUrl={this.props.baseApiUrl} />}
           />
           <Route
             exact={true}
             path="/settings"
-            render={props => <SettingsView {...props} baseApiUrl={this.props.baseApiUrl} />}
+            render={() => <SettingsView baseApiUrl={this.props.baseApiUrl} />}
           />
         </Switch>
       </Router>

@@ -1,5 +1,4 @@
 import React from 'react';
-import { TitleBar } from '../TitleBar/TitleBar';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import './Dashboard.css';
 import { AlbumIndexView } from '../AlbumIndexView/AlbumIndexView';
@@ -13,9 +12,10 @@ export const Dashboard: React.FunctionComponent<IProps> = (props) => {
 
   return (
       <MuiThemeProvider>
-          <TitleBar />
+        <div>
           <AlbumIndexView baseApiUrl={props.baseApiUrl} />
           <PhotoIndexView baseApiUrl={props.baseApiUrl} />
+        </div>
       </MuiThemeProvider>
   );
 };
