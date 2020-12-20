@@ -30,7 +30,6 @@ const getAllSettings = async(baseApiUrl: string) => {
 };
 
 const handleSaveSettings = async(settings: Setting[], baseApiUrl: string) => {
-  console.log(JSON.stringify(settings))
   const settingsAdapter = new SettingsAdapter(baseApiUrl);
   await settingsAdapter.updateSetting(settings);
 };

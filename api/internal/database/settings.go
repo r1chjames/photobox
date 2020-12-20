@@ -12,6 +12,13 @@ func (dbEnv *Env) GetAllSettings() ([]Setting, error) {
 	return setting, result.Error
 }
 
+func (dbEnv *Env) GetSetting(key string) (Setting, error) {
+	var setting Setting
+	setting.Key = key
+	result := dbEnv.Db.Find(&setting)
+	return setting, result.Error
+}
+
 func (dbEnv *Env) UpdateSetting(setting Setting) error {
 	result := dbEnv.Db.Clauses(clause.OnConflict{
 		UpdateAll: true,

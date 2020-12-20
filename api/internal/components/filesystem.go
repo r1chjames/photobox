@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/disintegration/imaging"
 	"github.com/rwcarlsen/goexif/exif"
+	"gitlab.com/r1chjames/photobox/api/internal/database"
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
 	"gitlab.com/r1chjames/photobox/api/internal/utils"
 	"io"
@@ -18,6 +19,14 @@ import (
 )
 
 var wg sync.WaitGroup
+
+func PerformPhotoIndex(appConfig AppConfig, dbEnv *database.Env) {
+	dbEnv.JobStarting("Photo_index")
+	defer dbEnv.JobCompleted("Photo_index")
+
+	photoRecords := ScanFilesystem(appConfig)
+	dbEnv.SavePhotoRecordsToDatabase(photoRecords)
+}
 
 func ScanFilesystem(appConfig AppConfig) []PhotoFile {
 

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import './AlbumItem.css';
 import { Album } from '../../Models/Album';
 import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
-import { Photo } from '../../Models/Photo';
+import { Photo, PhotoCount } from '../../Models/Photo';
 import { LoadingScreen } from '../LoadingScreen/LoadingScreen';
 import { Card, CardActionArea, CardContent, CardMedia, Typography } from '@material-ui/core';
 
@@ -12,22 +12,32 @@ interface IProps {
   albumViewCallback: (albumId: string) => void;
 }
 
-const getUrlOfFirstImageInAlbum = async(baseApiUrl: string, albumId: string) => {
-  const photosAdapter = new PhotosAdapter(baseApiUrl);
+const getUrlOfFirstImageInAlbum = async(photosAdapter: PhotosAdapter, baseApiUrl: string, albumId: string) => {
   const photos: Photo[] = await photosAdapter.getPhotosInfoInAlbum(albumId, 1, 1);
-  return `${baseApiUrl}/photo/thumbnail?photoId=${photos[0].id}`;
+  return `${baseApiUrl}/photo/${photos[0].id}/thumbnail`;
+};
+
+const getPhotoCountInAlbum = async(photosAdapter: PhotosAdapter, albumId: string) => {
+  return photosAdapter.getPhotoCountInAlbum(albumId);
 };
 
 export const AlbumItem: React.FunctionComponent<IProps> = (props) => {
 
   const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const [photoCount, setPhotoCount] = useState(0);
 
   useEffect(() => {
+    const photosAdapter = new PhotosAdapter(props.baseApiUrl);
     (async function retrieveThumbnailUrl() {
-      const retrievedThumbnailUrl = await getUrlOfFirstImageInAlbum(props.baseApiUrl, props.source.id);
+      const retrievedThumbnailUrl = await getUrlOfFirstImageInAlbum(photosAdapter, props.baseApiUrl, props.source.id);
       setThumbnailUrl(retrievedThumbnailUrl);
     })();
-  });
+
+    (async function retrieveAPhotoCount() {
+      const retrievedPhotoCount: PhotoCount = await getPhotoCountInAlbum(photosAdapter, props.source.id);
+      setPhotoCount(retrievedPhotoCount.photoCount);
+    })();
+  },        [setThumbnailUrl, setPhotoCount, props.baseApiUrl, props.source.id]);
 
   const content = () => {
     if (thumbnailUrl !== '') {
@@ -48,7 +58,7 @@ export const AlbumItem: React.FunctionComponent<IProps> = (props) => {
                 {props.source.name}
               </Typography>
               <Typography variant="caption" component="body">
-                50 Photos
+                {photoCount} photos
               </Typography>
             </CardContent>
           </CardActionArea>

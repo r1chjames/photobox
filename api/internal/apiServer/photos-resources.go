@@ -26,8 +26,9 @@ func definePhotosResources(router *gin.Engine, appConfig AppConfig) {
 
 	photo := router.Group(fmt.Sprintf("%s/photo", urlBasePath))
 	{
-		photo.GET("/bin", getPhoto)
-		photo.GET("/thumbnail", getThumbnail)
+		photo.GET("/:id", getPhoto)
+		photo.GET("/:id/thumbnail", getThumbnail)
+		photo.GET("/:id/bin", getPhotoBin)
 	}
 }
 
@@ -38,29 +39,17 @@ func indexPhotos(c *gin.Context) {
 		c.IndentedJSON(http.StatusConflict, "Photo Index already running")
 	} else {
 		c.Status(http.StatusAccepted)
-		dbEnv.JobStarting("Photo_index")
-		defer dbEnv.JobCompleted("Photo_index")
-
-		photoRecords := components.ScanFilesystem(config)
-		dbEnv.SavePhotoRecordsToDatabase(photoRecords)
+		components.PerformPhotoIndex(config, dbEnv)
 	}
 }
 
 func getPhotos(c *gin.Context) {
 	albumId := c.Query("albumId")
-	photoId := c.Query("photoId")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 	includeThumbnails, _ := strconv.ParseBool(c.DefaultQuery("include_thumbnails", "false"))
 
-	if photoId != "" {
-		resp, err := dbEnv.GetPhotoInfoById(photoId)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusNotFound, apiError{http.StatusNotFound, notFoundError("photo")})
-		} else {
-			c.IndentedJSON(http.StatusOK, resp)
-		}
-	} else if albumId != "" {
+	if albumId != "" {
 		resp, err := dbEnv.GetAllPhotosInfoInAlbum(albumId, page, limit, includeThumbnails)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusNotFound, apiError{http.StatusNotFound, notFoundError("album")})
@@ -77,6 +66,17 @@ func getPhotos(c *gin.Context) {
 	}
 }
 
+func getPhoto(c *gin.Context) {
+	photoId := c.Param("id")
+
+	resp, err := dbEnv.GetPhotoInfoById(photoId)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, apiError{http.StatusNotFound, notFoundError("photo")})
+	} else {
+		c.IndentedJSON(http.StatusOK, resp)
+	}
+}
+
 func getPhotoCount(c *gin.Context) {
 	albumId := c.Query("albumId")
 	if albumId == "" {
@@ -89,8 +89,8 @@ func getPhotoCount(c *gin.Context) {
 	}
 }
 
-func getPhoto(c *gin.Context) {
-	photoId := c.Query("photoId")
+func getPhotoBin(c *gin.Context) {
+	photoId := c.Param("id")
 	if photoId == "" {
 		c.IndentedJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, missingQueryParam("photo ID")})
 	} else {
@@ -106,7 +106,7 @@ func getPhoto(c *gin.Context) {
 }
 
 func getThumbnail(c *gin.Context) {
-	photoId := c.Query("photoId")
+	photoId := c.Param("id")
 	if photoId == "" {
 		c.IndentedJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, missingQueryParam("photo ID")})
 	} else {

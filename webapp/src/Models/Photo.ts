@@ -41,3 +41,17 @@ export class Photo {
     return this._metadata;
   }
 }
+
+// tslint:disable-next-line:max-classes-per-file
+export class PhotoCount {
+  // tslint:disable:variable-name
+  private readonly _photoCount: number;
+
+  constructor(photoCount: number) {
+    this._photoCount = photoCount;
+  }
+
+  get photoCount(): number {
+    return this._photoCount;
+  }
+}

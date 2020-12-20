@@ -13,9 +13,11 @@ func defineAlbumsResources(router *gin.Engine, appConfig AppConfig) {
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
 	albums := router.Group(fmt.Sprintf("%s/albums", urlBasePath))
 	{
-		albums.GET("", getAlbumById)
+		albums.GET("", getAlbums)
 		albums.GET("/count", countAllAlbums)
 	}
+
+	router.GET(fmt.Sprintf("%s/album/:id", urlBasePath), getAlbumById)
 }
 
 func countAllAlbums(c *gin.Context) {
@@ -25,25 +27,29 @@ func countAllAlbums(c *gin.Context) {
 	})
 }
 
-func getAlbumById(c *gin.Context) {
-	albumId := c.Query("albumId")
-	if albumId == "" {
-		c.IndentedJSON(http.StatusBadRequest, &apiError{http.StatusNotFound, missingQueryParam("album ID")})
-	}
+func getAlbums(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 
-	var resp interface{}
-	var err error
-	if albumId != "" {
-		resp, err = dbEnv.GetAlbumById(albumId)
-	} else {
-		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-		resp, err = dbEnv.GetAllAlbums(page, limit)
-	}
+	resp, err := dbEnv.GetAllAlbums(page, limit)
 
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, &apiError{http.StatusNotFound, notFoundError("album")})
 	} else {
 		c.JSON(http.StatusOK, resp)
+	}
+}
+
+func getAlbumById(c *gin.Context) {
+	albumId := c.Param("id")
+	if albumId == "" {
+		c.IndentedJSON(http.StatusBadRequest, &apiError{http.StatusNotFound, missingQueryParam("album ID")})
+	} else {
+		resp, err := dbEnv.GetAlbumById(albumId)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusNotFound, &apiError{http.StatusNotFound, notFoundError("album")})
+		} else {
+			c.JSON(http.StatusOK, resp)
+		}
 	}
 }

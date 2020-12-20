@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"gitlab.com/r1chjames/photobox/api/internal/apiServer"
+	"gitlab.com/r1chjames/photobox/api/internal/components"
 	"gitlab.com/r1chjames/photobox/api/internal/database"
 	"gitlab.com/r1chjames/photobox/api/internal/types"
 	"gitlab.com/r1chjames/photobox/api/internal/utils"
@@ -14,7 +15,10 @@ func main() {
 
 	dbEnv := database.InitDbConnection(appConfig)
 	dbEnv.PerformDbSetup(appConfig)
-	dbEnv.StopAllRunningJobs("NOT_RUNNING")
+
+	components.InitScheduler()
+	components.StopAllRunningJobs(dbEnv)
+	components.AddScheduledJobs(appConfig, dbEnv)
 
 	apiServer.Start(appConfig, dbEnv)
 }

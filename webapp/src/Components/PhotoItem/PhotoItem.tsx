@@ -14,8 +14,8 @@ interface IProps {
 export const PhotoItem: React.FunctionComponent<IProps> = (props) => {
 
   const [isImageModalOpen, setImageModalOpen] = useState(false);
-  const thumbnailUrl = `${props.baseApiUrl}/photo/thumbnail?photoId=${props.source.id}`;
-  const photoUrl = `${props.baseApiUrl}/photo/bin?photoId=${props.source.id}`;
+  const thumbnailUrl = `${props.baseApiUrl}/photo/${props.source.id}/thumbnail`;
+  const photoUrl = `${props.baseApiUrl}/photo/${props.source.id}/bin`;
 
   const gridImage = () => {
     return(

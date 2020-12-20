@@ -37,6 +37,14 @@ export class PhotosAdapter extends RestApiAdapter {
     return this.getApiCall(getPhotosInAlbumPath, '', PhotosAdapter.buildHeaders(), params);
   }
 
+  public async getPhotoCountInAlbum(albumId: string) {
+    const getPhotosInAlbumPath = `${this.baseApiPath}/photos/count?albumId=${albumId}`;
+    const params = {
+      albumId,
+    };
+    return this.getApiCall(getPhotosInAlbumPath, '', PhotosAdapter.buildHeaders(), params);
+  }
+
   public async getPhotoImage(photoId: string) {
     const getPhotosImagePath = `${this.baseApiPath}/photo/bin`;
     const params = {

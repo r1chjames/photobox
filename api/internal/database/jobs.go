@@ -23,7 +23,7 @@ func (dbEnv *Env) updateJobStatus(jobName string, status string) error {
 	return result.Error
 }
 
-func (dbEnv *Env) StopAllRunningJobs(status string) error {
+func (dbEnv *Env) UpdateAllJobsStatus(status string) error {
 	result := dbEnv.Db.Model(Job{}).Where("status = ?", "RUNNING").Update("Status", status)
 	return result.Error
 }
