@@ -1,23 +1,29 @@
 export class Setting {
 
   // tslint:disable:variable-name
-  private readonly _key: string;
-  private _value: string;
+  public readonly key: string;
+  public value: string;
+  public friendlyName: string;
+  public category: string;
+  public description: string;
 
-  constructor(key: string, value: string) {
-    this._key = key;
-    this._value = value;
+  constructor(key: string, value: string, friendlyName: string, category: string, description: string) {
+    this.key = key;
+    this.value = value;
+    this.friendlyName = friendlyName;
+    this.category = category;
+    this.description = description;
   }
 
-  get key(): string {
-    return this._key;
+  public getKey(): string {
+    return this.key;
   }
 
-  get value(): string {
-    return this._value;
+  public getValue(): string {
+    return this.value;
   }
 
-  set value(value: string) {
-    this._value = value;
+  public setValue(value: string) {
+    this.value = value;
   }
 }
