@@ -12,77 +12,107 @@ interface IProps {
 
 export const SettingModal: React.FunctionComponent<IProps> = (props) => {
 
-  const [key, setKey] = useState<string>();
-  const [value, setValue] = useState<string>();
-  const [friendlyName, setFriendlyName] = useState<string>();
-  const [category, setCategory] = useState<string>();
-  const [description, setDescription] = useState<string>();
+  const [key, setKey] = useState('');
+  const [value, setValue] = useState('');
+  const [friendlyName, setFriendlyName] = useState('');
+  const [category, setCategory] = useState('');
+  const [description, setDescription] = useState('');
+  const [keyErrorText, setKeyErrorText] = useState('Required');
+  const [valueErrorText, setValueErrorText] = useState('Required');
+  const [categoryErrorText, setCategoryErrorText] = useState('Required');
 
-  const handleKeyChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-    setKey(e.target.value);
+  const handleKeyChange = (fieldValue: string) => {
+    if (fieldValue.length > 1) {
+      setKeyErrorText('');
+      setKey(fieldValue);
+    } else {
+      setKeyErrorText('Invalid length');
+    }
   };
 
-  const handleValueChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-    setValue(e.target.value);
+  const handleValueChange = (fieldValue: string) => {
+    if (fieldValue.length > 1) {
+      setValueErrorText('');
+      setValue(fieldValue);
+    } else {
+      setValueErrorText('Invalid length');
+    }
   };
-  const handleFriendlyNameChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-    setFriendlyName(e.target.value);
+
+  const handleCategoryChange = (fieldValue: string) => {
+    if (fieldValue.length > 1) {
+      setCategoryErrorText('');
+      setCategory(fieldValue);
+    } else {
+      setCategoryErrorText('Invalid length');
+    }
   };
-  const handleCategoryChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-    setCategory(e.target.value);
-  };
-  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-    setDescription(e.target.value);
+
+  const handleSave = () => {
+    if (key!.length > 1 &&
+      value!.length > 1 &&
+      friendlyName!.length > 1 &&
+      category!.length > 1 &&
+      description!.length > 1
+    ) {
+      props.handleSave(key!, value!, friendlyName!, category!, description!);
+    }
   };
 
   return (
-    <Modal show={props.isOpen} dialogClassName="settingModal__content">
+    <Modal show={props.isOpen} dialogClassName="settingModal__content" onHide={() => props.handleClose()}>
       <Modal.Header className="settingModal__header">
         <Modal.Title className="settingModal__title">Add Setting</Modal.Title>
       </Modal.Header>
       <Modal.Body className="settingModal__body">
         <TextField
           required={true}
-          id="outlined-required"
+          id="key"
           label="Setting"
           variant="outlined"
-          onChange={e => handleKeyChange(e)}
+          error={keyErrorText.length !== 0}
+          helperText={keyErrorText}
+          onChange={e => handleKeyChange(e.target.value)}
         />
         <p/>
         <TextField
           required={true}
-          id="outlined-required"
+          id="value"
           label="Value"
           variant="outlined"
-          onChange={e => handleValueChange(e)}
+          error={valueErrorText.length !== 0}
+          helperText={valueErrorText}
+          onChange={e => handleValueChange(e.target.value)}
         />
         <p/>
         <TextField
-          id="outlined"
+          id="friendlyName"
           label="Friendly Name"
           variant="outlined"
-          onChange={e => handleFriendlyNameChange(e)}
+          onChange={e => setFriendlyName(e.target.value)}
         />
         <p/>
         <TextField
-          id="outlined"
+          id="category"
           label="Category"
           variant="outlined"
-          onChange={e => handleCategoryChange(e)}
+          error={categoryErrorText.length !== 0}
+          helperText={categoryErrorText}
+          onChange={e => handleCategoryChange(e.target.value)}
         />
         <p/>
         <TextField
-          id="outlined"
+          id="description"
           label="Description"
           variant="outlined"
-          onChange={e => handleDescriptionChange(e)}
+          onChange={e => setDescription(e.target.value)}
         />
       </Modal.Body>
       <Modal.Footer className="settingModal__footer">
         <Button
           className="settingModal__saveButton"
           variant="primary"
-          onClick={() => props.handleSave(key!, value!, friendlyName!, category!, description!)}
+          onClick={() => handleSave()}
         >
           Save
         </Button>

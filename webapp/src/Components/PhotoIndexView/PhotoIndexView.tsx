@@ -20,33 +20,14 @@ const getAllPhotos = async(baseApiUrl: string, albumId: string) => {
   return photos;
 };
 
-const loadItems = (groupKey: number, imageSources: Photo[], baseApiUrl: string) => {
-  const items = [];
-  const start = 0;
-
-  for (let i = 0; i < imageSources.length; i += 1) {
-    const imageSource = imageSources[start + i];
-    if (typeof imageSource !== 'undefined') {
-      items.push(
-        <PhotoItem
-          baseApiUrl={baseApiUrl}
-          groupKey={groupKey}
-          num={1 + start + i}
-          key={start + i}
-          source={imageSource}
-        />
-      );
-    }
-  }
-  return items;
-};
-
 const getAlbumName = async(baseApiUrl: string, albumId: string) => {
   const albumsAdapter = new AlbumsAdapter(baseApiUrl);
   if (albumId === null) return '';
   const album = await albumsAdapter.getAlbumInfoById(albumId);
   return album.name;
 };
+
+
 
 // const onAppend = async (params: OnAppend) => {
 //   // @ts-ignore
@@ -72,7 +53,6 @@ const onLayoutComplete = (params: OnLayoutComplete) => {
 export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
   const [photos, setPhotos] = useState<JSX.Element[]>();
   const [albumName, setAlbumName] = useState('');
-
   const { id } = useParams();
 
   useEffect(() => {
@@ -91,6 +71,43 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
       setPhotos(photoItems);
     })();
   },        [setPhotos, id, props.baseApiUrl]);
+
+  const loadItems = (groupKey: number, imageSources: Photo[], baseApiUrl: string) => {
+    const items = [];
+    const start = 0;
+
+    for (let i = 0; i < imageSources.length; i += 1) {
+      const imageSource = imageSources[start + i];
+
+      // let previousImageId;
+      // if (i === 0) {
+      //   previousImageId = imageSource.id;
+      // } else {
+      //   previousImageId = imageSources[start + i - 1].id;
+      // }
+      //
+      // let nextImageId;
+      // if (i === imageSources.length - 1) {
+      //   nextImageId = imageSource.id;
+      // } else {
+      //   nextImageId = imageSources[start + i + 1].id;
+      // }
+
+      if (typeof imageSource !== 'undefined') {
+        items.push(
+          <PhotoItem
+            baseApiUrl={baseApiUrl}
+            groupKey={groupKey}
+            num={1 + start + i}
+            key={start + i}
+            source={imageSource}
+            allPhotos={imageSources}
+          />
+        );
+      }
+    }
+    return items;
+  };
 
   return (
     <MuiThemeProvider>

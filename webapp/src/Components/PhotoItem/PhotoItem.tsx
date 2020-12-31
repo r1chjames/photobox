@@ -9,20 +9,36 @@ interface IProps {
   num: number;
   groupKey?: number;
   source: Photo;
+  allPhotos: Photo[];
 }
+
+const findImageIndexInArray = (photos: Photo[], photoId: string, defaultVal: number) => {
+  for (let i = 0; i < photos.length; i += 1) {
+    if (photos[i].id === photoId) {
+      return i;
+    }
+  }
+  return defaultVal;
+};
 
 export const PhotoItem: React.FunctionComponent<IProps> = (props) => {
 
+  const [currentId, setCurrentId] = useState(props.source.id);
   const [isImageModalOpen, setImageModalOpen] = useState(false);
-  const thumbnailUrl = `${props.baseApiUrl}/photo/${props.source.id}/thumbnail`;
-  const photoUrl = `${props.baseApiUrl}/photo/${props.source.id}/bin`;
+
+  const currentPhotoIdIndex = (): number => {
+    return findImageIndexInArray(props.allPhotos, currentId, 0);
+  };
+
+  const previousPhotoId = (currentPhotoIndex: number) => setCurrentId(props.allPhotos![currentPhotoIndex - 1].id);
+  const nextPhotoId = (currentPhotoIndex: number) => setCurrentId(props.allPhotos![currentPhotoIndex + 1].id);
 
   const gridImage = () => {
     return(
         <div className="imageItem__item">
           <div className="imageItem__thumbnail">
             <img
-              src={thumbnailUrl}
+              src={`${props.baseApiUrl}/photo/${props.source.id}/thumbnail`}
               alt={props.source.name}
               onClick={() => setImageModalOpen(!isImageModalOpen)}
             />
@@ -30,6 +46,28 @@ export const PhotoItem: React.FunctionComponent<IProps> = (props) => {
           <div className="imageItem__info">{`egjs ${props.num}`}</div>
         </div>
     );
+  };
+
+  const previousButton = () => {
+    const currentIdIndex = currentPhotoIdIndex() ;
+    if (currentIdIndex !== 0) {
+      return (
+        <Button onClick={() => previousPhotoId(currentIdIndex)} color="primary">
+          Previous
+        </Button>
+      );
+    }
+  };
+
+  const nextButton = () => {
+    const currentIdIndex = currentPhotoIdIndex() ;
+    if (currentIdIndex !== props.allPhotos.length - 1) {
+      return (
+        <Button onClick={() => nextPhotoId(currentIdIndex)} color="primary">
+          Next
+        </Button>
+      );
+    }
   };
 
   const content = () => {
@@ -47,18 +85,20 @@ export const PhotoItem: React.FunctionComponent<IProps> = (props) => {
                 {props.source.name}
               </DialogTitle>
               <DialogContent>
-                <a href={photoUrl} >
+                <a href={`${props.baseApiUrl}/photo/${currentId}/bin`} >
                   <img
                     className="imageItem__dialog__image"
-                    src={photoUrl}
+                    src={`${props.baseApiUrl}/photo/${currentId}/bin`}
                     alt={props.source.name}
                   />
                 </a>
               </DialogContent>
               <DialogActions>
+                {previousButton()}
                 <Button onClick={() => setImageModalOpen(!isImageModalOpen)} color="primary">
                   Close
                 </Button>
+                {nextButton()}
               </DialogActions>
             </Dialog>
           </div>

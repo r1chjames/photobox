@@ -1,7 +1,7 @@
 export class Setting {
 
   // tslint:disable:variable-name
-  public readonly key: string;
+  public key: string;
   public value: string;
   public friendlyName: string;
   public category: string;
@@ -21,9 +21,5 @@ export class Setting {
 
   public getValue(): string {
     return this.value;
-  }
-
-  public setValue(value: string) {
-    this.value = value;
   }
 }
