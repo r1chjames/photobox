@@ -38,7 +38,7 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
                 <AlbumItem
                   baseApiUrl={props.baseApiUrl}
                   source={album}
-                  albumViewCallback={() => history.push(`albums/${album.id}`)}
+                  albumViewCallback={() => history.push(`album/${album.id}`)}
                 />
               </article>
             );

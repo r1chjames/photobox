@@ -3,6 +3,7 @@ import './PhotoItem.css';
 import { Dialog, DialogActions, DialogContent, DialogTitle } from '@material-ui/core';
 import Button from '@material-ui/core/Button';
 import { Photo } from '../../Models/Photo';
+import history from '../../Routing/History';
 
 interface IProps {
   baseApiUrl: string;
@@ -35,15 +36,15 @@ export const PhotoItem: React.FunctionComponent<IProps> = (props) => {
 
   const gridImage = () => {
     return(
-        <div className="imageItem__item">
-          <div className="imageItem__thumbnail">
+        <div className="photoItem__item">
+          <div className="photoItem__thumbnail">
             <img
               src={`${props.baseApiUrl}/photo/${props.source.id}/thumbnail`}
               alt={props.source.name}
               onClick={() => setImageModalOpen(!isImageModalOpen)}
             />
           </div>
-          <div className="imageItem__info">{`egjs ${props.num}`}</div>
+          <div className="photoItem__info">{`egjs ${props.num}`}</div>
         </div>
     );
   };
@@ -76,7 +77,7 @@ export const PhotoItem: React.FunctionComponent<IProps> = (props) => {
         <div>
           <div>
             <Dialog
-              className="imageItem__dialog"
+              className="photoItem__dialog"
               open={true}
               aria-labelledby="customized-dialog-title"
               onClose={() => setImageModalOpen(false)}
@@ -85,13 +86,12 @@ export const PhotoItem: React.FunctionComponent<IProps> = (props) => {
                 {props.source.name}
               </DialogTitle>
               <DialogContent>
-                <a href={`${props.baseApiUrl}/photo/${currentId}/bin`} >
-                  <img
-                    className="imageItem__dialog__image"
-                    src={`${props.baseApiUrl}/photo/${currentId}/bin`}
-                    alt={props.source.name}
-                  />
-                </a>
+                <img
+                  className="photoItem__dialog__image"
+                  onClick={() => history.push(`photo/${currentId}`)}
+                  src={`${props.baseApiUrl}/photo/${currentId}/bin`}
+                  alt={props.source.name}
+                />
               </DialogContent>
               <DialogActions>
                 {previousButton()}

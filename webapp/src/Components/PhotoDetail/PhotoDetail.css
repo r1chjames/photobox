@@ -1,0 +1,13 @@
+.photoDetail__contentWrapper {
+    display: flex;
+}
+
+.photoDetail__mainImage {
+    width: 75%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.photoDetail__imageMetadata {
+    width: 25%;
+}
