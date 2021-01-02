@@ -9,28 +9,25 @@ export class AlbumsAdapter extends RestApiAdapter {
     this.baseApiPath = `${baseApiPath}`;
   }
 
-  private buildHeaders(additionalHeaders: {} = {}) {
+  private buildHeaders = (additionalHeaders: {} = {}) => {
     const standardHeaders = {
       'Content-Type': 'application/json'
     };
     return { ...standardHeaders, ...additionalHeaders };
   }
 
-  public async getAllAlbumsInfo() {
-    const getAllPhotosPath = `${this.baseApiPath}/albums`;
-    return this.getApiCall(getAllPhotosPath, '', this.buildHeaders(), {});
+  public getAllAlbumsInfo = async () => {
+    const getAllAlbumsPath = `${this.baseApiPath}/albums`;
+    return this.getApiCall(getAllAlbumsPath, '', this.buildHeaders(), {});
   }
 
-  public async getCountOfPhotosInAlbum() {
+  public getCountOfPhotosInAlbum = async () => {
     const getAllPhotosPath = `${this.baseApiPath}/album`;
     return this.getApiCall(getAllPhotosPath, '', this.buildHeaders(), {});
   }
 
-  public async getAlbumInfoById(albumId: string) {
-    const getAllPhotosPath = `${this.baseApiPath}/albums`;
-    const params = {
-      albumId,
-    };
-    return this.getApiCall(getAllPhotosPath, '', this.buildHeaders(), params);
+  public getAlbumInfoById = async (albumId: string) => {
+    const getAlbumInfoPath = `${this.baseApiPath}/album/${albumId}`;
+    return this.getApiCall(getAlbumInfoPath, '', this.buildHeaders(), {});
   }
 }

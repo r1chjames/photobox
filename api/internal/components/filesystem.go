@@ -10,6 +10,7 @@ import (
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
 	"gitlab.com/r1chjames/photobox/api/internal/utils"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -26,6 +27,29 @@ func PerformPhotoIndex(appConfig AppConfig, dbEnv *database.Env) {
 
 	photoRecords := ScanFilesystem(appConfig)
 	dbEnv.SavePhotoRecordsToDatabase(photoRecords)
+}
+
+func createDirectoryIfNotExists(basePhotoPath string, directoryName string) {
+	fullPath := fmt.Sprintf("%s/%s", basePhotoPath, directoryName)
+	err := os.Mkdir(fullPath, os.ModePerm)
+	if err != nil {
+		log.Print("Unable to create album folder. Check the value of setting default_new_albums_dir exists and is writable")
+	}
+}
+
+func WriteFileToFilesystem(dbEnv *database.Env, photo PhotoUpload) {
+	basePath, _ := dbEnv.GetSetting("default_new_albums_dir")
+	fileSavePath := fmt.Sprintf("%s/%s/%s", basePath.Value, photo.AlbumName, photo.Name)
+	log.Printf("Saving photo to: %s", fileSavePath)
+	log.Print(photo.BinaryContent)
+
+	createDirectoryIfNotExists(basePath.Value, photo.AlbumName)
+
+	fileContent := []byte(photo.BinaryContent)
+	err := ioutil.WriteFile(fileSavePath, fileContent, 0644)
+	if err != nil {
+		log.Print("Unable to save photo from upload")
+	}
 }
 
 func ScanFilesystem(appConfig AppConfig) []PhotoFile {

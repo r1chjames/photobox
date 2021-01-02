@@ -13,7 +13,7 @@ func defineAlbumsResources(router *gin.Engine, appConfig AppConfig) {
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
 	albums := router.Group(fmt.Sprintf("%s/albums", urlBasePath))
 	{
-		albums.GET("", getAlbums)
+		albums.GET("/", getAlbums)
 		albums.GET("/count", countAllAlbums)
 	}
 

@@ -27,7 +27,7 @@ interface IProps {
 
 const getAllSettings = async (baseApiUrl: string) => {
   const settingsAdapter = new SettingsAdapter(baseApiUrl);
-  const allSettings: Setting[] = await settingsAdapter.getALlSettings();
+  const allSettings: Setting[] = await settingsAdapter.getAllSettings();
   return allSettings;
 };
 

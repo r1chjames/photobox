@@ -29,7 +29,7 @@ func (dbEnv *Env) SavePhotoRecordsToDatabase(photoRecords []PhotoFile) {
 			Metadata:       photoMetadata,
 		}
 		photo.ID = photoHash
-		err = dbEnv.CreatePhoto(photo)
+		err = dbEnv.CreatePhotoInfo(photo)
 		if err != nil {
 			log.Print("unable to insert photo record")
 		}

@@ -26,6 +26,7 @@ func definePhotosResources(router *gin.Engine, appConfig AppConfig) {
 
 	photo := router.Group(fmt.Sprintf("%s/photo", urlBasePath))
 	{
+		photo.POST("", addPhoto)
 		photo.GET("/:id", getPhoto)
 		photo.GET("/:id/thumbnail", getThumbnail)
 		photo.GET("/:id/bin", getPhotoBin)
@@ -74,6 +75,21 @@ func getPhoto(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusNotFound, apiError{http.StatusNotFound, notFoundError("photo")})
 	} else {
 		c.IndentedJSON(http.StatusOK, resp)
+	}
+}
+
+func addPhoto(c *gin.Context) {
+	var photo PhotoUpload
+	err := c.BindJSON(&photo)
+
+	album, _ := dbEnv.CreateAlbumIfNotExists(photo.AlbumName)
+	components.WriteFileToFilesystem(dbEnv, photo)
+	err = dbEnv.CreatePhotoInfo(Photo{Name: photo.Name, AlbumId: album.ID})
+
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, invalidRequest()})
+	} else {
+		c.Status(http.StatusCreated)
 	}
 }
 

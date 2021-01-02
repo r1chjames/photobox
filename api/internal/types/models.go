@@ -49,3 +49,9 @@ type Job struct {
 	CreatedAt time.Time `json:"-"`
 	UpdatedAt time.Time `json:"-"`
 }
+
+type PhotoUpload struct {
+	Name           string         `json:"name"`
+	AlbumName      string         `json:"albumName"`
+	BinaryContent  string		  `json:"binaryContent"`
+}

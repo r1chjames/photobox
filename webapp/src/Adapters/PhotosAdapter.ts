@@ -9,19 +9,19 @@ export class PhotosAdapter extends RestApiAdapter {
     this.baseApiPath = `${baseApiPath}`;
   }
 
-  private static buildHeaders(additionalHeaders: {} = {}) {
+  private static buildHeaders = (additionalHeaders: {} = {}) => {
     const standardHeaders = {
       'Content-Type': 'application/json'
     };
     return { ...standardHeaders, ...additionalHeaders };
   }
 
-  public async getAllPhotosInfo() {
+  public getAllPhotosInfo = async () => {
     const getAllPhotosPath = `${this.baseApiPath}/photos`;
     return this.getApiCall(getAllPhotosPath, '', PhotosAdapter.buildHeaders(), {});
   }
 
-  public async getPhotoInfoById(photoId: string) {
+  public getPhotoInfoById = async (photoId: string) => {
     const getAllPhotosPath = `${this.baseApiPath}/photos`;
     const params = {
       photoId,
@@ -29,7 +29,7 @@ export class PhotosAdapter extends RestApiAdapter {
     return this.getApiCall(getAllPhotosPath, '', PhotosAdapter.buildHeaders(), params);
   }
 
-  public async getPhotosInfoInAlbum(albumId: string, page: number, limit: number) {
+  public getPhotosInfoInAlbum = async (albumId: string, page: number, limit: number) => {
     const getPhotosInAlbumPath = `${this.baseApiPath}/photos?page=${page}&limit=${limit}`;
     const params = {
       albumId,
@@ -37,7 +37,7 @@ export class PhotosAdapter extends RestApiAdapter {
     return this.getApiCall(getPhotosInAlbumPath, '', PhotosAdapter.buildHeaders(), params);
   }
 
-  public async getPhotoCountInAlbum(albumId: string) {
+  public getPhotoCountInAlbum = async (albumId: string) => {
     const getPhotosInAlbumPath = `${this.baseApiPath}/photos/count?albumId=${albumId}`;
     const params = {
       albumId,
@@ -45,11 +45,16 @@ export class PhotosAdapter extends RestApiAdapter {
     return this.getApiCall(getPhotosInAlbumPath, '', PhotosAdapter.buildHeaders(), params);
   }
 
-  public async getPhotoImage(photoId: string) {
+  public getPhotoImage = async (photoId: string) => {
     const getPhotosImagePath = `${this.baseApiPath}/photo/bin`;
     const params = {
       photoId,
     };
     return this.getApiCall(getPhotosImagePath, '', PhotosAdapter.buildHeaders(), params);
+  }
+
+  public uploadPhoto = async (body: {}) => {
+    const postSettingPath = `${this.baseApiPath}/photo`;
+    return this.postApiCall(postSettingPath, body, PhotosAdapter.buildHeaders());
   }
 }

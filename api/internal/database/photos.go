@@ -37,7 +37,7 @@ func (dbEnv *Env) GetPhotosInAlbumCount(albumId string) (int64, error) {
 	return result.RowsAffected, result.Error
 }
 
-func (dbEnv *Env) CreatePhoto(photo Photo) error {
+func (dbEnv *Env) CreatePhotoInfo(photo Photo) error {
 	result := dbEnv.Db.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&photo)

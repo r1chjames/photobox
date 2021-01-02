@@ -1,8 +1,7 @@
 import React, {useState} from 'react';
 import './SettingModal.css';
-import Modal from 'react-bootstrap/Modal';
-import {Button} from 'react-bootstrap';
 import {TextField} from '@material-ui/core';
+import {InputModal} from '../InputModal/InputModal';
 
 interface IProps {
   isOpen: boolean;
@@ -48,23 +47,27 @@ export const SettingModal: React.FunctionComponent<IProps> = (props) => {
     }
   };
 
-  const handleSave = () => {
-    if (key!.length > 1 &&
+  const checkForNullFields = () => {
+    return (key!.length > 1 &&
       value!.length > 1 &&
       friendlyName!.length > 1 &&
       category!.length > 1 &&
-      description!.length > 1
-    ) {
+      description!.length > 1);
+  };
+
+  const handleSave = () => {
+    if (checkForNullFields()) {
       props.handleSave(key!, value!, friendlyName!, category!, description!);
     }
   };
 
   return (
-    <Modal show={props.isOpen} dialogClassName="settingModal__content" onHide={() => props.handleClose()}>
-      <Modal.Header className="settingModal__header">
-        <Modal.Title className="settingModal__title">Add Setting</Modal.Title>
-      </Modal.Header>
-      <Modal.Body className="settingModal__body">
+    <InputModal
+      isOpen={props.isOpen}
+      title="Add Setting"
+      handleSave={handleSave}
+      handleClose={props.handleClose}
+    >
         <TextField
           required={true}
           id="key"
@@ -107,23 +110,6 @@ export const SettingModal: React.FunctionComponent<IProps> = (props) => {
           variant="outlined"
           onChange={e => setDescription(e.target.value)}
         />
-      </Modal.Body>
-      <Modal.Footer className="settingModal__footer">
-        <Button
-          className="settingModal__saveButton"
-          variant="primary"
-          onClick={() => handleSave()}
-        >
-          Save
-        </Button>
-        <Button
-          className="settingModal__closeButton"
-          variant="secondary"
-          onClick={() => props.handleClose()}
-        >
-          Close
-        </Button>
-      </Modal.Footer>
-    </Modal>
+    </InputModal>
   );
 };

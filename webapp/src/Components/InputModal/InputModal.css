@@ -1,0 +1,116 @@
+.inputModal__content {
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #212529;
+    text-align: left;
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    margin-left: 200px;
+    width: 30%;
+    left: 25%;
+    max-width: 400px;
+    margin-top: -150px;
+    pointer-events: auto;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid rgba(0,0,0,.2);
+    border-radius: .3rem;
+    outline: 0;
+}
+
+.inputModal__header {
+    display: flex;
+    box-sizing: border-box;
+    flex-direction: column;
+    position: relative;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    border-bottom-color: rgb(233, 236, 239);
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
+}
+
+.inputModal__title {
+    font-family: inherit;
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 1.5;
+    color: #212529;
+    text-align: left;
+    -webkit-box-direction: normal;
+    pointer-events: auto;
+    box-sizing: border-box;
+    display: flex;
+    -webkit-box-align: start;
+    align-items: flex-start;
+    -webkit-box-pack: justify;
+    justify-content: space-between;
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+    border-top-left-radius: .3rem;
+    border-top-right-radius: .3rem;
+}
+
+.inputModal__body {
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #212529;
+    text-align: left;
+    -webkit-box-direction: normal;
+    pointer-events: auto;
+    box-sizing: border-box;
+    position: relative;
+    -webkit-box-flex: 1;
+    flex: 1 1 auto;
+    padding: 1rem;
+}
+
+.inputModal__footer {
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #212529;
+    text-align: left;
+    -webkit-box-direction: normal;
+    pointer-events: auto;
+    box-sizing: border-box;
+    display: flex;
+    -webkit-box-align: center;
+    align-items: center;
+    -webkit-box-pack: end;
+    justify-content: flex-end;
+    padding: 1rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.inputModal__closeButton {
+    margin-left: 20px;
+    padding: 6px 12px 6px 12px;
+    background-color: grey;
+    border-color: grey;
+    color: white;
+    border-style: solid;
+    box-sizing: border-box;
+    border-radius: 0.25rem;
+    font-family: inherit;
+    font-size: 16px;
+}
+
+.inputModal__saveButton {
+    margin-left: 20px;
+    padding: 6px 12px 6px 12px;
+    background-color: #007bff;
+    border-color: #007bff;
+    border-radius: 0.25rem;
+    border-style: solid;
+    color: white;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 16px;
+}

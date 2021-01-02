@@ -18,6 +18,14 @@ func (dbEnv *Env) GetAlbumByName(albumName string) (Album, error) {
 	return album, result.Error
 }
 
+func (dbEnv *Env) CreateAlbumIfNotExists(albumName string) (Album, error) {
+	album, err := dbEnv.GetAlbumByName(albumName)
+	if checkNotFoundError(err) {
+		_, err = dbEnv.CreateAlbum(albumName)
+	}
+	return album, nil
+}
+
 func (dbEnv *Env) GetAllAlbums(page int, limit int) ([]Album, error) {
 	var albums []Album
 	result := dbEnv.Db.Scopes(Paginate(page, limit)).Find(&albums)

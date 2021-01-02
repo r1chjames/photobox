@@ -10,19 +10,19 @@ export class SettingsAdapter extends RestApiAdapter {
     this.baseApiPath = `${baseApiPath}`;
   }
 
-  private buildHeaders(additionalHeaders: {} = {}) {
+  private buildHeaders = (additionalHeaders: {} = {}) => {
     const standardHeaders = {
       'Content-Type': 'application/json'
     };
     return { ...standardHeaders, ...additionalHeaders };
   }
 
-  public async getALlSettings() {
+  public getAllSettings = async () => {
     const getAllSettingsPath = `${this.baseApiPath}/settings`;
     return this.getApiCall(getAllSettingsPath, '', this.buildHeaders(), {});
   }
 
-  public async updateSettings(settings: Setting[]) {
+  public updateSettings = async (settings: Setting[]) => {
     const postAllSettingsPath = `${this.baseApiPath}/settings`;
     const body = {
       settings
@@ -30,7 +30,7 @@ export class SettingsAdapter extends RestApiAdapter {
     return this.postApiCall(postAllSettingsPath, body, this.buildHeaders());
   }
 
-  public async updateSetting(setting: Setting) {
+  public updateSetting = async (setting: Setting) => {
     const postSettingPath = `${this.baseApiPath}/setting`;
     const body = {
       setting
