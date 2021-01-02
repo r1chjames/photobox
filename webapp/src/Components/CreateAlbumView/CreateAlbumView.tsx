@@ -2,12 +2,12 @@ import React from 'react';
 import Dropzone from 'react-dropzone';
 import './CreateAlbumView.css';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
-import {MainContent} from '../MainContent/MainContent';
-import {Button, Fab} from '@material-ui/core';
+import { MainContent } from '../MainContent/MainContent';
+import { Button, Fab } from '@material-ui/core';
 import SaveIcon from '@material-ui/icons/Save';
-import {useParams} from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import AddIcon from '@material-ui/icons/Add';
-import {PhotosAdapter} from '../../Adapters/PhotosAdapter';
+import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
 
 interface IProps {
   baseApiUrl: string;
@@ -73,7 +73,7 @@ export const CreateAlbumView: React.FunctionComponent<IProps> = (props) => {
       <MainContent title={name}>
         <div className="createAlbumView__dropzone">
           <Dropzone onDrop={acceptedFiles => handleFileUpload(acceptedFiles)}>
-            {({getRootProps, getInputProps}) => (
+            {({ getRootProps, getInputProps }) => (
               <section>
                 <div {...getRootProps()}>
                   <input {...getInputProps()} />
@@ -96,5 +96,5 @@ export const CreateAlbumView: React.FunctionComponent<IProps> = (props) => {
       </MainContent>
     </MuiThemeProvider>
   );
-  }
+}
 ;

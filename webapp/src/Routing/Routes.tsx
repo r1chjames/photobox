@@ -5,8 +5,8 @@ import { PhotoIndexView } from '../Components/PhotoIndexView/PhotoIndexView';
 import { Dashboard } from '../Components/Dashboard/Dashboard';
 import { AlbumIndexView } from '../Components/AlbumIndexView/AlbumIndexView';
 import { SettingsView } from '../Components/SettingsView/SettingsView';
-import {PhotoDetail} from '../Components/PhotoDetail/PhotoDetail';
-import {CreateAlbumView} from '../Components/CreateAlbumView/CreateAlbumView';
+import { PhotoDetail } from '../Components/PhotoDetail/PhotoDetail';
+import { CreateAlbumView } from '../Components/CreateAlbumView/CreateAlbumView';
 
 interface IProps {
   baseApiUrl: string;

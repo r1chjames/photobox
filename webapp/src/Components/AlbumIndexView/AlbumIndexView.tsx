@@ -1,14 +1,14 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import './AlbumIndexView.css';
-import {AlbumsAdapter} from '../../Adapters/AlbumsAdapter';
-import {Album} from '../../Models/Album';
-import {AlbumItem} from '../AlbumItem/AlbumItem';
+import { AlbumsAdapter } from '../../Adapters/AlbumsAdapter';
+import { Album } from '../../Models/Album';
+import { AlbumItem } from '../AlbumItem/AlbumItem';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import history from '../../Routing/History';
-import {MainContent} from '../MainContent/MainContent';
-import {Fab, TextField} from '@material-ui/core';
+import { MainContent } from '../MainContent/MainContent';
+import { Fab, TextField } from '@material-ui/core';
 import AddIcon from '@material-ui/icons/Add';
-import {InputModal} from '../InputModal/InputModal';
+import { InputModal } from '../InputModal/InputModal';
 
 interface IProps {
   baseApiUrl: string;

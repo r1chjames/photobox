@@ -8,7 +8,7 @@ import { PhotoItem } from '../PhotoItem/PhotoItem';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import { AlbumsAdapter } from '../../Adapters/AlbumsAdapter';
 import { MainContent } from '../MainContent/MainContent';
-import {LoadingScreen} from '../LoadingScreen/LoadingScreen';
+import { LoadingScreen } from '../LoadingScreen/LoadingScreen';
 
 interface IProps {
   baseApiUrl: string;

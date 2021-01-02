@@ -1,7 +1,7 @@
 import React from 'react';
 import './MainContent.css';
-import {Typography} from '@material-ui/core';
-import {TitleBar} from '../TitleBar/TitleBar';
+import { Typography } from '@material-ui/core';
+import { TitleBar } from '../TitleBar/TitleBar';
 
 interface IProps {
   title: string;

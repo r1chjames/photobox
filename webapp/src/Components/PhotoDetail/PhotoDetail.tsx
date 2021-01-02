@@ -1,11 +1,11 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import './PhotoDetail.css';
-import {Photo} from '../../Models/Photo';
+import { Photo } from '../../Models/Photo';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
-import {MainContent} from '../MainContent/MainContent';
-import {useParams} from 'react-router-dom';
-import {PhotosAdapter} from '../../Adapters/PhotosAdapter';
-import {LoadingScreen} from '../LoadingScreen/LoadingScreen';
+import { MainContent } from '../MainContent/MainContent';
+import { useParams } from 'react-router-dom';
+import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
+import { LoadingScreen } from '../LoadingScreen/LoadingScreen';
 
 interface IProps {
   baseApiUrl: string;

@@ -1,11 +1,11 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import './SettingsView.css';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import EditIcon from '@material-ui/icons/Edit';
 import SaveIcon from '@material-ui/icons/Save';
 import AddIcon from '@material-ui/icons/Add';
 import CancelIcon from '@material-ui/icons/Cancel';
-import {MainContent} from '../MainContent/MainContent';
+import { MainContent } from '../MainContent/MainContent';
 import {
   Fab,
   Paper,
@@ -17,9 +17,9 @@ import {
   TableRow,
   TextField
 } from '@material-ui/core';
-import {Setting} from '../../Models/Setting';
-import {SettingsAdapter} from '../../Adapters/SettingsAdapter';
-import {SettingModal} from '../SettingModal/SettingModal';
+import { Setting } from '../../Models/Setting';
+import { SettingsAdapter } from '../../Adapters/SettingsAdapter';
+import { SettingModal } from '../SettingModal/SettingModal';
 
 interface IProps {
   baseApiUrl: string;

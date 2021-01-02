@@ -1,7 +1,7 @@
 import React from 'react';
 import './InputModal.css';
 import Modal from 'react-bootstrap/Modal';
-import {Button} from 'react-bootstrap';
+import { Button } from 'react-bootstrap';
 
 interface IProps {
   isOpen: boolean;

@@ -1,7 +1,7 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import './SettingModal.css';
-import {TextField} from '@material-ui/core';
-import {InputModal} from '../InputModal/InputModal';
+import { TextField } from '@material-ui/core';
+import { InputModal } from '../InputModal/InputModal';
 
 interface IProps {
   isOpen: boolean;
