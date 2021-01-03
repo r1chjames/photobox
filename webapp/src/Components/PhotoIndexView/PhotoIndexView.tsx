@@ -65,7 +65,7 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
       })().then(() => setAlbumNameLoaded(true));
     } else {
       setAlbumName('Photos');
-      setPhotosLoaded(true);
+      setAlbumNameLoaded(true);
     }
 
     (async function retrievePhotos() {

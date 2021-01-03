@@ -9,7 +9,7 @@ export class AlbumsAdapter extends RestApiAdapter {
     this.baseApiPath = `${baseApiPath}`;
   }
 
-  private buildHeaders = (additionalHeaders: {} = {}) => {
+  private static buildHeaders = (additionalHeaders: {} = {}) => {
     const standardHeaders = {
       'Content-Type': 'application/json'
     };
@@ -18,16 +18,16 @@ export class AlbumsAdapter extends RestApiAdapter {
 
   public getAllAlbumsInfo = async () => {
     const getAllAlbumsPath = `${this.baseApiPath}/albums`;
-    return this.getApiCall(getAllAlbumsPath, '', this.buildHeaders(), {});
+    return this.getApiCall(getAllAlbumsPath, AlbumsAdapter.buildHeaders(), {});
   }
 
   public getCountOfPhotosInAlbum = async () => {
     const getAllPhotosPath = `${this.baseApiPath}/album`;
-    return this.getApiCall(getAllPhotosPath, '', this.buildHeaders(), {});
+    return this.getApiCall(getAllPhotosPath, AlbumsAdapter.buildHeaders(), {});
   }
 
   public getAlbumInfoById = async (albumId: string) => {
     const getAlbumInfoPath = `${this.baseApiPath}/album/${albumId}`;
-    return this.getApiCall(getAlbumInfoPath, '', this.buildHeaders(), {});
+    return this.getApiCall(getAlbumInfoPath, AlbumsAdapter.buildHeaders(), {});
   }
 }

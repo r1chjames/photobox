@@ -82,9 +82,8 @@ func addPhoto(c *gin.Context) {
 	var photo PhotoUpload
 	err := c.BindJSON(&photo)
 
-	album, _ := dbEnv.CreateAlbumIfNotExists(photo.AlbumName)
-	components.WriteFileToFilesystem(dbEnv, photo)
-	err = dbEnv.CreatePhotoInfo(Photo{Name: photo.Name, AlbumId: album.ID})
+	photoFile := components.WriteFileToFilesystem(dbEnv, photo)
+	dbEnv.SavePhotoRecordsToDatabase([]PhotoFile{photoFile})
 
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, invalidRequest()})

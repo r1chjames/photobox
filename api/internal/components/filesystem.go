@@ -3,6 +3,7 @@ package components
 import (
 	"bytes"
 	"crypto/md5"
+	b64 "encoding/base64"
 	"fmt"
 	"github.com/disintegration/imaging"
 	"github.com/rwcarlsen/goexif/exif"
@@ -31,25 +32,34 @@ func PerformPhotoIndex(appConfig AppConfig, dbEnv *database.Env) {
 
 func createDirectoryIfNotExists(basePhotoPath string, directoryName string) {
 	fullPath := fmt.Sprintf("%s/%s", basePhotoPath, directoryName)
-	err := os.Mkdir(fullPath, os.ModePerm)
+	err := os.Mkdir(fullPath, os.ModePerm) //TODO check if exists, swallow error if so
 	if err != nil {
 		log.Print("Unable to create album folder. Check the value of setting default_new_albums_dir exists and is writable")
 	}
 }
 
-func WriteFileToFilesystem(dbEnv *database.Env, photo PhotoUpload) {
+func WriteFileToFilesystem(dbEnv *database.Env, photo PhotoUpload) PhotoFile {
+
+	if !isImageFile(photo.Name) {
+	}
+
 	basePath, _ := dbEnv.GetSetting("default_new_albums_dir")
 	fileSavePath := fmt.Sprintf("%s/%s/%s", basePath.Value, photo.AlbumName, photo.Name)
 	log.Printf("Saving photo to: %s", fileSavePath)
-	log.Print(photo.BinaryContent)
 
 	createDirectoryIfNotExists(basePath.Value, photo.AlbumName)
+	value := strings.Split(photo.BinaryContent, ",")
 
-	fileContent := []byte(photo.BinaryContent)
-	err := ioutil.WriteFile(fileSavePath, fileContent, 0644)
+	decodedData, err := b64.StdEncoding.DecodeString(value[1])
+	err = ioutil.WriteFile(fileSavePath, decodedData, 0644)
 	if err != nil {
 		log.Print("Unable to save photo from upload")
 	}
+
+	fileInfo, _ := os.Lstat(fileSavePath)
+
+	return getMetaData(fileSavePath, fileInfo)
+
 }
 
 func ScanFilesystem(appConfig AppConfig) []PhotoFile {

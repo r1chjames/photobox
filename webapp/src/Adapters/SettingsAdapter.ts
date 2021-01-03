@@ -19,7 +19,7 @@ export class SettingsAdapter extends RestApiAdapter {
 
   public getAllSettings = async () => {
     const getAllSettingsPath = `${this.baseApiPath}/settings`;
-    return this.getApiCall(getAllSettingsPath, '', this.buildHeaders(), {});
+    return this.getApiCall(getAllSettingsPath, this.buildHeaders(), {});
   }
 
   public updateSettings = async (settings: Setting[]) => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import './AlbumItem.css';
 import { Album } from '../../Models/Album';
 import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
@@ -60,7 +60,10 @@ export const AlbumItem: React.FunctionComponent<IProps> = (props) => {
         <CardActionArea>
           <CardMedia
             className="albumItem__cardImage"
-            image={thumbnailUrl}
+            component="img"
+            src={thumbnailUrl}
+            alt="No thumbnail"
+            onError={(e: any) => e.target.src = '/no_image.png'}
             title={props.source.name}
           />
           <CardContent>

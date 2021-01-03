@@ -30,31 +30,13 @@ const readUploadedFileAsText = (inputFile: File) => {
     temporaryFileReader.onload = () => {
       resolve(temporaryFileReader.result);
     };
-    temporaryFileReader.readAsText(inputFile);
+    temporaryFileReader.readAsDataURL(inputFile);
   });
 };
 
 export const CreateAlbumView: React.FunctionComponent<IProps> = (props) => {
 
   const { name } = useParams();
-
-    // const handleFileUpload = async (acceptedFiles: File[]) => {
-    //   acceptedFiles.forEach((file) => {
-    //     const reader = new FileReader();
-    //
-    //     reader.onabort = () => console.log('file reading was aborted');
-    //     reader.onerror = () => console.log('file reading has failed');
-    //     reader.onload = () => {
-    //       const photoContent = {
-    //         name: file.name,
-    //         albumName: name,
-    //         binaryContent: reader.result as string,
-    //       };
-    //       uploadPhotoToApi(props.baseApiUrl, photoContent);
-    //     };
-    //     reader.readAsArrayBuffer(file);
-    //   });
-    // };
 
   const handleFileUpload = async (acceptedFiles: File[]) => {
     for (const file of acceptedFiles) {
@@ -64,7 +46,7 @@ export const CreateAlbumView: React.FunctionComponent<IProps> = (props) => {
         albumName: name,
         binaryContent: fileContent,
       };
-      uploadPhotoToApi(props.baseApiUrl, photoContent);
+      await uploadPhotoToApi(props.baseApiUrl, photoContent);
     }
   };
 

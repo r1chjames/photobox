@@ -18,15 +18,12 @@ export class PhotosAdapter extends RestApiAdapter {
 
   public getAllPhotosInfo = async () => {
     const getAllPhotosPath = `${this.baseApiPath}/photos`;
-    return this.getApiCall(getAllPhotosPath, '', PhotosAdapter.buildHeaders(), {});
+    return this.getApiCall(getAllPhotosPath, PhotosAdapter.buildHeaders(), {});
   }
 
   public getPhotoInfoById = async (photoId: string) => {
-    const getAllPhotosPath = `${this.baseApiPath}/photos`;
-    const params = {
-      photoId,
-    };
-    return this.getApiCall(getAllPhotosPath, '', PhotosAdapter.buildHeaders(), params);
+    const getAllPhotosPath = `${this.baseApiPath}/photo/${photoId}`;
+    return this.getApiCall(getAllPhotosPath, PhotosAdapter.buildHeaders(), {});
   }
 
   public getPhotosInfoInAlbum = async (albumId: string, page: number, limit: number) => {
@@ -34,7 +31,7 @@ export class PhotosAdapter extends RestApiAdapter {
     const params = {
       albumId,
     };
-    return this.getApiCall(getPhotosInAlbumPath, '', PhotosAdapter.buildHeaders(), params);
+    return this.getApiCall(getPhotosInAlbumPath, PhotosAdapter.buildHeaders(), params);
   }
 
   public getPhotoCountInAlbum = async (albumId: string) => {
@@ -42,7 +39,7 @@ export class PhotosAdapter extends RestApiAdapter {
     const params = {
       albumId,
     };
-    return this.getApiCall(getPhotosInAlbumPath, '', PhotosAdapter.buildHeaders(), params);
+    return this.getApiCall(getPhotosInAlbumPath, PhotosAdapter.buildHeaders(), params);
   }
 
   public getPhotoImage = async (photoId: string) => {
@@ -50,7 +47,7 @@ export class PhotosAdapter extends RestApiAdapter {
     const params = {
       photoId,
     };
-    return this.getApiCall(getPhotosImagePath, '', PhotosAdapter.buildHeaders(), params);
+    return this.getApiCall(getPhotosImagePath, PhotosAdapter.buildHeaders(), params);
   }
 
   public uploadPhoto = async (body: {}) => {

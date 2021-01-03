@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import './PhotoItem.css';
-import { Dialog, DialogActions, DialogContent, DialogTitle } from '@material-ui/core';
+import {Dialog, DialogActions, DialogContent, DialogTitle} from '@material-ui/core';
 import Button from '@material-ui/core/Button';
 import { Photo } from '../../Models/Photo';
 import history from '../../Routing/History';
@@ -42,6 +42,7 @@ export const PhotoItem: React.FunctionComponent<IProps> = (props) => {
               src={`${props.baseApiUrl}/photo/${props.source.id}/thumbnail`}
               alt={props.source.name}
               onClick={() => setImageModalOpen(!isImageModalOpen)}
+              onError={(e: any) => e.target.src = '/no_image.png'}
             />
           </div>
           <div className="photoItem__info">{`egjs ${props.num}`}</div>

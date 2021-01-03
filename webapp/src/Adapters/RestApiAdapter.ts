@@ -11,15 +11,15 @@ export class RestApiAdapter {
     return RestApiAdapter.apiCall('put', headers, body, path, {});
   }
 
-  protected async getApiCall(path: string, body: {}, headers: {}, params: {}) {
-    return RestApiAdapter.apiCall('get', headers, body, path, params);
+  protected async getApiCall(path: string, headers: {}, params: {}) {
+    return RestApiAdapter.apiCall('get', headers, {}, path, params);
   }
 
-  private static async apiCall(method: string, headers: {}, data: {}, url: string, params: {}) {
+  private static async apiCall(method: string, headers: {}, body: {}, url: string, params: {}) {
     const options = {
       method,
       headers,
-      data: JSON.stringify(data),
+      data: JSON.stringify(body),
       url,
       params,
     };

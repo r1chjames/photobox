@@ -11,13 +11,14 @@ import "net/http"
 
 func defineAlbumsResources(router *gin.Engine, appConfig AppConfig) {
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
+
+	router.GET(fmt.Sprintf("%s/album/:id", urlBasePath), getAlbumById)
 	albums := router.Group(fmt.Sprintf("%s/albums", urlBasePath))
 	{
-		albums.GET("/", getAlbums)
+		albums.GET("", getAllAlbums)
 		albums.GET("/count", countAllAlbums)
 	}
 
-	router.GET(fmt.Sprintf("%s/album/:id", urlBasePath), getAlbumById)
 }
 
 func countAllAlbums(c *gin.Context) {
@@ -27,9 +28,9 @@ func countAllAlbums(c *gin.Context) {
 	})
 }
 
-func getAlbums(c *gin.Context) {
+func getAllAlbums(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "100"))
 
 	resp, err := dbEnv.GetAllAlbums(page, limit)
 

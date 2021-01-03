@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import './PhotoDetail.css';
-import { Photo } from '../../Models/Photo';
+import {Photo} from '../../Models/Photo';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import { MainContent } from '../MainContent/MainContent';
 import { useParams } from 'react-router-dom';
 import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
 import { LoadingScreen } from '../LoadingScreen/LoadingScreen';
+import {Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from '@material-ui/core';
 
 interface IProps {
   baseApiUrl: string;
@@ -22,7 +23,7 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
 
   useEffect(() => {
     if (id !== undefined) {
-      (async function retrievePhotos() {
+      (async function retrievePhoto() {
         const retrievedPhoto = await getPhoto(props.baseApiUrl, id);
         setPhoto(retrievedPhoto);
       })();
@@ -40,7 +41,28 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                 className="photoDetail__mainImage"
               />
             <div className="photoDetail__imageMetadata">
-              placeholder
+              <TableContainer component={Paper}>
+                <Table aria-label="metadata table">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Setting</TableCell>
+                      <TableCell>Value</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {/*{ Object.entries(photo.metadata).forEach(*/}
+                    {/*  ([key, value]) => {*/}
+                    {/*    return (*/}
+                    {/*    <TableRow key={key}>*/}
+                    {/*      <TableCell component="th" scope="row">{key}</TableCell>*/}
+                    {/*      <TableCell>{value}</TableCell>*/}
+                    {/*    </TableRow>*/}
+                    {/*    );*/}
+                    {/*  })*/}
+                    {/*}*/}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </div>
           </div>
         </MainContent>
