@@ -69,8 +69,9 @@ func getPhotos(c *gin.Context) {
 
 func getPhoto(c *gin.Context) {
 	photoId := c.Param("id")
+	includeThumbnail, _ := strconv.ParseBool(c.DefaultQuery("include_thumbnail", "false"))
 
-	resp, err := dbEnv.GetPhotoInfoById(photoId)
+	resp, err := dbEnv.GetPhotoInfoById(photoId, includeThumbnail)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, apiError{http.StatusNotFound, notFoundError("photo")})
 	} else {
@@ -110,7 +111,7 @@ func getPhotoBin(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, missingQueryParam("photo ID")})
 	} else {
 
-		photoInfo, err := dbEnv.GetPhotoInfoById(photoId)
+		photoInfo, err := dbEnv.GetPhotoInfoById(photoId, false)
 		if err != nil {
 			c.IndentedJSON(http.StatusNotFound, notFoundError("photo"))
 		} else {
@@ -126,7 +127,7 @@ func getThumbnail(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, missingQueryParam("photo ID")})
 	} else {
 
-		photoInfo, err := dbEnv.GetPhotoInfoById(photoId)
+		photoInfo, err := dbEnv.GetPhotoInfoById(photoId, true)
 		if err != nil {
 			c.Status(http.StatusNotFound)
 		} else {

@@ -5,7 +5,7 @@ import (
 )
 
 type PhotoFile struct {
-	ID        string `gorm:"primarykey" json:"id"`
+	ID        string `gorm:"primarykey" json:"-"`
 	MD5       string `json:"md5"`
 	Path      string `json:"path"`
 	Directory string `json:"directory"`

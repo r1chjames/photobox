@@ -6,10 +6,13 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-func (dbEnv *Env) GetPhotoInfoById(photoId string) (Photo, error) {
+func (dbEnv *Env) GetPhotoInfoById(photoId string, includeThumbnail bool) (Photo, error) {
 	var photo Photo
 	photo.ID = photoId
 	result := dbEnv.Db.First(&photo)
+	if !includeThumbnail {
+		return removeThumbnail(photo), result.Error
+	}
 	return photo, result.Error
 }
 

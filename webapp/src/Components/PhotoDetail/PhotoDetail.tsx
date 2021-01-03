@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import './PhotoDetail.css';
 import {Photo} from '../../Models/Photo';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
@@ -45,21 +45,22 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                 <Table aria-label="metadata table">
                   <TableHead>
                     <TableRow>
-                      <TableCell>Setting</TableCell>
+                      <TableCell>Parameter</TableCell>
                       <TableCell>Value</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {/*{ Object.entries(photo.metadata).forEach(*/}
-                    {/*  ([key, value]) => {*/}
-                    {/*    return (*/}
-                    {/*    <TableRow key={key}>*/}
-                    {/*      <TableCell component="th" scope="row">{key}</TableCell>*/}
-                    {/*      <TableCell>{value}</TableCell>*/}
-                    {/*    </TableRow>*/}
-                    {/*    );*/}
-                    {/*  })*/}
-                    {/*}*/}
+                    {/* eslint-disable-next-line array-callback-return */}
+                    {Object.entries(photo.metadata).map(([key, value]) => {
+                      if (value !== null) {
+                        return (
+                          <TableRow key={key}>
+                            <TableCell component="th" scope="row">{key}</TableCell>
+                            <TableCell>{JSON.stringify(value)}</TableCell>
+                          </TableRow>
+                        );
+                      }
+                    })}
                   </TableBody>
                 </Table>
               </TableContainer>

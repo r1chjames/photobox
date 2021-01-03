@@ -89,7 +89,7 @@ export const PhotoItem: React.FunctionComponent<IProps> = (props) => {
               <DialogContent>
                 <img
                   className="photoItem__dialog__image"
-                  onClick={() => history.push(`photo/${currentId}`)}
+                  onClick={() => history.push(`/photo/${currentId}`)}
                   src={`${props.baseApiUrl}/photo/${currentId}/bin`}
                   alt={props.source.name}
                 />
