@@ -16,5 +16,5 @@ type PhotoFile struct {
 	Name      string    `json:"name"`
 	Exif      exif.Exif `json:"exif"`
 	Mime      string    `json:"mime"`
-	Thumbnail []byte    `json:"thumbnail"`
+	Thumbnail []byte    `json:"-" gorm:"-"`
 }

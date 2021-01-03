@@ -1,13 +1,14 @@
-import React from 'react';
+import React, {useState} from 'react';
 import Dropzone from 'react-dropzone';
 import './CreateAlbumView.css';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import { MainContent } from '../MainContent/MainContent';
-import { Button, Fab } from '@material-ui/core';
+import {Button, Fab} from '@material-ui/core';
 import SaveIcon from '@material-ui/icons/Save';
 import { useParams } from 'react-router-dom';
 import AddIcon from '@material-ui/icons/Add';
 import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
+import {InfoSnackbar} from '../Snackbar/InfoSnackbar';
 
 interface IProps {
   baseApiUrl: string;
@@ -36,6 +37,7 @@ const readUploadedFileAsText = (inputFile: File) => {
 
 export const CreateAlbumView: React.FunctionComponent<IProps> = (props) => {
 
+  const [showSnackbar, setShowSnackbar] = useState(false);
   const { name } = useParams();
 
   const handleFileUpload = async (acceptedFiles: File[]) => {
@@ -46,7 +48,7 @@ export const CreateAlbumView: React.FunctionComponent<IProps> = (props) => {
         albumName: name,
         binaryContent: fileContent,
       };
-      await uploadPhotoToApi(props.baseApiUrl, photoContent);
+      uploadPhotoToApi(props.baseApiUrl, photoContent).then(() => setShowSnackbar(true));
     }
   };
 
@@ -75,8 +77,8 @@ export const CreateAlbumView: React.FunctionComponent<IProps> = (props) => {
         <Fab color="primary" aria-label="add" className="createAlbumView__addButton">
           <SaveIcon onClick={() => console.log('save')}/>
         </Fab>
+        <InfoSnackbar text={'Photo Uploaded'} show={showSnackbar} handleStopShowing={() => setShowSnackbar(false)}/>
       </MainContent>
     </MuiThemeProvider>
   );
-}
-;
+};

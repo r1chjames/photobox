@@ -72,7 +72,7 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
         <section className="albumIndexView__cardContainer">
           {albums.map((album: Album) => {
             return(
-              <article key={album.id} className="albumIndexView__card">
+              <article key={album.id}>
                 <AlbumItem
                   baseApiUrl={props.baseApiUrl}
                   source={album}

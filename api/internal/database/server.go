@@ -27,6 +27,7 @@ func (dbEnv *Env) SavePhotoRecordsToDatabase(photoRecords []PhotoFile) {
 			AlbumId:        albumId,
 			Tags:           "",
 			Metadata:       photoMetadata,
+			Thumbnail:      photo.Thumbnail,
 		}
 		photo.ID = photoHash
 		err = dbEnv.CreatePhotoInfo(photo)

@@ -20,6 +20,7 @@ import {
 import { Setting } from '../../Models/Setting';
 import { SettingsAdapter } from '../../Adapters/SettingsAdapter';
 import { SettingModal } from '../SettingModal/SettingModal';
+import {InfoSnackbar} from '../Snackbar/InfoSnackbar';
 
 interface IProps {
   baseApiUrl: string;
@@ -33,7 +34,6 @@ const getAllSettings = async (baseApiUrl: string) => {
 
 const handleSaveSettings = async (settings: Setting[], baseApiUrl: string) => {
   const settingsAdapter = new SettingsAdapter(baseApiUrl);
-  console.table(settings);
   await settingsAdapter.updateSettings(settings);
 };
 
@@ -42,6 +42,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
   const [settings, setSettings] = useState<Setting[]>([]);
   const [editing, setEditing] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showSnackbar, setShowSnackbar] = useState(false);
 
   useEffect(() => {
     (async function retrieveAllSettings() {
@@ -129,6 +130,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
           onClick={() => {
             handleSaveSettings(settings, props.baseApiUrl);
             setEditing(false);
+            setShowSnackbar(true);
           }}
         />
       );
@@ -142,6 +144,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
     const updatedSettings = settings.concat(new Setting(key, value, friendlyName, category, description));
     setSettings(updatedSettings);
     setShowModal(false);
+    setShowSnackbar(true);
     setEditing(true);
   };
 
@@ -171,6 +174,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
             </TableBody>
           </Table>
         </TableContainer>
+        <InfoSnackbar text={'Settings saved'} show={showSnackbar} handleStopShowing={() => setShowSnackbar(false)}/>
         <Fab color="primary" aria-label="add" className="settingsView__addButton">
           {addCancelButton()}
         </Fab>

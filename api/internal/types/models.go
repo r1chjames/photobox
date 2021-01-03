@@ -24,18 +24,19 @@ type Photo struct {
 	Metadata       datatypes.JSON `json:"metadata"`
 	CreatedAt      time.Time      `json:"createdAt"`
 	UpdatedAt      time.Time      `json:"updatedAt"`
+	Thumbnail      []byte         `json:"thumbnail"`
 }
 
 type Setting struct {
-	Key          string         `gorm:"primarykey" json:"key"`
-	Value        string         `json:"value"`
-	FriendlyName string         `json:"friendlyName"`
-	Category     string         `json:"category"`
-	Type         string         `json:"type"`
-	Options      string			`json:"options"`
-	Description  string         `json:"description"`
-	CreatedAt    time.Time      `json:"-"`
-	UpdatedAt    time.Time      `json:"-"`
+	Key          string    `gorm:"primarykey" json:"key"`
+	Value        string    `json:"value"`
+	FriendlyName string    `json:"friendlyName"`
+	Category     string    `json:"category"`
+	Type         string    `json:"type"`
+	Options      string    `json:"options"`
+	Description  string    `json:"description"`
+	CreatedAt    time.Time `json:"-"`
+	UpdatedAt    time.Time `json:"-"`
 }
 
 type Settings struct {
@@ -51,7 +52,7 @@ type Job struct {
 }
 
 type PhotoUpload struct {
-	Name           string         `json:"name"`
-	AlbumName      string         `json:"albumName"`
-	BinaryContent  string		  `json:"binaryContent"`
+	Name          string `json:"name"`
+	AlbumName     string `json:"albumName"`
+	BinaryContent string `json:"binaryContent"`
 }

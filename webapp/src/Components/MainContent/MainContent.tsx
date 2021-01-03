@@ -14,7 +14,7 @@ export const MainContent: React.FunctionComponent<IProps> = (props) => {
       <TitleBar />
       <div className="mainContent__mainPage">
         <div className="mainContent__title">
-          <Typography variant="h4" component="h1">
+          <Typography variant="h5" component="h1">
             {props.title}
           </Typography>
         </div>

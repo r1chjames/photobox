@@ -1,7 +1,6 @@
 package apiServer
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"gitlab.com/r1chjames/photobox/api/internal/components"
@@ -48,17 +47,16 @@ func getPhotos(c *gin.Context) {
 	albumId := c.Query("albumId")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-	includeThumbnails, _ := strconv.ParseBool(c.DefaultQuery("include_thumbnails", "false"))
 
 	if albumId != "" {
-		resp, err := dbEnv.GetAllPhotosInfoInAlbum(albumId, page, limit, includeThumbnails)
+		resp, err := dbEnv.GetAllPhotosInfoInAlbum(albumId, page, limit)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusNotFound, apiError{http.StatusNotFound, notFoundError("album")})
 		} else {
 			c.IndentedJSON(http.StatusOK, resp)
 		}
 	} else {
-		resp, err := dbEnv.GetAllPhotos(page, limit, includeThumbnails)
+		resp, err := dbEnv.GetAllPhotos(page, limit)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusNotFound, "No photos found")
 		} else {
@@ -69,9 +67,8 @@ func getPhotos(c *gin.Context) {
 
 func getPhoto(c *gin.Context) {
 	photoId := c.Param("id")
-	includeThumbnail, _ := strconv.ParseBool(c.DefaultQuery("include_thumbnail", "false"))
 
-	resp, err := dbEnv.GetPhotoInfoById(photoId, includeThumbnail)
+	resp, err := dbEnv.GetPhotoInfoById(photoId)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, apiError{http.StatusNotFound, notFoundError("photo")})
 	} else {
@@ -111,7 +108,7 @@ func getPhotoBin(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, missingQueryParam("photo ID")})
 	} else {
 
-		photoInfo, err := dbEnv.GetPhotoInfoById(photoId, false)
+		photoInfo, err := dbEnv.GetPhotoInfoById(photoId)
 		if err != nil {
 			c.IndentedJSON(http.StatusNotFound, notFoundError("photo"))
 		} else {
@@ -126,19 +123,11 @@ func getThumbnail(c *gin.Context) {
 	if photoId == "" {
 		c.IndentedJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, missingQueryParam("photo ID")})
 	} else {
-
-		photoInfo, err := dbEnv.GetPhotoInfoById(photoId, true)
+		photoInfo, err := dbEnv.GetPhotoInfoById(photoId)
 		if err != nil {
-			c.Status(http.StatusNotFound)
+			c.IndentedJSON(http.StatusNotFound, notFoundError("thumbnail"))
 		} else {
-			var photoMetadata PhotoFile
-			retrievedPhotoMetadata := photoInfo.Metadata
-			err = json.Unmarshal(retrievedPhotoMetadata, &photoMetadata)
-			if err != nil || len(photoMetadata.Thumbnail) == 0 {
-				c.IndentedJSON(http.StatusNotFound, notFoundError("thumbnail"))
-			} else {
-				c.Data(http.StatusOK, "application/octet-stream", photoMetadata.Thumbnail)
-			}
+			c.Data(http.StatusOK, "application/octet-stream", photoInfo.Thumbnail)
 		}
 	}
 }

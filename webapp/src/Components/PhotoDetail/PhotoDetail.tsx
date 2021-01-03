@@ -50,7 +50,6 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {/* eslint-disable-next-line array-callback-return */}
                     {Object.entries(photo.metadata).map(([key, value]) => {
                       if (value !== null) {
                         return (
@@ -60,6 +59,7 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                           </TableRow>
                         );
                       }
+                      return;
                     })}
                   </TableBody>
                 </Table>
