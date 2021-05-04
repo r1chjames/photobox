@@ -7,6 +7,6 @@ build:
     - apk add make
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
-    - cd api && make docker-push
+    - make docker-push
 
     
