@@ -10,7 +10,7 @@ export class SettingsAdapter extends RestApiAdapter {
     this.baseApiPath = `${baseApiPath}`;
   }
 
-  private buildHeaders = (additionalHeaders: {} = {}) => {
+  private buildHeaders = (additionalHeaders: Record<string, string> = {}) => {
     const standardHeaders = {
       'Content-Type': 'application/json'
     };

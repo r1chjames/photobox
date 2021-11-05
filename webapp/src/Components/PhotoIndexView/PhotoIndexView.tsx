@@ -9,6 +9,7 @@ import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import { AlbumsAdapter } from '../../Adapters/AlbumsAdapter';
 import { MainContent } from '../MainContent/MainContent';
 import { LoadingScreen } from '../LoadingScreen/LoadingScreen';
+// import {GroupedItemWrapper} from '../GroupedItemWrapper/GroupedItemWrapper';
 
 interface IProps {
   baseApiUrl: string;
@@ -27,6 +28,34 @@ const getAlbumName = async(baseApiUrl: string, albumId: string) => {
     const album = await albumsAdapter.getAlbumInfoById(albumId);
     return album.name;
   }
+};
+
+const getPhotoDate = (imageSource: Photo): string => {
+  const exifVal =  imageSource.metadata.exif;
+  return exifVal !== null ? exifVal.DateTime : imageSource.createdAt;
+};
+
+const updatePhotoCollection = (items: Map<string, JSX.Element[]>, date: string, itemToAdd: JSX.Element) => {
+  if (date == null || undefined) {
+    console.log(itemToAdd)
+  }
+  const itemToUpdate = items.has(date) ? items.get(date) : [];
+  itemToUpdate!.push(itemToAdd);
+  return items.set(date, itemToUpdate!);
+};
+
+const parseItems = (items: Map<string, JSX.Element[]>) => {
+  const itemsToReturn: JSX.Element[] = [];
+  items.forEach((values, key) => {
+    itemsToReturn.push(
+      <div>
+        {key}
+        {values}
+      </div>
+    );
+  });
+
+  return itemsToReturn;
 };
 
 // const onAppend = async (params: OnAppend) => {
@@ -51,7 +80,7 @@ const onLayoutComplete = (params: OnLayoutComplete) => {
 };
 
 export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
-  const [photos, setPhotos] = useState<JSX.Element[]>();
+  const [photos, setPhotos] = useState<Map<string, JSX.Element[]>>();
   const [albumName, setAlbumName] = useState('');
   const { id } = useParams();
   const [albumNameLoaded, setAlbumNameLoaded] = useState(false);
@@ -78,22 +107,25 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
   const apiCallsCompleted = () => (albumNameLoaded && photosLoaded);
 
   const loadItems = (groupKey: number, imageSources: Photo[], baseApiUrl: string) => {
-    const items = [];
+    let items = new Map<string, JSX.Element[]>();
     const start = 0;
 
     if (imageSources) {
       for (let i = 0; i < imageSources.length; i += 1) {
         const imageSource = imageSources[start + i];
         if (typeof imageSource !== 'undefined') {
-          items.push(
-            <PhotoItem
-              baseApiUrl={baseApiUrl}
-              groupKey={groupKey}
-              num={1 + start + i}
-              key={start + i}
-              source={imageSource}
-              allPhotos={imageSources}
-            />
+          items = updatePhotoCollection(items,
+                                        getPhotoDate(imageSource),
+                                        (
+                                          <PhotoItem
+                                            baseApiUrl={baseApiUrl}
+                                            groupKey={groupKey}
+                                            num={1 + start + i}
+                                            key={start + i}
+                                            source={imageSource}
+                                            allPhotos={imageSources}
+                                          />
+                                        )
           );
         }
       }
@@ -118,7 +150,7 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
           // onAppend={onAppend}
           onLayoutComplete={onLayoutComplete}
         >
-          {photos}
+          {parseItems(photos)}
         </JustifiedLayout>
       );
     }

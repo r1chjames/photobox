@@ -9,7 +9,7 @@ export class PhotosAdapter extends RestApiAdapter {
     this.baseApiPath = `${baseApiPath}`;
   }
 
-  private static buildHeaders = (additionalHeaders: {} = {}) => {
+  private static buildHeaders = (additionalHeaders: Record<string, string> = {}) => {
     const standardHeaders = {
       'Content-Type': 'application/json'
     };
@@ -50,7 +50,7 @@ export class PhotosAdapter extends RestApiAdapter {
     return this.getApiCall(getPhotosImagePath, PhotosAdapter.buildHeaders(), params);
   }
 
-  public uploadPhoto = async (body: {}) => {
+  public uploadPhoto = async (body: Record<string, unknown>) => {
     const postSettingPath = `${this.baseApiPath}/photo`;
     return this.postApiCall(postSettingPath, body, PhotosAdapter.buildHeaders());
   }

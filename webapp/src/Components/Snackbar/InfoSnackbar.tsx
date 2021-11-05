@@ -1,6 +1,6 @@
 import React from 'react';
 import './Snackbar.css';
-import {IconButton, Snackbar} from '@material-ui/core';
+import { IconButton, Snackbar } from '@material-ui/core';
 
 interface IProps {
   text: string;

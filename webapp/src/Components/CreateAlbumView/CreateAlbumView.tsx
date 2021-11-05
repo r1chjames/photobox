@@ -14,7 +14,7 @@ interface IProps {
   baseApiUrl: string;
 }
 
-const uploadPhotoToApi = async (baseApiUrl: string, body: {}) => {
+const uploadPhotoToApi = async (baseApiUrl: string, body: Record<string, unknown>) => {
   const photosAdapter = new PhotosAdapter(baseApiUrl);
   await photosAdapter.uploadPhoto(body);
 };

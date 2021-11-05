@@ -9,7 +9,7 @@ export class AlbumsAdapter extends RestApiAdapter {
     this.baseApiPath = `${baseApiPath}`;
   }
 
-  private static buildHeaders = (additionalHeaders: {} = {}) => {
+  private static buildHeaders = (additionalHeaders: Record<string, string> = {}) => {
     const standardHeaders = {
       'Content-Type': 'application/json'
     };

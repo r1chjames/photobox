@@ -6,15 +6,18 @@ export class Photo {
   private readonly _filesystemPath: string;
   private readonly _albumId: string;
   private readonly _tags: string;
-  private readonly _metadata: any;
+  private readonly _metadata: Record<string, unknown>;
+  private readonly _createdAt: string;
 
-  constructor(id: string, name: string, filesystemPath: string, albumId: string, tags: string, metadata: any) {
+  constructor(id: string, name: string, filesystemPath: string, albumId: string, tags: string,
+              metadata: Record<string, unknown>, createdAt: string) {
     this._id = id;
     this._name = name;
     this._filesystemPath = filesystemPath;
     this._albumId = albumId;
     this._tags = tags;
     this._metadata = metadata;
+    this._createdAt = createdAt;
   }
 
   get id(): string {
@@ -37,8 +40,12 @@ export class Photo {
     return this._tags;
   }
 
-  get metadata(): any {
+  get metadata(): Record<string, unknown> {
     return this._metadata;
+  }
+
+  get createdAt(): string {
+    return this._createdAt;
   }
 }
 
