@@ -5,7 +5,7 @@ PROJECTNAME := $(shell basename "$(PWD)")
 
 # Go related variables.
 GOBASE := $(shell pwd)
-GOPATH := $(GOBASE)/vendor:$(GOBASE)
+# GOPATH := $(GOBASE)/vendor:$(GOBASE)
 GOBIN := $(GOBASE)/bin
 GOFILES := $(wildcard *.go)
 
@@ -21,7 +21,7 @@ install: go-get
 
 deploy:
 
-build: clean install
+build: clean install compile
 
 ## compile: Compile the binary.
 compile:
@@ -41,7 +41,7 @@ clean:
 
 go-build:
 	@echo "  >  Building binary..."
-	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) CGO_ENABLED=0 go build $(LDFLAGS) -o $(GOBIN)/$(PROJECTNAME) $(GOFILES)
+	@GOPATH=$(GOPATH) GO111MODULE=on GOBIN=$(GOBIN) CGO_ENABLED=0 go build $(LDFLAGS) -o $(GOBIN)/$(PROJECTNAME) $(GOFILES)
 
 go-generate:
 	@echo "  >  Generating dependency files..."
@@ -49,7 +49,7 @@ go-generate:
 
 go-get:
 	@echo "  >  Checking if there are any missing dependencies..."
-	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go mod download
+	@GOBIN=$(GOBIN) go mod vendor
 
 go-install:
 	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go install $(GOFILES)

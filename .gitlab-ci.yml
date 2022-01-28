@@ -1,6 +1,37 @@
-build:
+stages:
+  - build-depdendencies
+  - build-image
+
+
+build-api:
+  stage: build-depdendencies
+  image:
+    name: golang:alpine3.15
+  before_script:
+    - apk add make git
+  script:
+    - cd api && make build
+  artifacts:
+    paths:
+      - api/bin/api
+
+
+# build-webapp:
+#   stage: build-depdendencies
+#   image:
+#     name: node:current-alpine3.15
+#   before_script:
+#     - apk add make
+#   script:
+#     - cd webapp && make build_app
+#   artifacts:
+#     paths:
+#       - webapp/build/
+
+
+build-image:
+  stage: build-image
   image: docker:latest
-  stage: build
   services:
     - docker:dind
   before_script:

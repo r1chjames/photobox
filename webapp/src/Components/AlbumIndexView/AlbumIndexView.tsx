@@ -3,7 +3,7 @@ import './AlbumIndexView.css';
 import { AlbumsAdapter } from '../../Adapters/AlbumsAdapter';
 import { Album } from '../../Models/Album';
 import { AlbumItem } from '../AlbumItem/AlbumItem';
-import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 import history from '../../Routing/History';
 import { MainContent } from '../MainContent/MainContent';
 import { Fab, TextField } from '@material-ui/core';
@@ -51,7 +51,7 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
   };
 
   return (
-    <MuiThemeProvider>
+    <ThemeProvider>
       <MainContent title="Albums">
         <InputModal
           isOpen={showNewAlbumModal}
@@ -86,6 +86,6 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
           <AddIcon onClick={() => handleCreateNewAlbum()} />
         </Fab>
       </MainContent>
-    </MuiThemeProvider>
+    </ThemeProvider>
   );
 };
