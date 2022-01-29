@@ -117,7 +117,7 @@ func isImageFile(fileName string) bool {
 
 func getMetaData(path string, info os.FileInfo) PhotoFile {
 	slashIndices := utils.AllIndicesOfChar(path, "/")
-	photoDirectory := path[slashIndices[len(slashIndices)-2]+1:slashIndices[len(slashIndices)-1]]
+	photoDirectory := path[slashIndices[len(slashIndices)-2]+1 : slashIndices[len(slashIndices)-1]]
 	exifData, thumbnail := getExifDataAndThumbnail(path)
 	return PhotoFile{
 		MD5:       getSum(path),
@@ -162,7 +162,8 @@ func generateMissingThumbnail(path string) []byte {
 	extension := getFileExtension(path)
 	img, err := imaging.Open(path)
 	if err != nil {
-		panic(err)
+		log.Print("Unable to open file")
+		return nil
 	}
 	thumb := imaging.Thumbnail(img, 600, 600, imaging.CatmullRom)
 	var buffer bytes.Buffer
