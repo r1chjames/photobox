@@ -31,7 +31,7 @@
 # APP IMAGE BUILD STAGE
 FROM alpine:3.13.5
 
-RUN apk add file git
+RUN apk add file git tzdata
 
 # COPY --from=api-build /app/bin/api /app
 # COPY --from=webapp-build /app/build/. /web
