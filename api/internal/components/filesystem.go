@@ -67,7 +67,7 @@ func ScanFilesystem(appConfig AppConfig) []PhotoFile {
 	photosRoot := appConfig.PhotoDir
 
 	var photos []PhotoFile
-	photoChan := make(chan PhotoFile, 10)
+	photoChan := make(chan PhotoFile, 4)
 
 	wg.Add(1)
 	go func(photoChan chan PhotoFile) {
