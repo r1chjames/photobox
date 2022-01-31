@@ -39,7 +39,9 @@ func indexPhotos(c *gin.Context) {
 		c.IndentedJSON(http.StatusConflict, "Photo Index already running")
 	} else {
 		c.Status(http.StatusAccepted)
-		components.PerformPhotoIndex(config, dbEnv)
+		go func() {
+			components.PerformPhotoIndex(config, dbEnv)
+		}()
 	}
 }
 

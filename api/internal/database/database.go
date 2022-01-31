@@ -15,7 +15,7 @@ type Env struct {
 
 func InitDbConnection(appConfig AppConfig) *Env {
 	db, err := gorm.Open(mysql.New(mysql.Config{
-		DSN: fmt.Sprintf("%s?charset=utf8&parseTime=True&loc=Local", appConfig.DbUrl),
+		DSN: fmt.Sprintf("%s?charset=utf8mb4&parseTime=True&loc=Local", appConfig.DbUrl),
 	}), &gorm.Config{})
 
 	if err != nil {

@@ -16,6 +16,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 )
@@ -23,11 +24,20 @@ import (
 var wg sync.WaitGroup
 
 func PerformPhotoIndex(appConfig AppConfig, dbEnv *database.Env) {
-	dbEnv.JobStarting("Photo_index")
-	defer dbEnv.JobCompleted("Photo_index")
+	_ = dbEnv.JobStarting("Photo_index")
 
-	photoRecords := ScanFilesystem(appConfig)
-	dbEnv.SavePhotoRecordsToDatabase(photoRecords)
+	defer func(dbEnv *database.Env, jobName string) {
+		_ = dbEnv.JobCompleted(jobName)
+	}(dbEnv, "Photo_index")
+
+	photoChan := make(chan PhotoFile, runtime.GOMAXPROCS(runtime.NumCPU()))
+	defer close(photoChan)
+	go func(photoChan chan PhotoFile) {
+		for photo := range photoChan {
+			dbEnv.SavePhotoRecordToDatabase(photo)
+		}
+	}(photoChan)
+	ScanFilesystem(appConfig, photoChan)
 }
 
 func createDirectoryIfNotExists(basePhotoPath string, directoryName string) {
@@ -62,48 +72,36 @@ func WriteFileToFilesystem(dbEnv *database.Env, photo PhotoUpload) PhotoFile {
 
 }
 
-func ScanFilesystem(appConfig AppConfig) []PhotoFile {
+func ScanFilesystem(appConfig AppConfig, photoChan chan PhotoFile) {
 
 	photosRoot := appConfig.PhotoDir
 
-	var photos []PhotoFile
-	photoChan := make(chan PhotoFile, 4)
-
 	wg.Add(1)
-	go func(photoChan chan PhotoFile) {
-		for photo := range photoChan {
-			photos = append(photos, photo)
-		}
-	}(photoChan)
-
 	walkDir(photosRoot, photoChan)
 	wg.Wait()
-
-	close(photoChan)
-
-	return photos
 }
 
 func walkDir(dir string, photoChan chan PhotoFile) {
 	defer wg.Done()
 
-	visit := func(path string, f os.FileInfo, err error) error {
-		if f.IsDir() && path != dir {
-			log.Printf("Processing directory: %s", f.Name())
+	visit := func(path string, d os.DirEntry, err error) error {
+		if d.IsDir() && path != dir {
+			log.Printf("Processing directory: %s", d.Name())
 			wg.Add(1)
 			go walkDir(path, photoChan)
 			return filepath.SkipDir
 		}
 
-		if f.Mode().IsRegular() && isImageFile(f.Name()) {
+		if d.Type().IsRegular() && isImageFile(d.Name()) {
 			log.Printf("Processing file: %s", path)
-			data := getMetaData(path, f)
+			info, _ := d.Info()
+			data := getMetaData(path, info)
 			photoChan <- data
 		}
 		return nil
 	}
 
-	err := filepath.Walk(dir, visit)
+	err := filepath.WalkDir(dir, visit)
 	if err != nil {
 		log.Print(err)
 	}
@@ -197,9 +195,14 @@ func getSize(info os.FileInfo) int64 {
 func getSum(path string) string {
 	f, err := os.Open(path)
 	if err != nil {
-		log.Fatal(err)
+		log.Print("Unable to generate checksum")
+		return ""
 	}
-	defer f.Close()
+
+	defer func(f *os.File) {
+		_ = f.Close()
+	}(f)
+
 	h := md5.New()
 	if _, err := io.Copy(h, f); err != nil {
 		log.Fatal(err)
