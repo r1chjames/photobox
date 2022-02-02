@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import './PhotoItem.css';
-import {Dialog, DialogActions, DialogContent, DialogTitle} from '@material-ui/core';
-import Button from '@material-ui/core/Button';
 import { Photo } from '../../Models/Photo';
 import history from '../../Routing/History';
+import {Button, Dialog, Group, Text} from '@mantine/core';
 
 interface IProps {
   baseApiUrl: string;
@@ -79,28 +78,28 @@ export const PhotoItem: React.FunctionComponent<IProps> = (props) => {
           <div>
             <Dialog
               className="photoItem__dialog"
-              open={true}
+              opened={isImageModalOpen}
               aria-labelledby="customized-dialog-title"
               onClose={() => setImageModalOpen(false)}
             >
-              <DialogTitle id="customized-dialog-title">
+              <Text size="sm" style={{ marginBottom: 10 }} weight={500}>
                 {props.source.name}
-              </DialogTitle>
-              <DialogContent>
+              </Text>
+              <Group>
                 <img
                   className="photoItem__dialog__image"
                   onClick={() => history.push(`/photo/${currentId}`)}
                   src={`${props.baseApiUrl}/photo/${currentId}/bin`}
                   alt={props.source.name}
                 />
-              </DialogContent>
-              <DialogActions>
+              </Group>
+              <Group>
                 {previousButton()}
                 <Button onClick={() => setImageModalOpen(!isImageModalOpen)} color="primary">
                   Close
                 </Button>
                 {nextButton()}
-              </DialogActions>
+              </Group>
             </Dialog>
           </div>
           {gridImage()}

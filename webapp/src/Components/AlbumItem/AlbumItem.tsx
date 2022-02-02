@@ -4,7 +4,7 @@ import { Album } from '../../Models/Album';
 import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
 import { Photo, PhotoCount } from '../../Models/Photo';
 import { LoadingScreen } from '../LoadingScreen/LoadingScreen';
-import { Card, CardActionArea, CardContent, CardMedia, Typography } from '@material-ui/core';
+import {Badge, Text, Card, Group, Image} from '@mantine/core';
 
 interface IProps {
   baseApiUrl: string;
@@ -53,31 +53,31 @@ export const AlbumItem: React.FunctionComponent<IProps> = (props) => {
     }
     return (
       <Card
-        className="albumItem__cardWrapper"
+        shadow="sm" padding="lg"
+        // className="albumItem__cardWrapper"
         onClick={() => props.albumViewCallback(props.source.id)}
-        elevation={0}
       >
-        <CardActionArea>
-          <CardMedia
-            className="albumItem__cardImage"
-            component="img"
-            src={thumbnailUrl}
-            alt="No thumbnail"
-            onError={(e: any) => e.target.src = '/no_image.png'}
-            title={props.source.name}
-          />
-          <CardContent>
-            <Typography variant="subtitle1" component="div">
-              {props.source.name}
-            </Typography>
-            <Typography variant="caption" component="div">
-              {photoCount} photos
-            </Typography>
-          </CardContent>
-        </CardActionArea>
+        <Card.Section>
+          <Image src={thumbnailUrl} />
+        </Card.Section>
+        <Group position="apart" style={{ marginBottom: 5 }}>
+          <Text weight={500}>{props.source.name}</Text>
+          <Badge color="pink" variant="light">
+            {photoCount} photos
+          </Badge>
+        </Group>
       </Card>
     );
   };
+
+    {/*  className="albumItem__cardImage"*/}
+    {/*  component="img"*/}
+    {/*  src={thumbnailUrl}*/}
+    {/*  alt="No thumbnail"*/}
+    {/*  onError={(e: any) => e.target.src = '/no_image.png'}*/}
+    {/*  title={props.source.name}*/}
+    {/*/>*/}
+
 
   return content();
 };

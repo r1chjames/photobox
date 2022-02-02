@@ -1,6 +1,5 @@
 import React from 'react';
 import './MainContent.css';
-import { Typography } from '@material-ui/core';
 import { TitleBar } from '../TitleBar/TitleBar';
 
 interface IProps {
@@ -14,9 +13,7 @@ export const MainContent: React.FunctionComponent<IProps> = (props) => {
       <TitleBar />
       <div className="mainContent__mainPage">
         <div className="mainContent__title">
-          <Typography variant="h5" component="h1">
-            {props.title}
-          </Typography>
+          {props.title}
         </div>
         <div className="mainContent__contentWrapper">
           {props.children}

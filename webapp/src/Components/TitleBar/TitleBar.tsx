@@ -1,83 +1,34 @@
 import React from 'react';
-import {
-  AppBar,
-  Divider,
-  Drawer,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  MuiThemeProvider,
-  Toolbar, Typography
-} from '@material-ui/core';
-import SettingsIcon from '@material-ui/icons/Settings';
-import VerticalSplitIcon from '@material-ui/icons/VerticalSplit';
-import PhotoIcon from '@material-ui/icons/Photo';
-import PhotoAlbumIcon from '@material-ui/icons/PhotoAlbum';
+import {AppShell, Navbar, Header, Title} from '@mantine/core';
 import history from '../../Routing/History';
 import './TitleBar.css';
-import theme from '../../Theme/theme';
 
 export const TitleBar: React.FunctionComponent = (props) => {
-
-  const siteLinks = [{
-    name: 'Dashboard',
-    icon: <VerticalSplitIcon/>,
-    link: '/',
-  },
-    {
-      name: 'Photos',
-      icon: <PhotoIcon/>,
-      link: '/photos'
-    },
-    {
-      name: 'Albums',
-      icon: <PhotoAlbumIcon/>,
-      link: '/albums',
-    },
-    {
-      name: 'Settings',
-      icon: <SettingsIcon/>,
-      link: '/settings',
-    }];
-
   return (
     <div className="titleBar__mainBar">
-      <MuiThemeProvider theme={theme}>
-        <AppBar
-          position="fixed"
-          className="titleBar__appBar"
-          elevation={0}
-        >
-          <Toolbar>
-            <Typography variant="h6">
-              Photobox
-            </Typography>
-            {props.children}
-          </Toolbar>
-          <Divider/>
-        </AppBar>
-        <Drawer
-          className="titleBar__drawer"
-          variant="permanent"
-          anchor="left"
-          classes={{ paper: 'titleBar__drawerPaper' }}
-        >
-          <Divider/>
-          <List>
-            {siteLinks.map((link, index) => (
-              <ListItem
-                button={true}
-                key={link.name}
-                onClick={(() => history.push(link.link))}
-              >
-                <ListItemIcon>{link.icon}</ListItemIcon>
-                <ListItemText primary={link.name}/>
-              </ListItem>
-            ))}
-          </List>
-        </Drawer>
-      </MuiThemeProvider>
+      <AppShell
+        padding="md"
+        navbar={
+          <Navbar width={{base: 300}} height={500} padding="xs">
+            <Navbar.Section>
+              <Title onClick={(() => history.push('/'))}>Dashboard</Title>
+              <Title onClick={(() => history.push('/photos'))}>Photos</Title>
+              <Title onClick={(() => history.push('/albums'))}>Albums</Title>
+              <Title onClick={(() => history.push('/settings'))}>Settings</Title>
+            </Navbar.Section>
+          </Navbar>
+        }
+        header={
+          <Header height={60} padding="xs">
+            Photobox
+          </Header>
+        }
+        styles={(theme) => ({
+          main: {backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0]},
+        })}
+      >
+        {props.children}
+      </AppShell>
     </div>
   );
 };

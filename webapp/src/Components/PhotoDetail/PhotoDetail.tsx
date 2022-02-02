@@ -1,12 +1,11 @@
 import React, {useEffect, useState} from 'react';
 import './PhotoDetail.css';
 import {Photo} from '../../Models/Photo';
-import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import { MainContent } from '../MainContent/MainContent';
 import { useParams } from 'react-router-dom';
 import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
 import { LoadingScreen } from '../LoadingScreen/LoadingScreen';
-import {Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from '@material-ui/core';
+import {MantineProvider, Table} from '@mantine/core';
 
 interface IProps {
   baseApiUrl: string;
@@ -41,29 +40,23 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                 className="photoDetail__mainImage"
               />
             <div className="photoDetail__imageMetadata">
-              <TableContainer component={Paper}>
-                <Table aria-label="metadata table">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Parameter</TableCell>
-                      <TableCell>Value</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {Object.entries(photo.metadata).map(([key, value]) => {
-                      if (value !== null) {
-                        return (
-                          <TableRow key={key}>
-                            <TableCell component="th" scope="row">{key}</TableCell>
-                            <TableCell>{JSON.stringify(value)}</TableCell>
-                          </TableRow>
-                        );
-                      }
-                      return;
-                    })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+              <Table aria-label="metadata table">
+                <tr>
+                  <th>Parameter</th>
+                  <th>Value</th>
+                </tr>
+                {Object.entries(photo.metadata).map(([key, value]) => {
+                  if (value !== null) {
+                    return (
+                      <tr key={key}>
+                        <td>{key}</td>
+                        <td>{JSON.stringify(value)}</td>
+                      </tr>
+                    );
+                  }
+                  return;
+                })}
+              </Table>
             </div>
           </div>
         </MainContent>
@@ -75,8 +68,8 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
   };
 
   return (
-    <MuiThemeProvider>
+    <MantineProvider>
       {content()}
-    </MuiThemeProvider>
+    </MantineProvider>
   );
 };

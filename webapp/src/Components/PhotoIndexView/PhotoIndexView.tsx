@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { JustifiedLayout, OnLayoutComplete } from '@egjs/react-infinitegrid';
+import {MasonryInfiniteGrid} from '@egjs/react-infinitegrid';
 import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
 import { Photo } from '../../Models/Photo';
 import './PhotoIndexView.css';
 import { PhotoItem } from '../PhotoItem/PhotoItem';
-import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import { AlbumsAdapter } from '../../Adapters/AlbumsAdapter';
 import { MainContent } from '../MainContent/MainContent';
 import { LoadingScreen } from '../LoadingScreen/LoadingScreen';
+import { MantineProvider } from '@mantine/core';
 // import {GroupedItemWrapper} from '../GroupedItemWrapper/GroupedItemWrapper';
 
 interface IProps {
@@ -17,8 +17,7 @@ interface IProps {
 
 const getAllPhotos = async(baseApiUrl: string, albumId: string) => {
   const photosAdapter = new PhotosAdapter(baseApiUrl);
-  let photos: Photo[];
-  photos = await photosAdapter.getPhotosInfoInAlbum(albumId, 1, 100);
+  const photos = await photosAdapter.getPhotosInfoInAlbum(albumId, 1, 100);
   return photos;
 };
 
@@ -31,7 +30,9 @@ const getAlbumName = async(baseApiUrl: string, albumId: string) => {
 };
 
 const getPhotoDate = (imageSource: Photo): string => {
-  const exifVal =  imageSource.metadata.exif;
+  const exifVal = imageSource.metadata.exif;
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
   return exifVal !== null ? exifVal.DateTime : imageSource.createdAt;
 };
 
@@ -74,10 +75,11 @@ const parseItems = (items: Map<string, JSX.Element[]>) => {
 //   this.setState({ images: this.state.images.concat(items) });
 // }
 
-const onLayoutComplete = (params: OnLayoutComplete) => {
-  // @ts-ignore
-  return !params.isLayout && params.endLoading();
-};
+// const onLayoutComplete = (params: OnLayoutComplete) => {
+//   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+//   // @ts-ignore
+//   return !params.isLayout && params.endLoading();
+// };
 
 export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
   const [photos, setPhotos] = useState<Map<string, JSX.Element[]>>();
@@ -98,7 +100,7 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
     }
 
     (async function retrievePhotos() {
-      const retrievedPhotos = await getAllPhotos(props.baseApiUrl, id);
+      const retrievedPhotos = await getAllPhotos(props.baseApiUrl, id as string);
       const photoItems = loadItems(0, retrievedPhotos, props.baseApiUrl);
       setPhotos(photoItems);
     })().then(() => setPhotosLoaded(true));
@@ -144,14 +146,14 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
 
     if (apiCallsCompleted() && photos) {
       return (
-        <JustifiedLayout
+        <MasonryInfiniteGrid
           options={{ isConstantSize: false, transitionDuration: 0.2, useFit: true }}
           layoutOptions={{ margin: 5, column: [0, 5] }}
           // onAppend={onAppend}
-          onLayoutComplete={onLayoutComplete}
+          // onLayoutComplete={onLayoutComplete}
         >
           {parseItems(photos)}
-        </JustifiedLayout>
+        </MasonryInfiniteGrid>
       );
     }
 
@@ -161,12 +163,12 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
   };
 
   return (
-    <MuiThemeProvider>
+    <MantineProvider>
       <MainContent title={albumName}>
         <div className="photoIndexView__photoIndex">
           {content()}
         </div>
       </MainContent>
-    </MuiThemeProvider>
+    </MantineProvider>
   );
 };

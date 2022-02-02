@@ -16,6 +16,6 @@ primary.args = {
   baseApiUrl: 'https://google.com/',
   num: 1,
   groupKey: 1,
-  source: new Photo('1', 'test', '', 'a', '', '', ''),
-  allPhotos: [new Photo('1', 'test', '', 'a', '', '', '')],
+  source: new Photo('1', 'test', '', 'a', '', {'': ''}, ''),
+  allPhotos: [new Photo('1', 'test', '', 'a', '', {'': ''}, '')],
 };

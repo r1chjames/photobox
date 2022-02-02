@@ -3,12 +3,11 @@ import './AlbumIndexView.css';
 import { AlbumsAdapter } from '../../Adapters/AlbumsAdapter';
 import { Album } from '../../Models/Album';
 import { AlbumItem } from '../AlbumItem/AlbumItem';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
 import history from '../../Routing/History';
 import { MainContent } from '../MainContent/MainContent';
-import { Fab, TextField } from '@material-ui/core';
-import AddIcon from '@material-ui/icons/Add';
 import { InputModal } from '../InputModal/InputModal';
+import {Button, MantineProvider, TextInput} from '@mantine/core';
+import {MdAddCircle} from 'react-icons/md';
 
 interface IProps {
   baseApiUrl: string;
@@ -51,7 +50,7 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
   };
 
   return (
-    <ThemeProvider>
+    <MantineProvider>
       <MainContent title="Albums">
         <InputModal
           isOpen={showNewAlbumModal}
@@ -59,13 +58,11 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
           handleSave={newAlbumModalSaveClick}
           handleClose={() => setShowNewAlbumModal(false)}
         >
-          <TextField
+          <TextInput
             required={true}
             id="album-name"
             label="Album Name"
-            variant="outlined"
             error={createAlbumModalAlbumNameErrorText.length !== 0}
-            helperText={createAlbumModalAlbumNameErrorText}
             onChange={e => handleNewAlbumNameValueChange(e.target.value)}
           />
         </InputModal>
@@ -82,10 +79,15 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
             );
           })}
         </section>
-        <Fab color="primary" aria-label="add" className="albumIndexView__addButton">
-          <AddIcon onClick={() => handleCreateNewAlbum()} />
-        </Fab>
+        <Button
+          color="primary"
+          aria-label="add"
+          className="albumIndexView__addButton"
+          onClick={() => handleCreateNewAlbum()}
+        >
+          <MdAddCircle/>
+        </Button>
       </MainContent>
-    </ThemeProvider>
+    </MantineProvider>
   );
 };

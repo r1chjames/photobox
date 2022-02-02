@@ -10,7 +10,7 @@ export class Photo {
   private readonly _createdAt: string;
 
   constructor(id: string, name: string, filesystemPath: string, albumId: string, tags: string,
-              metadata: Record<string, unknown>, createdAt: string) {
+              metadata: Record<string, string>, createdAt: string) {
     this._id = id;
     this._name = name;
     this._filesystemPath = filesystemPath;
