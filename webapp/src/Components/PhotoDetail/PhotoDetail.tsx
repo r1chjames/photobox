@@ -4,8 +4,7 @@ import {Photo} from '../../Models/Photo';
 import { MainContent } from '../MainContent/MainContent';
 import { useParams } from 'react-router-dom';
 import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
-import { LoadingScreen } from '../LoadingScreen/LoadingScreen';
-import {MantineProvider, Table} from '@mantine/core';
+import {Loader, MantineProvider, Table} from '@mantine/core';
 
 interface IProps {
   baseApiUrl: string;
@@ -63,7 +62,7 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
       );
     }
     return (
-      <LoadingScreen />
+      <Loader size={"md"} />
     );
   };
 

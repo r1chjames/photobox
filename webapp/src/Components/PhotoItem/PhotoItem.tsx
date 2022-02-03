@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import './PhotoItem.css';
 import { Photo } from '../../Models/Photo';
-import history from '../../Routing/History';
 import {Button, Dialog, Group, Text} from '@mantine/core';
+import {useNavigate} from "react-router-dom";
 
 interface IProps {
   baseApiUrl: string;
@@ -22,7 +22,7 @@ const findImageIndexInArray = (photos: Photo[], photoId: string, defaultVal: num
 };
 
 export const PhotoItem: React.FunctionComponent<IProps> = (props) => {
-
+  const navigate = useNavigate()
   const [currentId, setCurrentId] = useState(props.source.id);
   const [isImageModalOpen, setImageModalOpen] = useState(false);
 
@@ -88,7 +88,7 @@ export const PhotoItem: React.FunctionComponent<IProps> = (props) => {
               <Group>
                 <img
                   className="photoItem__dialog__image"
-                  onClick={() => history.push(`/photo/${currentId}`)}
+                  onClick={() => navigate(`/photo/${currentId}`)}
                   src={`${props.baseApiUrl}/photo/${currentId}/bin`}
                   alt={props.source.name}
                 />

@@ -1,20 +1,21 @@
 import React from 'react';
 import {AppShell, Navbar, Header, Title} from '@mantine/core';
-import history from '../../Routing/History';
+import { useNavigate } from 'react-router-dom';
 import './TitleBar.css';
 
 export const TitleBar: React.FunctionComponent = (props) => {
+  const navigate = useNavigate()
   return (
     <div className="titleBar__mainBar">
       <AppShell
         padding="md"
         navbar={
-          <Navbar width={{base: 300}} height={500} padding="xs">
+          <Navbar width={{base: 200}} height={500} padding="xs">
             <Navbar.Section>
-              <Title onClick={(() => history.push('/'))}>Dashboard</Title>
-              <Title onClick={(() => history.push('/photos'))}>Photos</Title>
-              <Title onClick={(() => history.push('/albums'))}>Albums</Title>
-              <Title onClick={(() => history.push('/settings'))}>Settings</Title>
+              <Title onClick={() => navigate('/')}>Dashboard</Title>
+              <Title onClick={() => navigate('/photos')}>Photos</Title>
+              <Title onClick={() => navigate('/albums')}>Albums</Title>
+              <Title onClick={() => navigate('/settings')}>Settings</Title>
             </Navbar.Section>
           </Navbar>
         }

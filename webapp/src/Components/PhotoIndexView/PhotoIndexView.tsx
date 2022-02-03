@@ -7,8 +7,7 @@ import './PhotoIndexView.css';
 import { PhotoItem } from '../PhotoItem/PhotoItem';
 import { AlbumsAdapter } from '../../Adapters/AlbumsAdapter';
 import { MainContent } from '../MainContent/MainContent';
-import { LoadingScreen } from '../LoadingScreen/LoadingScreen';
-import { MantineProvider } from '@mantine/core';
+import {Loader, MantineProvider} from '@mantine/core';
 // import {GroupedItemWrapper} from '../GroupedItemWrapper/GroupedItemWrapper';
 
 interface IProps {
@@ -31,7 +30,6 @@ const getAlbumName = async(baseApiUrl: string, albumId: string) => {
 
 const getPhotoDate = (imageSource: Photo): string => {
   const exifVal = imageSource.metadata.exif;
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   return exifVal !== null ? exifVal.DateTime : imageSource.createdAt;
 };
@@ -158,7 +156,7 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
     }
 
     return (
-      <LoadingScreen />
+      <Loader size={"md"} />
     );
   };
 

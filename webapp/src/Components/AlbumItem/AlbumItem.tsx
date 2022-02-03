@@ -3,8 +3,7 @@ import './AlbumItem.css';
 import { Album } from '../../Models/Album';
 import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
 import { Photo, PhotoCount } from '../../Models/Photo';
-import { LoadingScreen } from '../LoadingScreen/LoadingScreen';
-import {Badge, Text, Card, Group, Image} from '@mantine/core';
+import {Badge, Text, Card, Group, Image, Loader} from '@mantine/core';
 
 interface IProps {
   baseApiUrl: string;
@@ -48,7 +47,7 @@ export const AlbumItem: React.FunctionComponent<IProps> = (props) => {
   const content = () => {
     if (loading) {
       return (
-        <LoadingScreen />
+        <Loader size={"md"} />
       );
     }
     return (

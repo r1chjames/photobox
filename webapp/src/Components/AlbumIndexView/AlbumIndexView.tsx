@@ -3,11 +3,11 @@ import './AlbumIndexView.css';
 import { AlbumsAdapter } from '../../Adapters/AlbumsAdapter';
 import { Album } from '../../Models/Album';
 import { AlbumItem } from '../AlbumItem/AlbumItem';
-import history from '../../Routing/History';
 import { MainContent } from '../MainContent/MainContent';
 import { InputModal } from '../InputModal/InputModal';
 import {Button, MantineProvider, TextInput} from '@mantine/core';
 import {MdAddCircle} from 'react-icons/md';
+import {useNavigate} from "react-router-dom";
 
 interface IProps {
   baseApiUrl: string;
@@ -20,6 +20,7 @@ const getAllAlbums = async(baseApiUrl: string) => {
 };
 
 export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
+  const navigate = useNavigate()
 
   const [albums, setAlbums] = useState<Album[]>([]);
   const [showNewAlbumModal, setShowNewAlbumModal] = useState(Boolean);
@@ -46,7 +47,7 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
   };
 
   const newAlbumModalSaveClick = () => {
-    history.push(`/album/new/${newAlbumName}`);
+    navigate(`/album/new/${newAlbumName}`);
   };
 
   return (
@@ -73,7 +74,7 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
                 <AlbumItem
                   baseApiUrl={props.baseApiUrl}
                   source={album}
-                  albumViewCallback={() => history.push(`album/${album.id}`)}
+                  albumViewCallback={() => navigate(`album/${album.id}`)}
                 />
               </article>
             );
