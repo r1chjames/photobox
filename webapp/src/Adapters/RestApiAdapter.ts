@@ -1,4 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const axios = require('axios').default;
 
 export class RestApiAdapter {
