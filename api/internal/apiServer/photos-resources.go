@@ -99,7 +99,7 @@ func getPhotoCount(c *gin.Context) {
 	} else {
 		photoCount, _ := dbEnv.GetPhotosInAlbumCount(albumId)
 		c.IndentedJSON(http.StatusOK, gin.H{
-			"photoCount": photoCount,
+            "photoCount": photoCount,
 		})
 	}
 }

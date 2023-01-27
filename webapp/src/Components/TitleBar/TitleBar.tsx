@@ -1,35 +1,93 @@
-import React from 'react';
-import {AppShell, Navbar, Header, Title} from '@mantine/core';
-import { useNavigate } from 'react-router-dom';
-import './TitleBar.css';
+import { useState } from 'react';
+import  React from 'react';
+import { Navbar, Center, Tooltip, UnstyledButton, createStyles, Stack } from '@mantine/core';
+import {
+  TablerIcon,
+  IconGauge,
+  IconDeviceDesktopAnalytics,
+  IconCalendarStats,
+  IconSettings,
+  IconLogout,
+  IconSwitchHorizontal,
+} from '@tabler/icons-react';
 
-export const TitleBar: React.FunctionComponent = (props) => {
-  const navigate = useNavigate()
+
+const useStyles = createStyles((theme) => ({
+  link: {
+    width: 50,
+    height: 50,
+    borderRadius: theme.radius.md,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: theme.colorScheme === 'dark' ? theme.colors.dark[0] : theme.colors.gray[7],
+
+    '&:hover': {
+      backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[5] : theme.colors.gray[0],
+    },
+  },
+
+  active: {
+    '&, &:hover': {
+      backgroundColor: theme.fn.variant({ variant: 'light', color: theme.primaryColor }).background,
+      color: theme.fn.variant({ variant: 'light', color: theme.primaryColor }).color,
+    },
+  },
+}));
+
+interface NavbarLinkProps {
+    icon: TablerIcon;
+    label: string;
+    active?: boolean;
+    onClick?(): void;
+}
+
+function NavbarLink({ icon: Icon, label, active, onClick }: NavbarLinkProps) {
+  const { classes, cx } = useStyles();
   return (
-    <div className="titleBar__mainBar">
-      <AppShell
-        padding="md"
-        navbar={
-          <Navbar width={{base: 200}} height={500} padding="xs">
-            <Navbar.Section>
-              <Title onClick={() => navigate('/')}>Dashboard</Title>
-              <Title onClick={() => navigate('/photos')}>Photos</Title>
-              <Title onClick={() => navigate('/albums')}>Albums</Title>
-              <Title onClick={() => navigate('/settings')}>Settings</Title>
-            </Navbar.Section>
-          </Navbar>
-        }
-        header={
-          <Header height={60} padding="xs">
-            Photobox
-          </Header>
-        }
-        styles={(theme) => ({
-          main: {backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0]},
-        })}
-      >
-        {props.children}
-      </AppShell>
-    </div>
+    <Tooltip label={label} position="right" transitionDuration={0}>
+      <UnstyledButton onClick={onClick} className={cx(classes.link, { [classes.active]: active })}>
+        <Icon stroke={1.5} />
+      </UnstyledButton>
+    </Tooltip>
   );
-};
+}
+
+const linksList = [
+  { icon: IconGauge, label: 'Dashboard' },
+  { icon: IconDeviceDesktopAnalytics, label: 'Photo' },
+  { icon: IconCalendarStats, label: 'Albums' },
+  { icon: IconSettings, label: 'Settings' },
+];
+
+export function TitleBar() {
+  const [active, setActive] = useState(2);
+
+  const links = linksList.map((link, index) => (
+    <NavbarLink
+      {...link}
+      key={link.label}
+      active={index === active}
+      onClick={() => setActive(index)}
+    />
+  ));
+
+  return (
+    <Navbar height={750} width={{ base: 80 }} p="md">
+      <Center>
+        <br />
+      </Center>
+      <Navbar.Section grow mt={50}>
+        <Stack justify="center" spacing={0}>
+          {links}
+        </Stack>
+      </Navbar.Section>
+      <Navbar.Section>
+        <Stack justify="center" spacing={0}>
+          <NavbarLink icon={IconSwitchHorizontal} label="Change account" />
+          <NavbarLink icon={IconLogout} label="Logout" />
+        </Stack>
+      </Navbar.Section>
+    </Navbar>
+  );
+}

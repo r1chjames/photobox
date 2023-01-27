@@ -3,7 +3,6 @@ import './AlbumIndexView.css';
 import { AlbumsAdapter } from '../../Adapters/AlbumsAdapter';
 import { Album } from '../../Models/Album';
 import { AlbumItem } from '../AlbumItem/AlbumItem';
-import { MainContent } from '../MainContent/MainContent';
 import { InputModal } from '../InputModal/InputModal';
 import {Button, MantineProvider, TextInput} from '@mantine/core';
 import {MdAddCircle} from 'react-icons/md';
@@ -32,7 +31,7 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
       const retrievedAlbums = await getAllAlbums(props.baseApiUrl);
       setAlbums(retrievedAlbums);
     })();
-  },        [setAlbums, props.baseApiUrl]);
+  },[setAlbums, props.baseApiUrl]);
 
   const handleNewAlbumNameValueChange = (fieldValue: string) => {
     if (fieldValue.length > 1) {
@@ -52,7 +51,6 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
 
   return (
     <MantineProvider>
-      <MainContent title="Albums">
         <InputModal
           isOpen={showNewAlbumModal}
           title="Create Album"
@@ -88,7 +86,6 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
         >
           <MdAddCircle/>
         </Button>
-      </MainContent>
     </MantineProvider>
   );
 };

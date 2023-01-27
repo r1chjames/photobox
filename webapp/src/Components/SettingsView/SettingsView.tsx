@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import './SettingsView.css';
-import { MainContent } from '../MainContent/MainContent';
 import { Setting } from '../../Models/Setting';
 import { SettingsAdapter } from '../../Adapters/SettingsAdapter';
 import { SettingModal } from '../SettingModal/SettingModal';
@@ -141,7 +140,6 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
 
   return (
     <MantineProvider>
-      <MainContent title="Settings">
         <SettingModal
           isOpen={showModal}
           handleSave={handleModalSave}
@@ -170,7 +168,6 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
         <ActionIcon color="primary" aria-label="edit" className="settingsView__saveEditButton">
           {editingButton()}
         </ActionIcon>
-      </MainContent>
     </MantineProvider>
   );
 };

@@ -5,8 +5,7 @@ import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
 import { Photo } from '../../Models/Photo';
 import './PhotoIndexView.css';
 import { PhotoItem } from '../PhotoItem/PhotoItem';
-import { AlbumsAdapter } from '../../Adapters/AlbumsAdapter';
-import { MainContent } from '../MainContent/MainContent';
+//import { AlbumsAdapter } from '../../Adapters/AlbumsAdapter';
 import {Loader, MantineProvider} from '@mantine/core';
 // import {GroupedItemWrapper} from '../GroupedItemWrapper/GroupedItemWrapper';
 
@@ -20,13 +19,13 @@ const getAllPhotos = async(baseApiUrl: string, albumId: string) => {
   return photos;
 };
 
-const getAlbumName = async(baseApiUrl: string, albumId: string) => {
-  const albumsAdapter = new AlbumsAdapter(baseApiUrl);
-  if (albumId !== null) {
-    const album = await albumsAdapter.getAlbumInfoById(albumId);
-    return album.name;
-  }
-};
+//const getAlbumName = async(baseApiUrl: string, albumId: string) => {
+//  const albumsAdapter = new AlbumsAdapter(baseApiUrl);
+//  if (albumId !== null) {
+//    const album = await albumsAdapter.getAlbumInfoById(albumId);
+//    return album.name;
+//  }
+//};
 
 const getPhotoDate = (imageSource: Photo): string => {
   const exifVal = imageSource.metadata.exif;
@@ -81,21 +80,21 @@ const parseItems = (items: Map<string, JSX.Element[]>) => {
 
 export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
   const [photos, setPhotos] = useState<Map<string, JSX.Element[]>>();
-  const [albumName, setAlbumName] = useState('');
+//  const [albumName, setAlbumName] = useState('');
   const { id } = useParams();
-  const [albumNameLoaded, setAlbumNameLoaded] = useState(false);
+//  const [albumNameLoaded, setAlbumNameLoaded] = useState(false);
   const [photosLoaded, setPhotosLoaded] = useState(false);
 
   useEffect(() => {
-    if (id !== undefined) {
-      (async function retrieveAlbumName() {
-        const retrievedAlbumName = await getAlbumName(props.baseApiUrl, id);
-        setAlbumName(retrievedAlbumName);
-      })().then(() => setAlbumNameLoaded(true));
-    } else {
-      setAlbumName('Photos');
-      setAlbumNameLoaded(true);
-    }
+//    if (id !== undefined) {
+//      (async function retrieveAlbumName() {
+//        const retrievedAlbumName = await getAlbumName(props.baseApiUrl, id);
+//        setAlbumName(retrievedAlbumName);
+//      })().then(() => setAlbumNameLoaded(true));
+//    } else {
+//      setAlbumName('Photos');
+//      setAlbumNameLoaded(true);
+//    }
 
     (async function retrievePhotos() {
       const retrievedPhotos = await getAllPhotos(props.baseApiUrl, id as string);
@@ -104,7 +103,7 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
     })().then(() => setPhotosLoaded(true));
   },        [setPhotos, id, props.baseApiUrl]);
 
-  const apiCallsCompleted = () => (albumNameLoaded && photosLoaded);
+  const apiCallsCompleted = () => (photosLoaded);
 
   const loadItems = (groupKey: number, imageSources: Photo[], baseApiUrl: string) => {
     let items = new Map<string, JSX.Element[]>();
@@ -162,11 +161,9 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
 
   return (
     <MantineProvider>
-      <MainContent title={albumName}>
         <div className="photoIndexView__photoIndex">
           {content()}
         </div>
-      </MainContent>
     </MantineProvider>
   );
 };

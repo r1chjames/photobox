@@ -1,7 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import './PhotoDetail.css';
 import {Photo} from '../../Models/Photo';
-import { MainContent } from '../MainContent/MainContent';
 import { useParams } from 'react-router-dom';
 import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
 import {Loader, MantineProvider, Table} from '@mantine/core';
@@ -31,7 +30,6 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
   const content = () => {
     if (photo !== undefined) {
       return (
-        <MainContent title={photo.name}>
           <div className="photoDetail__contentWrapper">
               <img
                 src={`${props.baseApiUrl}/photo/${id}/bin`}
@@ -58,7 +56,6 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
               </Table>
             </div>
           </div>
-        </MainContent>
       );
     }
     return (

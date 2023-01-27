@@ -2,10 +2,9 @@ import * as React from "react";
 import { ComponentMeta, ComponentStory } from "@storybook/react";
 import { AlbumItem } from './AlbumItem';
 import { Album } from "../../Models/Album";
-import {Photo, PhotoCount} from "../../Models/Photo";
 
-const photoResp = JSON.stringify(new Photo("p1", "photo 1", "/tmp/photo1.jpg", "a1", "", {a: "", b: ""}, ""))
-const countResp = JSON.stringify(new PhotoCount(1))
+const photoResp = {"id":"p1","name":"photo 1","filesystemPath":"/tmp/photo1.jpg","albumId":"a1","tags":"","metadata":{"a":"","b":""},"createdAt":""}
+const countResp = {"photoCount": 1};
 
 export default {
     component: AlbumItem,

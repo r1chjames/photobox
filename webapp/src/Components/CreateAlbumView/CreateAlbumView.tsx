@@ -1,7 +1,6 @@
 import React, {useState} from 'react';
 import Dropzone from 'react-dropzone';
 import './CreateAlbumView.css';
-import {MainContent} from '../MainContent/MainContent';
 import {useParams} from 'react-router-dom';
 import {PhotosAdapter} from '../../Adapters/PhotosAdapter';
 import {InfoSnackbar} from '../Snackbar/InfoSnackbar';
@@ -53,7 +52,7 @@ export const CreateAlbumView: React.FunctionComponent<IProps> = (props) => {
   };
 
   return (
-    <MainContent title={"name"}>
+          <div>
       <div className="createAlbumView__dropzone">
         <Dropzone onDrop={acceptedFiles => handleFileUpload(acceptedFiles)}>
           {({getRootProps, getInputProps}) => (
@@ -77,6 +76,6 @@ export const CreateAlbumView: React.FunctionComponent<IProps> = (props) => {
       {/*  <SaveIcon onClick={() => console.log('save')}/>*/}
       {/*</Fab>*/}
       <InfoSnackbar text={'Photo Uploaded'} show={showSnackbar} handleStopShowing={() => setShowSnackbar(false)}/>
-    </MainContent>
+    </div>
   );
 };

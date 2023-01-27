@@ -1,12 +1,12 @@
-.mainContent__mainPage {
+.viewContainer__mainPage {
     margin-left: 250px;
     margin-top: 75px;
 }
 
-.mainContent__title {
+.viewContainer__title {
     margin: 15px;
 }
 
-.mainContent__contentWrapper {
+.viewContainer__contentWrapper {
     margin: 20px;
 }
