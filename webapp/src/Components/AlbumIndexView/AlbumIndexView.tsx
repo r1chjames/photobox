@@ -1,19 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import './AlbumIndexView.css';
-import { AlbumsAdapter } from '../../Adapters/AlbumsAdapter';
+import { ImplAlbumsAdapter } from '../../Adapters/ImplAlbumsAdapter';
 import { Album } from '../../Models/Album';
 import { AlbumItem } from '../AlbumItem/AlbumItem';
 import { InputModal } from '../InputModal/InputModal';
 import {Button, MantineProvider, TextInput} from '@mantine/core';
 import {MdAddCircle} from 'react-icons/md';
 import {useNavigate} from "react-router-dom";
+import {MockAlbumsAdapter} from "../../Adapters/MockAlbumsAdapter";
 
 interface IProps {
-  baseApiUrl: string;
+  albumsAdapter: ImplAlbumsAdapter | MockAlbumsAdapter;
 }
 
-const getAllAlbums = async(baseApiUrl: string) => {
-  const albumsAdapter = new AlbumsAdapter(baseApiUrl);
+const getAllAlbums = async(propsAlbumsAdapter: ImplAlbumsAdapter | MockAlbumsAdapter) => {
+  const albumsAdapter = propsAlbumsAdapter;
   const albumSources: Album[] = await albumsAdapter.getAllAlbumsInfo();
   return albumSources;
 };
@@ -28,10 +29,10 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
 
   useEffect(() => {
     (async function retrieveAllAlbums() {
-      const retrievedAlbums = await getAllAlbums(props.baseApiUrl);
+      const retrievedAlbums = await getAllAlbums(props.albumsAdapter);
       setAlbums(retrievedAlbums);
     })();
-  },[setAlbums, props.baseApiUrl]);
+  },[setAlbums, props.albumsAdapter]);
 
   const handleNewAlbumNameValueChange = (fieldValue: string) => {
     if (fieldValue.length > 1) {
@@ -51,6 +52,7 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
 
   return (
     <MantineProvider>
+      <p>Albums</p>
         <InputModal
           isOpen={showNewAlbumModal}
           title="Create Album"
@@ -70,7 +72,7 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
             return(
               <article key={album.id}>
                 <AlbumItem
-                  baseApiUrl={props.baseApiUrl}
+                  baseApiUrl={"TODO update this"}
                   source={album}
                   albumViewCallback={() => navigate(`album/${album.id}`)}
                 />

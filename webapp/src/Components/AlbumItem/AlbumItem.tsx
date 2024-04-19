@@ -52,7 +52,7 @@ export const AlbumItem: React.FunctionComponent<IProps> = (props) => {
     }
     return (
       <Card
-        shadow="sm" padding="lg"
+        shadow="sm"
         // className="albumItem__cardWrapper"
         onClick={() => props.albumViewCallback(props.source.id)}
       >

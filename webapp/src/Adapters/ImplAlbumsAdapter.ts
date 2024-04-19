@@ -1,6 +1,7 @@
 import { RestApiAdapter } from './RestApiAdapter';
+import { IAlbumsAdapter } from './IAlbumsAdapter';
 
-export class AlbumsAdapter extends RestApiAdapter {
+export class ImplAlbumsAdapter extends RestApiAdapter  implements IAlbumsAdapter {
 
   private readonly baseApiPath: string;
 
@@ -18,16 +19,16 @@ export class AlbumsAdapter extends RestApiAdapter {
 
   public getAllAlbumsInfo = async () => {
     const getAllAlbumsPath = `${this.baseApiPath}/albums`;
-    return this.getApiCall(getAllAlbumsPath, AlbumsAdapter.buildHeaders(), {});
+    return this.getApiCall(getAllAlbumsPath, ImplAlbumsAdapter.buildHeaders(), {});
   }
 
   public getCountOfPhotosInAlbum = async () => {
     const getAllPhotosPath = `${this.baseApiPath}/album`;
-    return this.getApiCall(getAllPhotosPath, AlbumsAdapter.buildHeaders(), {});
+    return this.getApiCall(getAllPhotosPath, ImplAlbumsAdapter.buildHeaders(), {});
   }
 
   public getAlbumInfoById = async (albumId: string) => {
     const getAlbumInfoPath = `${this.baseApiPath}/album/${albumId}`;
-    return this.getApiCall(getAlbumInfoPath, AlbumsAdapter.buildHeaders(), {});
+    return this.getApiCall(getAlbumInfoPath, ImplAlbumsAdapter.buildHeaders(), {});
   }
 }

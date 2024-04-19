@@ -62,6 +62,10 @@ go-test:
 	@echo "Running tests"
 	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go test ./...
 
+run-db:
+	@echo "Starting MySQL DB"
+	docker run -d --name mysql -e "MYSQL_ROOT_PASSWORD=password" -p 3306:3306 -v $(shell pwd)/scripts/sql:/docker-entrypoint-initdb.d mysql
+
 .PHONY: help
 all: help
 help: Makefile

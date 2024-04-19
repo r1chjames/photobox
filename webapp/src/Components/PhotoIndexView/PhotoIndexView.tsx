@@ -5,7 +5,7 @@ import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
 import { Photo } from '../../Models/Photo';
 import './PhotoIndexView.css';
 import { PhotoItem } from '../PhotoItem/PhotoItem';
-//import { AlbumsAdapter } from '../../Adapters/AlbumsAdapter';
+//import { ImplAlbumsAdapter } from '../../Adapters/ImplAlbumsAdapter';
 import {Loader, MantineProvider} from '@mantine/core';
 // import {GroupedItemWrapper} from '../GroupedItemWrapper/GroupedItemWrapper';
 
@@ -20,7 +20,7 @@ const getAllPhotos = async(baseApiUrl: string, albumId: string) => {
 };
 
 //const getAlbumName = async(baseApiUrl: string, albumId: string) => {
-//  const albumsAdapter = new AlbumsAdapter(baseApiUrl);
+//  const albumsAdapter = new ImplAlbumsAdapter(baseApiUrl);
 //  if (albumId !== null) {
 //    const album = await albumsAdapter.getAlbumInfoById(albumId);
 //    return album.name;
