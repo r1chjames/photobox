@@ -33,19 +33,6 @@
   "devDependencies": {
     "@chromatic-com/storybook": "^1.3.3",
     "@rollup/plugin-typescript": "^8.3.0",
-    "@storybook/addon-actions": "^8.0.8",
-    "@storybook/addon-essentials": "^8.0.8",
-    "@storybook/addon-interactions": "^8.0.8",
-    "@storybook/addon-links": "^8.0.8",
-    "@storybook/addon-onboarding": "^8.0.8",
-    "@storybook/addons": "^7.6.17",
-    "@storybook/api": "^7.6.17",
-    "@storybook/blocks": "^8.0.8",
-    "@storybook/node-logger": "^8.0.8",
-    "@storybook/preset-create-react-app": "^8.0.8",
-    "@storybook/react": "^8.0.8",
-    "@storybook/react-webpack5": "^8.0.8",
-    "@storybook/test": "^8.0.8",
     "@typescript-eslint/eslint-plugin": "^5.10.2",
     "@typescript-eslint/parser": "^5.10.2",
     "eslint": "^8.7.0",
@@ -58,8 +45,6 @@
     "rollup-plugin-node-globals": "^1.4.0",
     "rollup-plugin-serve": "^1.1.0",
     "rollup-plugin-terser": "^7.0.2",
-    "storybook": "next",
-    "storybook-addon-mock": "^5.0.0",
     "ts-jest": "~27.1.3",
     "tslib": "^2.3.1",
     "typescript": "^4.5.5",
@@ -70,9 +55,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "lint": "eslint . --ext .ts",
-    "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "lint": "eslint . --ext .ts"
   },
   "browserslist": {
     "production": [

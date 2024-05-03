@@ -10,6 +10,9 @@ import {AlbumIndexView} from '../Components/AlbumIndexView/AlbumIndexView';
 import {SettingsView} from '../Components/SettingsView/SettingsView';
 import {PhotoDetail} from '../Components/PhotoDetail/PhotoDetail';
 import {CreateAlbumView} from '../Components/CreateAlbumView/CreateAlbumView';
+import {AlbumsAdapter} from "../Adapters/AlbumsAdapter";
+import {RestApiAdapter} from "../Adapters/RestApiAdapter";
+import {PhotosAdapter} from "../Adapters/PhotosAdapter";
 
 interface IProps {
   baseApiUrl: string;
@@ -35,7 +38,10 @@ export default class Router extends Component<IProps> {
           />
           <Route
             path="/albums"
-            element={() => <AlbumIndexView baseApiUrl={this.props.baseApiUrl}/>}
+            element={() => <AlbumIndexView
+                albumsAdapter={new AlbumsAdapter(new RestApiAdapter(""))}
+                photosAdapter={new PhotosAdapter(new RestApiAdapter(""))}
+            />}
           />
           <Route
             path="/album/:id"

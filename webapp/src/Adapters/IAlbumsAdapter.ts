@@ -1,8 +1,7 @@
 
-interface IAlbumsAdapter {
+export interface IAlbumsAdapter {
 
   getAllAlbumsInfo(): Promise<any>;
   getCountOfPhotosInAlbum(): Promise<any>;
-  getAlbumInfoById(): Promise<any>;
+  getAlbumInfoById(albumId: string): Promise<any>;
 }
-

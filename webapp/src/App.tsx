@@ -11,6 +11,9 @@ import {AlbumIndexView} from "./Components/AlbumIndexView/AlbumIndexView";
 import {CreateAlbumView} from "./Components/CreateAlbumView/CreateAlbumView";
 import {SettingsView} from "./Components/SettingsView/SettingsView";
 import {ViewContainer} from "./Components/ViewContainer/ViewContainer";
+import {AlbumsAdapter} from "./Adapters/AlbumsAdapter";
+import {RestApiAdapter} from "./Adapters/RestApiAdapter";
+import { PhotosAdapter } from "./Adapters/PhotosAdapter";
 
 interface IProps {
     baseApiUrl: string;
@@ -49,7 +52,10 @@ export const App: React.FunctionComponent<IProps> = (props) => {
                         path="/albums"
                         element={
                             <ViewContainer>
-                                <AlbumIndexView baseApiUrl={props.baseApiUrl}/>
+                                <AlbumIndexView
+                                    albumsAdapter={new AlbumsAdapter(new RestApiAdapter(props.baseApiUrl))}
+                                    photosAdapter={new PhotosAdapter(new RestApiAdapter(props.baseApiUrl))}
+                                />
                             </ViewContainer>
                         }
                     />

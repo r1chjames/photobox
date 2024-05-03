@@ -1,19 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import './AlbumIndexView.css';
-import { ImplAlbumsAdapter } from '../../Adapters/ImplAlbumsAdapter';
 import { Album } from '../../Models/Album';
 import { AlbumItem } from '../AlbumItem/AlbumItem';
 import { InputModal } from '../InputModal/InputModal';
 import {Button, MantineProvider, TextInput} from '@mantine/core';
 import {MdAddCircle} from 'react-icons/md';
 import {useNavigate} from "react-router-dom";
-import {MockAlbumsAdapter} from "../../Adapters/MockAlbumsAdapter";
+import {AlbumsAdapter} from "../../Adapters/AlbumsAdapter";
+import {PhotosAdapter} from "../../Adapters/PhotosAdapter";
 
 interface IProps {
-  albumsAdapter: ImplAlbumsAdapter | MockAlbumsAdapter;
+  albumsAdapter: AlbumsAdapter;
+  photosAdapter: PhotosAdapter;
 }
 
-const getAllAlbums = async(propsAlbumsAdapter: ImplAlbumsAdapter | MockAlbumsAdapter) => {
+const getAllAlbums = async(propsAlbumsAdapter: AlbumsAdapter) => {
   const albumsAdapter = propsAlbumsAdapter;
   const albumSources: Album[] = await albumsAdapter.getAllAlbumsInfo();
   return albumSources;
@@ -72,7 +73,7 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
             return(
               <article key={album.id}>
                 <AlbumItem
-                  baseApiUrl={"TODO update this"}
+                  photosAdapter={this.photosAdapter}
                   source={album}
                   albumViewCallback={() => navigate(`album/${album.id}`)}
                 />
