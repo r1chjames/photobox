@@ -1,18 +1,17 @@
-import * as React from "react";
-import { ComponentMeta, ComponentStory } from "@storybook/react";
-
+import type {Meta, StoryObj} from '@storybook/react';
 import { InfoSnackbar } from './InfoSnackbar';
 
-export default {
-  component: InfoSnackbar
-} as ComponentMeta<typeof InfoSnackbar>;
+const meta: Meta<typeof InfoSnackbar> = {
+    component: InfoSnackbar,
+};
 
-export const primary: ComponentStory<typeof InfoSnackbar> = (args) => (
-        <InfoSnackbar {...args} />
-        );
+export default meta;
+type Story = StoryObj<typeof InfoSnackbar>;
 
-primary.args = {
-  text: 'Snackbar text',
-  show: true,
-  handleStopShowing: () => console.log()
+export const Primary: Story = {
+    args: {
+        text: 'Snackbar text',
+        show: true,
+        handleStopShowing: () => console.log()
+    },
 };

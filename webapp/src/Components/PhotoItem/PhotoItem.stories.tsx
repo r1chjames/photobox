@@ -1,21 +1,22 @@
-import * as React from "react";
-import { ComponentMeta, ComponentStory } from "@storybook/react";
+import type {Meta, StoryObj} from '@storybook/react';
 
 import { PhotoItem } from './PhotoItem';
 import { Photo } from '../../Models/Photo';
 
-export default {
-  component: PhotoItem
-} as ComponentMeta<typeof PhotoItem>;
 
-export const primary: ComponentStory<typeof PhotoItem> = (args) => (
-        <PhotoItem {...args} />
-        );
+const meta: Meta<typeof PhotoItem> = {
+  component: PhotoItem,
+};
 
-primary.args = {
-  baseApiUrl: 'https://google.com/',
-  num: 1,
-  groupKey: 1,
-  source: new Photo('1', 'test', '', 'a', '', {'': ''}, ''),
-  allPhotos: [new Photo('1', 'test', '', 'a', '', {'': ''}, '')],
+export default meta;
+type Story = StoryObj<typeof PhotoItem>;
+
+export const Primary: Story = {
+  args: {
+    baseApiUrl: 'https://google.com/',
+    num: 1,
+    groupKey: 1,
+    source: new Photo('1', 'test', '', 'a', '', {'': ''}, ''),
+    allPhotos: [new Photo('1', 'test', '', 'a', '', {'': ''}, '')],
+  },
 };

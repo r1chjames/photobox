@@ -9,17 +9,17 @@ import {MdAdd, MdCancel, MdSave} from 'react-icons/md';
 import {ImPencil} from 'react-icons/im';
 
 interface IProps {
-  baseApiUrl: string;
+    settingsAdapter: SettingsAdapter;
 }
 
-const getAllSettings = async (baseApiUrl: string) => {
-  const settingsAdapter = new SettingsAdapter(baseApiUrl);
+const getAllSettings = async (propsSettingsAdapter: SettingsAdapter) => {
+  const settingsAdapter = propsSettingsAdapter;
   const allSettings: Setting[] = await settingsAdapter.getAllSettings();
   return allSettings;
 };
 
-const handleSaveSettings = async (settings: Setting[], baseApiUrl: string) => {
-  const settingsAdapter = new SettingsAdapter(baseApiUrl);
+const handleSaveSettings = async (settings: Setting[], propsSettingsAdapter: SettingsAdapter) => {
+  const settingsAdapter = propsSettingsAdapter;
   await settingsAdapter.updateSettings(settings);
 };
 
@@ -32,10 +32,10 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
 
   useEffect(() => {
     (async function retrieveAllSettings() {
-      const retrievedSettings = await getAllSettings(props.baseApiUrl);
+      const retrievedSettings = await getAllSettings(props.settingsAdapter);
       setSettings(retrievedSettings);
     })();
-  },        [setSettings, props.baseApiUrl]);
+  },        [setSettings, props.settingsAdapter]);
 
   const handleValueChange = (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>, setting: Setting) => {
     const i = settings.findIndex(k => k.key === setting.key);
@@ -118,7 +118,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
       return (
         <MdSave
           onClick={() => {
-            handleSaveSettings(settings, props.baseApiUrl);
+            handleSaveSettings(settings, props.settingsAdapter);
             setEditing(false);
             setShowSnackbar(true);
           }}

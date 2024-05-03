@@ -33,7 +33,7 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
       const retrievedAlbums = await getAllAlbums(props.albumsAdapter);
       setAlbums(retrievedAlbums);
     })();
-  },[setAlbums, props.albumsAdapter]);
+  },[setAlbums, props.albumsAdapter, props.photosAdapter]);
 
   const handleNewAlbumNameValueChange = (fieldValue: string) => {
     if (fieldValue.length > 1) {
@@ -73,7 +73,7 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
             return(
               <article key={album.id}>
                 <AlbumItem
-                  photosAdapter={this.photosAdapter}
+                  photosAdapter={props.photosAdapter}
                   source={album}
                   albumViewCallback={() => navigate(`album/${album.id}`)}
                 />

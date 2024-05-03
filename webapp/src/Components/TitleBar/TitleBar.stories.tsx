@@ -1,11 +1,13 @@
-import * as React from "react";
-import { ComponentMeta, ComponentStory } from "@storybook/react";
+import type {Meta, StoryObj} from '@storybook/react';
 import { TitleBar } from './TitleBar';
 
-export default {
+const meta: Meta<typeof TitleBar> = {
     component: TitleBar,
-} as ComponentMeta<typeof TitleBar>;
+};
 
-export const Primary: ComponentStory<typeof TitleBar> = () => (
-        <TitleBar />
-        );
+export default meta;
+type Story = StoryObj<typeof TitleBar>;
+
+export const Primary: Story = {
+    args: {},
+};

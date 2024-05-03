@@ -7,10 +7,11 @@ import {Loader, MantineProvider, Table} from '@mantine/core';
 
 interface IProps {
   baseApiUrl: string;
+  photosAdapter: PhotosAdapter;
 }
 
-const getPhoto = async(baseApiUrl: string, photoId: string) => {
-  const photosAdapter = new PhotosAdapter(baseApiUrl);
+const getPhoto = async(propsPhotosAdapter: PhotosAdapter, photoId: string) => {
+  const photosAdapter = propsPhotosAdapter;
   return photosAdapter.getPhotoInfoById(photoId);
 };
 
@@ -21,11 +22,11 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
   useEffect(() => {
     if (id !== undefined) {
       (async function retrievePhoto() {
-        const retrievedPhoto = await getPhoto(props.baseApiUrl, id);
+        const retrievedPhoto = await getPhoto(props.photosAdapter, id);
         setPhoto(retrievedPhoto);
       })();
     }
-  },        [setPhoto, id, props.baseApiUrl]);
+  },        [setPhoto, id, props.photosAdapter]);
 
   const content = () => {
     if (photo !== undefined) {

@@ -6,15 +6,15 @@ import {PhotosAdapter} from '../../Adapters/PhotosAdapter';
 import {InfoSnackbar} from '../Snackbar/InfoSnackbar';
 
 interface IProps {
-  baseApiUrl: string;
+  photosAdapter: PhotosAdapter;
 }
 
 type QueryParams = {
   name: string;
 }
 
-const uploadPhotoToApi = async (baseApiUrl: string, body: Record<string, unknown>) => {
-  const photosAdapter = new PhotosAdapter(baseApiUrl);
+const uploadPhotoToApi = async (propsPhotosAdapter: PhotosAdapter, body: Record<string, unknown>) => {
+  const photosAdapter = propsPhotosAdapter;
   await photosAdapter.uploadPhoto(body);
 };
 
@@ -47,7 +47,7 @@ export const CreateAlbumView: React.FunctionComponent<IProps> = (props) => {
         albumName: name,
         binaryContent: fileContent,
       };
-      uploadPhotoToApi(props.baseApiUrl, photoContent).then(() => setShowSnackbar(true));
+      uploadPhotoToApi(props.photosAdapter, photoContent).then(() => setShowSnackbar(true));
     }
   };
 

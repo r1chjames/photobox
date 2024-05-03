@@ -14,6 +14,7 @@ import {ViewContainer} from "./Components/ViewContainer/ViewContainer";
 import {AlbumsAdapter} from "./Adapters/AlbumsAdapter";
 import {RestApiAdapter} from "./Adapters/RestApiAdapter";
 import { PhotosAdapter } from "./Adapters/PhotosAdapter";
+import {SettingsAdapter} from "./Adapters/SettingsAdapter";
 
 interface IProps {
     baseApiUrl: string;
@@ -28,7 +29,11 @@ export const App: React.FunctionComponent<IProps> = (props) => {
                         path="/"
                         element={
                             <ViewContainer>
-                                <Dashboard baseApiUrl={props.baseApiUrl}/>
+                                <Dashboard
+                                    baseApiUrl={props.baseApiUrl}
+                                    albumsAdapter={new AlbumsAdapter(new RestApiAdapter(props.baseApiUrl))}
+                                    photosAdapter={new PhotosAdapter(new RestApiAdapter(props.baseApiUrl))}
+                                />
                             </ViewContainer>
                         }
                     />
@@ -36,7 +41,10 @@ export const App: React.FunctionComponent<IProps> = (props) => {
                         path="/photos"
                         element={
                             <ViewContainer>
-                                <PhotoIndexView baseApiUrl={props.baseApiUrl}/>
+                                <PhotoIndexView
+                                    baseApiUrl={props.baseApiUrl}
+                                    photosAdapter={new PhotosAdapter(new RestApiAdapter(props.baseApiUrl))}
+                                />
                             </ViewContainer>
                         }
                     />
@@ -44,7 +52,10 @@ export const App: React.FunctionComponent<IProps> = (props) => {
                         path="/photo/:id"
                         element={
                             <ViewContainer>
-                                <PhotoDetail baseApiUrl={props.baseApiUrl}/>
+                                <PhotoDetail
+                                    baseApiUrl={props.baseApiUrl}
+                                    photosAdapter={new PhotosAdapter(new RestApiAdapter(props.baseApiUrl))}
+                                />
                             </ViewContainer>
                         }
                     />
@@ -63,7 +74,10 @@ export const App: React.FunctionComponent<IProps> = (props) => {
                         path="/album/:id"
                         element={
                             <ViewContainer>
-                                <PhotoIndexView baseApiUrl={props.baseApiUrl}/>
+                                <PhotoIndexView
+                                    baseApiUrl={props.baseApiUrl}
+                                    photosAdapter={new PhotosAdapter(new RestApiAdapter(props.baseApiUrl))}
+                                />
                             </ViewContainer>
                         }
                     />
@@ -71,7 +85,9 @@ export const App: React.FunctionComponent<IProps> = (props) => {
                         path="/album/new/:name"
                         element={
                             <ViewContainer>
-                                <CreateAlbumView baseApiUrl={props.baseApiUrl}/>
+                                <CreateAlbumView
+                                    photosAdapter={new PhotosAdapter(new RestApiAdapter(props.baseApiUrl))}
+                                />
                             </ViewContainer>
                         }
                     />
@@ -79,7 +95,9 @@ export const App: React.FunctionComponent<IProps> = (props) => {
                         path="/settings"
                         element={
                             <ViewContainer>
-                                <SettingsView baseApiUrl={props.baseApiUrl}/>
+                                <SettingsView
+                                    settingsAdapter={new SettingsAdapter(new RestApiAdapter(props.baseApiUrl))}
+                                />
                             </ViewContainer>
                         }
                     />

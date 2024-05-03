@@ -10,11 +10,12 @@ import {Loader, MantineProvider} from '@mantine/core';
 // import {GroupedItemWrapper} from '../GroupedItemWrapper/GroupedItemWrapper';
 
 interface IProps {
-  baseApiUrl: string;
+  baseApiUrl: string
+  photosAdapter: PhotosAdapter
 }
 
-const getAllPhotos = async(baseApiUrl: string, albumId: string) => {
-  const photosAdapter = new PhotosAdapter(baseApiUrl);
+const getAllPhotos = async(propsPhotosAdapter: PhotosAdapter, albumId: string) => {
+  const photosAdapter = propsPhotosAdapter;
   const photos = await photosAdapter.getPhotosInfoInAlbum(albumId, 1, 100);
   return photos;
 };
@@ -97,11 +98,11 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
 //    }
 
     (async function retrievePhotos() {
-      const retrievedPhotos = await getAllPhotos(props.baseApiUrl, id as string);
+      const retrievedPhotos = await getAllPhotos(props.photosAdapter, id as string);
       const photoItems = loadItems(0, retrievedPhotos, props.baseApiUrl);
       setPhotos(photoItems);
     })().then(() => setPhotosLoaded(true));
-  },        [setPhotos, id, props.baseApiUrl]);
+  },        [setPhotos, id, props.photosAdapter]);
 
   const apiCallsCompleted = () => (photosLoaded);
 

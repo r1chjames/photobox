@@ -6,7 +6,7 @@ import { Photo, PhotoCount } from '../../Models/Photo';
 import {Badge, Text, Card, Group, Image, Loader} from '@mantine/core';
 
 interface IProps {
-  photosAdapter: PhotosAdapter
+  photosAdapter: PhotosAdapter;
   source: Album;
   albumViewCallback: (albumId: string) => void;
 }

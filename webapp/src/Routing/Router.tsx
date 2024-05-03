@@ -13,6 +13,7 @@ import {CreateAlbumView} from '../Components/CreateAlbumView/CreateAlbumView';
 import {AlbumsAdapter} from "../Adapters/AlbumsAdapter";
 import {RestApiAdapter} from "../Adapters/RestApiAdapter";
 import {PhotosAdapter} from "../Adapters/PhotosAdapter";
+import {SettingsAdapter} from "../Adapters/SettingsAdapter";
 
 interface IProps {
   baseApiUrl: string;
@@ -26,34 +27,65 @@ export default class Router extends Component<IProps> {
         <Routes>
           <Route
             path="/"
-            element={() => <Dashboard baseApiUrl={this.props.baseApiUrl}/>}
+            element={() =>
+                <Dashboard
+                  baseApiUrl={this.props.baseApiUrl}
+                  albumsAdapter={new AlbumsAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                  photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                />
+            }
           />
           <Route
             path="/photos"
-            element={() => <PhotoIndexView baseApiUrl={this.props.baseApiUrl}/>}
+            element={() =>
+                <PhotoIndexView
+                    baseApiUrl={this.props.baseApiUrl}
+                    photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                />
+            }
           />
           <Route
             path="/photo/:id"
-            element={() => <PhotoDetail baseApiUrl={this.props.baseApiUrl}/>}
+            element={() =>
+                <PhotoDetail
+                  baseApiUrl={this.props.baseApiUrl}
+                  photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                />
+            }
           />
           <Route
             path="/albums"
-            element={() => <AlbumIndexView
-                albumsAdapter={new AlbumsAdapter(new RestApiAdapter(""))}
-                photosAdapter={new PhotosAdapter(new RestApiAdapter(""))}
-            />}
+            element={() =>
+                <AlbumIndexView
+                  albumsAdapter={new AlbumsAdapter(new RestApiAdapter(""))}
+                  photosAdapter={new PhotosAdapter(new RestApiAdapter(""))}
+              />
+            }
           />
           <Route
             path="/album/:id"
-            element={() => <PhotoIndexView baseApiUrl={this.props.baseApiUrl}/>}
+            element={() =>
+                <PhotoIndexView
+                  baseApiUrl={this.props.baseApiUrl}
+                  photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+              />
+            }
           />
           <Route
             path="/album/new/:name"
-            element={() => <CreateAlbumView baseApiUrl={this.props.baseApiUrl}/>}
+            element={() =>
+                <CreateAlbumView
+                     photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                />
+            }
           />
           <Route
             path="/settings"
-            element={() => <SettingsView baseApiUrl={this.props.baseApiUrl}/>}
+            element={() =>
+                <SettingsView
+                    settingsAdapter={new SettingsAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                />
+            }
           />
         </Routes>
       </BrowserRouter>

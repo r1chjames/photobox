@@ -44,9 +44,9 @@ export class RestApiAdapter implements IRestApiAdapter {
 
 export class MockRestApiAdapter implements IRestApiAdapter {
 
-  public resp: string;
+  public resp: any;
 
-  constructor(resp: string) {
+  constructor(resp: any) {
     this.resp = resp;
   }
 

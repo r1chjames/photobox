@@ -1,56 +1,24 @@
-import * as React from "react";
-// import { Meta, StoryObj } from "@storybook/react";
-import { AlbumIndexView } from './AlbumIndexView';
-
+import type {Meta, StoryObj} from '@storybook/react';
+import {AlbumIndexView} from './AlbumIndexView';
+import {PhotosAdapter} from "../../Adapters/PhotosAdapter";
+import {MockRestApiAdapter} from "../../Adapters/RestApiAdapter";
+import {AlbumsAdapter} from "../../Adapters/AlbumsAdapter";
 
 const albumResp = [{"id":"a1","name":"album 1","description":"an album","tags":"","metadata":{"a":"","b":""},"createdAt":"","updatedAt":""},
                    {"id":"a2","name":"album 2","description":"an album","tags":"","metadata":{"a":"","b":""},"createdAt":"","updatedAt":""}];
 
-// const meta: Meta<typeof AlbumIndexView> = {
-//     component: AlbumIndexView,
-// };
-//
-// export default meta;
-// type Story = StoryObj<typeof AlbumIndexView>;
-//
-//
-// export const Primary: Story = {
-//     args: {
-//         baseApiUrl: "http://localhost"
-//     }
-// }
+const photoResp = {"id":"p1","name":"photo 1","filesystemPath":"/tmp/photo1.jpg","albumId":"a1","tags":"","metadata":{"a":"","b":""},"createdAt":""}
 
-
-export default {
-    title: 'Examples/Fetch',
+const meta: Meta<typeof AlbumIndexView> = {
     component: AlbumIndexView,
-    parameters: {
-        mockData: [
-            {
-                url: 'http://localhost/albums',
-                method: 'GET',
-                status: 200,
-                response: albumResp
-            },
-        ],
-    },
 };
 
-const Template = (args: any) => <AlbumIndexView {...args} />;
+export default meta;
+type Story = StoryObj<typeof AlbumIndexView>;
 
-export const FetchCall = Template.bind({});
-
-
-//     {
-//     component: AlbumIndexView,
-//     parameters: {
-//         mockData: [
-//             {
-//                 url: 'http://localhost/albums',
-//                 method: 'GET',
-//                 status: 200,
-//                 response: albumResp
-//             },
-//         ],
-//     },
-// };
+export const Primary: Story = {
+    args: {
+        albumsAdapter: new AlbumsAdapter(new MockRestApiAdapter(albumResp)),
+        photosAdapter: new PhotosAdapter(new MockRestApiAdapter(photoResp)),
+    },
+};
