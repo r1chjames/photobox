@@ -13,7 +13,7 @@ type Story = StoryObj<typeof PhotoItem>;
 
 export const Primary: Story = {
   args: {
-    baseApiUrl: 'https://google.com/',
+    baseApiUrl: 'https://4.img-dpreview.com/files/p/E~TS1180x0~articles/3925134721/0266554465.jpeg',
     num: 1,
     groupKey: 1,
     source: new Photo('1', 'test', '', 'a', '', {'': ''}, ''),

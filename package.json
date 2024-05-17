@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "ts-mockito": "^2.6.1"
+  }
+}

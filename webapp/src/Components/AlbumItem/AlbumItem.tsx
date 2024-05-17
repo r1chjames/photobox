@@ -1,9 +1,9 @@
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import './AlbumItem.css';
 import { Album } from '../../Models/Album';
 import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
-import { Photo, PhotoCount } from '../../Models/Photo';
 import {Badge, Text, Card, Group, Image, Loader} from '@mantine/core';
+import useAlbumItem from "./useAlbumItem";
 
 interface IProps {
   photosAdapter: PhotosAdapter;
@@ -11,38 +11,9 @@ interface IProps {
   albumViewCallback: (albumId: string) => void;
 }
 
-const getUrlOfFirstImageInAlbum = async(photosAdapter: PhotosAdapter, albumId: string) => {
-  const photos: Photo[] = await photosAdapter.getPhotosInfoInAlbum(albumId, 1, 1);
-  if (photos && photos.length > 0) {
-    return `photo/${photos[0].id}/thumbnail`;
-  }
-  return '';
-};
-
-const getPhotoCountInAlbum = async(photosAdapter: PhotosAdapter, albumId: string) => {
-  return photosAdapter.getPhotoCountInAlbum(albumId);
-};
-
 export const AlbumItem: React.FunctionComponent<IProps> = (props) => {
 
-  const [thumbnailUrl, setThumbnailUrl] = useState('');
-  const [photoCount, setPhotoCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const photosAdapter = props.photosAdapter;
-    (async function retrieveThumbnailUrl() {
-      const retrievedThumbnailUrl = await getUrlOfFirstImageInAlbum(photosAdapter, props.source.id);
-      setThumbnailUrl(retrievedThumbnailUrl);
-      setLoading(false);
-    })();
-
-    (async function retrieveAPhotoCount() {
-      const retrievedPhotoCount: PhotoCount = await getPhotoCountInAlbum(photosAdapter, props.source.id);
-      setPhotoCount(retrievedPhotoCount.photoCount);
-      setLoading(false);
-    })();
-  },        [setThumbnailUrl, setPhotoCount, props.photosAdapter, props.source.id]);
+  const [{thumbnailUrl, photoCount, loading}] = useAlbumItem(props.photosAdapter, props.source);
 
   const content = () => {
     if (loading) {
