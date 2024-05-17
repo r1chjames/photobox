@@ -30,8 +30,8 @@ export const AlbumItem: React.FunctionComponent<IProps> = (props) => {
         <Card.Section>
           <Image src={thumbnailUrl} />
         </Card.Section>
-        <Group position="apart" style={{ marginBottom: 5 }}>
-          <Text weight={500}>{props.source.name}</Text>
+        <Group style={{ marginBottom: 5 }}>
+          <Text>{props.source.name}</Text>
           <Badge color="pink" variant="light">
             {photoCount} photos
           </Badge>

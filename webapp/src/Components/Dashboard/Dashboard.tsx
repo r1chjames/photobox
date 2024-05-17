@@ -4,7 +4,6 @@ import { AlbumIndexView } from '../AlbumIndexView/AlbumIndexView';
 import { PhotoIndexView } from '../PhotoIndexView/PhotoIndexView';
 import {AlbumsAdapter} from "../../Adapters/AlbumsAdapter";
 import {PhotosAdapter} from "../../Adapters/PhotosAdapter";
-import {ViewContainer} from "../ViewContainer/ViewContainer";
 
 interface IProps {
     albumsAdapter: AlbumsAdapter;
@@ -14,7 +13,7 @@ interface IProps {
 export const Dashboard: React.FunctionComponent<IProps> = (props) => {
 
   return (
-      <ViewContainer>
+      <div>
         <AlbumIndexView
             albumsAdapter={props.albumsAdapter}
             photosAdapter={props.photosAdapter}
@@ -22,6 +21,6 @@ export const Dashboard: React.FunctionComponent<IProps> = (props) => {
         <PhotoIndexView
             photosAdapter={props.photosAdapter}
         />
-      </ViewContainer>
+      </div>
   );
 };

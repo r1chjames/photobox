@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import './AlbumIndexView.css';
 import { Album } from '../../Models/Album';
 import { AlbumItem } from '../AlbumItem/AlbumItem';
@@ -8,47 +8,25 @@ import {MdAddCircle} from 'react-icons/md';
 import {useNavigate} from "react-router-dom";
 import {AlbumsAdapter} from "../../Adapters/AlbumsAdapter";
 import {PhotosAdapter} from "../../Adapters/PhotosAdapter";
+import useAlbumIndexView from "./useAlbumIndexView";
 
 interface IProps {
   albumsAdapter: AlbumsAdapter;
   photosAdapter: PhotosAdapter;
 }
 
-const getAllAlbums = async(propsAlbumsAdapter: AlbumsAdapter) => {
-  const albumsAdapter = propsAlbumsAdapter;
-  const albumSources: Album[] = await albumsAdapter.getAllAlbumsInfo();
-  return albumSources;
-};
-
 export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
   const navigate = useNavigate()
-
-  const [albums, setAlbums] = useState<Album[]>([]);
   const [showNewAlbumModal, setShowNewAlbumModal] = useState(Boolean);
-  const [createAlbumModalAlbumNameErrorText, setCreateAlbumModalAlbumNameErrorText] = useState('Required');
-  const [newAlbumName, setNewAlbumName] = useState('');
-
-  useEffect(() => {
-    (async function retrieveAllAlbums() {
-      const retrievedAlbums = await getAllAlbums(props.albumsAdapter);
-      setAlbums(retrievedAlbums);
-    })();
-  },[setAlbums, props.albumsAdapter, props.photosAdapter]);
-
-  const handleNewAlbumNameValueChange = (fieldValue: string) => {
-    if (fieldValue.length > 1) {
-      setCreateAlbumModalAlbumNameErrorText('');
-      setNewAlbumName(fieldValue);
-    } else {
-      setCreateAlbumModalAlbumNameErrorText('Invalid length');
-    }
-  };
-  const handleCreateNewAlbum = () => {
-    setShowNewAlbumModal(true);
-  };
+  const [{albums, createAlbumModalAlbumNameErrorText, newAlbumName, handleNewAlbumNameValueChange}] = useAlbumIndexView(props.albumsAdapter);
 
   const newAlbumModalSaveClick = () => {
     navigate(`/album/new/${newAlbumName}`);
+  };
+
+
+  const handleCreateNewAlbum = () => {
+    setShowNewAlbumModal(true);
   };
 
   return (

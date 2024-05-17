@@ -117,7 +117,8 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
                                         getPhotoDate(imageSource),
                                         (
                                           <PhotoItem
-                                            baseApiUrl={baseApiUrl}
+                                            src={baseApiUrl}
+                                            thumbnail={baseApiUrl}
                                             groupKey={groupKey}
                                             num={1 + start + i}
                                             key={start + i}

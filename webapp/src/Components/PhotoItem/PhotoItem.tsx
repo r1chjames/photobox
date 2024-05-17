@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import './PhotoItem.css';
 import { Photo } from '../../Models/Photo';
-import {Button, Dialog, Group, Text} from '@mantine/core';
+import {Button, Dialog, Group, Text, Image} from '@mantine/core';
 import {useNavigate} from "react-router-dom";
 
 interface IProps {
-  baseApiUrl: string;
+  src: string;
+  thumbnail: string;
   num: number;
   groupKey?: number;
   source: Photo;
@@ -35,17 +35,16 @@ export const PhotoItem: React.FunctionComponent<IProps> = (props) => {
 
   const gridImage = () => {
     return(
-        <div className="photoItem__item">
-          <div className="photoItem__thumbnail">
-            <img
-              src={`${props.baseApiUrl}/photo/${props.source.id}/thumbnail`}
-              alt={props.source.name}
-              onClick={() => setImageModalOpen(!isImageModalOpen)}
-              onError={(e: any) => e.target.src = '/no_image.png'}
-            />
-          </div>
-          <div className="photoItem__info">{`egjs ${props.num}`}</div>
-        </div>
+      <Image
+          radius="md"
+          h={100}
+          w="auto"
+          fit="contain"
+          src={props.thumbnail}
+          alt={props.source.name}
+          onClick={() => setImageModalOpen(!isImageModalOpen)}
+          onError={(e: any) => e.target.src = '/no_image.png'}
+      />
     );
   };
 
@@ -77,19 +76,16 @@ export const PhotoItem: React.FunctionComponent<IProps> = (props) => {
         <div>
           <div>
             <Dialog
-              className="photoItem__dialog"
               opened={isImageModalOpen}
               aria-labelledby="customized-dialog-title"
-              onClose={() => setImageModalOpen(false)}
-            >
-              <Text size="sm" style={{ marginBottom: 10 }} weight={500}>
+              onClose={() => setImageModalOpen(false)}>
+              <Text size="sm" style={{ marginBottom: 10 }}>
                 {props.source.name}
               </Text>
               <Group>
-                <img
-                  className="photoItem__dialog__image"
+                <Image
                   onClick={() => navigate(`/photo/${currentId}`)}
-                  src={`${props.baseApiUrl}/photo/${currentId}/bin`}
+                  src={props.src}
                   alt={props.source.name}
                 />
               </Group>
@@ -102,7 +98,7 @@ export const PhotoItem: React.FunctionComponent<IProps> = (props) => {
               </Group>
             </Dialog>
           </div>
-          {gridImage()}
+          { gridImage() }
         </div>
       );
     }

@@ -1,8 +1,10 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {AlbumItem} from './AlbumItem';
-import {PhotosAdapter} from "../../Adapters/PhotosAdapter";
 import {Album} from "../../Models/Album";
-import {anything, instance, mock, when} from "ts-mockito";
+import {MockRestApiAdapter} from "../../Adapters/RestApiAdapter";
+import { getPhotosInfoInAlbum, getPhotoCountInAlbum } from "../../Adapters/PhotosAdapter.mock";
+import {PhotosAdapter} from "../../Adapters/PhotosAdapter";
+import {Photo} from "../../Models/Photo";
 
 const meta: Meta<typeof AlbumItem> = {
     component: AlbumItem,
@@ -11,15 +13,21 @@ const meta: Meta<typeof AlbumItem> = {
 export default meta;
 type Story = StoryObj<typeof AlbumItem>;
 
-const album = new Album("1234", "Album 1", "A great album", "","")
+const album = new Album("a1", "Album 12222", "A great album", "","")
 
-const mockPhotosAdapter: PhotosAdapter = mock(PhotosAdapter);
-when(mockPhotosAdapter.getPhotosInfoInAlbum(anything(), anything(), anything())).thenResolve("https://4.img-dpreview.com/files/p/E~TS1180x0~articles/3925134721/0266554465.jpeg");
-when(mockPhotosAdapter.getPhotoCountInAlbum(anything())).thenResolve(1);
+const photosInAlbums: Photo[] = [
+    new Photo("p1", "photo 1", "/tmp/photo1.jpg", "a1", "", {"a":"","b":""}, ""),
+    new Photo("p2", "photo 2", "/tmp/photo2.jpg", "a1", "", {"a":"","b":""}, "")
+];
 
 export const Primary: Story = {
+    // @ts-ignore
+    async beforeEach() {
+        getPhotosInfoInAlbum.mockReturnValue(photosInAlbums);
+        getPhotoCountInAlbum.mockReturnValue(1);
+    },
     args: {
-        photosAdapter: instance(mockPhotosAdapter),
+        photosAdapter: new PhotosAdapter(new MockRestApiAdapter("")),
         source: album,
         albumViewCallback: () => console.log("Clicked"),
     },

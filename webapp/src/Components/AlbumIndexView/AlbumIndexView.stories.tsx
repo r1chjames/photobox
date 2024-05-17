@@ -3,11 +3,20 @@ import {AlbumIndexView} from './AlbumIndexView';
 import {PhotosAdapter} from "../../Adapters/PhotosAdapter";
 import {MockRestApiAdapter} from "../../Adapters/RestApiAdapter";
 import {AlbumsAdapter} from "../../Adapters/AlbumsAdapter";
+import {getAllAlbumsInfo} from "../../Adapters/AlbumsAdapter.mock";
+import { getPhotosInfoInAlbum, getPhotoCountInAlbum } from "../../Adapters/PhotosAdapter.mock";
+import {Album} from "../../Models/Album";
+import {Photo} from "../../Models/Photo";
 
-const albumResp = [{"id":"a1","name":"album 1","description":"an album","tags":"","metadata":{"a":"","b":""},"createdAt":"","updatedAt":""},
-                   {"id":"a2","name":"album 2","description":"an album","tags":"","metadata":{"a":"","b":""},"createdAt":"","updatedAt":""}];
+const allAlbums: Album[] = [
+    new Album("a1","album 1","an album","", ""),
+    new Album("a2","album 2","an album","", "")
+];
 
-const photoResp = {"id":"p1","name":"photo 1","filesystemPath":"/tmp/photo1.jpg","albumId":"a1","tags":"","metadata":{"a":"","b":""},"createdAt":""}
+const photosInAlbums: Photo[] = [
+    new Photo("p1", "photo 1", "/tmp/photo1.jpg", "a1", "", {"a":"","b":""}, ""),
+    new Photo("p2", "photo 2", "/tmp/photo2.jpg", "a1", "", {"a":"","b":""}, "")
+];
 
 const meta: Meta<typeof AlbumIndexView> = {
     component: AlbumIndexView,
@@ -17,8 +26,14 @@ export default meta;
 type Story = StoryObj<typeof AlbumIndexView>;
 
 export const Primary: Story = {
+    // @ts-ignore
+    async beforeEach() {
+        getAllAlbumsInfo.mockReturnValue(allAlbums);
+        getPhotosInfoInAlbum.mockReturnValue(photosInAlbums);
+        getPhotoCountInAlbum.mockReturnValue(2);
+    },
     args: {
-        albumsAdapter: new AlbumsAdapter(new MockRestApiAdapter(albumResp)),
-        photosAdapter: new PhotosAdapter(new MockRestApiAdapter(photoResp)),
+        albumsAdapter: new AlbumsAdapter(new MockRestApiAdapter(allAlbums)),
+        photosAdapter: new PhotosAdapter(new MockRestApiAdapter(photosInAlbums)),
     },
 };
