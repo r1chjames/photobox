@@ -10,7 +10,6 @@ import {Loader, MantineProvider} from '@mantine/core';
 // import {GroupedItemWrapper} from '../GroupedItemWrapper/GroupedItemWrapper';
 
 interface IProps {
-  baseApiUrl: string
   photosAdapter: PhotosAdapter
 }
 
@@ -99,7 +98,7 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
 
     (async function retrievePhotos() {
       const retrievedPhotos = await getAllPhotos(props.photosAdapter, id as string);
-      const photoItems = loadItems(0, retrievedPhotos, props.baseApiUrl);
+      const photoItems = loadItems(0, retrievedPhotos, "TODO");
       setPhotos(photoItems);
     })().then(() => setPhotosLoaded(true));
   },        [setPhotos, id, props.photosAdapter]);
