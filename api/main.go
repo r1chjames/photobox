@@ -26,11 +26,12 @@ func main() {
 
 func parseAppVariables() types.AppConfig {
 	dbHost := utils.GetEnv("DB_HOST", "localhost")
-	dbPort := utils.GetEnv("DB_PORT", "3306")
+	dbPort := utils.GetEnv("DB_PORT", "5432")
 	dbUser := utils.GetEnv("DB_USER", "photobox")
 	dbPassword := utils.GetEnv("DB_PASSWORD", "photobox")
 	dbName := utils.GetEnv("DB_NAME", "photobox")
-	dbURL := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
+
+	dbURL := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s", dbHost, dbUser, dbPassword, dbName, dbPort)
 	resetSettings, _ := strconv.ParseBool(utils.GetEnv("RESET_SETTINGS", "false"))
 	debugMode, _ := strconv.ParseBool(utils.GetEnv("DEBUG_MODE", "false"))
 	timezone, _ := time.LoadLocation(utils.GetEnv("TIMEZONE", "Europe/London"))

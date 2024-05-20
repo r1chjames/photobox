@@ -2,9 +2,8 @@ package database
 
 import (
 	"errors"
-	"fmt"
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
-	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"log"
 )
@@ -14,8 +13,8 @@ type Env struct {
 }
 
 func InitDbConnection(appConfig AppConfig) *Env {
-	db, err := gorm.Open(mysql.New(mysql.Config{
-		DSN: fmt.Sprintf("%s?charset=utf8mb4&parseTime=True&loc=Local", appConfig.DbUrl),
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		DSN: appConfig.DbUrl,
 	}), &gorm.Config{})
 
 	if err != nil {

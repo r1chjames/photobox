@@ -1,4 +1,4 @@
 CREATE DATABASE photobox;
 
-CREATE USER 'photobox'@'%' IDENTIFIED BY 'photobox';
-GRANT ALL privileges ON photobox.* TO 'photobox'@'%';
+CREATE USER photobox WITH ENCRYPTED PASSWORD 'photobox';
+GRANT ALL PRIVILEGES ON DATABASE photobox TO photobox;
