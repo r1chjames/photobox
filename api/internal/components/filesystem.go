@@ -11,7 +11,6 @@ import (
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
 	"gitlab.com/r1chjames/photobox/api/internal/utils"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -44,7 +43,7 @@ func createDirectoryIfNotExists(basePhotoPath string, directoryName string) {
 	fullPath := fmt.Sprintf("%s/%s", basePhotoPath, directoryName)
 	err := os.Mkdir(fullPath, os.ModePerm) //TODO check if exists, swallow error if so
 	if err != nil {
-		log.Print("Unable to create album folder. Check the value of setting default_new_albums_dir exists and is writable")
+		log.Printf("Unable to create album folder. Check the value of setting default_new_albums_dir exists and is writable, %s", err)
 	}
 }
 
@@ -61,7 +60,7 @@ func WriteFileToFilesystem(dbEnv *database.Env, photo PhotoUpload) PhotoFile {
 	value := strings.Split(photo.BinaryContent, ",")
 
 	decodedData, err := b64.StdEncoding.DecodeString(value[1])
-	err = ioutil.WriteFile(fileSavePath, decodedData, 0644)
+	err = os.WriteFile(fileSavePath, decodedData, 0644)
 	if err != nil {
 		log.Print("Unable to save photo from upload")
 	}
@@ -133,7 +132,7 @@ func getMetaData(path string, info os.FileInfo) PhotoFile {
 func getExifDataAndThumbnail(path string) (exif.Exif, []byte) {
 	file, err := os.Open(path)
 	if err != nil {
-		log.Print("Unable to open file")
+		log.Printf("Unable to open file, %s", err)
 		return exif.Exif{}, []byte{}
 	}
 	var exifData *exif.Exif
@@ -160,7 +159,7 @@ func generateMissingThumbnail(path string) []byte {
 	extension := getFileExtension(path)
 	img, err := imaging.Open(path)
 	if err != nil {
-		log.Print("Unable to open file")
+		log.Printf("Unable to open file, %s", err)
 		return nil
 	}
 	thumb := imaging.Thumbnail(img, 600, 600, imaging.CatmullRom)
@@ -195,7 +194,7 @@ func getSize(info os.FileInfo) int64 {
 func getSum(path string) string {
 	f, err := os.Open(path)
 	if err != nil {
-		log.Print("Unable to generate checksum")
+		log.Printf("Unable to generate checksum, %s", err)
 		return ""
 	}
 

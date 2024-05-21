@@ -17,7 +17,7 @@ func Start(appConfig AppConfig, env *database.Env) {
 
 	err := router.Run()
 	if err != nil {
-		log.Fatal("Error starting API Server")
+		log.Fatalf("Error starting API Server, %s", err)
 	}
 }
 

@@ -20,7 +20,7 @@ func (dbEnv *Env) SavePhotoRecordToDatabase(photo PhotoFile) {
 	if checkNotFoundError(err) {
 		albumId, _ = dbEnv.CreateAlbum(photo.Directory)
 		if err != nil {
-			log.Print("unable to insert album record")
+			log.Printf("unable to insert album record, %s", err)
 		}
 	}
 	log.Printf("Adding photo: %s to album: %s", photo.Name, photo.Directory)
@@ -37,6 +37,6 @@ func (dbEnv *Env) SavePhotoRecordToDatabase(photo PhotoFile) {
 	photo.ID = photoHash
 	err = dbEnv.CreatePhotoInfo(photoInfo)
 	if err != nil {
-		log.Print("unable to insert photo record")
+		log.Printf("unable to insert photo record, %s", err)
 	}
 }

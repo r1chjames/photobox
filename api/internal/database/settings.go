@@ -26,7 +26,6 @@ func (dbEnv *Env) UpdateSetting(setting Setting) error {
 	return result.Error
 }
 
-
 func (dbEnv *Env) UpdateAllSettings(settings *[]Setting) error {
 	result := dbEnv.Db.Clauses(clause.OnConflict{
 		UpdateAll: true,
@@ -81,12 +80,12 @@ func (dbEnv *Env) createBaseSettings(resetSettings bool) {
 	if resetSettings {
 		err := dbEnv.UpdateAllSettings(&settings)
 		if err != nil {
-			log.Fatal("Unable to create initial settings")
+			log.Fatalf("Unable to create initial settings, %s", err)
 		}
 	} else {
 		err := dbEnv.overwriteAllSettings(&settings)
 		if err != nil {
-			log.Fatal("Unable to create initial settings")
+			log.Fatalf("Unable to create initial settings, %s", err)
 		}
 	}
 }

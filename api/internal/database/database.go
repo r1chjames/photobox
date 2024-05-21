@@ -18,7 +18,7 @@ func InitDbConnection(appConfig AppConfig) *Env {
 	}), &gorm.Config{})
 
 	if err != nil {
-		log.Fatal("failed to connect database")
+		log.Fatalf("failed to connect database, %s", err)
 	}
 	return &Env{Db: db}
 }
@@ -27,7 +27,7 @@ func (dbEnv *Env) PerformDbSetup(appConfig AppConfig) {
 	// Migrate the schema
 	err := dbEnv.Db.AutoMigrate(&Album{}, &Photo{}, &Setting{}, &Job{})
 	if err != nil {
-		log.Fatal("failed to perform database migration")
+		log.Fatalf("failed to perform database migration, %s", err)
 	}
 
 	dbEnv.createBaseSettings(appConfig.ResetSettings)
