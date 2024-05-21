@@ -18,10 +18,11 @@ func (dbEnv *Env) SavePhotoRecordToDatabase(photo PhotoFile) {
 	result, err := dbEnv.GetAlbumByName(photo.Directory)
 	albumId := result.ID
 	if checkNotFoundError(err) {
-		albumId, _ = dbEnv.CreateAlbum(photo.Directory)
-		if err != nil {
-			log.Printf("unable to insert album record, %s", err)
+		albumId, albErr := dbEnv.CreateAlbum(photo.Directory)
+		if albErr != nil {
+			log.Printf("unable to insert album record, %s", albErr)
 		}
+		log.Printf("created album name: %s, id: %s", photo.Directory, albumId)
 	}
 	log.Printf("Adding photo: %s to album: %s", photo.Name, photo.Directory)
 	photoHash := b64.StdEncoding.EncodeToString([]byte(photo.Path))

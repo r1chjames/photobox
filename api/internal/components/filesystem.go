@@ -15,7 +15,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
 )
@@ -29,7 +28,7 @@ func PerformPhotoIndex(appConfig AppConfig, dbEnv *database.Env) {
 		_ = dbEnv.JobCompleted(jobName)
 	}(dbEnv, "Photo_index")
 
-	photoChan := make(chan PhotoFile, runtime.GOMAXPROCS(runtime.NumCPU()))
+	photoChan := make(chan PhotoFile)
 	defer close(photoChan)
 	go func(photoChan chan PhotoFile) {
 		for photo := range photoChan {
