@@ -6,7 +6,6 @@ import (
 	b64 "encoding/base64"
 	"fmt"
 	"github.com/disintegration/imaging"
-	"github.com/google/uuid"
 	"github.com/rwcarlsen/goexif/exif"
 	"gitlab.com/r1chjames/photobox/api/internal/database"
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
@@ -118,7 +117,6 @@ func getMetaData(path string, info os.FileInfo) PhotoFile {
 	photoDirectory := path[slashIndices[len(slashIndices)-2]+1 : slashIndices[len(slashIndices)-1]]
 	exifData, _ := getExifDataAndThumbnail(path)
 	return PhotoFile{
-		ID:        uuid.New().String(),
 		MD5:       getSum(path),
 		Path:      path,
 		Directory: photoDirectory,

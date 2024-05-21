@@ -24,10 +24,10 @@ func (dbEnv *Env) SavePhotoRecordToDatabase(photo PhotoFile) {
 		}
 		log.Printf("created album name: %s, id: %s", photo.Directory, albumId)
 	}
-	log.Printf("Adding photo: %s to album: %s", photo.Name, photo.Directory)
 	photoHash := b64.StdEncoding.EncodeToString([]byte(photo.Path))
 	photoMetadata, _ := json.Marshal(&photo)
 	photoInfo := Photo{
+		ID:             photoHash,
 		Name:           utils.EscapeInvalidCharacters(photo.Name),
 		FilesystemPath: utils.EscapeInvalidCharacters(photo.Path),
 		AlbumId:        albumId,
@@ -35,7 +35,9 @@ func (dbEnv *Env) SavePhotoRecordToDatabase(photo PhotoFile) {
 		Metadata:       photoMetadata,
 		Thumbnail:      photo.Thumbnail,
 	}
-	photo.ID = photoHash
+
+	log.Printf("Adding photo: %s to album: %s", photo.Name, photo.Directory)
+
 	err = dbEnv.CreatePhotoInfo(photoInfo)
 	if err != nil {
 		log.Printf("unable to insert photo record, %s", err)
