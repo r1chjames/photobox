@@ -30,7 +30,7 @@ func countAllAlbums(c *gin.Context) {
 
 func getAllAlbums(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "100"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "30"))
 
 	resp, err := dbEnv.GetAllAlbums(page, limit)
 
