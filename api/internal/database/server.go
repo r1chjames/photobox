@@ -42,4 +42,5 @@ func (dbEnv *Env) SavePhotoRecordToDatabase(photo PhotoFile) {
 	if err != nil {
 		log.Printf("unable to insert photo record, %s", err)
 	}
+	log.Printf("Added photo: %s to album: %s", photo.Name, photo.Directory)
 }

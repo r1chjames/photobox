@@ -24,15 +24,23 @@ var wg sync.WaitGroup
 
 func PerformPhotoIndex(appConfig AppConfig, dbEnv *database.Env) {
 	_ = dbEnv.JobStarting("Photo_index")
+	log.Print("Starting photo index")
 
 	defer func(dbEnv *database.Env, jobName string) {
 		_ = dbEnv.JobCompleted(jobName)
+		log.Print("Finished photo index")
 	}(dbEnv, "Photo_index")
 
-	photoChan := make(chan PhotoFile, runtime.GOMAXPROCS(runtime.NumCPU()))
+	photoChan := make(chan string, runtime.NumCPU())
 	defer close(photoChan)
-	go func(photoChan chan PhotoFile) {
-		for photo := range photoChan {
+	go func(photoChan chan string) {
+		for path := range photoChan {
+			log.Printf("Processing photo: %s", path)
+			photoFile, err := os.Lstat(path)
+			if err != nil {
+				log.Printf("Unable to process photo at path %s", err)
+			}
+			photo := getMetaData(path, photoFile.Name(), photoFile.Size())
 			dbEnv.SavePhotoRecordToDatabase(photo)
 		}
 	}(photoChan)
@@ -67,11 +75,11 @@ func WriteFileToFilesystem(dbEnv *database.Env, photo PhotoUpload) PhotoFile {
 
 	fileInfo, _ := os.Lstat(fileSavePath)
 
-	return getMetaData(fileSavePath, fileInfo)
+	return getMetaData(fileSavePath, fileInfo.Name(), fileInfo.Size())
 
 }
 
-func ScanFilesystem(appConfig AppConfig, photoChan chan PhotoFile) {
+func ScanFilesystem(appConfig AppConfig, photoChan chan string) {
 
 	photosRoot := appConfig.PhotoDir
 
@@ -80,7 +88,7 @@ func ScanFilesystem(appConfig AppConfig, photoChan chan PhotoFile) {
 	wg.Wait()
 }
 
-func walkDir(dir string, photoChan chan PhotoFile) {
+func walkDir(dir string, photoChan chan string) {
 	defer wg.Done()
 
 	visit := func(path string, d os.DirEntry, err error) error {
@@ -92,10 +100,7 @@ func walkDir(dir string, photoChan chan PhotoFile) {
 		}
 
 		if d.Type().IsRegular() && isImageFile(d.Name()) {
-			log.Printf("Processing file: %s", path)
-			info, _ := d.Info()
-			data := getMetaData(path, info)
-			photoChan <- data
+			photoChan <- path
 		}
 		return nil
 	}
@@ -112,19 +117,20 @@ func isImageFile(fileName string) bool {
 	return utils.Exists(imageFileTypes, fileType)
 }
 
-func getMetaData(path string, info os.FileInfo) PhotoFile {
+func getMetaData(path string, name string, size int64) PhotoFile {
 	slashIndices := utils.AllIndicesOfChar(path, "/")
 	photoDirectory := path[slashIndices[len(slashIndices)-2]+1 : slashIndices[len(slashIndices)-1]]
-	exifData, _ := getExifDataAndThumbnail(path)
+	exifData, thumbnail := getExifDataAndThumbnail(path)
 	return PhotoFile{
 		MD5:       getSum(path),
 		Path:      path,
 		Directory: photoDirectory,
-		Size:      getSize(info),
+		Size:      size,
 		Extension: getExtension(path),
-		Name:      info.Name(), //GetFileName(path)
+		Name:      name, //GetFileName(path)
 		Exif:      exifData,
 		Mime:      getFileType(path),
+		Thumbnail: thumbnail,
 	}
 }
 
