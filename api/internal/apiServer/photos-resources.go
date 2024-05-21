@@ -49,16 +49,17 @@ func getPhotos(c *gin.Context) {
 	albumId := c.Query("albumId")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	includeThumbnail, _ := strconv.ParseBool(c.DefaultQuery("thumbnail", "false"))
 
 	if albumId != "" {
-		resp, err := dbEnv.GetAllPhotosInfoInAlbum(albumId, page, limit)
+		resp, err := dbEnv.GetAllPhotosInfoInAlbum(albumId, page, limit, includeThumbnail)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusNotFound, apiError{http.StatusNotFound, notFoundError("album")})
 		} else {
 			c.IndentedJSON(http.StatusOK, resp)
 		}
 	} else {
-		resp, err := dbEnv.GetAllPhotos(page, limit)
+		resp, err := dbEnv.GetAllPhotos(page, limit, includeThumbnail)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusNotFound, "No photos found")
 		} else {
@@ -99,7 +100,7 @@ func getPhotoCount(c *gin.Context) {
 	} else {
 		photoCount, _ := dbEnv.GetPhotosInAlbumCount(albumId)
 		c.IndentedJSON(http.StatusOK, gin.H{
-            "photoCount": photoCount,
+			"photoCount": photoCount,
 		})
 	}
 }
