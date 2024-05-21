@@ -49,7 +49,10 @@ func getPhotos(c *gin.Context) {
 	albumId := c.Query("albumId")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-	includeThumbnail, _ := strconv.ParseBool(c.DefaultQuery("thumbnail", "false"))
+	includeThumbnail, err := strconv.ParseBool(c.DefaultQuery("thumbnail", "false"))
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, "thumbnail query parameter must be either true or false")
+	}
 
 	if albumId != "" {
 		resp, err := dbEnv.GetAllPhotosInfoInAlbum(albumId, page, limit, includeThumbnail)
@@ -70,8 +73,12 @@ func getPhotos(c *gin.Context) {
 
 func getPhoto(c *gin.Context) {
 	photoId := c.Param("id")
+	includeThumbnail, err := strconv.ParseBool(c.DefaultQuery("thumbnail", "false"))
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, "thumbnail query parameter must be either true or false")
+	}
 
-	resp, err := dbEnv.GetPhotoInfoById(photoId)
+	resp, err := dbEnv.GetPhotoInfoById(photoId, includeThumbnail)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, apiError{http.StatusNotFound, notFoundError("photo")})
 	} else {
@@ -111,7 +118,7 @@ func getPhotoBin(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, missingQueryParam("photo ID")})
 	} else {
 
-		photoInfo, err := dbEnv.GetPhotoInfoById(photoId)
+		photoInfo, err := dbEnv.GetPhotoInfoById(photoId, false)
 		if err != nil {
 			c.IndentedJSON(http.StatusNotFound, notFoundError("photo"))
 		} else {
@@ -126,7 +133,7 @@ func getThumbnail(c *gin.Context) {
 	if photoId == "" {
 		c.IndentedJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, missingQueryParam("photo ID")})
 	} else {
-		photoInfo, err := dbEnv.GetPhotoInfoById(photoId)
+		photoInfo, err := dbEnv.GetPhotoInfoById(photoId, true)
 		if err != nil {
 			c.IndentedJSON(http.StatusNotFound, notFoundError("thumbnail"))
 		} else {
