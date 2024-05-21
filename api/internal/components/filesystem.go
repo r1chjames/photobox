@@ -6,6 +6,7 @@ import (
 	b64 "encoding/base64"
 	"fmt"
 	"github.com/disintegration/imaging"
+	"github.com/google/uuid"
 	"github.com/rwcarlsen/goexif/exif"
 	"gitlab.com/r1chjames/photobox/api/internal/database"
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
@@ -15,6 +16,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 )
@@ -28,7 +30,7 @@ func PerformPhotoIndex(appConfig AppConfig, dbEnv *database.Env) {
 		_ = dbEnv.JobCompleted(jobName)
 	}(dbEnv, "Photo_index")
 
-	photoChan := make(chan PhotoFile)
+	photoChan := make(chan PhotoFile, runtime.GOMAXPROCS(runtime.NumCPU()))
 	defer close(photoChan)
 	go func(photoChan chan PhotoFile) {
 		for photo := range photoChan {
@@ -114,8 +116,9 @@ func isImageFile(fileName string) bool {
 func getMetaData(path string, info os.FileInfo) PhotoFile {
 	slashIndices := utils.AllIndicesOfChar(path, "/")
 	photoDirectory := path[slashIndices[len(slashIndices)-2]+1 : slashIndices[len(slashIndices)-1]]
-	exifData, thumbnail := getExifDataAndThumbnail(path)
+	exifData, _ := getExifDataAndThumbnail(path)
 	return PhotoFile{
+		ID:        uuid.New().String(),
 		MD5:       getSum(path),
 		Path:      path,
 		Directory: photoDirectory,
@@ -124,7 +127,6 @@ func getMetaData(path string, info os.FileInfo) PhotoFile {
 		Name:      info.Name(), //GetFileName(path)
 		Exif:      exifData,
 		Mime:      getFileType(path),
-		Thumbnail: thumbnail,
 	}
 }
 
