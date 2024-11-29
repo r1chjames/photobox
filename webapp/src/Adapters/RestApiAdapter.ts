@@ -1,4 +1,4 @@
-const axios = require('axios').default;
+import axios from 'axios';
 
 export interface IRestApiAdapter {
 
@@ -24,21 +24,21 @@ export class RestApiAdapter implements IRestApiAdapter {
     return this.apiCall('put', headers, body, path, {});
   }
 
-  async getApiCall(path: string, headers: Record<string, string>, params: Record<string, unknown>) {
+  async getApiCall(path: string, headers: Record<string, string>, params: Record<string, any>) {
     return this.apiCall('get', headers, {}, path, params);
   }
 
-  private async apiCall(method: string, headers: Record<string, string>, body: Record<string, unknown>, url: string, params: Record<string, unknown>) {
+  private async apiCall(method: string, headers: Record<string, string>, body: Record<string, any>, url: string, params: Record<string, any>) {
     const parsedUrl = `${this.baseApiPath}/${url}`;
     const options = {
       method,
       headers,
       data: JSON.stringify(body),
-      parsedUrl,
+      url: parsedUrl,
       params,
     };
     const resp = await axios(options);
-    return await resp.data;
+    return resp.data;
   }
 }
 

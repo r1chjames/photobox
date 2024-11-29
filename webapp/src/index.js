@@ -1,19 +1,20 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import ReactDOM from "react-dom/client";
 import './index.css';
 import * as serviceWorker from './serviceWorker';
 import App from './App.tsx';
 import {BrowserRouter} from "react-router-dom";
 
-const baseApiUrl = "http://127.0.0.1:8080/api";
+const baseApiUrl = "https://photodev.r1chjames.co.uk/api";
 
-ReactDOM.render(
+const root = ReactDOM.createRoot(document.getElementById("root"));
+
+root.render(
     <React.StrictMode>
         <BrowserRouter>
-            <App baseApiUrl={""}/>
+            <App baseApiUrl={baseApiUrl}/>
         </BrowserRouter>
     </React.StrictMode>
-    , document.getElementById('root')
 );
 
 serviceWorker.unregister();
