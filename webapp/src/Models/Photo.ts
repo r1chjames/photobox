@@ -7,11 +7,11 @@ export class Photo {
   private readonly _sourcePath: string;
   private readonly _albumId: string;
   private readonly _tags: string;
-  private readonly _metadata: Record<string, unknown>;
+  private readonly _metadata: Record<string, any>;
   private readonly _createdAt: string;
 
   constructor(id: string, name: string, filesystemPath: string, sourcePath: string, albumId: string, tags: string,
-              metadata: Record<string, string>, createdAt: string, apiBasePath: string) {
+              metadata: Record<string, any>, createdAt: string, apiBasePath: string) {
     this._id = id;
     this._name = name;
     this._filesystemPath = filesystemPath;
@@ -53,6 +53,12 @@ export class Photo {
   get createdAt(): string {
     return this._createdAt;
   }
+
+  getPhotoDate = (): string => {
+    const exifVal = this.metadata.exif;
+    // @ts-ignore
+    return exifVal !== null ? exifVal.DateTime : this.createdAt;
+  };
 }
 
 // tslint:disable-next-line:max-classes-per-file
@@ -96,4 +102,12 @@ export class PhotoCount {
   get photoCount(): number {
     return this._photoCount;
   }
+}
+
+export const previousPhotoInAlbum = (photos: Photo[], currentPhotoIndex: number) => {
+  return currentPhotoIndex > 0 ? photos![currentPhotoIndex - 1] : photos![0];
+}
+
+export const nextPhotoInAlbum = (photos: Photo[], currentPhotoIndex: number) => {
+  return currentPhotoIndex < photos!.length ? photos![currentPhotoIndex + 1] : photos![currentPhotoIndex];
 }

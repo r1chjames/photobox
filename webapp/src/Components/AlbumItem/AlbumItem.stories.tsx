@@ -1,8 +1,6 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {AlbumItem} from './AlbumItem';
-import { getPhotosInfoInAlbum, getPhotoCountInAlbum } from "../../Adapters/PhotosAdapter.mock";
-import {Photo} from "../../Models/Photo";
-import {newAlbum, newPhoto} from "../../utils/Storybook";
+import {SBModelBuilder} from "../../utils/SBModelBuilder";
 import {MockPhotosAdapter} from "../../Adapters/MockPhotosAdapter";
 
 const meta: Meta<typeof AlbumItem> = {
@@ -12,20 +10,14 @@ const meta: Meta<typeof AlbumItem> = {
 export default meta;
 type Story = StoryObj<typeof AlbumItem>;
 
-const photosInAlbums: Photo[] = [
-    newPhoto(1), newPhoto(2)
-];
+const albumWithPhotos = new SBModelBuilder().newAlbumWithPhotos(1, 4);
 
 export const Primary: Story = {
-    // @ts-ignore
-    async beforeEach() {
-        getPhotosInfoInAlbum.mockReturnValue(photosInAlbums);
-        getPhotoCountInAlbum.mockReturnValue(1);
-    },
     args: {
         photosAdapter: new MockPhotosAdapter()
-            .withGetPhotosInfoInAlbum(photosInAlbums),
-        source: newAlbum(1),
+            .withGetPhotosInfoInAlbum(albumWithPhotos.getPhotos())
+            .withGetPhotoCountInAlbum(albumWithPhotos.getPhotos().length),
+        source: albumWithPhotos.getAlbums().at(0),
         albumViewCallback: () => console.log("Clicked"),
     },
 };

@@ -55,3 +55,5 @@ export class PhotosAdapter implements IPhotosAdapter {
     return this.restApiAdapter.postApiCall(postSettingPath, body, this.buildHeaders());
   }
 }
+
+

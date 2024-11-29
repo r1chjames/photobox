@@ -39,3 +39,4 @@ export const decorators = [
         <MantineProvider theme={theme}>{renderStory()}</MantineProvider>
     ),
 ];
+export const tags = ['autodocs'];

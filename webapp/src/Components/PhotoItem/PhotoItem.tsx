@@ -6,32 +6,18 @@ import {useNavigate} from "react-router-dom";
 interface IProps {
   src: string;
   thumbnail: string;
-  num: number;
   groupKey?: number;
   source: Photo;
-  allPhotos: Photo[];
+  photoSequence: number;
+  previousPhoto: () => void;
+  nextPhoto: () => void;
+  lastInAlbum: boolean;
 }
 
-const findImageIndexInArray = (photos: Photo[], photoId: string, defaultVal: number) => {
-  for (let i = 0; i < photos.length; i += 1) {
-    if (photos[i].id === photoId) {
-      return i;
-    }
-  }
-  return defaultVal;
-};
 
 export const PhotoItem: React.FunctionComponent<IProps> = (props) => {
   const navigate = useNavigate()
-  const [currentId, setCurrentId] = useState(props.source.id);
   const [isImageModalOpen, setImageModalOpen] = useState(false);
-
-  const currentPhotoIdIndex = (): number => {
-    return findImageIndexInArray(props.allPhotos, currentId, 0);
-  };
-
-  const previousPhotoId = (currentPhotoIndex: number) => setCurrentId(props.allPhotos![currentPhotoIndex - 1].id);
-  const nextPhotoId = (currentPhotoIndex: number) => setCurrentId(props.allPhotos![currentPhotoIndex + 1].id);
 
   const gridImage = () => {
     return(
@@ -49,10 +35,9 @@ export const PhotoItem: React.FunctionComponent<IProps> = (props) => {
   };
 
   const previousButton = () => {
-    const currentIdIndex = currentPhotoIdIndex() ;
-    if (currentIdIndex !== 0) {
+    if (props.photoSequence !== 0) {
       return (
-        <Button onClick={() => previousPhotoId(currentIdIndex)} color="primary">
+        <Button onClick={() => props.previousPhoto()} color="primary">
           Previous
         </Button>
       );
@@ -60,10 +45,9 @@ export const PhotoItem: React.FunctionComponent<IProps> = (props) => {
   };
 
   const nextButton = () => {
-    const currentIdIndex = currentPhotoIdIndex() ;
-    if (currentIdIndex !== props.allPhotos.length - 1) {
+    if (!props.lastInAlbum) {
       return (
-        <Button onClick={() => nextPhotoId(currentIdIndex)} color="primary">
+        <Button onClick={() => props.nextPhoto()} color="primary">
           Next
         </Button>
       );
@@ -84,7 +68,7 @@ export const PhotoItem: React.FunctionComponent<IProps> = (props) => {
               </Text>
               <Group>
                 <Image
-                  onClick={() => navigate(`/photo/${currentId}`)}
+                  onClick={() => navigate(`/photo/${props.source.id}`)}
                   src={props.src}
                   alt={props.source.name}
                 />
