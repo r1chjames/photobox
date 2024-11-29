@@ -1,12 +1,12 @@
 import React from 'react';
 import './AlbumItem.css';
 import { Album } from '../../Models/Album';
-import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
 import {Badge, Text, Card, Group, Image, Loader} from '@mantine/core';
 import useAlbumItem from "./useAlbumItem";
+import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 
 interface IProps {
-  photosAdapter: PhotosAdapter;
+  photosAdapter: IPhotosAdapter;
   source: Album;
   albumViewCallback: (albumId: string) => void;
 }

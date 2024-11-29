@@ -1,9 +1,10 @@
 // @ts-nocheck
 import {fn, Mock} from '@storybook/test';
-import * as actual from './PhotosAdapter';
+import * as actualPhoto from './PhotosAdapter';
+import * as actualAlbum from './AlbumsAdapter';
 
 export * from './AlbumsAdapter';
 
-export const getAllAlbumsInfo: Mock = fn(actual.PhotosAdapter).mockName('getAllAlbumsInfo');
-export const getCountOfPhotosInAlbum: Mock = fn(actual.PhotosAdapter).mockName('getCountOfPhotosInAlbum');
-export const getAlbumInfoById: Mock = fn(actual.PhotosAdapter).mockName('getAlbumInfoById');
+export const getAllAlbumsInfo: Mock = fn(actualAlbum.PhotosAdapter).mockName('getAllAlbumsInfo');
+export const getCountOfPhotosInAlbum: Mock = fn(actualPhoto.PhotosAdapter).mockName('getCountOfPhotosInAlbum');
+export const getAlbumInfoById: Mock = fn(actualPhoto.PhotosAdapter).mockName('getAlbumInfoById');

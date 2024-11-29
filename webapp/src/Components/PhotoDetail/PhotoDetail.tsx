@@ -1,40 +1,40 @@
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import './PhotoDetail.css';
 import {Photo} from '../../Models/Photo';
-import { useParams } from 'react-router-dom';
-import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
+// import { useParams } from 'react-router-dom';
+// import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
 import {Loader, MantineProvider, Table} from '@mantine/core';
 
 interface IProps {
-  baseApiUrl: string;
-  photosAdapter: PhotosAdapter;
+  photo: Photo;
+  // photosAdapter: PhotosAdapter;
 }
 
-const getPhoto = async(propsPhotosAdapter: PhotosAdapter, photoId: string) => {
-  const photosAdapter = propsPhotosAdapter;
-  return photosAdapter.getPhotoInfoById(photoId);
-};
+// const getPhoto = async(propsPhotosAdapter: PhotosAdapter, photoId: string) => {
+//   const photosAdapter = propsPhotosAdapter;
+//   return photosAdapter.getPhotoInfoById(photoId);
+// };
 
 export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
-  const [photo, setPhoto] = useState<Photo>();
-  const { id } = useParams();
+  // const [photo, setPhoto] = useState<Photo>();
+  // const { id } = useParams();
 
-  useEffect(() => {
-    if (id !== undefined) {
-      (async function retrievePhoto() {
-        const retrievedPhoto = await getPhoto(props.photosAdapter, id);
-        setPhoto(retrievedPhoto);
-      })();
-    }
-  },        [setPhoto, id, props.photosAdapter]);
+  // useEffect(() => {
+  //   if (id !== undefined) {
+  //     (async function retrievePhoto() {
+  //       const retrievedPhoto = await getPhoto(props.photosAdapter, id);
+  //       setPhoto(retrievedPhoto);
+  //     })();
+  //   }
+  // },        [setPhoto, id, props.photosAdapter]);
 
   const content = () => {
-    if (photo !== undefined) {
+    if (props.photo !== undefined) {
       return (
           <div className="photoDetail__contentWrapper">
               <img
-                src={`${props.baseApiUrl}/photo/${id}/bin`}
-                alt={photo.name}
+                src={props.photo.sourcePath}
+                alt={props.photo.name}
                 className="photoDetail__mainImage"
               />
             <div className="photoDetail__imageMetadata">
@@ -43,7 +43,7 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                   <th>Parameter</th>
                   <th>Value</th>
                 </tr>
-                {Object.entries(photo.metadata).map(([key, value]) => {
+                {Object.entries(props.photo.metadata).map(([key, value]) => {
                   if (value !== null) {
                     return (
                       <tr key={key}>

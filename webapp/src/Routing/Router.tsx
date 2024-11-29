@@ -4,7 +4,6 @@ import {PhotoIndexView} from '../Components/PhotoIndexView/PhotoIndexView';
 import {Dashboard} from '../Components/Dashboard/Dashboard';
 import {AlbumIndexView} from '../Components/AlbumIndexView/AlbumIndexView';
 import {SettingsView} from '../Components/SettingsView/SettingsView';
-import {PhotoDetail} from '../Components/PhotoDetail/PhotoDetail';
 import {CreateAlbumView} from '../Components/CreateAlbumView/CreateAlbumView';
 import {AlbumsAdapter} from "../Adapters/AlbumsAdapter";
 import {RestApiAdapter} from "../Adapters/RestApiAdapter";
@@ -37,15 +36,16 @@ export default class Router extends Component<IProps> {
                         />
                     }
                 />
-                <Route
-                    path="/photo/:id"
-                    element={
-                        <PhotoDetail
-                            baseApiUrl={this.props.baseApiUrl}
-                            photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
-                        />
-                    }
-                />
+                {/*<Route*/}
+                {/*    path="/photo/:id"*/}
+                {/*    element={*/}
+                {/*        <PhotoDetail*/}
+                {/*            // baseApiUrl={this.props.baseApiUrl}*/}
+                {/*            photo={new Photo("p1", "photo 1", "/tmp/photo1.jpg", "https://4.img-dpreview.com/files/p/E~TS1180x0~articles/3925134721/0266554465.jpeg", "a1", "", {"a":"","b":""}, "")}*/}
+                {/*            // photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}*/}
+                {/*        />*/}
+                {/*    }*/}
+                {/*/>*/}
                 <Route
                     path="/albums"
                     element={

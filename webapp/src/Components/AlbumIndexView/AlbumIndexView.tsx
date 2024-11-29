@@ -6,13 +6,13 @@ import { InputModal } from '../InputModal/InputModal';
 import {Button, MantineProvider, TextInput} from '@mantine/core';
 import {MdAddCircle} from 'react-icons/md';
 import {useNavigate} from "react-router-dom";
-import {AlbumsAdapter} from "../../Adapters/AlbumsAdapter";
-import {PhotosAdapter} from "../../Adapters/PhotosAdapter";
 import useAlbumIndexView from "./useAlbumIndexView";
+import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
+import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 
 interface IProps {
-  albumsAdapter: AlbumsAdapter;
-  photosAdapter: PhotosAdapter;
+  albumsAdapter: IAlbumsAdapter;
+  photosAdapter: IPhotosAdapter;
 }
 
 export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {

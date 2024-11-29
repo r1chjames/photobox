@@ -1,8 +1,8 @@
 import {useEffect, useState} from 'react';
 import {Album} from "../../Models/Album";
-import {AlbumsAdapter} from "../../Adapters/AlbumsAdapter";
+import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 
-const useAlbumIndexView = (albumsAdapter: AlbumsAdapter) => {
+const useAlbumIndexView = (albumsAdapter: IAlbumsAdapter) => {
 
     const [albums, setAlbums] = useState<Album[]>([]);
     const [createAlbumModalAlbumNameErrorText, setCreateAlbumModalAlbumNameErrorText] = useState('Required');
@@ -20,6 +20,7 @@ const useAlbumIndexView = (albumsAdapter: AlbumsAdapter) => {
 
     const getAllAlbums = async() => {
         const albumSources: Album[] = await albumsAdapter.getAllAlbumsInfo();
+        console.log(albumSources);
         setAlbums(albumSources);
     };
 

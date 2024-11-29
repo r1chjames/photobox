@@ -5,7 +5,7 @@ import * as serviceWorker from './serviceWorker';
 import App from './App.tsx';
 import {BrowserRouter} from "react-router-dom";
 
-const baseApiUrl = "https://photodev.r1chjames.co.uk/api";
+const baseApiUrl = "http://photobox:8080/api";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 

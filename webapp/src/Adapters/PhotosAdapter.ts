@@ -1,6 +1,7 @@
 import {IRestApiAdapter} from "./RestApiAdapter";
+import {IPhotosAdapter} from "./IPhotosAdapter";
 
-export class PhotosAdapter {
+export class PhotosAdapter implements IPhotosAdapter {
 
   private restApiAdapter: IRestApiAdapter;
 

@@ -1,9 +1,9 @@
 import {useEffect, useState} from 'react';
-import {PhotosAdapter} from "../../Adapters/PhotosAdapter";
 import {Photo} from "../../Models/Photo";
 import {Album} from "../../Models/Album";
+import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 
-const useAlbumItem = (photosAdapter: PhotosAdapter, source: Album) => {
+const useAlbumItem = (photosAdapter: IPhotosAdapter, source: Album) => {
 
     const [thumbnailUrl, setThumbnailUrl] = useState('');
     const [photoCount, setPhotoCount] = useState(0);

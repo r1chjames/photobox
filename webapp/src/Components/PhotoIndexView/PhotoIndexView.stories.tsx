@@ -4,6 +4,7 @@ import {MockRestApiAdapter} from "../../Adapters/RestApiAdapter";
 import {PhotoIndexView} from "./PhotoIndexView";
 import {getPhotosInfoInAlbum} from "../../Adapters/PhotosAdapter.mock";
 import {Photo} from "../../Models/Photo";
+import {newPhoto} from "../../utils/Storybook";
 
 const photoResp = {"id":"p1","name":"photo 1","filesystemPath":"/tmp/photo1.jpg","albumId":"a1","tags":"","metadata":{"a":"","b":""},"createdAt":""}
 
@@ -15,8 +16,7 @@ export default meta;
 type Story = StoryObj<typeof PhotoIndexView>;
 
 const photosInAlbums: Photo[] = [
-    new Photo("p1", "photo 1", "/tmp/photo1.jpg", "a1", "", {"a":"","b":""}, ""),
-    new Photo("p2", "photo 2", "/tmp/photo2.jpg", "a1", "", {"a":"","b":""}, "")
+    newPhoto(1), newPhoto(2)
 ];
 
 export const Primary: Story = {
