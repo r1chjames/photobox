@@ -5,6 +5,7 @@ import (
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 	"log"
 )
 
@@ -15,7 +16,11 @@ type Env struct {
 func InitDbConnection(appConfig AppConfig) *Env {
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN: appConfig.DbUrl,
-	}), &gorm.Config{})
+	}), &gorm.Config{
+		NamingStrategy: schema.NamingStrategy{
+			TablePrefix:   "photobox.",
+			SingularTable: false,
+		}})
 
 	if err != nil {
 		log.Fatalf("failed to connect database, %s", err)

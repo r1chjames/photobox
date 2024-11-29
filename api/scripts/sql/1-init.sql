@@ -1,4 +1,8 @@
 CREATE DATABASE photobox;
 
 CREATE USER photobox WITH ENCRYPTED PASSWORD 'photobox';
+\c photobox;
+CREATE SCHEMA photobox;
 GRANT ALL PRIVILEGES ON DATABASE photobox TO photobox;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA photobox TO photobox;
+GRANT USAGE,CREATE ON SCHEMA photobox TO photobox;
