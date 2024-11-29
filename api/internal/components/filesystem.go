@@ -120,7 +120,8 @@ func isImageFile(fileName string) bool {
 func getMetaData(path string, name string, size int64) PhotoFile {
 	slashIndices := utils.AllIndicesOfChar(path, "/")
 	photoDirectory := path[slashIndices[len(slashIndices)-2]+1 : slashIndices[len(slashIndices)-1]]
-	exifData, thumbnail := getExifDataAndThumbnail(path)
+	exifData := getExifData(path)
+	thumbnail := generateThumbnail(path, exifData)
 	return PhotoFile{
 		MD5:       getSum(path),
 		Path:      path,
@@ -134,25 +135,28 @@ func getMetaData(path string, name string, size int64) PhotoFile {
 	}
 }
 
-func getExifDataAndThumbnail(path string) (exif.Exif, []byte) {
+func getExifData(path string) exif.Exif {
 	file, err := os.Open(path)
 	if err != nil {
 		log.Printf("Unable to open file, %s", err)
-		return exif.Exif{}, []byte{}
+		return exif.Exif{}
 	}
 	var exifData *exif.Exif
-	var parsedThumbnail []byte
 
 	exifData, err = exif.Decode(file)
 	if err != nil {
 		exifData = &exif.Exif{}
 	}
 
-	parsedThumbnail = getThumbnail(exifData)
+	return *exifData
+}
+
+func generateThumbnail(path string, exifData exif.Exif) []byte {
+	parsedThumbnail := getThumbnail(&exifData)
 	if len(parsedThumbnail) == 0 {
 		parsedThumbnail = generateMissingThumbnail(path)
 	}
-	return *exifData, parsedThumbnail
+	return parsedThumbnail
 }
 
 func getThumbnail(exif *exif.Exif) []byte {

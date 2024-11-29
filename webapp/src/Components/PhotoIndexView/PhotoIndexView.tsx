@@ -15,7 +15,7 @@ interface IProps {
 
 const getAllPhotos = async(propsPhotosAdapter: PhotosAdapter, albumId: string) => {
   const photosAdapter = propsPhotosAdapter;
-  const photos = await photosAdapter.getPhotosInfoInAlbum(albumId, 1, 100);
+  const photos = await photosAdapter.getPhotosInfoInAlbum(albumId, 1, 100, true);
   return photos;
 };
 

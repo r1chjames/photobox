@@ -56,6 +56,7 @@ func getPhotos(c *gin.Context) {
 
 	if albumId != "" {
 		resp, err := dbEnv.GetAllPhotosInfoInAlbum(albumId, page, limit, includeThumbnail)
+		setPhotoSourcePaths(resp)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusNotFound, apiError{http.StatusNotFound, notFoundError("album")})
 		} else {
@@ -63,6 +64,7 @@ func getPhotos(c *gin.Context) {
 		}
 	} else {
 		resp, err := dbEnv.GetAllPhotos(page, limit, includeThumbnail)
+		setPhotoSourcePaths(resp)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusNotFound, "No photos found")
 		} else {
@@ -79,10 +81,11 @@ func getPhoto(c *gin.Context) {
 	}
 
 	resp, err := dbEnv.GetPhotoInfoById(photoId, includeThumbnail)
+	setPhotoSourcePath(resp)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, apiError{http.StatusNotFound, notFoundError("photo")})
 	} else {
-		c.IndentedJSON(http.StatusOK, resp)
+		c.IndentedJSON(http.StatusOK, &resp)
 	}
 }
 
@@ -139,5 +142,15 @@ func getThumbnail(c *gin.Context) {
 		} else {
 			c.Data(http.StatusOK, "application/octet-stream", photoInfo.Thumbnail)
 		}
+	}
+}
+
+func setPhotoSourcePath(photo *Photo) {
+	photo.SourcePath = fmt.Sprintf("%s/photo/%s}/bin", config.ApiBasePath, photo.ID)
+}
+
+func setPhotoSourcePaths(photos []*Photo) {
+	for _, photo := range photos {
+		setPhotoSourcePath(photo)
 	}
 }

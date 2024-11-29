@@ -5,8 +5,8 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-func (dbEnv *Env) GetPhotoInfoById(photoId string, includeThumbnail bool) (Photo, error) {
-	var photo Photo
+func (dbEnv *Env) GetPhotoInfoById(photoId string, includeThumbnail bool) (*Photo, error) {
+	var photo *Photo
 	photo.ID = photoId
 	result := dbEnv.Db
 	if !includeThumbnail {
@@ -16,8 +16,8 @@ func (dbEnv *Env) GetPhotoInfoById(photoId string, includeThumbnail bool) (Photo
 	return photo, result.Error
 }
 
-func (dbEnv *Env) GetAllPhotos(pageNumber int, pageSize int, includeThumbnail bool) ([]Photo, error) {
-	var photos []Photo
+func (dbEnv *Env) GetAllPhotos(pageNumber int, pageSize int, includeThumbnail bool) ([]*Photo, error) {
+	var photos []*Photo
 	result := dbEnv.Db.Scopes(Paginate(pageNumber, pageSize))
 	if !includeThumbnail {
 		result.Omit("thumbnail")
@@ -26,8 +26,8 @@ func (dbEnv *Env) GetAllPhotos(pageNumber int, pageSize int, includeThumbnail bo
 	return photos, result.Error
 }
 
-func (dbEnv *Env) GetAllPhotosInfoInAlbum(albumId string, pageNumber int, pageSize int, includeThumbnail bool) ([]Photo, error) {
-	var photos []Photo
+func (dbEnv *Env) GetAllPhotosInfoInAlbum(albumId string, pageNumber int, pageSize int, includeThumbnail bool) ([]*Photo, error) {
+	var photos []*Photo
 	result := dbEnv.Db.Scopes(Paginate(pageNumber, pageSize))
 	if !includeThumbnail {
 		result.Omit("thumbnail")

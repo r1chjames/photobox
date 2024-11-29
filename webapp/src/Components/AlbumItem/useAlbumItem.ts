@@ -10,7 +10,7 @@ const useAlbumItem = (photosAdapter: IPhotosAdapter, source: Album) => {
     const [isLoading, setIsLoading] = useState(true);
 
     const getUrlOfFirstImageInAlbum = async () => {
-        const photos: Photo[] = await photosAdapter.getPhotosInfoInAlbum(source.id, 1, 1);
+        const photos: Photo[] = await photosAdapter.getPhotosInfoInAlbum(source.id, 1, 1, true);
         if (photos && photos.length > 0) {
             return `photo/${photos[0].id}/thumbnail`;
         }

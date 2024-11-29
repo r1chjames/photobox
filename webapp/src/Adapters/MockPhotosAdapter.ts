@@ -35,7 +35,7 @@ export class MockPhotosAdapter implements IPhotosAdapter {
   }
 
 
-  public getAllPhotosInfo = async () => {
+  public getAllPhotosInfo = async (includeThumbnails: boolean) => {
     return this._getAllPhotosInfo;
   }
 
@@ -43,7 +43,7 @@ export class MockPhotosAdapter implements IPhotosAdapter {
     return this._getPhotoInfoById;
   }
 
-  public getPhotosInfoInAlbum = async (albumId: string, page: number, limit: number) => {
+  public getPhotosInfoInAlbum = async (albumId: string, page: number, limit: number, includeThumbnails: boolean) => {
     return this._getPhotosInfoInAlbum;
   }
 

@@ -23,6 +23,9 @@ func Start(appConfig AppConfig, env *database.Env) {
 
 func setupRouter(appConfig AppConfig) *gin.Engine {
 	router := gin.Default()
+	//config := cors.DefaultConfig()
+	//config.AllowOrigins = []string{"http://photobox"}
+	//router.Use(cors.New(config))
 	router.Use(cors.Default())
 
 	defineAlbumsResources(router, appConfig)

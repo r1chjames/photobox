@@ -20,6 +20,7 @@ type Photo struct {
 	ID             string         `gorm:"primarykey" json:"id"`
 	Name           string         `json:"name"`
 	FilesystemPath string         `json:"filesystemPath"`
+	SourcePath     string         `json:"sourcePath"`
 	AlbumId        string         `json:"albumId" gorm:"index"`
 	Tags           string         `json:"tags"`
 	Metadata       datatypes.JSON `json:"metadata"`

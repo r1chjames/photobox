@@ -16,8 +16,8 @@ export class PhotosAdapter implements IPhotosAdapter {
     return { ...standardHeaders, ...additionalHeaders };
   }
 
-  public getAllPhotosInfo = async () => {
-    const getAllPhotosPath = "photos";
+  public getAllPhotosInfo = async (includeThumbnails: boolean) => {
+    const getAllPhotosPath = `photos?thumbnail=${includeThumbnails}`;
     return this.restApiAdapter.getApiCall(getAllPhotosPath, this.buildHeaders(), {});
   }
 
@@ -26,8 +26,8 @@ export class PhotosAdapter implements IPhotosAdapter {
     return this.restApiAdapter.getApiCall(getAllPhotosPath, this.buildHeaders(), {});
   }
 
-  public getPhotosInfoInAlbum = async (albumId: string, page: number, limit: number) => {
-    const getPhotosInAlbumPath = `photos?page=${page}&limit=${limit}`;
+  public getPhotosInfoInAlbum = async (albumId: string, page: number, limit: number, includeThumbnails: boolean) => {
+    const getPhotosInAlbumPath = `photos?page=${page}&limit=${limit}&thumbnail=${includeThumbnails}`;
     const params = {
       albumId,
     };
