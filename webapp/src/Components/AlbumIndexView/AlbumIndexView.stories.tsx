@@ -20,6 +20,7 @@ export const Primary: Story = {
             .withGetAllAlbumsResponse(albumWithPhotos.getAlbums())
             .withGetCountOfPhotosInAlbum(albumWithPhotos.getPhotos().length),
         photosAdapter: new MockPhotosAdapter()
-            .withGetAllPhotosInfo(albumWithPhotos.getPhotos()),
+            .withGetAllPhotosInfo(albumWithPhotos.getPhotos())
+            .withGetPhotoCountInAlbum(2),
     },
 };

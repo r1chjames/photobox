@@ -13,10 +13,10 @@ interface IProps {
 
 export const AlbumItem: React.FunctionComponent<IProps> = (props) => {
 
-  const [{thumbnailUrl, photoCount, loading}] = useAlbumItem(props.photosAdapter, props.source);
+  const [{thumbnailUrl, photoCount, isLoading}] = useAlbumItem(props.photosAdapter, props.source);
 
   const content = () => {
-    if (loading) {
+    if (isLoading) {
       return (
         <Loader size={"md"} />
       );
@@ -32,7 +32,7 @@ export const AlbumItem: React.FunctionComponent<IProps> = (props) => {
         </Card.Section>
         <Group style={{ marginBottom: 5 }}>
           <Text>{props.source.name}</Text>
-          <Badge color="pink" variant="light">
+          <Badge color="blue" variant="light">
             {photoCount} photos
           </Badge>
         </Group>

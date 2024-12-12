@@ -5,13 +5,14 @@ export class Photo {
   private readonly _name: string;
   private readonly _filesystemPath: string;
   private readonly _sourcePath: string;
+  private readonly _thumbnailPath: string;
   private readonly _albumId: string;
   private readonly _tags: string;
-  private readonly _metadata: Record<string, any>;
+  private readonly _metadata: Record<string, Record<string, string>>;
   private readonly _createdAt: string;
 
-  constructor(id: string, name: string, filesystemPath: string, sourcePath: string, albumId: string, tags: string,
-              metadata: Record<string, any>, createdAt: string, apiBasePath: string) {
+  constructor(id: string, name: string, filesystemPath: string, sourcePath: string, thumnnailPath: string, albumId: string, tags: string,
+              metadata: Record<string, Record<string, string>>, createdAt: string, apiBasePath: string) {
     this._id = id;
     this._name = name;
     this._filesystemPath = filesystemPath;
@@ -20,6 +21,7 @@ export class Photo {
     this._tags = tags;
     this._metadata = metadata;
     this._createdAt = createdAt;
+    this._thumbnailPath = `${apiBasePath}/${thumnnailPath}`
   }
 
   get id(): string {
@@ -38,6 +40,10 @@ export class Photo {
     return this._sourcePath;
   }
 
+  get thumbnailPath(): string {
+    return this._thumbnailPath;
+  }
+
   get albumId(): string {
     return this._albumId;
   }
@@ -54,10 +60,10 @@ export class Photo {
     return this._createdAt;
   }
 
-  getPhotoDate = (): string => {
-    const exifVal = this.metadata.exif;
+  getPhotoDate(): string {
+    const exifVal = this._metadata.exif;
     // @ts-ignore
-    return exifVal !== null ? exifVal.DateTime : this.createdAt;
+    return exifVal !== null ? exifVal.DateTime : this._createdAt;
   };
 }
 

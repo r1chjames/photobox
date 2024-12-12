@@ -9,14 +9,6 @@ const useAlbumItem = (photosAdapter: IPhotosAdapter, source: Album) => {
     const [photoCount, setPhotoCount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
 
-    const getUrlOfFirstImageInAlbum = async () => {
-        const photos: Photo[] = await photosAdapter.getPhotosInfoInAlbum(source.id, 1, 1, true);
-        if (photos && photos.length > 0) {
-            return `photo/${photos[0].id}/thumbnail`;
-        }
-        return '';
-    };
-
     const getPhotoCountInAlbum = async () => {
         const count = await photosAdapter.getPhotoCountInAlbum(source.id);
         setPhotoCount(count);
@@ -24,8 +16,9 @@ const useAlbumItem = (photosAdapter: IPhotosAdapter, source: Album) => {
     };
 
     const retrieveThumbnailUrl = async () => {
-        const retrievedThumbnailUrl = await getUrlOfFirstImageInAlbum();
-        setThumbnailUrl(retrievedThumbnailUrl);
+        const photos: Photo[] = await photosAdapter.getPhotosInfoInAlbum(source.id, 1, 1, true);
+        const firstPhotoInAlbum = (photos && photos.length > 0) ? photos[0].thumbnailPath : 'placeholder';
+        setThumbnailUrl(firstPhotoInAlbum);
         setIsLoading(false);
     }
 
@@ -34,7 +27,7 @@ const useAlbumItem = (photosAdapter: IPhotosAdapter, source: Album) => {
         getPhotoCountInAlbum();
     },[]);
 
-    return [{thumbnailUrl, photoCount, loading: isLoading}]
+    return [{thumbnailUrl, photoCount, isLoading}]
 };
 
 export default useAlbumItem;
