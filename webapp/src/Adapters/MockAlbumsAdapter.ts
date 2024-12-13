@@ -1,38 +1,32 @@
 import {IAlbumsAdapter} from "./IAlbumsAdapter";
 import {Album} from "../Models/Album";
+import {Photo} from "../Models/Photo";
 
 export class MockAlbumsAdapter implements IAlbumsAdapter {
 
-  private _getAllAlbumsInfo: Album[] = [];
-  private _getCountOfPhotosInAlbum: number = 0;
-  private _getAlbumInfoById: string = "";
+  private _photos: Photo[] = [];
+  private _albums: Album[] = [];
 
-  public withGetAllAlbumsResponse(getAllAlbumsInfo: Album[]): this {
-    this._getAllAlbumsInfo = getAllAlbumsInfo
-    return this;
-  }
-
-  public withGetCountOfPhotosInAlbum(getCountOfPhotosInAlbum: number): this {
-    this._getCountOfPhotosInAlbum = getCountOfPhotosInAlbum
-    return this;
-  }
-
-  public withGetAlbumInfoById(getAlbumInfoById: string): this {
-    this._getAlbumInfoById = getAlbumInfoById
+  public withAlbums(albums: Album[]): this {
+    this._albums = albums
     return this;
   }
 
   public getAllAlbumsInfo = async () => {
-    return this._getAllAlbumsInfo;
+    return this._albums;
+  }
+
+  public getPhotoCountInAlbum = async (albumId: string) => {
+    return this._photos.filter(p => `a${p.albumId}` === albumId).length;
   }
 
   public getCountOfPhotosInAlbum = async () => {
     return {
-      "photoCount" : this._getCountOfPhotosInAlbum
+      "photoCount" : this._photos.filter(p => `a${p.albumId}` === "albumId").length
     };
   }
 
   public getAlbumInfoById = async (albumId: string) => {
-    return this._getAlbumInfoById;
+    return this._albums.filter(a => `a${a.id}` === albumId);
   }
 }

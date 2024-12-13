@@ -3,7 +3,7 @@ import './PhotoDetail.css';
 import {Photo} from '../../Models/Photo';
 // import { useParams } from 'react-router-dom';
 // import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
-import {Loader, MantineProvider, Table} from '@mantine/core';
+import {Loader, Table} from '@mantine/core';
 
 interface IProps {
   photo: Photo;
@@ -65,8 +65,8 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
   };
 
   return (
-    <MantineProvider>
+    <div>
       {content()}
-    </MantineProvider>
+    </div>
   );
 };

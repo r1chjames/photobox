@@ -22,17 +22,17 @@ export const AlbumItem: React.FunctionComponent<IProps> = (props) => {
       );
     }
     return (
-      <Card
-        shadow="sm"
+      <Card shadow="sm" padding="lg" radius="md" withBorder
+            style={{ width: '200px' , margin: '10px' }}
         // className="albumItem__cardWrapper"
         onClick={() => props.albumViewCallback(props.source.id)}
       >
         <Card.Section>
           <Image src={thumbnailUrl} />
         </Card.Section>
-        <Group style={{ marginBottom: 5 }}>
-          <Text>{props.source.name}</Text>
-          <Badge color="blue" variant="light">
+        <Group justify="space-between" mt="md" mb="xs">
+          <Text fw={500}>{props.source.name}</Text>
+          <Badge color="blue" variant="light" size="xs">
             {photoCount} photos
           </Badge>
         </Group>

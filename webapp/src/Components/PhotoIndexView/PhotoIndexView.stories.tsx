@@ -19,7 +19,6 @@ const photosInAlbums: Photo[] = [
 export const Primary: Story = {
     args: {
         photosAdapter: new MockPhotosAdapter()
-            .withGetPhotosInfoInAlbum(photosInAlbums)
-            .withGetPhotoCountInAlbum(photosInAlbums.length)
+            .withPhotos(photosInAlbums)
     },
 };

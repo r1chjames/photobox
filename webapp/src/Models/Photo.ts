@@ -11,7 +11,7 @@ export class Photo {
   private readonly _metadata: Record<string, Record<string, string>>;
   private readonly _createdAt: string;
 
-  constructor(id: string, name: string, filesystemPath: string, sourcePath: string, thumnnailPath: string, albumId: string, tags: string,
+  constructor(id: string, name: string, filesystemPath: string, sourcePath: string, thumbnailPath: string, albumId: string, tags: string,
               metadata: Record<string, Record<string, string>>, createdAt: string, apiBasePath: string) {
     this._id = id;
     this._name = name;
@@ -21,7 +21,7 @@ export class Photo {
     this._tags = tags;
     this._metadata = metadata;
     this._createdAt = createdAt;
-    this._thumbnailPath = `${apiBasePath}/${thumnnailPath}`
+    this._thumbnailPath = `${apiBasePath}/${thumbnailPath}`
   }
 
   get id(): string {

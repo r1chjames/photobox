@@ -9,7 +9,12 @@ const meta: Meta<typeof AlbumIndexView> = {
     component: AlbumIndexView,
 };
 
-const albumWithPhotos = new SBModelBuilder().newAlbumWithPhotos(5, 4);
+const albumWithPhotos = new SBModelBuilder()
+    .newAlbumWithPhotos(2)
+    .newAlbumWithPhotos(4)
+    .newAlbumWithPhotos(7)
+    .newAlbumWithPhotos(1)
+    .newAlbumWithPhotos(5);
 
 export default meta;
 type Story = StoryObj<typeof AlbumIndexView>;
@@ -17,11 +22,8 @@ type Story = StoryObj<typeof AlbumIndexView>;
 export const Primary: Story = {
     args: {
         albumsAdapter: new MockAlbumsAdapter()
-            .withGetAllAlbumsResponse(albumWithPhotos.getAlbums())
-            .withGetCountOfPhotosInAlbum(albumWithPhotos.getPhotos().length),
+            .withAlbums(albumWithPhotos.getAlbums()),
         photosAdapter: new MockPhotosAdapter()
-            .withGetAllPhotosInfo(albumWithPhotos.getPhotos())
-            .withGetPhotosInfoInAlbum(albumWithPhotos.getPhotos())
-            .withGetPhotoCountInAlbum(2),
+            .withPhotos(albumWithPhotos.getPhotos())
     },
 };

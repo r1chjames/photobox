@@ -3,7 +3,7 @@ import './AlbumIndexView.css';
 import { Album } from '../../Models/Album';
 import { AlbumItem } from '../AlbumItem/AlbumItem';
 import { InputModal } from '../InputModal/InputModal';
-import {Button, MantineProvider, TextInput} from '@mantine/core';
+import {Button, Flex, MantineProvider, TextInput} from '@mantine/core';
 import {MdAddCircle} from 'react-icons/md';
 import {useNavigate} from "react-router-dom";
 import useAlbumIndexView from "./useAlbumIndexView";
@@ -47,6 +47,15 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
           />
         </InputModal>
         <section className="albumIndexView__cardContainer">
+          <Flex
+              direction={{ base: 'column', sm: 'row' }}
+              gap={{ base: 'sm', sm: 'lg' }}
+              justify={{ sm: 'center' }}
+              mih={50}
+              bg="rgba(0, 0, 0, .05)"
+              align="center"
+              wrap="wrap"
+          >
           {albums.map((album: Album) => {
             return(
               <article key={album.id}>
@@ -58,6 +67,7 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
               </article>
             );
           })}
+          </Flex>
         </section>
         <Button
           color="primary"

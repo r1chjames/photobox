@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "node-red-contrib-huemagic-fork": "^4.2.8",
-    "ts-mockito": "^2.6.1"
-  }
-}

@@ -10,13 +10,12 @@ const meta: Meta<typeof AlbumItem> = {
 export default meta;
 type Story = StoryObj<typeof AlbumItem>;
 
-const albumWithPhotos = new SBModelBuilder().newAlbumWithPhotos(1, 4);
+const albumWithPhotos = new SBModelBuilder().newAlbumWithPhotos(4);
 
 export const Primary: Story = {
     args: {
         photosAdapter: new MockPhotosAdapter()
-            .withGetPhotosInfoInAlbum(albumWithPhotos.getPhotos())
-            .withGetPhotoCountInAlbum(albumWithPhotos.getPhotos().length),
+            .withPhotos(albumWithPhotos.getPhotos()),
         source: albumWithPhotos.getAlbums().at(0),
         albumViewCallback: () => console.log("Clicked"),
     },

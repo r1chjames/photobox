@@ -3,56 +3,31 @@ import {IPhotosAdapter} from "./IPhotosAdapter";
 
 export class MockPhotosAdapter implements IPhotosAdapter {
 
-  private _getAllPhotosInfo: Photo[] | any = null;
-  private _getPhotoInfoById: Photo | any = null;
-  private _getPhotosInfoInAlbum: Photo[] | any = null;
-  private _getPhotoCountInAlbum: number = 0;
-  private _getPhotoImage: string | any = null;
+  private _photos: Photo[] = [];
 
-  public withGetAllPhotosInfo(getAllPhotosInfo: Photo[]): this {
-    this._getAllPhotosInfo = getAllPhotosInfo;
+  public withPhotos(photos: Photo[]): this {
+    this._photos = photos;
     return this;
   }
-
-  public withGetPhotoInfoById(getPhotoInfoById: Photo): this {
-    this._getPhotoInfoById = getPhotoInfoById;
-    return this;
-  }
-
-  public withGetPhotosInfoInAlbum(getPhotosInfoInAlbum: Photo[]): this {
-    this._getPhotosInfoInAlbum = getPhotosInfoInAlbum;
-    return this;
-  }
-
-  public withGetPhotoCountInAlbum(getPhotoCountInAlbum: number): this {
-    this._getPhotoCountInAlbum = getPhotoCountInAlbum;
-    return this;
-  }
-
-  public withGetPhotoImage(getPhotoImage: string): this {
-    this._getPhotoImage = getPhotoImage;
-    return this;
-  }
-
 
   public getAllPhotosInfo = async (includeThumbnails: boolean) => {
-    return this._getAllPhotosInfo;
+    return this._photos;
   }
 
   public getPhotoInfoById = async (photoId: string) => {
-    return this._getPhotoInfoById;
+    return this._photos.filter(p => `p${p.id}` === photoId);
   }
 
   public getPhotosInfoInAlbum = async (albumId: string, page: number, limit: number, includeThumbnails: boolean) => {
-    return this._getPhotosInfoInAlbum;
+    return this._photos.filter(p => `a${p.albumId}` === albumId);
   }
 
   public getPhotoCountInAlbum = async (albumId: string) => {
-    return this._getPhotoCountInAlbum;
+    return this._photos.filter(p => `a${p.albumId}` === albumId).length;
   }
 
   public getPhotoImage = async (photoId: string) => {
-    return this._getPhotoImage;
+    return this._photos.filter(p => `p${p.id}` === photoId);
   }
 
   public uploadPhoto = async (body: Record<string, unknown>) => {
