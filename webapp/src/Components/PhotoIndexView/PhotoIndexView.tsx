@@ -5,14 +5,15 @@ import {Loader, MantineProvider} from '@mantine/core';
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import usePhotoIndexView from "./usePhotoIndexView";
 import {PhotoItem} from "../PhotoItem/PhotoItem";
+import {useParams} from "react-router-dom";
 
 interface IProps {
   photosAdapter: IPhotosAdapter;
-  albumId: string;
 }
 
 export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
-  const [{photos, isApiCallsRunning}] = usePhotoIndexView(props.photosAdapter, props.albumId);
+  const { albumId } = useParams();
+  const [{photos, isApiCallsRunning}] = usePhotoIndexView(props.photosAdapter, albumId);
   const [photoItemsByDate, setPhotoItemsByDate] = useState<Map<string, JSX.Element[]>>(new Map<string, JSX.Element[]>);
   const [isLoading, setIsLoading] = useState(false);
 

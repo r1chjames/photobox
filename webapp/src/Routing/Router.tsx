@@ -56,7 +56,7 @@ export default class Router extends Component<IProps> {
                     }
                 />
                 <Route
-                    path="/album/:id"
+                    path="/album/:albumid"
                     element={
                         <PhotoIndexView
                             photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
