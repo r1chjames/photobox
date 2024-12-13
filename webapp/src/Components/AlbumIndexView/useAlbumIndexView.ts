@@ -17,10 +17,8 @@ const useAlbumIndexView = (albumsAdapter: IAlbumsAdapter) => {
         }
     };
 
-
     const getAllAlbums = async() => {
         const albumSources: Album[] = await albumsAdapter.getAllAlbumsInfo();
-        console.log(albumSources);
         setAlbums(albumSources);
     };
 

@@ -1,87 +1,54 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
 import {MasonryInfiniteGrid} from '@egjs/react-infinitegrid';
-import { Photo } from '../../Models/Photo';
 import './PhotoIndexView.css';
 import {Loader, MantineProvider} from '@mantine/core';
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
-import useAlbumIndexView from "../AlbumIndexView/useAlbumIndexView";
 import usePhotoIndexView from "./usePhotoIndexView";
-// import {GroupedItemWrapper} from '../GroupedItemWrapper/GroupedItemWrapper';
+import {PhotoItem} from "../PhotoItem/PhotoItem";
 
 interface IProps {
   photosAdapter: IPhotosAdapter;
   albumId: string;
 }
 
-
-
 export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
-  const [{photos, isLoading}] = usePhotoIndexView(props.photosAdapter, props.albumId);
-  const [photoItemsByDate, setPhotoItemsByDate] = useState();
-
-  const updatePhotoCollectionByDate = (items: Map<string, JSX.Element>) => {
-    // let itemDateMap = new Map<string, JSX.Element[]>;
-    // items.forEach((jsxItem, date) => {
-    //   const currentMapValue = itemDateMap.get(date);
-    //   itemDateMap.set(
-    //       date,
-    //       currentMapValue.push(jsxItem)
-    //   )
-    // })
-    return Object.groupBy(items, (entries, index) => {
-      return entries.project;
-    });
-  };
-
+  const [{photos, isApiCallsRunning}] = usePhotoIndexView(props.photosAdapter, props.albumId);
+  const [photoItemsByDate, setPhotoItemsByDate] = useState<Map<string, JSX.Element[]>>(new Map<string, JSX.Element[]>);
+  const [isLoading, setIsLoading] = useState(false);
 
   const loadItems = (groupKey: number) => {
-    let items= new Map<string, JSX.Element>;
-    const start = 0;
-
+    setIsLoading(true);
+    const photoItems = new Map<string, JSX.Element[]>();
     if (photos) {
-      for (let i = 0; i < photos.length; i += 1) {
-        const photo = photos[start + i];
+      photos.forEach(function (photo, i) {
         if (typeof photo !== 'undefined') {
-          items.set(
-              photo.getPhotoDate(),
-                  <PhotoItem
-                      src={photo.sourcePath}
-                      thumbnail={photo.thumbnailPath}
-                      groupKey={groupKey}
-                      num={1 + start + i}
-                      key={start + i}
-                      source={photo}
-                      allPhotos={photos}
-                  />
-              )
-            }
+          const currentMapValue = photoItems.get(photo.getPhotoDate()) || [];
+          currentMapValue.push(
+              <PhotoItem
+                  src={photo.sourcePath}
+                  thumbnail={photo.thumbnailPath}
+                  groupKey={groupKey}
+                  source={photo}
+                  photoSequence={i}
+                  previousPhoto={() => console.log("previous")}
+                  nextPhoto={() => console.log("next")}
+                  lastInAlbum={i < photos.length}
+              />
+            );
+          photoItems.set(photo.getPhotoDate(), currentMapValue);
         }
-      }
-    setPhotoItemsByDate(updatePhotoCollectionByDate(items));
-    };
+      });
+    }
+    setPhotoItemsByDate(photoItems);
+    setIsLoading(false);
+  };
 
-  useEffect(() =>
-      loadItems(1),
-      [photoItemsByDate]
-  );
-
-  {/*const parseItems = (items: Map<string, JSX.Element[]>) => {*/}
-  {/*  const itemsToReturn: JSX.Element[] = [];*/}
-  {/*  items.forEach((values, key) => {*/}
-  {/*    itemsToReturn.push(*/}
-  {/*        <div>*/}
-  {/*          {key}*/}
-  {/*          {values}*/}
-  {/*        </div>*/}
-  {/*    );*/}
-  {/*  });*/}
-
-  {/*  return itemsToReturn;*/}
-  {/*};*/}
+  useEffect(() => {
+    if (!isApiCallsRunning) loadItems(1)
+  }, [photos]);
 
   const content = () => {
-    if (isLoading && !photos) {
+    if (isLoading && !photoItemsByDate) {
       return (
         <div>
           This album is empty
@@ -89,7 +56,7 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
       );
     }
 
-    if (isLoading && photos) {
+    if (!isLoading && photoItemsByDate) {
       return (
         <MasonryInfiniteGrid
           options={{ isConstantSize: false, transitionDuration: 0.2, useFit: true }}
@@ -97,7 +64,7 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
           // onAppend={onAppend}
           // onLayoutComplete={onLayoutComplete}
         >
-          {photoItems}
+          {photoItemsByDate}
         </MasonryInfiniteGrid>
       );
     }

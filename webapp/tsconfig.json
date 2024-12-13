@@ -10,9 +10,9 @@
       "node_modules/@types"
     ],
     "allowJs": true,
-    "target": "ES2023",
+    "target": "ESNext",
     "lib": [
-      "ES2023",
+      "ESNext",
       "dom"
     ],
     "skipLibCheck": true,

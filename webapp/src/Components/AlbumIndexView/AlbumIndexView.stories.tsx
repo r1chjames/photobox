@@ -21,6 +21,7 @@ export const Primary: Story = {
             .withGetCountOfPhotosInAlbum(albumWithPhotos.getPhotos().length),
         photosAdapter: new MockPhotosAdapter()
             .withGetAllPhotosInfo(albumWithPhotos.getPhotos())
+            .withGetPhotosInfoInAlbum(albumWithPhotos.getPhotos())
             .withGetPhotoCountInAlbum(2),
     },
 };
