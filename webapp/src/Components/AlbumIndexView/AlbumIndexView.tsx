@@ -3,7 +3,7 @@ import './AlbumIndexView.css';
 import { Album } from '../../Models/Album';
 import { AlbumItem } from '../AlbumItem/AlbumItem';
 import { InputModal } from '../InputModal/InputModal';
-import {Button, Flex, MantineProvider, TextInput} from '@mantine/core';
+import {Button, Flex, TextInput} from '@mantine/core';
 import {MdAddCircle} from 'react-icons/md';
 import {useNavigate} from "react-router-dom";
 import useAlbumIndexView from "./useAlbumIndexView";
@@ -30,8 +30,7 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
   };
 
   return (
-    <MantineProvider>
-      <p>Albums</p>
+    <div>
         <InputModal
           isOpen={showNewAlbumModal}
           title="Create Album"
@@ -52,7 +51,7 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
               gap={{ base: 'sm', sm: 'lg' }}
               justify={{ sm: 'center' }}
               mih={50}
-              bg="rgba(0, 0, 0, .05)"
+              bg="rgba(0, 0, 0, 0)"
               align="flex-start"
               wrap="wrap"
           >
@@ -77,6 +76,6 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
         >
           <MdAddCircle/>
         </Button>
-    </MantineProvider>
+    </div>
   );
 };

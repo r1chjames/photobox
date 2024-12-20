@@ -4,7 +4,7 @@ import { Setting } from '../../Models/Setting';
 import { SettingsAdapter } from '../../Adapters/SettingsAdapter';
 import { SettingModal } from '../SettingModal/SettingModal';
 import {InfoSnackbar} from '../Snackbar/InfoSnackbar';
-import {ActionIcon, MantineProvider, Table, TextInput} from '@mantine/core';
+import {ActionIcon, Table, TextInput} from '@mantine/core';
 import {MdAdd, MdCancel, MdSave} from 'react-icons/md';
 import {ImPencil} from 'react-icons/im';
 
@@ -139,7 +139,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
   };
 
   return (
-    <MantineProvider>
+    <div>
         <SettingModal
           isOpen={showModal}
           handleSave={handleModalSave}
@@ -168,6 +168,6 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
         <ActionIcon color="primary" aria-label="edit" className="settingsView__saveEditButton">
           {editingButton()}
         </ActionIcon>
-    </MantineProvider>
+    </div>
   );
 };

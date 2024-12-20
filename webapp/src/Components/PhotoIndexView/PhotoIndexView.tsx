@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {JustifiedInfiniteGrid} from '@egjs/react-infinitegrid';
 import './PhotoIndexView.css';
-import {Loader, MantineProvider} from '@mantine/core';
+import {Loader} from '@mantine/core';
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import usePhotoIndexView from "./usePhotoIndexView";
 import {PhotoItem} from "../PhotoItem/PhotoItem";
@@ -128,10 +128,8 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
   };
 
   return (
-    <MantineProvider>
-        <div className="photoIndexView__photoIndex">
-          {content()}
-        </div>
-    </MantineProvider>
+    <div className="photoIndexView__photoIndex">
+      {content()}
+    </div>
   );
 };
