@@ -4,25 +4,25 @@ import {Photo} from "../../Models/Photo";
 
 const usePhotoIndexView = (photosAdapter: IPhotosAdapter, albumId: string | undefined) => {
 
-    const [photos, setPhotos] = useState<Photo[]>();
-    const [isApiCallsRunning, sApiCallsRunning] = useState(false);
+    const [photos, setPhotos] = useState<Photo[]>([]);
+    const [isApiCallsRunning, setIsApiCallsRunning] = useState(false);
 
-    async function retrievePhotos() {
+    async function retrievePhotos(nextGroupKey: number, count: number) {
         let retrievedPhotos;
         if (typeof albumId !== 'undefined') {
-            retrievedPhotos = await photosAdapter.getPhotosInfoInAlbum(albumId, 1, 100, true);
+            retrievedPhotos = await photosAdapter.getPhotosInfoInAlbum(albumId, nextGroupKey, count, true);
         } else {
             retrievedPhotos = await photosAdapter.getAllPhotosInfo(true);
         }
         setPhotos(retrievedPhotos);
-        sApiCallsRunning(false);
+        setIsApiCallsRunning(false);
     }
 
     useEffect(() => {
-        retrievePhotos();
+        retrievePhotos(1, 30);
     },[]);
 
-    return [{photos, isApiCallsRunning}]
+    return [{photos, isApiCallsRunning, retrievePhotos}]
 };
 
 export default usePhotoIndexView;

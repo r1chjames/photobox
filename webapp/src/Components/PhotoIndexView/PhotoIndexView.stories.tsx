@@ -4,7 +4,6 @@ import {Photo} from "../../Models/Photo";
 import {newPhoto} from "../../utils/SBModelBuilder";
 import {MockPhotosAdapter} from "../../Adapters/MockPhotosAdapter";
 
-
 const meta: Meta<typeof PhotoIndexView> = {
     component: PhotoIndexView,
 };

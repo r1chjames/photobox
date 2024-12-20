@@ -53,7 +53,7 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
               justify={{ sm: 'center' }}
               mih={50}
               bg="rgba(0, 0, 0, .05)"
-              align="center"
+              align="flex-start"
               wrap="wrap"
           >
           {albums.map((album: Album) => {
