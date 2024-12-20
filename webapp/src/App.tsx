@@ -17,8 +17,7 @@ export const App: React.FunctionComponent<IProps> = (props) => {
         <Router baseApiUrl={props.baseApiUrl}>
             <QueryClientProvider client={queryClient}>
                 <MantineProvider theme={theme}>
-                    <AppBar />
-
+                    <AppBar activeLink={"Albums"}/>
                 </MantineProvider>
             </QueryClientProvider>
         </Router>
