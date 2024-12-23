@@ -4,31 +4,44 @@ import {useDisclosure} from "@mantine/hooks";
 import {IconAlbum, IconLibraryPhoto, IconPhoto} from "@tabler/icons-react";
 
 interface IProps {
-    activeLink: string;
+    activeLink: Labels;
+}
+
+export enum Labels {
+    Dashboard = "Dashboard",
+    Photos = "Photos",
+    Albums = "Albums",
+    Settings = "Settings"
 }
 
 const navLinkData = [
     {
         icon: IconLibraryPhoto,
-        label: 'Dashboard',
+        label: Labels.Dashboard,
         href: '/',
         description: 'All photos & albums'
     },
     {
         icon: IconPhoto,
-        label: 'Photos',
+        label: Labels.Photos,
         href: "/photos",
         description: 'All photos'
     },
     {
         icon: IconAlbum,
-        label: 'Albums',
+        label: Labels.Albums,
         href: '/albums',
         description: 'All albums'
     },
+    {
+        icon: IconAlbum,
+        label: Labels.Settings,
+        href: '/settings',
+        description: 'Manage configuration'
+    },
 ];
 
-const activeLinkIndex = (index: string) => navLinkData.map(item => item.label).indexOf(index)
+const activeLinkIndex = (index: Labels) => navLinkData.map(item => item.label).indexOf(index);
 
 export const AppBar: React.FunctionComponent<IProps> = (props) => {
   const [opened, {toggle}] = useDisclosure(false);
@@ -36,15 +49,14 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
 
     const navBarItems = navLinkData.map((item, index) => (
         <NavLink
-            href="#required-for-focus"
+            href={item.href}
             key={item.label}
             active={index === active}
-            label={item.label}
+            label={item.label.toString()}
             description={item.description}
             // rightSection={item.rightSection}
             leftSection={<item.icon size="1rem" stroke={1.5} />}
             onClick={() => setActive(index)}
-
         />
     ));
 
@@ -66,9 +78,9 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
               size="sm"
           />
         <div>
-          <Flex align={ "center" }>
-              <IconLibraryPhoto size="4rem" stroke={1.5} color={"#228be6"}/>
-              <Text size="xl" fw={900} c={"#228be6"}>
+          <Flex align={ "center" } m={1}>
+              <IconLibraryPhoto size="4rem" stroke={1.5} color={"#5474b4"}/>
+              <Text size="xl" fw={900} c={"#5474b4"}>
                 Photobox
               </Text>
           </Flex>

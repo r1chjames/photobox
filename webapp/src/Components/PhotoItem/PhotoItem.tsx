@@ -7,13 +7,13 @@ interface IProps {
   src: string;
   thumbnail: string;
   groupKey?: number;
+  key: number;
   source: Photo;
   photoSequence: number;
   previousPhoto: () => void;
   nextPhoto: () => void;
   lastInAlbum: boolean;
 }
-
 
 export const PhotoItem: React.FunctionComponent<IProps> = (props) => {
   const navigate = useNavigate()
@@ -23,8 +23,6 @@ export const PhotoItem: React.FunctionComponent<IProps> = (props) => {
     return(
       <Image
           radius="md"
-          h={100}
-          w="auto"
           fit="contain"
           src={props.thumbnail}
           alt={props.source.name}

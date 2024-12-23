@@ -1,22 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {JustifiedInfiniteGrid} from '@egjs/react-infinitegrid';
 import './PhotoIndexView.css';
-import {Loader} from '@mantine/core';
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import usePhotoIndexView from "./usePhotoIndexView";
 import {PhotoItem} from "../PhotoItem/PhotoItem";
-import {useParams} from "react-router-dom";
+import {Photo} from "../../Models/Photo";
+import {Skeleton, Title} from "@mantine/core";
 
 interface IProps {
-  photosAdapter: IPhotosAdapter;
+    albumId?: string;
+    photosAdapter: IPhotosAdapter;
 }
 
-export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
-  const { albumId } = useParams();
-  const [{photos, isApiCallsRunning, retrievePhotos}] = usePhotoIndexView(props.photosAdapter, albumId);
+const defaultProps = {
+    albumId: "undefined",
+}
+
+export const PhotoIndexView: React.FunctionComponent<IProps> = (propsIn) => {
+    const props = {...defaultProps, ...propsIn};
+    const [{photos, retrievePhotos}] = usePhotoIndexView(props.photosAdapter, props.albumId);
   // const [photoItemsByDate, setPhotoItemsByDate] = useState<Map<string, JSX.Element[]>>(new Map<string, JSX.Element[]>);
-  const [photoItems, setPhotoItems] = useState<JSX.Element[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
 
   // const loadItemsByDate = (groupKey: number) => {
   //   setIsLoading(true);
@@ -45,36 +48,11 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
   //   setIsLoading(false);
   // };
 
-  const loadItems = (groupKey: number) => {
-    setIsLoading(true);
-    if (photos) {
-      photos.forEach(function (photo, i) {
-        if (typeof photo !== 'undefined') {
-          photoItems.push(
-              <PhotoItem
-                src={photo.sourcePath}
-                thumbnail={photo.thumbnailPath}
-                groupKey={groupKey}
-                source={photo}
-                photoSequence={i}
-                previousPhoto={() => console.log("previous")}
-                nextPhoto={() => console.log("next")}
-                lastInAlbum={i < photos.length}
-            />
-          );
-        }
-      });
-    }
-    setPhotoItems(photoItems);
-    setIsLoading(false);
-  };
-
-  useEffect(() => {
-    if (!isApiCallsRunning) loadItems(1)
-  }, [photos]);
-
   const onRequestAppend = async (e: any) => {
     const nextGroupKey = (+e.groupKey! || 0) + 1;
+    console.log("getting some more");
+    console.log("current group key: " + e.groupKey)
+    console.log("next group key: " + nextGroupKey)
     e.wait();
     e.currentTarget.appendPlaceholders(5, nextGroupKey);
     setTimeout(() => {
@@ -83,48 +61,53 @@ export const PhotoIndexView: React.FunctionComponent<IProps> = (props) => {
     }, 1000);
   }
 
-  const content = () => {
-    if (isLoading && !photoItems) {
-      return (
-        <div>
-          This album is empty
-        </div>
-      );
-    }
-
-    const Item = ({ num }: any) => <div className="item" style={{
-      width: "250px",
-    }}>
-      <div className="thumbnail">
-        <img
-            src={`https://naver.github.io/egjs-infinitegrid/assets/image/${(num % 33) + 1}.jpg`}
-            alt="egjs"
+  const GridImageItem = (params: {photo: Photo, groupKey: number, index: number}) =>
+      <div className="item" style={{ width: "50px" }}>
+        <PhotoItem
+            src={params.photo.sourcePath}
+            thumbnail={params.photo.thumbnailPath}
+            groupKey={params.groupKey}
+            key={params.index}
+            source={params.photo}
+            photoSequence={params.index}
+            previousPhoto={() => console.log("previous")}
+            nextPhoto={() => console.log("next")}
+            lastInAlbum={params.index < photos.length}
         />
-      </div>
-      <div className="info">{`egjs ${num}`}</div>
-    </div>;
+      </div>;
 
-    if (!isLoading && photoItems) {
-      return (
-        <JustifiedInfiniteGrid
-          placeholder={<div className="placeholder"></div>}
-          options={{ isConstantSize: false, transitionDuration: 0.2, useFit: true }}
-          layoutOptions={{ margin: 5, column: [0, 5] }}
-          className="container"
-          gap={5}
-          onRequestAppend={onRequestAppend}
-          // onAppend={onAppend}
-          // onLayoutComplete={onLayoutComplete}
-        >
-          {photoItems.map((photo, index) => <Item data-grid-groupkey={index} key={photo.key} num={index} />)}
+const AlbumTitle = () => {
+    return props.albumId !== "undefined"
+        ?
+            <Title size="h4">{props.albumId}</Title>
+        :
+            <></>
+}
 
-        </JustifiedInfiniteGrid>
-      );
-    }
-
-    return (
-      <Loader size={"md"} />
-    );
+  const content = () => {
+    return (photos.length === 0)
+        ?
+          <div>
+            This album is empty
+          </div>
+        :
+        <div>
+            <AlbumTitle />
+            <JustifiedInfiniteGrid
+                placeholder={<Skeleton height={7} mt={6} radius="md" />}
+                options={{ isConstantSize: false, transitionDuration: 0.2, useFit: true }}
+                layoutOptions={{ margin: 5, column: [0, 5] }}
+                className="container"
+                gap={5}
+                stretch={true}
+                passUnstretchRow={true}
+                sizeRange={[228,228]}
+                stretchRange={[144,320]}
+                onRequestAppend={onRequestAppend}
+                >
+                {photos.map((photo, index) => <GridImageItem data-grid-groupkey={index} groupKey={index} index={index} photo={photo}/>)}
+            </JustifiedInfiniteGrid>
+        </div>
   };
 
   return (

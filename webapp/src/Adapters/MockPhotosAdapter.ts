@@ -10,16 +10,16 @@ export class MockPhotosAdapter implements IPhotosAdapter {
     return this;
   }
 
-  public getAllPhotosInfo = async (includeThumbnails: boolean) => {
+  public getAllPhotosInfo = async (page: number, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
     return this._photos;
   }
 
-  public getPhotoInfoById = async (photoId: string) => {
+  public getPhotoInfoById = async (photoId: string): Promise<Photo[]> => {
     return this._photos.filter(p => `p${p.id}` === photoId);
   }
 
-  public getPhotosInfoInAlbum = async (albumId: string, page: number, limit: number, includeThumbnails: boolean) => {
-    return this._photos.filter(p => `a${p.albumId}` === albumId);
+  public getPhotosInfoInAlbum = async (albumId: string, page: number, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
+    return this._photos.filter(p => `${p.albumId}` === albumId);
   }
 
   public getPhotoCountInAlbum = async (albumId: string) => {

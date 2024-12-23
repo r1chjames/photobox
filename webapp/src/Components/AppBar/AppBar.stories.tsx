@@ -1,5 +1,5 @@
 import type {Meta, StoryObj} from '@storybook/react';
-import {AppBar} from "./AppBar";
+import {AppBar, Labels} from "./AppBar";
 import {AlbumIndexView} from "../AlbumIndexView/AlbumIndexView";
 import {MockAlbumsAdapter} from "../../Adapters/MockAlbumsAdapter";
 import {MockPhotosAdapter} from "../../Adapters/MockPhotosAdapter";
@@ -34,7 +34,7 @@ export const Photos: Story = {
 
 export const Albums: Story = {
     render: (args) => (
-        <AppBar>
+        <AppBar activeLink={Labels.Albums}>
             <AlbumIndexView
                 albumsAdapter={new MockAlbumsAdapter()
                     .withAlbums(albumWithPhotos.getAlbums())}

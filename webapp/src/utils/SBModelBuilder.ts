@@ -9,6 +9,11 @@ export class SBModelBuilder {
     public newAlbumWithPhotos(photoCount: number): this {
         const albumId = getRandomInt(50);
         this.albums.push(newAlbum(`${albumId}`));
+        this.newPhotoCollection(photoCount, `${albumId}`);
+        return this;
+    }
+
+    public newPhotoCollection(photoCount: number, albumId: string): this {
         for (let p = 1; p < photoCount + 1; p++) {
             this.photos.push(newPhoto(`${p}`, `${albumId}`));
         }
@@ -22,7 +27,6 @@ export class SBModelBuilder {
     public getAlbums() {
         return this.albums;
     }
-
 }
 
 const getRandomInt = (max: number)=> Math.floor(Math.random() * max);
@@ -45,6 +49,6 @@ export const newPhoto = (photoId: string, albumId: string) => {
 }
 
 export const newAlbum = (id: string)=> {
-    return new Album(`a${id}`, `Album ${id}`, `Album ${id}`, "", "");
+    return new Album(`${id}`, `Album ${id}`, `Album ${id}`, "", "");
 }
 
