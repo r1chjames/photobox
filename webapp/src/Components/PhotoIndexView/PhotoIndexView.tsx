@@ -98,7 +98,6 @@ const AlbumTitle = () => {
                 options={{ isConstantSize: false, transitionDuration: 0.2, useFit: true }}
                 layoutOptions={{ margin: 5, column: [0, 5] }}
                 className="container"
-                gap={5}
                 stretch={true}
                 passUnstretchRow={true}
                 sizeRange={[228,228]}
