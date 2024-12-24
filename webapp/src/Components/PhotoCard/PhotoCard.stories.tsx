@@ -1,24 +1,22 @@
 import type {Meta, StoryObj} from '@storybook/react';
 
 import {SBModelBuilder} from "../../utils/SBModelBuilder";
-import {PhotoItem} from "./PhotoItem";
+import {PhotoCard} from "./PhotoCard";
 
 const photos = new SBModelBuilder().newAlbumWithPhotos(3);
 
-const meta: Meta<typeof PhotoItem> = {
-  component: PhotoItem,
+const meta: Meta<typeof PhotoCard> = {
+  component: PhotoCard,
 };
 
 export default meta;
-type Story = StoryObj<typeof PhotoItem>;
+type Story = StoryObj<typeof PhotoCard>;
 
 export const FirstInAlbum: Story = {
   args: {
-    groupKey: 1,
-    photoSequence: 0,
     source: photos.getPhotos()[0],
-    previousPhoto: () => photos.getPhotos()[0],
-    nextPhoto: () => photos.getPhotos()[1],
+    previousPhoto: () => console.log("previous"),
+    nextPhoto: () => console.log("next"),
     firstInAlbum: true,
     lastInAlbum: false
   },
@@ -26,11 +24,9 @@ export const FirstInAlbum: Story = {
 
 export const MiddleOfAlbum: Story = {
   args: {
-    groupKey: 1,
-    photoSequence: 1,
     source: photos.getPhotos()[1],
-    previousPhoto: () => photos.getPhotos()[0],
-    nextPhoto: () => photos.getPhotos()[2],
+    previousPhoto: () => console.log("previous"),
+    nextPhoto: () => console.log("next"),
     firstInAlbum: false,
     lastInAlbum: false
   },
@@ -38,11 +34,9 @@ export const MiddleOfAlbum: Story = {
 
 export const LastInAlbum: Story = {
   args: {
-    groupKey: 1,
-    photoSequence: 1,
     source: photos.getPhotos()[2],
-    previousPhoto: () => photos.getPhotos()[1],
-    nextPhoto: () => photos.getPhotos()[2],
+    previousPhoto: () => console.log("previous"),
+    nextPhoto: () => console.log("next"),
     firstInAlbum: false,
     lastInAlbum: true
   },

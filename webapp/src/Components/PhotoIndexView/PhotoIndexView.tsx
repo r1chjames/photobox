@@ -1,16 +1,16 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {JustifiedInfiniteGrid} from '@egjs/react-infinitegrid';
 import './PhotoIndexView.css';
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import usePhotoIndexView from "./usePhotoIndexView";
-import {PhotoItem} from "../PhotoItem/PhotoItem";
-import {Photo} from "../../Models/Photo";
-import {Skeleton, Title} from "@mantine/core";
+import {PhotoCard} from "../PhotoCard/PhotoCard";
+import {Image, Modal, Skeleton, Title} from "@mantine/core";
+import {useMediaQuery} from "@mantine/hooks";
 
 interface IProps {
     albumId?: string;
     photosAdapter: IPhotosAdapter;
-    maxDisplayed? : number;
+    maxDisplayed?: number;
 }
 
 const defaultProps = {
@@ -20,98 +20,132 @@ const defaultProps = {
 
 export const PhotoIndexView: React.FunctionComponent<IProps> = (propsIn) => {
     const props = {...defaultProps, ...propsIn};
+    const [isImageModalOpen, setImageModalOpen] = useState(false);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const isMobile = useMediaQuery('(max-width: 50em)');
     const [{photos, allRetrieved, retrievePhotos}] = usePhotoIndexView(props.photosAdapter, props.albumId);
-  // const [photoItemsByDate, setPhotoItemsByDate] = useState<Map<string, JSX.Element[]>>(new Map<string, JSX.Element[]>);
+    // const [photoItemsByDate, setPhotoItemsByDate] = useState<Map<string, JSX.Element[]>>(new Map<string, JSX.Element[]>);
 
-  // const loadItemsByDate = (groupKey: number) => {
-  //   setIsLoading(true);
-  //   const photoItems = new Map<string, JSX.Element[]>();
-  //   if (photos) {
-  //     photos.forEach(function (photo, i) {
-  //       if (typeof photo !== 'undefined') {
-  //         const currentMapValue = photoItems.get(photo.getPhotoDate()) || [];
-  //         currentMapValue.push(
-  //             <PhotoItem
-  //                 src={photo.sourcePath}
-  //                 thumbnail={photo.thumbnailPath}
-  //                 groupKey={groupKey}
-  //                 source={photo}
-  //                 photoSequence={i}
-  //                 previousPhoto={() => console.log("previous")}
-  //                 nextPhoto={() => console.log("next")}
-  //                 lastInAlbum={i < photos.length}
-  //             />
-  //           );
-  //         photoItems.set(photo.getPhotoDate(), currentMapValue);
-  //       }
-  //     });
-  //   }
-  //   setPhotoItemsByDate(photoItems);
-  //   setIsLoading(false);
-  // };
+    // const loadItemsByDate = (groupKey: number) => {
+    //   setIsLoading(true);
+    //   const photoItems = new Map<string, JSX.Element[]>();
+    //   if (photos) {
+    //     photos.forEach(function (photo, i) {
+    //       if (typeof photo !== 'undefined') {
+    //         const currentMapValue = photoItems.get(photo.getPhotoDate()) || [];
+    //         currentMapValue.push(
+    //             <PhotoCard
+    //                 src={photo.sourcePath}
+    //                 thumbnail={photo.thumbnailPath}
+    //                 groupKey={groupKey}
+    //                 source={photo}
+    //                 photoSequence={i}
+    //                 handlePreviousPhoto={() => console.log("previous")}
+    //                 handleNextPhoto={() => console.log("next")}
+    //                 lastInAlbum={i < photos.length}
+    //             />
+    //           );
+    //         photoItems.set(photo.getPhotoDate(), currentMapValue);
+    //       }
+    //     });
+    //   }
+    //   setPhotoItemsByDate(photoItems);
+    //   setIsLoading(false);
+    // };
 
-  const onRequestAppend = async (e: any) => {
-      if ((photos.length < props.maxDisplayed) && !allRetrieved) {
-          const nextGroupKey = (+e.groupKey! || 0) + 1;
-          e.wait();
-          e.currentTarget.appendPlaceholders(5, nextGroupKey);
-          await retrievePhotos(nextGroupKey, 30);
-          e.ready();
-      }
-  }
+    const onRequestAppend = async (e: any) => {
+        if ((photos.length < props.maxDisplayed) && !allRetrieved) {
+            const nextGroupKey = (+e.groupKey! || 0) + 1;
+            e.wait();
+            e.currentTarget.appendPlaceholders(5, nextGroupKey);
+            await retrievePhotos(nextGroupKey, 30);
+            e.ready();
+        }
+    }
 
-  const GridImageItem = (params: {photo: Photo, groupKey: number, index: number}) => {
-      return (
-          <div className="item" style={{width: "50px"}}>
-              <PhotoItem
-                  groupKey={params.groupKey}
-                  key={params.index}
-                  source={params.photo}
-                  photoSequence={params.index}
-                  previousPhoto={(currentIndex: number) => (currentIndex !== 0) ? photos[currentIndex-1]:params.photo}
-                  nextPhoto={(currentIndex: number) => (currentIndex != photos.length) ? photos[currentIndex+1]:params.photo}
-                  firstInAlbum={params.index === 0}
-                  lastInAlbum={params.index === photos.length}
-              />
-        </div>);
-  }
+    const handleModalOpen = (idx: number) => {
+        console.log(idx);
+        console.log(JSON.stringify(photos[idx]))
+        setCurrentIndex(idx);
+        setImageModalOpen(true);
+    };
 
-const AlbumTitle = () => {
-    return props.albumId !== "undefined"
-        ?
-            <Title size="h4">{props.albumId}</Title>
-        :
-            <></>
-}
+    const handleModalClose = () => {
+        setCurrentIndex(0);
+        setImageModalOpen(false);
+    };
 
-  const content = () => {
+    const handlePreviousPhoto = () => {
+        setCurrentIndex(currentIndex - 1);
+    }
+
+    const handleNextPhoto = () => {
+        setCurrentIndex(currentIndex + 1);
+    }
+
+    const GridImageItem = ({photo, index}: any) =>
+        <div className="item" style={{width: "50px"}}>
+            <div className="thumbnail">
+                <Image
+                    radius="md"
+                    fit="contain"
+                    p={5}
+                    src={photo.thumbnailPath}
+                    alt={photo.name}
+                    onClick={() => handleModalOpen(index)}
+                    onError={(e: any) => e.target.src = '/no_image.png'}
+                />
+            </div>
+        </div>;
+
+
+    const AlbumTitle = () => props.albumId !== "undefined" ? <Title size="h4">{props.albumId}</Title> : <></>
+
     return (photos.length === 0)
         ?
-          <div>
+        <>
             This album is empty
-          </div>
+        </>
         :
-        <div>
-            <AlbumTitle />
+        <>
+            <AlbumTitle/>
             <JustifiedInfiniteGrid
-                placeholder={<Skeleton height={7} mt={6} radius="md" />}
-                options={{ isConstantSize: false, transitionDuration: 0.2, useFit: true }}
+                placeholder={<Skeleton height={7} mt={6} radius="md"/>}
+                options={{isConstantSize: false, transitionDuration: 0.2, useFit: true}}
                 className="container"
                 stretch={true}
                 passUnstretchRow={true}
-                sizeRange={[228,228]}
-                stretchRange={[144,320]}
-                onRequestAppend={onRequestAppend}
-                >
-                {photos
-                    .map((photo, index) => <GridImageItem data-grid-groupkey={index} groupKey={index} index={index} photo={photo}/>)}
+                sizeRange={[228, 228]}
+                stretchRange={[144, 320]}
+                onRequestAppend={onRequestAppend}>
+                {photos.map((photo, index) =>
+                    <GridImageItem
+                        data-grid-groupkey={index}
+                        key={index}
+                        photo={photo}
+                        index={index}/>)}
             </JustifiedInfiniteGrid>
-        </div>
-  };
-
-  return (
-    <div className="photoIndexView__photoIndex">
-      {content()}
-    </div>
-  );
+            <Modal
+                opened={isImageModalOpen}
+                withCloseButton={false}
+                aria-labelledby="customized-dialog-title"
+                size="auto"
+                padding={"0"}
+                m={"0"}
+                overlayProps={{
+                    backgroundOpacity: 0.55,
+                }}
+                fullScreen={isMobile}
+                transitionProps={{transition: 'fade', duration: 200}}
+                onClose={() => handleModalClose()}>
+                <PhotoCard
+                    source={photos[currentIndex]}
+                    previousPhoto={() => handlePreviousPhoto()}
+                    nextPhoto={() => handleNextPhoto()}
+                    firstInAlbum={currentIndex === 0}
+                    lastInAlbum={currentIndex === photos.length}
+                    closeModal={() => setImageModalOpen(false)}
+                />
+            </Modal>
+        </>
 };

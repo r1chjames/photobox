@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import {nextPhotoInAlbum, Photo, previousPhotoInAlbum} from "../../Models/Photo";
-import {PhotoItem} from "../PhotoItem/PhotoItem";
+import {PhotoCard} from "../PhotoCard/PhotoCard";
 
 const usePhotoIndexView = (photosAdapter: IPhotosAdapter, id: string) => {
 
@@ -33,7 +33,7 @@ const usePhotoIndexView = (photosAdapter: IPhotosAdapter, id: string) => {
                     items = updatePhotoCollection(items,
                         imageSource.getPhotoDate(),
                         (
-                            <PhotoItem
+                            <PhotoCard
                                 src={imageSource.sourcePath}
                                 thumbnail={imageSource.sourcePath}
                                 groupKey={groupKey}
