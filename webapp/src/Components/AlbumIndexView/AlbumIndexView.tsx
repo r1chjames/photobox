@@ -13,17 +13,22 @@ import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 interface IProps {
   albumsAdapter: IAlbumsAdapter;
   photosAdapter: IPhotosAdapter;
+  maxDisplayed? : number;
 }
 
-export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
-  const navigate = useNavigate()
-  const [showNewAlbumModal, setShowNewAlbumModal] = useState(Boolean);
-  const [{albums, createAlbumModalAlbumNameErrorText, newAlbumName, handleNewAlbumNameValueChange}] = useAlbumIndexView(props.albumsAdapter);
+const defaultProps = {
+    maxDisplayed: 20000000,
+}
+
+export const AlbumIndexView: React.FunctionComponent<IProps> = (propsIn) => {
+    const props = {...defaultProps, ...propsIn};
+    const navigate = useNavigate()
+    const [showNewAlbumModal, setShowNewAlbumModal] = useState(Boolean);
+    const [{albums, createAlbumModalAlbumNameErrorText, newAlbumName, handleNewAlbumNameValueChange}] = useAlbumIndexView(props.albumsAdapter);
 
   const newAlbumModalSaveClick = () => {
     navigate(`/album/new/${newAlbumName}`);
   };
-
 
   const handleCreateNewAlbum = () => {
     setShowNewAlbumModal(true);
@@ -55,7 +60,7 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (props) => {
               align="flex-start"
               wrap="wrap"
           >
-          {albums.map((album: Album) => {
+          {albums.slice(0, props.maxDisplayed).map((album: Album) => {
             return(
               <article key={album.id}>
                 <AlbumItem

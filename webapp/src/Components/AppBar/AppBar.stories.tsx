@@ -5,6 +5,8 @@ import {MockAlbumsAdapter} from "../../Adapters/MockAlbumsAdapter";
 import {MockPhotosAdapter} from "../../Adapters/MockPhotosAdapter";
 import {SBModelBuilder} from "../../utils/SBModelBuilder";
 import React from 'react';
+import {PhotoIndexView} from "../PhotoIndexView/PhotoIndexView";
+import {Dashboard} from "../Dashboard/Dashboard";
 
 const meta: Meta<typeof AppBar> = {
     component: AppBar,
@@ -23,13 +25,29 @@ const albumWithPhotos = new SBModelBuilder()
 export default meta;
 type Story = StoryObj<typeof AppBar>;
 
-export const Primary: Story = {
-};
-
-export const Dashboard: Story = {
+export const Home: Story = {
+    render: (args) => (
+        <AppBar activeLink={Labels.Dashboard}>
+            <Dashboard
+                albumsAdapter={new MockAlbumsAdapter()
+                    .withAlbums(albumWithPhotos.getAlbums())}
+                photosAdapter={new MockPhotosAdapter()
+                    .withPhotos(albumWithPhotos.getPhotos())}
+            />
+        </AppBar>
+    )
 };
 
 export const Photos: Story = {
+    render: (args) => (
+        <AppBar activeLink={Labels.Photos}>
+            <PhotoIndexView
+                photosAdapter={new MockPhotosAdapter()
+                    .withPhotos(albumWithPhotos.getPhotos())}
+                maxDisplayed={20}
+            />
+        </AppBar>
+    )
 };
 
 export const Albums: Story = {
@@ -40,6 +58,7 @@ export const Albums: Story = {
                     .withAlbums(albumWithPhotos.getAlbums())}
                 photosAdapter={new MockPhotosAdapter()
                                 .withPhotos(albumWithPhotos.getPhotos())}
+                maxDisplayed={20}
             />
         </AppBar>
     )

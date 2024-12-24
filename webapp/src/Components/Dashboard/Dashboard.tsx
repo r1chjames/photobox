@@ -2,25 +2,27 @@ import React from 'react';
 import './Dashboard.css';
 import { AlbumIndexView } from '../AlbumIndexView/AlbumIndexView';
 import { PhotoIndexView } from '../PhotoIndexView/PhotoIndexView';
-import {AlbumsAdapter} from "../../Adapters/AlbumsAdapter";
-import {PhotosAdapter} from "../../Adapters/PhotosAdapter";
+import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
+import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 
 interface IProps {
-    albumsAdapter: AlbumsAdapter;
-    photosAdapter: PhotosAdapter;
+    albumsAdapter: IAlbumsAdapter;
+    photosAdapter: IPhotosAdapter;
 }
 
 export const Dashboard: React.FunctionComponent<IProps> = (props) => {
 
   return (
-      <div>
+      <>
         <AlbumIndexView
             albumsAdapter={props.albumsAdapter}
             photosAdapter={props.photosAdapter}
+            maxDisplayed={20}
         />
         <PhotoIndexView
             photosAdapter={props.photosAdapter}
+            maxDisplayed={50}
         />
-      </div>
+      </>
   );
 };
