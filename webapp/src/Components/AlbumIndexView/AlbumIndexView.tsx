@@ -53,8 +53,8 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (propsIn) => {
         <section className="albumIndexView__cardContainer">
           <Flex
               direction={{ base: 'column', sm: 'row' }}
-              gap={{ base: 'sm', sm: 'lg' }}
-              justify={{ sm: 'center' }}
+              gap={{ base: 'sm', sm: 'md' }}
+              justify={{ sm: 'flex-start' }}
               mih={50}
               bg="rgba(0, 0, 0, 0)"
               align="flex-start"

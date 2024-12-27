@@ -17,12 +17,12 @@ export class MockAlbumsAdapter implements IAlbumsAdapter {
   }
 
   public getPhotoCountInAlbum = async (albumId: string) => {
-    return this._photos.filter(p => `a${p.albumId}` === albumId).length;
+    return this._photos.filter(p => `${p.albumId}` === albumId).length;
   }
 
   public getCountOfPhotosInAlbum = async () => {
     return {
-      "photoCount" : this._photos.filter(p => `a${p.albumId}` === "albumId").length
+      "photoCount" : this._photos.filter(p => `${p.albumId}` === "albumId").length
     };
   }
 

@@ -1,6 +1,5 @@
 import React from 'react';
 import { Notification } from '@mantine/core'
-import './Snackbar.css';
 
 interface IProps {
   text: string;

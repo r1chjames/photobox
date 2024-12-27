@@ -28,7 +28,7 @@ export class MockPhotosAdapter implements IPhotosAdapter {
   }
 
   public getPhotoCountInAlbum = async (albumId: string) => {
-    return this._photos.filter(p => `a${p.albumId}` === albumId).length;
+    return this._photos.filter(p => `${p.albumId}` === albumId).length;
   }
 
   public getPhotoImage = async (photoId: string) => {

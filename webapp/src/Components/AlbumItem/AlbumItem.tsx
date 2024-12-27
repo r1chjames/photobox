@@ -23,12 +23,11 @@ export const AlbumItem: React.FunctionComponent<IProps> = (props) => {
     }
     return (
       <Card shadow="sm" padding="lg" radius="md" withBorder
-            style={{ width: '200px' , margin: '10px' }}
-        // className="albumItem__cardWrapper"
+            style={{ width: '200px' , margin: '10px'}}
         onClick={() => props.albumViewCallback(props.source.id)}
       >
         <Card.Section>
-          <Image src={thumbnailUrl} />
+          <Image src={thumbnailUrl} wah={"200px"} mah={"140px"} />
         </Card.Section>
         <Group justify="space-between" mt="md" mb="xs">
           <Text fw={500}>{props.source.name}</Text>

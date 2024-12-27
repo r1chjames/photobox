@@ -20,6 +20,11 @@ const albumWithPhotos = new SBModelBuilder()
     .newAlbumWithPhotos(9)
     .newAlbumWithPhotos(88)
     .newAlbumWithPhotos(14)
+    .newAlbumWithPhotos(14)
+    .newAlbumWithPhotos(14)
+    .newAlbumWithPhotos(14)
+    .newAlbumWithPhotos(14)
+    .newAlbumWithPhotos(14)
     .newAlbumWithPhotos(5);
 
 export default meta;

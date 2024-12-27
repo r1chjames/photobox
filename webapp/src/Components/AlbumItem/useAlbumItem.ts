@@ -6,25 +6,26 @@ import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 const useAlbumItem = (photosAdapter: IPhotosAdapter, source: Album) => {
 
     const [thumbnailUrl, setThumbnailUrl] = useState('');
-    const [photoCount, setPhotoCount] = useState(0);
+    const [photoCount, setPhotoCount] = useState();
     const [isLoading, setIsLoading] = useState(true);
 
-    const getPhotoCountInAlbum = async () => {
-        const count = await photosAdapter.getPhotoCountInAlbum(source.id);
-        setPhotoCount(count);
-        setIsLoading(false);
-    };
 
     const retrieveThumbnailUrl = async () => {
         const photos: Photo[] = await photosAdapter.getPhotosInfoInAlbum(source.id, 1, 1, true);
         const firstPhotoInAlbum = (photos && photos.length > 0) ? photos[0].thumbnailPath : 'placeholder';
         setThumbnailUrl(firstPhotoInAlbum);
-        setIsLoading(false);
     }
+
+    const getPhotoCountInAlbum = async () => {
+        const count = await photosAdapter.getPhotoCountInAlbum(source.id);
+        console.log(count);
+        setPhotoCount(count);
+    };
 
     useEffect(() => {
         retrieveThumbnailUrl();
         getPhotoCountInAlbum();
+        setIsLoading(false);
     },[]);
 
     return [{thumbnailUrl, photoCount, isLoading}]

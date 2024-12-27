@@ -26,3 +26,10 @@ export const AlbumPhotos: Story = {
             .withPhotos(photos.getPhotos())
     },
 };
+
+export const EmptyAlbumPhotos: Story = {
+    args: {
+        albumId: "Album 1",
+        photosAdapter: new MockPhotosAdapter()
+    },
+};
