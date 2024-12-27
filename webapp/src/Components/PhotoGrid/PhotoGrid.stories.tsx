@@ -1,14 +1,14 @@
 import type {Meta, StoryObj} from '@storybook/react';
-import {PhotoIndexView} from "./PhotoIndexView";
+import {PhotoGrid} from "./PhotoGrid";
 import {SBModelBuilder} from "../../utils/SBModelBuilder";
 import {MockPhotosAdapter} from "../../Adapters/MockPhotosAdapter";
 
-const meta: Meta<typeof PhotoIndexView> = {
-    component: PhotoIndexView,
+const meta: Meta<typeof PhotoGrid> = {
+    component: PhotoGrid,
 };
 
 export default meta;
-type Story = StoryObj<typeof PhotoIndexView>;
+type Story = StoryObj<typeof PhotoGrid>;
 
 const photos = new SBModelBuilder().newPhotoCollection(150, "Album 1");
 

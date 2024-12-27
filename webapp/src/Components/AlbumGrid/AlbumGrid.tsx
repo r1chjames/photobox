@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import './AlbumIndexView.css';
+import './AlbumGrid.css';
 import { Album } from '../../Models/Album';
-import { AlbumItem } from '../AlbumItem/AlbumItem';
+import { AlbumCard } from '../AlbumCard/AlbumCard';
 import { InputModal } from '../InputModal/InputModal';
 import {Button, Flex, TextInput} from '@mantine/core';
 import {MdAddCircle} from 'react-icons/md';
 import {useNavigate} from "react-router-dom";
-import useAlbumIndexView from "./useAlbumIndexView";
+import useAlbumGrid from "./useAlbumGrid";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 
@@ -20,11 +20,11 @@ const defaultProps = {
     maxDisplayed: 20000000,
 }
 
-export const AlbumIndexView: React.FunctionComponent<IProps> = (propsIn) => {
+export const AlbumGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const props = {...defaultProps, ...propsIn};
     const navigate = useNavigate()
     const [showNewAlbumModal, setShowNewAlbumModal] = useState(Boolean);
-    const [{albums, createAlbumModalAlbumNameErrorText, newAlbumName, handleNewAlbumNameValueChange}] = useAlbumIndexView(props.albumsAdapter);
+    const [{albums, createAlbumModalAlbumNameErrorText, newAlbumName, handleNewAlbumNameValueChange}] = useAlbumGrid(props.albumsAdapter);
 
   const newAlbumModalSaveClick = () => {
     navigate(`/album/new/${newAlbumName}`);
@@ -63,7 +63,7 @@ export const AlbumIndexView: React.FunctionComponent<IProps> = (propsIn) => {
           {albums.slice(0, props.maxDisplayed).map((album: Album) => {
             return(
               <article key={album.id}>
-                <AlbumItem
+                <AlbumCard
                   photosAdapter={props.photosAdapter}
                   source={album}
                   albumViewCallback={() => navigate(`album/${album.id}`)}

@@ -2,7 +2,7 @@ import {useEffect, useState} from 'react';
 import {Album} from "../../Models/Album";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 
-const useAlbumIndexView = (albumsAdapter: IAlbumsAdapter) => {
+const useAlbumGrid = (albumsAdapter: IAlbumsAdapter) => {
 
     const [albums, setAlbums] = useState<Album[]>([]);
     const [createAlbumModalAlbumNameErrorText, setCreateAlbumModalAlbumNameErrorText] = useState('Required');
@@ -29,4 +29,4 @@ const useAlbumIndexView = (albumsAdapter: IAlbumsAdapter) => {
     return [{albums, createAlbumModalAlbumNameErrorText, newAlbumName, handleNewAlbumNameValueChange}]
 };
 
-export default useAlbumIndexView;
+export default useAlbumGrid;

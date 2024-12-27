@@ -3,7 +3,7 @@ import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import {nextPhotoInAlbum, Photo, previousPhotoInAlbum} from "../../Models/Photo";
 import {PhotoCard} from "../PhotoCard/PhotoCard";
 
-const usePhotoIndexView = (photosAdapter: IPhotosAdapter, id: string) => {
+const usePhotoGrid = (photosAdapter: IPhotosAdapter, id: string) => {
 
     const [photos, setPhotos] = useState<Photo[]>();
     const [photoItems, setPhotoItems] = useState<JSX.Element[]>();
@@ -79,4 +79,4 @@ const usePhotoIndexView = (photosAdapter: IPhotosAdapter, id: string) => {
     return [{photoItems, photosLoaded}]
 };
 
-export default usePhotoIndexView;
+export default usePhotoGrid;

@@ -13,7 +13,6 @@ export class MockPhotosAdapter implements IPhotosAdapter {
 
   public getAllPhotosInfo = async (offset: number, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
     const toReturn = paginate(this._photos, limit, offset);
-    console.log("Returning: " + JSON.stringify(toReturn));
     return toReturn;
   }
 
@@ -23,7 +22,6 @@ export class MockPhotosAdapter implements IPhotosAdapter {
 
   public getPhotosInfoInAlbum = async (albumId: string, offset: number, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
     const toReturn = paginate(this._photos.filter(p => `${p.albumId}` === albumId), limit, offset);
-    console.log("Returning: " + JSON.stringify(toReturn));
     return toReturn;
   }
 

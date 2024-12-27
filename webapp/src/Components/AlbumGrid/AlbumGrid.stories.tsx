@@ -1,12 +1,12 @@
 import type {Meta, StoryObj} from '@storybook/react';
-import {AlbumIndexView} from './AlbumIndexView';
+import {AlbumGrid} from './AlbumGrid';
 import {SBModelBuilder} from "../../utils/SBModelBuilder";
 import {MockAlbumsAdapter} from "../../Adapters/MockAlbumsAdapter";
 import {MockPhotosAdapter} from "../../Adapters/MockPhotosAdapter";
 
 
-const meta: Meta<typeof AlbumIndexView> = {
-    component: AlbumIndexView,
+const meta: Meta<typeof AlbumGrid> = {
+    component: AlbumGrid,
 };
 
 const albumWithPhotos = new SBModelBuilder()
@@ -20,7 +20,7 @@ const albumWithPhotos = new SBModelBuilder()
     .newAlbumWithPhotos(5);
 
 export default meta;
-type Story = StoryObj<typeof AlbumIndexView>;
+type Story = StoryObj<typeof AlbumGrid>;
 
 export const Primary: Story = {
     args: {

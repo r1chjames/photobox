@@ -1,14 +1,14 @@
 import type {Meta, StoryObj} from '@storybook/react';
-import {AlbumItem} from './AlbumItem';
+import {AlbumCard} from './AlbumCard';
 import {SBModelBuilder} from "../../utils/SBModelBuilder";
 import {MockPhotosAdapter} from "../../Adapters/MockPhotosAdapter";
 
-const meta: Meta<typeof AlbumItem> = {
-    component: AlbumItem,
+const meta: Meta<typeof AlbumCard> = {
+    component: AlbumCard,
 };
 
 export default meta;
-type Story = StoryObj<typeof AlbumItem>;
+type Story = StoryObj<typeof AlbumCard>;
 
 const albumWithPhotos = new SBModelBuilder().newAlbumWithPhotos(4);
 

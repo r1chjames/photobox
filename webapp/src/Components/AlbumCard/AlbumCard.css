@@ -1,4 +1,4 @@
-.albumItem__cardWrapper {
+.albumCard__cardWrapper {
     width: 200px;
     height: 270px;
     border: 50px;
@@ -6,7 +6,7 @@
     margin-right: 30px;
 }
 
-.albumItem__cardImage {
+.albumCard_cardImage {
     height: 200px;
     border-radius: .5rem;
 }

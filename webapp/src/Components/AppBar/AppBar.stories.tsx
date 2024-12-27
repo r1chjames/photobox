@@ -1,11 +1,11 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {AppBar, Labels} from "./AppBar";
-import {AlbumIndexView} from "../AlbumIndexView/AlbumIndexView";
+import {AlbumGrid} from "../AlbumGrid/AlbumGrid";
 import {MockAlbumsAdapter} from "../../Adapters/MockAlbumsAdapter";
 import {MockPhotosAdapter} from "../../Adapters/MockPhotosAdapter";
 import {SBModelBuilder} from "../../utils/SBModelBuilder";
 import React from 'react';
-import {PhotoIndexView} from "../PhotoIndexView/PhotoIndexView";
+import {PhotoGrid} from "../PhotoGrid/PhotoGrid";
 import {Dashboard} from "../Dashboard/Dashboard";
 
 const meta: Meta<typeof AppBar> = {
@@ -46,7 +46,7 @@ export const Home: Story = {
 export const Photos: Story = {
     render: (args) => (
         <AppBar activeLink={Labels.Photos}>
-            <PhotoIndexView
+            <PhotoGrid
                 photosAdapter={new MockPhotosAdapter()
                     .withPhotos(albumWithPhotos.getPhotos())}
                 maxDisplayed={20}
@@ -58,7 +58,7 @@ export const Photos: Story = {
 export const Albums: Story = {
     render: (args) => (
         <AppBar activeLink={Labels.Albums}>
-            <AlbumIndexView
+            <AlbumGrid
                 albumsAdapter={new MockAlbumsAdapter()
                     .withAlbums(albumWithPhotos.getAlbums())}
                 photosAdapter={new MockPhotosAdapter()

@@ -3,7 +3,7 @@ import {Photo} from "../../Models/Photo";
 import {Album} from "../../Models/Album";
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 
-const useAlbumItem = (photosAdapter: IPhotosAdapter, source: Album) => {
+const useAlbumCard = (photosAdapter: IPhotosAdapter, source: Album) => {
 
     const [thumbnailUrl, setThumbnailUrl] = useState('');
     const [photoCount, setPhotoCount] = useState();
@@ -12,13 +12,12 @@ const useAlbumItem = (photosAdapter: IPhotosAdapter, source: Album) => {
 
     const retrieveThumbnailUrl = async () => {
         const photos: Photo[] = await photosAdapter.getPhotosInfoInAlbum(source.id, 1, 1, true);
-        const firstPhotoInAlbum = (photos && photos.length > 0) ? photos[0].thumbnailPath : 'placeholder';
+        const firstPhotoInAlbum = (photos && photos.length > 0) ? photos[0].thumbnailPath : 'no_image.png';
         setThumbnailUrl(firstPhotoInAlbum);
     }
 
     const getPhotoCountInAlbum = async () => {
         const count = await photosAdapter.getPhotoCountInAlbum(source.id);
-        console.log(count);
         setPhotoCount(count);
     };
 
@@ -31,4 +30,4 @@ const useAlbumItem = (photosAdapter: IPhotosAdapter, source: Album) => {
     return [{thumbnailUrl, photoCount, isLoading}]
 };
 
-export default useAlbumItem;
+export default useAlbumCard;

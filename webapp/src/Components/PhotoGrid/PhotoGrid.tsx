@@ -1,12 +1,12 @@
 import React, {useState} from 'react';
 import {JustifiedInfiniteGrid} from '@egjs/react-infinitegrid';
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
-import usePhotoIndexView from "./usePhotoIndexView";
+import usePhotoGrid from "./usePhotoGrid";
 import {PhotoCard} from "../PhotoCard/PhotoCard";
 import {Flex, Modal, Skeleton, Space, Text, ThemeIcon, Title} from "@mantine/core";
 import {useMediaQuery} from "@mantine/hooks";
 import {IconPhotoX} from "@tabler/icons-react";
-import './PhotoIndexView.css';
+import './PhotoGrid.css';
 
 interface IProps {
     albumId?: string;
@@ -19,12 +19,12 @@ const defaultProps = {
     maxDisplayed: 20000000
 }
 
-export const PhotoIndexView: React.FunctionComponent<IProps> = (propsIn) => {
+export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const props = {...defaultProps, ...propsIn};
     const [isImageModalOpen, setImageModalOpen] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
     const isMobile = useMediaQuery('(max-width: 50em)');
-    const [{photos, allRetrieved, retrievePhotos}] = usePhotoIndexView(props.photosAdapter, props.albumId);
+    const [{photos, allRetrieved, retrievePhotos}] = usePhotoGrid(props.photosAdapter, props.albumId);
     // const [photoItemsByDate, setPhotoItemsByDate] = useState<Map<string, JSX.Element[]>>(new Map<string, JSX.Element[]>);
 
     // const loadItemsByDate = (groupKey: number) => {
