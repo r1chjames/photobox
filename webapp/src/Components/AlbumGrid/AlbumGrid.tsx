@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import './AlbumGrid.css';
 import { Album } from '../../Models/Album';
 import { AlbumCard } from '../AlbumCard/AlbumCard';
 import { InputModal } from '../InputModal/InputModal';
@@ -53,7 +52,7 @@ export const AlbumGrid: React.FunctionComponent<IProps> = (propsIn) => {
         <section className="albumIndexView__cardContainer">
           <Flex
               direction={{ base: 'column', sm: 'row' }}
-              gap={{ base: 'sm', sm: 'md' }}
+              gap={{ base: 'lg', sm: 'lg' }}
               justify={{ sm: 'flex-start' }}
               mih={50}
               bg="rgba(0, 0, 0, 0)"

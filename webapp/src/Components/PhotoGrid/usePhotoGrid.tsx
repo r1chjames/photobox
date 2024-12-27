@@ -14,9 +14,6 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, id: string) => {
     };
 
     const updatePhotoCollection = (items: Map<string, JSX.Element[]>, date: string, itemToAdd: JSX.Element) => {
-        if (date == null || undefined) {
-            console.log(itemToAdd)
-        }
         const itemToUpdate = items.has(date) ? items.get(date) : [];
         itemToUpdate!.push(itemToAdd);
         return items.set(date, itemToUpdate!);

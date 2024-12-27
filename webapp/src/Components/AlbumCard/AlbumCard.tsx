@@ -21,12 +21,11 @@ export const AlbumCard: React.FunctionComponent<IProps> = (props) => {
       );
     }
     return (
-      <Card shadow="sm" padding="lg" radius="md" withBorder
-            style={{ width: '200px' , margin: '10px'}}
+      <Card shadow="sm" radius="md" withBorder mb={'10px'} mr={'10px'} w={"200px"}
         onClick={() => props.albumViewCallback(props.source.id)}
       >
         <Card.Section>
-          <Image src={thumbnailUrl} wah={"200px"} mah={"140px"} />
+          <Image src={thumbnailUrl} wah={"200px"} h={"150px"} />
         </Card.Section>
         <Group justify="space-between" mt="md" mb="xs">
           <Text fw={500}>{props.source.name}</Text>

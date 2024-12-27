@@ -1,10 +1,9 @@
 import React from 'react';
-import './Dashboard.css';
 import {AlbumGrid} from '../AlbumGrid/AlbumGrid';
 import {PhotoGrid} from '../PhotoGrid/PhotoGrid';
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
-import {Title} from "@mantine/core";
+import {Space, Title} from "@mantine/core";
 
 interface IProps {
     albumsAdapter: IAlbumsAdapter;
@@ -17,6 +16,7 @@ export const Dashboard: React.FunctionComponent<IProps> = (props) => {
         <>
             <div>
                 <Title size="h4">Albums</Title>
+                <Space h="md" />
                 <AlbumGrid
                     albumsAdapter={props.albumsAdapter}
                     photosAdapter={props.photosAdapter}
@@ -24,7 +24,9 @@ export const Dashboard: React.FunctionComponent<IProps> = (props) => {
                 />
             </div>
             <div>
+                <Space h="md" />
                 <Title size="h4">Photos</Title>
+                <Space h="md" />
                 <PhotoGrid
                     photosAdapter={props.photosAdapter}
                     maxDisplayed={50}

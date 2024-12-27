@@ -1,3 +1,38 @@
+html, body {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #fff;
+}
+
+a {
+    color: unset;
+    text-decoration: none;
+}
+
+.header {
+    text-align: center;
+    background: #333;
+    color: #fff;
+    padding: 20px 0px;
+    margin: 0 0 10px;
+}
+
+.description {
+    padding: 6px 30px;
+    margin: 0;
+    font-weight: 400;
+}
+
+.description li {
+    padding: 3px 0px;
+}
+
+.wrapper {
+    margin-top: 50px;
+}
+
 .container {
     width: 100%;
     height: 600px;
@@ -6,20 +41,13 @@
 .item {
     display: inline-block;
     width: 250px;
+    border-radius: 8px;
     opacity: 1;
 }
 
 .masonrygrid.horizontal .item {
     width: auto;
     height: 250px;
-}
-
-.item .info {
-    display: flex;
-    align-items: center;
-    font-weight: bold;
-    color: #777;
-    height: 30px;
 }
 
 .item .thumbnail {
@@ -33,8 +61,8 @@
     width: 100%;
     height: 100%;
     border-radius: 8px;
-    background: #eee;
-    object-fit: contain;
+    background: #fff;
+    /*object-fit: contain;*/
 }
 
 .masonrygrid.horizontal .item .thumbnail img {
@@ -51,7 +79,7 @@
 .placeholder {
     width: 250px;
     border-radius: 5px;
-    background: #eee;
+    background: #fff;
     height: 250px;
 }
 
