@@ -61,53 +61,9 @@ export class Photo {
   }
 
   getPhotoDate(): string {
-    const exifVal = this._metadata.find((k,_) => k === 'exif');
-    // @ts-ignore
+    const exifVal = this._metadata.find((k) => k === 'exif');
     return exifVal !== null ? exifVal.DateTime : this._createdAt;
   };
-}
-
-// tslint:disable-next-line:max-classes-per-file
-// export class Metadata {
-//   // tslint:disable:variable-name
-//   private readonly _directory: string;
-//   private readonly _exif: any;
-//   private readonly _extension: string;
-//   private readonly _id: string;
-//   private readonly _md5: string;
-//   private readonly _mime: string;
-//   private readonly _name: string;
-//   private readonly _path: string;
-//   private readonly _size: number;
-//   private readonly _thumbnail: string | null;
-//
-//   constructor(directory: string, exif: string, extension: string, id: string, md5: string, mime: string, name: string,
-//               path: string, size: number, thumbnail: string | null) {
-//     this._directory = directory;
-//     this._exif = exif;
-//     this._extension = extension;
-//     this._id = id;
-//     this._md5 = md5;
-//     this._mime = mime;
-//     this._name = name;
-//     this._path = path;
-//     this._size = size;
-//     this._thumbnail = thumbnail;
-//   }
-// }
-
-// tslint:disable-next-line:max-classes-per-file
-export class PhotoCount {
-  // tslint:disable:variable-name
-  private readonly _photoCount: number;
-
-  constructor(photoCount: number) {
-    this._photoCount = photoCount;
-  }
-
-  get photoCount(): number {
-    return this._photoCount;
-  }
 }
 
 export const previousPhotoInAlbum = (photos: Photo[], currentPhotoIndex: number) => {

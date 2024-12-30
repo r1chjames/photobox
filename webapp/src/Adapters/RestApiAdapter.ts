@@ -51,14 +51,17 @@ export class MockRestApiAdapter implements IRestApiAdapter {
   }
 
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async postApiCall(path: string, body: Record<string, unknown>, headers: Record<string, string>) {
     return this.resp;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async putApiCall(path: string, body: Record<string, unknown>, headers: Record<string, string>) {
     return this.resp;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async getApiCall(path: string, headers: Record<string, string>, params: Record<string, unknown>) {
     return this.resp;
   }

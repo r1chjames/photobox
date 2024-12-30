@@ -1,5 +1,3 @@
-
-
 export const paginate = <T>(array: T[], limit: number, offset: number): T[] => {
     if (!array) return [];
 

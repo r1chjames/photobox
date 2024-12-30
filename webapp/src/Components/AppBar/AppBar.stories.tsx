@@ -31,7 +31,7 @@ export default meta;
 type Story = StoryObj<typeof AppBar>;
 
 export const Home: Story = {
-    render: (args) => (
+    render: () => (
         <AppBar activeLink={Labels.Dashboard}>
             <Dashboard
                 albumsAdapter={new MockAlbumsAdapter()
@@ -44,7 +44,7 @@ export const Home: Story = {
 };
 
 export const Photos: Story = {
-    render: (args) => (
+    render: () => (
         <AppBar activeLink={Labels.Photos}>
             <PhotoGrid
                 photosAdapter={new MockPhotosAdapter()
@@ -56,7 +56,7 @@ export const Photos: Story = {
 };
 
 export const Albums: Story = {
-    render: (args) => (
+    render: () => (
         <AppBar activeLink={Labels.Albums}>
             <AlbumGrid
                 albumsAdapter={new MockAlbumsAdapter()

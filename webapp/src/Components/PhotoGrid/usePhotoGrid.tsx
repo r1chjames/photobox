@@ -9,7 +9,7 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, id: string) => {
     const [photoItems, setPhotoItems] = useState<JSX.Element[]>();
     const [photosLoaded, setPhotosLoaded] = useState(false);
 
-    const getAllPhotos = async(propsPhotosAdapter: IPhotosAdapter, albumId: string) => {
+    const getAllPhotos = async (propsPhotosAdapter: IPhotosAdapter, albumId: string) => {
         return await propsPhotosAdapter.getPhotosInfoInAlbum(albumId, 1, 100, true);
     };
 

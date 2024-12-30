@@ -2,18 +2,10 @@ import React from 'react';
 import './PhotoDetail.css';
 import {Photo} from '../../Models/Photo';
 import {Loader, Table} from '@mantine/core';
-import {object} from "prop-types";
+import {valueType} from "../../utils/TypeUtils.js";
 
 interface IProps {
     photo: Photo;
-}
-
-const isJson = (str: string) => {
-    try {
-        return JSON.parse(str) && !!str;
-    } catch (e) {
-        return false;
-    }
 }
 
 export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
@@ -27,11 +19,6 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
         );
     }
 
-    const valueType = (value: any) => {
-        if (isJson(value)) return 'json'
-        if (typeof value === 'object' || Array.isArray(value)) return 'object'
-        if (typeof value === 'string') return 'string'
-    }
 
     const buildRows = (metadata: Record<string, any>) => {
         return Object.entries(metadata).map(([key, value]) => {
@@ -45,14 +32,6 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                 default:
                     return;
             }
-
-            // if (isJson(value)) {
-            //
-            // } else if (typeof value === 'object') {
-            //
-            // } else {
-            //     return tableRow(key, value);
-            // }
         })
     }
 

@@ -65,7 +65,7 @@
   "scripts": {
     "start": "vite",
     "build": "vite build",
-    "lint": "eslint . --ext .ts",
+    "lint": "eslint .",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
