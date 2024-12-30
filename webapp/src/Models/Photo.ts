@@ -8,11 +8,11 @@ export class Photo {
   private readonly _thumbnailPath: string;
   private readonly _albumId: string;
   private readonly _tags: string;
-  private readonly _metadata: Record<string, Record<string, string>>;
+  private readonly _metadata: Record<string, any>[];
   private readonly _createdAt: string;
 
   constructor(id: string, name: string, filesystemPath: string, sourcePath: string, thumbnailPath: string, albumId: string, tags: string,
-              metadata: Record<string, Record<string, string>>, createdAt: string, apiBasePath: string) {
+              metadata: Record<string, any>[], createdAt: string, apiBasePath: string) {
     this._id = id;
     this._name = name;
     this._filesystemPath = filesystemPath;
@@ -52,7 +52,7 @@ export class Photo {
     return this._tags;
   }
 
-  get metadata(): Record<string, unknown> {
+  get metadata(): Record<string, any>[] {
     return this._metadata;
   }
 
@@ -61,7 +61,7 @@ export class Photo {
   }
 
   getPhotoDate(): string {
-    const exifVal = this._metadata.exif;
+    const exifVal = this._metadata.find((k,_) => k === 'exif');
     // @ts-ignore
     return exifVal !== null ? exifVal.DateTime : this._createdAt;
   };

@@ -20,6 +20,5 @@ export const paginate = <T>(array: T[], limit: number, offset: number): T[] => {
 
 export const calculatePage = (limit: number, offset: number): number => {
     const page = offset/limit;
-    console.log("next page: " + page)
     return page >= 1 ? page : 1;
 }

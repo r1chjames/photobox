@@ -59,22 +59,12 @@ export const CreateAlbumView: React.FunctionComponent<IProps> = (props) => {
             <section>
               <div {...getRootProps()}>
                 <input {...getInputProps()} />
-                {/*<div className="createAlbumView__dropzone__uploadButtonContainer">*/}
-                {/*  <AddIcon className="createAlbumView__dropzone__uploadButtonIcon"/>*/}
-                {/*  <Button>Select photos</Button>*/}
-                {/*</div>*/}
                 <p>Drag photos here to upload</p>
               </div>
             </section>
           )}
         </Dropzone>
       </div>
-      {/*<Fab color="primary" aria-label="add" className="createAlbumView__addPhotoButton">*/}
-      {/*  <AddIcon onClick={() => console.log('save')}/>*/}
-      {/*</Fab>*/}
-      {/*<Fab color="primary" aria-label="add" className="createAlbumView__addButton">*/}
-      {/*  <SaveIcon onClick={() => console.log('save')}/>*/}
-      {/*</Fab>*/}
       <InfoSnackbar text={'Photo Uploaded'} show={showSnackbar} handleStopShowing={() => setShowSnackbar(false)}/>
     </div>
   );

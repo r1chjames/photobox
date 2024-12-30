@@ -25,34 +25,6 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const isMobile = useMediaQuery('(max-width: 50em)');
     const [{photos, allRetrieved, retrievePhotos}] = usePhotoGrid(props.photosAdapter, props.albumId);
-    // const [photoItemsByDate, setPhotoItemsByDate] = useState<Map<string, JSX.Element[]>>(new Map<string, JSX.Element[]>);
-
-    // const loadItemsByDate = (groupKey: number) => {
-    //   setIsLoading(true);
-    //   const photoItems = new Map<string, JSX.Element[]>();
-    //   if (photos) {
-    //     photos.forEach(function (photo, i) {
-    //       if (typeof photo !== 'undefined') {
-    //         const currentMapValue = photoItems.get(photo.getPhotoDate()) || [];
-    //         currentMapValue.push(
-    //             <PhotoCard
-    //                 src={photo.sourcePath}
-    //                 thumbnail={photo.thumbnailPath}
-    //                 groupKey={groupKey}
-    //                 source={photo}
-    //                 photoSequence={i}
-    //                 handlePreviousPhoto={() => console.log("previous")}
-    //                 handleNextPhoto={() => console.log("next")}
-    //                 lastInAlbum={i < photos.length}
-    //             />
-    //           );
-    //         photoItems.set(photo.getPhotoDate(), currentMapValue);
-    //       }
-    //     });
-    //   }
-    //   setPhotoItemsByDate(photoItems);
-    //   setIsLoading(false);
-    // };
 
     const onRequestAppend = async (e: any) => {
         if ((photos.length < props.maxDisplayed) && !allRetrieved) {

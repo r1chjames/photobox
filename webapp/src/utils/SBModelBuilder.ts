@@ -45,7 +45,11 @@ const getRandomPhotoImage = ()=> {
 
 export const newPhoto = (photoId: string, albumId: string) => {
     const randomPhotoImage = getRandomPhotoImage();
-    return new Photo(`p${photoId}`, `Photo ${photoId}`, `/tmp/photo${photoId}.jpg`, randomPhotoImage, randomPhotoImage, albumId, "", {"exif": {"DateTime": "2024-01-01T10:00.000"}}, "2024-01-01T10:00.000", "https://4.img-dpreview.com");
+    const metadata: Record<string, any>[] = [
+        {"exif": "[{\"DateTime\": \"2024-01-01T10:00.000\"}, {\"ApertureValue\": \"101/32\"}]"},
+        {"camera": "A7Cii"}
+    ];
+    return new Photo(`p${photoId}`, `Photo ${photoId}`, `/tmp/photo${photoId}.jpg`, randomPhotoImage, randomPhotoImage, albumId, "", metadata, "2024-01-01T10:00.000", "https://4.img-dpreview.com");
 }
 
 export const newAlbum = (id: string)=> {

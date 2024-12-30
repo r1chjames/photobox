@@ -1,7 +1,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 
 import { PhotoDetail } from './PhotoDetail';
-import {newPhoto} from "../../utils/SBModelBuilder";
+import {newPhoto, SBModelBuilder} from "../../utils/SBModelBuilder";
 
 const meta: Meta<typeof PhotoDetail> = {
     component: PhotoDetail,
