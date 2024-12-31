@@ -1,6 +1,6 @@
 import React, {useEffect} from 'react';
 import {Photo} from '../../Models/Photo';
-import {ActionIcon, Card, Flex, Group, Image, Overlay, Text} from '@mantine/core';
+import {ActionIcon, Button, Card, Flex, Group, Image, Overlay, Text} from '@mantine/core';
 import {useNavigate} from "react-router-dom";
 import {IconArrowLeftDashed, IconArrowRightDashed, IconX} from "@tabler/icons-react";
 
@@ -87,8 +87,9 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                     </Flex>
                 </Overlay>
             </Card.Section>
-            <Group justify="space-between" mt="md" mb="xs">
+            <Group justify="space-between" mt="md" mb="xs" >
                 <Text fw={500}>{props.source.name}</Text>
+                <Button onClick={() => navigate(`/photo/${props.source.id}`)} mt={50}>View</Button>
             </Group>
         </Card>
     );

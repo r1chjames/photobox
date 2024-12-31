@@ -7,6 +7,7 @@ import {SBModelBuilder} from "../../utils/SBModelBuilder";
 import React from 'react';
 import {PhotoGrid} from "../PhotoGrid/PhotoGrid";
 import {Dashboard} from "../Dashboard/Dashboard";
+import {PhotoDetail} from "../PhotoDetail/PhotoDetail";
 
 const meta: Meta<typeof AppBar> = {
     component: AppBar,
@@ -50,6 +51,16 @@ export const Photos: Story = {
                 photosAdapter={new MockPhotosAdapter()
                     .withPhotos(albumWithPhotos.getPhotos())}
                 maxDisplayed={20}
+            />
+        </AppBar>
+    )
+};
+
+export const PhotoInfo: Story = {
+    render: () => (
+        <AppBar activeLink={Labels.Photos}>
+            <PhotoDetail
+                photo={albumWithPhotos.getPhotos()[0]}
             />
         </AppBar>
     )

@@ -1,7 +1,7 @@
 import React from 'react';
-import './PhotoDetail.css';
 import {Photo} from '../../Models/Photo';
-import {Loader, Table} from '@mantine/core';
+import {useDisclosure} from '@mantine/hooks';
+import {Button, Dialog, Group, Image, Loader, Table} from '@mantine/core';
 import {valueType} from "../../utils/TypeUtils.js";
 
 interface IProps {
@@ -9,6 +9,7 @@ interface IProps {
 }
 
 export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
+    const [opened, {toggle, close}] = useDisclosure(true);
 
     const tableRow = (key: string, value: string) => {
         return (
@@ -17,8 +18,7 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                 <Table.Td>{value}</Table.Td>
             </Table.Tr>
         );
-    }
-
+    };
 
     const buildRows = (metadata: Record<string, any>) => {
         return Object.entries(metadata).map(([key, value]) => {
@@ -33,18 +33,21 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                     return;
             }
         })
-    }
+    };
 
     const content = () => {
         if (props.photo !== undefined) {
             return (
-                <div className="photoDetail__contentWrapper">
-                    <img
+                <>
+                    <Image
+                        radius={"md"}
                         src={props.photo.sourcePath}
-                        alt={props.photo.name}
-                        className="photoDetail__mainImage"
                     />
-                    <div className="photoDetail__imageMetadata">
+                    <Group justify="center">
+                        <Button onClick={toggle} mt={50}>Metadata</Button>
+                    </Group>
+                    <Dialog opened={opened} withCloseButton onClose={close} size="lg" radius="md"
+                            position={{top: "30%", right: 50}}>
                         <Table>
                             <Table.Thead>
                                 <Table.Tr>
@@ -56,10 +59,9 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                                 {props.photo.metadata.map(metadataElement => buildRows(metadataElement))}
                             </Table.Tbody>
                         </Table>
-                    </div>
-                </div>
-            )
-                ;
+                    </Dialog>
+                </>
+            );
         }
 
         return (
