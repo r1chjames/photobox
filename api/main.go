@@ -21,7 +21,7 @@ func main() {
 	components.StopAllRunningJobs(dbEnv)
 	components.AddScheduledJobs(appConfig, dbEnv)
 
-	apiServer.Start(appConfig, dbEnv)
+	apiServer.NewServer(appConfig, dbEnv)
 }
 
 func parseAppVariables() types.AppConfig {

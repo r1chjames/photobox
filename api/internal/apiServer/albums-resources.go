@@ -9,11 +9,11 @@ import (
 )
 import "net/http"
 
-func defineAlbumsResources(router *gin.Engine, appConfig AppConfig) {
+func (server *Server) defineAlbumsResources(appConfig AppConfig) {
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
 
-	router.GET(fmt.Sprintf("%s/album/:id", urlBasePath), getAlbumById)
-	albums := router.Group(fmt.Sprintf("%s/albums", urlBasePath))
+	server.router.GET(fmt.Sprintf("%s/album/:id", urlBasePath), getAlbumById)
+	albums := server.router.Group(fmt.Sprintf("%s/albums", urlBasePath)).Use(authMiddleware(*server.tokenMaker))
 	{
 		albums.GET("", getAllAlbums)
 		albums.GET("/count", countAllAlbums)

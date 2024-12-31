@@ -30,7 +30,7 @@ func InitDbConnection(appConfig AppConfig) *Env {
 
 func (dbEnv *Env) PerformDbSetup(appConfig AppConfig) {
 	// Migrate the schema
-	err := dbEnv.Db.AutoMigrate(&Album{}, &Photo{}, &Setting{}, &Job{})
+	err := dbEnv.Db.AutoMigrate(&Album{}, &Photo{}, &Setting{}, &Job{}, &User{})
 	if err != nil {
 		log.Fatalf("failed to perform database migration, %s", err)
 	}

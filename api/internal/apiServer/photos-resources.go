@@ -12,18 +12,18 @@ import "net/http"
 
 var config AppConfig
 
-func definePhotosResources(router *gin.Engine, appConfig AppConfig) {
+func (server *Server) definePhotosResources(appConfig AppConfig) {
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
 	config = appConfig
 
-	photos := router.Group(fmt.Sprintf("%s/photos", urlBasePath))
+	photos := server.router.Group(fmt.Sprintf("%s/photos", urlBasePath)).Use(authMiddleware(*server.tokenMaker))
 	{
 		photos.GET("", getPhotos)
 		photos.GET("/count", getPhotoCount)
 		photos.POST("/index", indexPhotos)
 	}
 
-	photo := router.Group(fmt.Sprintf("%s/photo", urlBasePath))
+	photo := server.router.Group(fmt.Sprintf("%s/photo", urlBasePath)).Use(authMiddleware(*server.tokenMaker))
 	{
 		photo.POST("", addPhoto)
 		photo.GET("/:id", getPhoto)

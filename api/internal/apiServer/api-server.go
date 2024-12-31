@@ -4,34 +4,41 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"gitlab.com/r1chjames/photobox/api/internal/database"
+	"gitlab.com/r1chjames/photobox/api/internal/token"
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
 	"log"
 )
 
 var dbEnv *database.Env
 
-func Start(appConfig AppConfig, env *database.Env) {
+func NewServer(appConfig AppConfig, env *database.Env) *Server {
+	tokenMaker, err := token.NewPaseto("abcdefghijkl12345678901234567890")
+	if err != nil {
+		log.Fatalf("Couldn't create token maker: %w", err)
+	}
+
+	server := &Server{
+		tokenMaker: tokenMaker,
+	}
 	dbEnv = env
-
-	router := setupRouter(appConfig)
-
-	err := router.Run()
+	server.setupRouter(appConfig)
+	err = server.router.Run()
 	if err != nil {
 		log.Fatalf("Error starting API Server, %s", err)
 	}
+
+	return server
 }
 
-func setupRouter(appConfig AppConfig) *gin.Engine {
+func (server *Server) setupRouter(appConfig AppConfig) {
 	router := gin.Default()
-	//config := cors.DefaultConfig()
-	//config.AllowOrigins = []string{"http://photobox"}
-	//router.Use(cors.New(config))
 	router.Use(cors.Default())
+	server.router = router
 
-	defineAlbumsResources(router, appConfig)
-	definePhotosResources(router, appConfig)
-	defineServerResources(router, appConfig)
-	return router
+	server.defineAlbumsResources(appConfig)
+	server.definePhotosResources(appConfig)
+	server.defineServerResources(appConfig)
+	server.defineUserResources(appConfig)
 }
 
 func setDbEnv(env *database.Env) {

@@ -58,3 +58,10 @@ type PhotoUpload struct {
 	AlbumName     string `json:"albumName"`
 	BinaryContent string `json:"binaryContent"`
 }
+
+type User struct {
+	ID       string `json:"id"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
