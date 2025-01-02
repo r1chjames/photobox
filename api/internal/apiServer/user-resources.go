@@ -1,14 +1,30 @@
 package apiServer
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/pkg/errors"
+	. "gitlab.com/r1chjames/photobox/api/internal/token"
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
-	"math/rand"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 )
+
+type registrationRequest struct {
+	Username string `json:"username" binding:"required"`
+	Email    string `json:"email"`
+	Password string `json:"password" binding:"required"`
+}
+
+type CreationOrUpdateRequest struct {
+	Username string   `json:"username" binding:"required"`
+	Email    string   `json:"email"`
+	Role     UserRole `json:"role" binding:"required"`
+	Approved bool     `json:"approved"`
+	Password string   `json:"password" binding:"required"`
+}
 
 type loginRequest struct {
 	Username string `json:"username" binding:"required"`
@@ -23,92 +39,165 @@ type loginResponse struct {
 func (server *Server) defineUserResources(appConfig AppConfig) {
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
 
-	publicRoutes := server.router.Group(urlBasePath)
+	publicRoutes := server.router.Group(fmt.Sprintf("%s/user", urlBasePath))
 	publicRoutes.POST("/login", server.login)
-	publicRoutes.POST("/create", server.createUser)
+	publicRoutes.POST("/register", server.registerUser)
 
-	authenticatedRoutes := server.router.Group(urlBasePath).Use(authMiddleware(*server.tokenMaker))
-	authenticatedRoutes.DELETE("/delete/:id", server.deleteUser)
+	authenticatedRoutes := server.router.Group(fmt.Sprintf("%s/user", urlBasePath)).Use(authMiddleware(*server.tokenMaker))
+	authenticatedRoutes.POST("/create", server.createUser)
+	authenticatedRoutes.POST("/update", server.updateUser)
+
 }
 
 func (server *Server) login(ctx *gin.Context) {
-	// Request binding for login credentials
 	var req loginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	user, err := dbEnv.GetUserByUsername(req.Username)
-	if err != nil {
-		ctx.JSON(http.StatusNotFound, req.Username)
-	} else {
-		ctx.JSON(http.StatusOK, user)
-	}
-
-	if user.Password == req.Password {
-		// Create and send an access token
-		accessToken, err := server.tokenMaker.CreateToken(req.Username, time.Minute)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		response := loginResponse{
-			AccessToken: accessToken,
-			User:        user,
-		}
-		ctx.JSON(http.StatusOK, response)
+	user, err := dbEnv.GetApprovedUserByUsername(req.Username)
+	if user.ID == "" || err != nil {
+		ctx.Status(http.StatusForbidden)
 		return
 	}
 
-	ctx.JSON(http.StatusForbidden, gin.H{"error": "Incorrect password"})
+	valid, err := ComparePasswordAndHash(req.Password, user.Password)
+	if !valid || err != nil {
+		ctx.Status(http.StatusForbidden)
+		return
+	}
+
+	// Create and send an access token
+	accessToken, err := server.tokenMaker.CreateToken(req.Username, time.Minute)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	response := loginResponse{
+		AccessToken: accessToken,
+		User:        user,
+	}
+	ctx.JSON(http.StatusOK, response)
 	return
 }
 
-type createUserRequest struct {
-	Username string `json:"username" binding:"required"`
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
+func CreateUser(req CreationOrUpdateRequest, approved bool) error {
+	hashSalt, err := CreateHash(req.Password, DefaultArgon2idHash())
+	if err != nil {
+		return errors.New("Error creating hash")
+	}
+
+	var user = User{
+		ID:       uuid.NewString(),
+		Username: req.Username,
+		Email:    req.Email,
+		Role:     req.Role,
+		Approved: approved,
+		Password: hashSalt,
+	}
+
+	err = dbEnv.CreateUser(user)
+	if err != nil {
+		return errors.New("Unable to save user")
+	}
+	return nil
 }
 
 func (server *Server) createUser(ctx *gin.Context) {
-	// Request binding for new user details
-	var user User
-	if err := ctx.ShouldBindJSON(&user); err != nil {
+	var req CreationOrUpdateRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Assign a unique ID and add the user to the list
-	user.ID = strconv.Itoa(rand.Intn(1000))
-	err := dbEnv.CreateUser(user)
+	err := CreateUser(req, false)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, invalidRequest())
 	} else {
-		ctx.JSON(http.StatusOK, user)
+		ctx.Status(http.StatusOK)
 	}
 
 	return
 }
 
-type deleteUserRequest struct {
-	ID string `uri:"id" binding:"required"`
+func (server *Server) verifyAuthorizedUserRole(ctx *gin.Context) (string, UserRole, error) {
+	authHeader := strings.Fields(GetAuthHeader(ctx))[1]
+	payload, err := server.tokenMaker.ParseToken(authHeader)
+	if err != nil {
+		return "", "", err
+	}
+	tokenUserObject, err := dbEnv.GetUserByUsername(payload.Username)
+	if err != nil {
+		return payload.Username, "", err
+	}
+	return payload.Username, tokenUserObject.Role, nil
 }
 
-func (server *Server) deleteUser(ctx *gin.Context) {
-	// Request binding for user ID
-	var req deleteUserRequest
-	if err := ctx.ShouldBindUri(&req); err != nil {
+func (server *Server) updateUser(ctx *gin.Context) {
+	var req CreationOrUpdateRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	err := dbEnv.DeleteUser(req.ID)
+	var userToUpdate User
+	var username, role, _ = server.verifyAuthorizedUserRole(ctx)
+	if role == ADMINISTRATOR {
+		userToUpdate = User{
+			Username: req.Username,
+			Email:    req.Email,
+			Role:     req.Role,
+			Approved: req.Approved,
+		}
+	} else if username == req.Username {
+		userToUpdate = User{
+			Email:    req.Email,
+			Password: req.Password,
+		}
+	} else {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	err := dbEnv.UpdateUser(userToUpdate)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, invalidRequest())
 	} else {
-		ctx.JSON(http.StatusOK, "")
+		ctx.Status(http.StatusOK)
+	}
+
+	return
+}
+
+func (server *Server) registerUser(ctx *gin.Context) {
+	var req registrationRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	hashSalt, err := CreateHash(req.Password, DefaultArgon2idHash())
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var user = User{
+		ID:       uuid.NewString(),
+		Username: req.Username,
+		Email:    req.Email,
+		Role:     VIEWER,
+		Approved: false,
+		Password: hashSalt,
+	}
+
+	err = dbEnv.CreateUser(user)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, invalidRequest())
+	} else {
+		ctx.Status(http.StatusOK)
 	}
 
 	return

@@ -59,9 +59,19 @@ type PhotoUpload struct {
 	BinaryContent string `json:"binaryContent"`
 }
 
+type UserRole string
+
+const (
+	ADMINISTRATOR UserRole = "administrator"
+	VIEWER        UserRole = "viewer"
+	CONTRIBUTOR   UserRole = "contributor"
+)
+
 type User struct {
-	ID       string `json:"id"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	ID       string   `gorm:"primarykey" json:"id"`
+	Username string   `json:"username"`
+	Role     UserRole `json:"role"`
+	Email    string   `json:"email"`
+	Approved bool     `json:"-"`
+	Password string   `json:"-"`
 }

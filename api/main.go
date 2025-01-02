@@ -16,12 +16,30 @@ func main() {
 
 	dbEnv := database.InitDbConnection(appConfig)
 	dbEnv.PerformDbSetup(appConfig)
+	apiServer.NewDBEnv(dbEnv)
 
 	components.InitScheduler(appConfig)
 	components.StopAllRunningJobs(dbEnv)
 	components.AddScheduledJobs(appConfig, dbEnv)
+	addDefaultAdminUser(dbEnv)
+	apiServer.NewServer(appConfig)
 
-	apiServer.NewServer(appConfig, dbEnv)
+}
+
+func addDefaultAdminUser(dbEnv *database.Env) {
+	defaultAdminUsername := utils.GetEnv("DEFAULT_ADMIN_USERNAME", "admin")
+	defaultAdminPassword := utils.GetEnv("DEFAULT_ADMIN_PASSWORD", "password")
+	user, err := dbEnv.GetUserByUsername(defaultAdminUsername)
+	if user.ID == "" || err != nil {
+		err := apiServer.CreateUser(apiServer.CreationOrUpdateRequest{
+			Username: defaultAdminUsername,
+			Password: defaultAdminPassword,
+			Role:     types.ADMINISTRATOR,
+		}, true)
+		if err != nil {
+			return
+		}
+	}
 }
 
 func parseAppVariables() types.AppConfig {

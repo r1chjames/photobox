@@ -12,9 +12,13 @@ const (
 	authorizationHeaderBearerType = "bearer"
 )
 
+func GetAuthHeader(ctx *gin.Context) string {
+	return ctx.GetHeader(authorizationHeaderKey)
+}
+
 func authMiddleware(maker token.PasetoMaker) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		authHeader := ctx.GetHeader(authorizationHeaderKey)
+		authHeader := GetAuthHeader(ctx)
 		if authHeader == "" {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "No header was passed"})
 			return

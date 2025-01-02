@@ -11,7 +11,12 @@ import (
 
 var dbEnv *database.Env
 
-func NewServer(appConfig AppConfig, env *database.Env) *Server {
+func NewDBEnv(env *database.Env) *database.Env {
+	dbEnv = env
+	return dbEnv
+}
+
+func NewServer(appConfig AppConfig) *Server {
 	tokenMaker, err := token.NewPaseto("abcdefghijkl12345678901234567890")
 	if err != nil {
 		log.Fatalf("Couldn't create token maker: %w", err)
@@ -20,7 +25,6 @@ func NewServer(appConfig AppConfig, env *database.Env) *Server {
 	server := &Server{
 		tokenMaker: tokenMaker,
 	}
-	dbEnv = env
 	server.setupRouter(appConfig)
 	err = server.router.Run()
 	if err != nil {

@@ -13,8 +13,13 @@ func (dbEnv *Env) GetAllUsers() ([]User, error) {
 
 func (dbEnv *Env) GetUserByUsername(username string) (User, error) {
 	var user User
-	user.Username = username
-	result := dbEnv.Db.Find(&user)
+	result := dbEnv.Db.Find(&user, "username = ? ", username)
+	return user, result.Error
+}
+
+func (dbEnv *Env) GetApprovedUserByUsername(username string) (User, error) {
+	var user User
+	result := dbEnv.Db.Find(&user, "username = ? AND approved = true", username)
 	return user, result.Error
 }
 
@@ -28,7 +33,7 @@ func (dbEnv *Env) CreateUser(user User) error {
 func (dbEnv *Env) UpdateUser(user User) error {
 	result := dbEnv.Db.Clauses(clause.OnConflict{
 		UpdateAll: true,
-	}).Create(&user)
+	}).Updates(&user)
 	return result.Error
 }
 

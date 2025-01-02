@@ -5,4 +5,4 @@ docker run \
   -e "POSTGRES_PASSWORD=password" \
   -p 5432:5432 \
   -v $(pwd)/sql:/docker-entrypoint-initdb.d \
-  postgres:15.10
+  postgres:16.4
