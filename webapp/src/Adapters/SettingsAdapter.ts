@@ -18,7 +18,7 @@ export class SettingsAdapter {
 
   public getAllSettings = async () => {
     const getAllSettingsPath = "settings";
-    return this.restApiAdapter.getApiCall(getAllSettingsPath, this.buildHeaders(), {});
+    return this.restApiAdapter.getApiCall(getAllSettingsPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 
   public updateSettings = async (settings: Setting[]) => {
@@ -26,7 +26,7 @@ export class SettingsAdapter {
     const body = {
       settings
     };
-    return this.restApiAdapter.postApiCall(postAllSettingsPath, body, this.buildHeaders());
+    return this.restApiAdapter.postApiCall(postAllSettingsPath, body, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 
   public updateSetting = async (setting: Setting) => {
@@ -34,6 +34,6 @@ export class SettingsAdapter {
     const body = {
       setting
     };
-    return this.restApiAdapter.postApiCall(postSettingPath, body, this.buildHeaders());
+    return this.restApiAdapter.postApiCall(postSettingPath, body, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 }

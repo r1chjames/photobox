@@ -18,16 +18,16 @@ export class AlbumsAdapter implements IAlbumsAdapter {
 
   public getAllAlbumsInfo = async () => {
     const getAllAlbumsPath = "albums";
-    return this.restApiAdapter.getApiCall(getAllAlbumsPath, this.buildHeaders(), {});
+    return this.restApiAdapter.getApiCall(getAllAlbumsPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 
   public getCountOfPhotosInAlbum = async () => {
     const getAllPhotosPath = "album";
-    return this.restApiAdapter.getApiCall(getAllPhotosPath, this.buildHeaders(), {});
+    return this.restApiAdapter.getApiCall(getAllPhotosPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 
   public getAlbumInfoById = async (albumId: string) => {
     const getAlbumInfoPath = `/album/${albumId}`;
-    return this.restApiAdapter.getApiCall(getAlbumInfoPath, this.buildHeaders(), {});
+    return this.restApiAdapter.getApiCall(getAlbumInfoPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 }

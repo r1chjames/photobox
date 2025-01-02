@@ -1,5 +1,6 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {LoginCard} from "./LoginCard";
+import {MockUsersAdapter} from "../../Adapters/MockUsersAdapter";
 
 const meta: Meta<typeof LoginCard> = {
   component: LoginCard,
@@ -10,7 +11,6 @@ type Story = StoryObj<typeof LoginCard>;
 
 export const Default: Story = {
   args: {
-    isLoggedIn: false,
-    submitLogin: () => {},
+      usersAdapter: new MockUsersAdapter(),
   }
 };

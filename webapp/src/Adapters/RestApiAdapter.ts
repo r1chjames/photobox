@@ -5,7 +5,7 @@ export interface IRestApiAdapter {
   postApiCall(path: string, body: Record<string, unknown>, headers: Record<string, string>): Promise<any>
   putApiCall(path: string, body: Record<string, unknown>, headers: Record<string, string>): Promise<any>
   getApiCall(path: string, headers: Record<string, string>, params: Record<string, unknown>): Promise<any>
-
+  authHeader(): Record<string, string>
 }
 
 export class RestApiAdapter implements IRestApiAdapter {
@@ -40,29 +40,10 @@ export class RestApiAdapter implements IRestApiAdapter {
     const resp = await axios(options);
     return resp.data;
   }
-}
 
-export class MockRestApiAdapter implements IRestApiAdapter {
-
-  public resp;
-
-  constructor(resp: any) {
-    this.resp = resp;
-  }
-
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async postApiCall(path: string, body: Record<string, unknown>, headers: Record<string, string>) {
-    return this.resp;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async putApiCall(path: string, body: Record<string, unknown>, headers: Record<string, string>) {
-    return this.resp;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getApiCall(path: string, headers: Record<string, string>, params: Record<string, unknown>) {
-    return this.resp;
+  authHeader()  {
+    return {
+      'Authorization': `Bearer ${localStorage.getItem('token')}`
+    }
   }
 }

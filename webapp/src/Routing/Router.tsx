@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {Route, Routes} from "react-router-dom";
+import {Navigate, Route, Routes} from "react-router-dom";
 import {PhotoGrid} from '../Components/PhotoGrid/PhotoGrid';
 import {Dashboard} from '../Components/Dashboard/Dashboard';
 import {AlbumGrid} from '../Components/AlbumGrid/AlbumGrid';
@@ -9,10 +9,25 @@ import {AlbumsAdapter} from "../Adapters/AlbumsAdapter";
 import {RestApiAdapter} from "../Adapters/RestApiAdapter";
 import {PhotosAdapter} from "../Adapters/PhotosAdapter";
 import {SettingsAdapter} from "../Adapters/SettingsAdapter";
+import {LoginCard} from "../Components/LoginCard/LoginCard";
+import {UsersAdapter} from "../Adapters/UsersAdapter";
 
 interface IProps {
     baseApiUrl: string;
 }
+
+interface IPRProps {
+    children: React.ReactNode;
+}
+
+const ProtectedRoute = (props: IPRProps) => {
+    const token = localStorage.getItem('token');
+    if (token == null) {
+        return <Navigate to={"/login"}/>;
+    }
+
+    return <>{props.children}</>;
+};
 
 export default class Router extends Component<IProps> {
 
@@ -22,61 +37,71 @@ export default class Router extends Component<IProps> {
                 <Route
                     path="/"
                     element={
-                        <Dashboard
-                            albumsAdapter={new AlbumsAdapter(new RestApiAdapter(this.props.baseApiUrl))}
-                            photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                        <ProtectedRoute>
+                            <Dashboard
+                                albumsAdapter={new AlbumsAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                                photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                            />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/login"
+                    element={
+                        <LoginCard
+                            usersAdapter={new UsersAdapter(new RestApiAdapter(this.props.baseApiUrl))}
                         />
                     }
                 />
                 <Route
                     path="/photos"
                     element={
-                        <PhotoGrid
-                            photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
-                        />
+                        <ProtectedRoute>
+                            <PhotoGrid
+                                photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                            />
+                        </ProtectedRoute>
                     }
                 />
-                {/*<Route*/}
-                {/*    path="/photo/:id"*/}
-                {/*    element={*/}
-                {/*        <PhotoDetail*/}
-                {/*            // baseApiUrl={this.props.baseApiUrl}*/}
-                {/*            photo={new Photo("p1", "photo 1", "/tmp/photo1.jpg", "https://4.img-dpreview.com/files/p/E~TS1180x0~articles/3925134721/0266554465.jpeg", "a1", "", {"a":"","b":""}, "")}*/}
-                {/*            // photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}*/}
-                {/*        />*/}
-                {/*    }*/}
-                {/*/>*/}
                 <Route
                     path="/albums"
                     element={
-                        <AlbumGrid
-                            albumsAdapter={new AlbumsAdapter(new RestApiAdapter(this.props.baseApiUrl))}
-                            photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
-                        />
+                        <ProtectedRoute>
+                            <AlbumGrid
+                                albumsAdapter={new AlbumsAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                                photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                            />
+                        </ProtectedRoute>
                     }
                 />
                 <Route
                     path="/album/:albumid"
                     element={
-                        <PhotoGrid
-                            photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
-                        />
+                        <ProtectedRoute>
+                            <PhotoGrid
+                                photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                            />
+                        </ProtectedRoute>
                     }
                 />
                 <Route
                     path="/album/new/:name"
                     element={
-                        <CreateAlbumView
-                            photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
-                        />
+                        <ProtectedRoute>
+                            <CreateAlbumView
+                                photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                            />
+                        </ProtectedRoute>
                     }
                 />
                 <Route
                     path="/settings"
                     element={
-                        <SettingsView
-                            settingsAdapter={new SettingsAdapter(new RestApiAdapter(this.props.baseApiUrl))}
-                        />
+                        <ProtectedRoute>
+                            <SettingsView
+                                settingsAdapter={new SettingsAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                            />
+                        </ProtectedRoute>
                     }
                 />
             </Routes>

@@ -19,12 +19,12 @@ export class PhotosAdapter implements IPhotosAdapter {
 
   public getAllPhotosInfo = async (offset: number, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
     const getAllPhotosPath = `photos?page=${offset}&limit=${limit}&thumbnail=${includeThumbnails}`;
-    return this.restApiAdapter.getApiCall(getAllPhotosPath, this.buildHeaders(), {});
+    return this.restApiAdapter.getApiCall(getAllPhotosPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 
   public getPhotoInfoById = async (photoId: string): Promise<Photo[]> => {
     const getAllPhotosPath = `photo/${photoId}`;
-    return this.restApiAdapter.getApiCall(getAllPhotosPath, this.buildHeaders(), {});
+    return this.restApiAdapter.getApiCall(getAllPhotosPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 
   public getPhotosInfoInAlbum = async (albumId: string, offset: number, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
@@ -32,7 +32,7 @@ export class PhotosAdapter implements IPhotosAdapter {
     const params = {
       albumId,
     };
-    return this.restApiAdapter.getApiCall(getPhotosInAlbumPath, this.buildHeaders(), params);
+    return this.restApiAdapter.getApiCall(getPhotosInAlbumPath, this.buildHeaders(this.restApiAdapter.authHeader()), params);
   }
 
   public getPhotoCountInAlbum = async (albumId: string) => {
@@ -40,7 +40,7 @@ export class PhotosAdapter implements IPhotosAdapter {
     const params = {
       albumId,
     };
-    return this.restApiAdapter.getApiCall(getPhotosInAlbumPath, this.buildHeaders(), params);
+    return this.restApiAdapter.getApiCall(getPhotosInAlbumPath, this.buildHeaders(this.restApiAdapter.authHeader()), params);
   }
 
   public getPhotoImage = async (photoId: string) => {
@@ -48,12 +48,12 @@ export class PhotosAdapter implements IPhotosAdapter {
     const params = {
       photoId,
     };
-    return this.restApiAdapter.getApiCall(getPhotosImagePath, this.buildHeaders(), params);
+    return this.restApiAdapter.getApiCall(getPhotosImagePath, this.buildHeaders(this.restApiAdapter.authHeader()), params);
   }
 
   public uploadPhoto = async (body: Record<string, unknown>) => {
     const postSettingPath = `photo`;
-    return this.restApiAdapter.postApiCall(postSettingPath, body, this.buildHeaders());
+    return this.restApiAdapter.postApiCall(postSettingPath, body, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 }
 
