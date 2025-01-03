@@ -22,7 +22,7 @@ export class PhotosAdapter implements IPhotosAdapter {
     return this.restApiAdapter.getApiCall(getAllPhotosPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 
-  public getPhotoInfoById = async (photoId: string): Promise<Photo[]> => {
+  public getPhotoInfoById = async (photoId: string): Promise<Photo> => {
     const getAllPhotosPath = `photo/${photoId}`;
     return this.restApiAdapter.getApiCall(getAllPhotosPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }

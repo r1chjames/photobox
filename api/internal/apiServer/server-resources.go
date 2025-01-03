@@ -44,7 +44,7 @@ func getAllSettings(c *gin.Context) {
 }
 
 func updateAllSettings(c *gin.Context) {
-	var settings Settings
+	var settings SettingsResponse
 	err := c.BindJSON(&settings)
 	if err != nil {
 		log.Println(err.Error())

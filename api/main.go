@@ -34,7 +34,7 @@ func addDefaultAdminUser(dbEnv *database.Env) {
 		err := apiServer.CreateUser(apiServer.CreationOrUpdateRequest{
 			Username: defaultAdminUsername,
 			Password: defaultAdminPassword,
-			Role:     types.ADMINISTRATOR,
+			Role:     apiServer.ADMINISTRATOR,
 		}, true)
 		if err != nil {
 			return

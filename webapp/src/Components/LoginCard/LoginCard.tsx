@@ -16,7 +16,7 @@ import {
     TextInput,
     Title
 } from '@mantine/core';
-import {useInputState} from "@mantine/hooks";
+import {getHotkeyHandler, useInputState} from "@mantine/hooks";
 import {IconAlertTriangle, IconCheck, IconX} from '@tabler/icons-react';
 import {IUsersAdapter} from "../../Adapters/IUsersAdapter";
 import {User} from "../../Models/User";
@@ -81,6 +81,18 @@ export const LoginCard: React.FunctionComponent<IProps> = (props) => {
             />
         ));
 
+
+    const keyPress = (e: any) => {
+        switch (e.which) {
+            case 37: {
+                // left
+                props.previousPhoto();
+                break
+            }
+            default:
+        }
+    }
+
     const handleSubmit = async () => {
         let token;
         switch (segmentedValue) {
@@ -91,7 +103,7 @@ export const LoginCard: React.FunctionComponent<IProps> = (props) => {
                 token = await props.usersAdapter.register(new User(username, email, registrationPassword));
                 break;
         }
-        localStorage.setItem("token", token);
+        localStorage.setItem("token", token.access_token);
         navigate("/")
     };
 
@@ -115,6 +127,9 @@ export const LoginCard: React.FunctionComponent<IProps> = (props) => {
                     required
                     onChange={setPassword}
                     width="75%"
+                    onKeyDown={getHotkeyHandler([
+                        ['Enter', handleSubmit],
+                    ])}
                 />
             </>
         );
@@ -149,6 +164,9 @@ export const LoginCard: React.FunctionComponent<IProps> = (props) => {
                     label="Password"
                     required
                     width="75%"
+                    onKeyDown={getHotkeyHandler([
+                        ['Enter', handleSubmit],
+                    ])}
                 />
                 <Group gap={5} grow mt="xs" mb="md">
                     {bars}

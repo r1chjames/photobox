@@ -5,7 +5,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"gitlab.com/r1chjames/photobox/api/internal/database"
-	"gitlab.com/r1chjames/photobox/api/internal/types"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 	"net/http"
 	"testing"
@@ -66,14 +65,14 @@ func TestGetPhotoByPhotoIdWhenIdDoesNotExist(t *testing.T) {
 }
 
 func TestGetPhotoByAlbumId(t *testing.T) {
-	photo1 := types.Photo{
+	photo1 := PhotoResponse{
 		ID:             "photo1",
 		Name:           "name1",
 		FilesystemPath: "/dir1",
 		SourcePath:     "https://4.img-dpreview.com/files/p/E~TS1180x0~articles/3925134721/0266554465.jpeg",
 		AlbumId:        "album1",
 	}
-	photo2 := types.Photo{
+	photo2 := PhotoResponse{
 		ID:             "photo2",
 		Name:           "name2",
 		FilesystemPath: "/dir1",
@@ -105,14 +104,14 @@ func TestGetPhotoByAlbumId(t *testing.T) {
 }
 
 func TestGetAllPhotos(t *testing.T) {
-	photo1 := types.Photo{
+	photo1 := PhotoResponse{
 		ID:             "photo1",
 		Name:           "name1",
 		SourcePath:     "https://4.img-dpreview.com/files/p/E~TS1180x0~articles/3925134721/0266554465.jpeg",
 		FilesystemPath: "/dir1",
 		AlbumId:        "album1",
 	}
-	photo2 := types.Photo{
+	photo2 := PhotoResponse{
 		ID:             "photo2",
 		Name:           "name2",
 		SourcePath:     "https://4.img-dpreview.com/files/p/E~TS1180x0~articles/3925134721/0266554465.jpeg",

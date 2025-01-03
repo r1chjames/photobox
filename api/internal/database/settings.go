@@ -1,7 +1,6 @@
 package database
 
 import (
-	. "gitlab.com/r1chjames/photobox/api/internal/types"
 	"gorm.io/gorm/clause"
 	"log"
 )

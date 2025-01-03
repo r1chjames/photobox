@@ -3,13 +3,13 @@ package apiServer
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	. "gitlab.com/r1chjames/photobox/api/internal/types"
+	"gitlab.com/r1chjames/photobox/api/internal/types"
 	"strconv"
 	"strings"
 )
 import "net/http"
 
-func (server *Server) defineAlbumsResources(appConfig AppConfig) {
+func (server *Server) defineAlbumsResources(appConfig types.AppConfig) {
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
 
 	server.router.GET(fmt.Sprintf("%s/album/:id", urlBasePath), getAlbumById)

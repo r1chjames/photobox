@@ -2,7 +2,7 @@ package database
 
 import (
 	"errors"
-	. "gitlab.com/r1chjames/photobox/api/internal/types"
+	"gitlab.com/r1chjames/photobox/api/internal/types"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -13,7 +13,7 @@ type Env struct {
 	Db *gorm.DB
 }
 
-func InitDbConnection(appConfig AppConfig) *Env {
+func InitDbConnection(appConfig types.AppConfig) *Env {
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN: appConfig.DbUrl,
 	}), &gorm.Config{
@@ -28,7 +28,7 @@ func InitDbConnection(appConfig AppConfig) *Env {
 	return &Env{Db: db}
 }
 
-func (dbEnv *Env) PerformDbSetup(appConfig AppConfig) {
+func (dbEnv *Env) PerformDbSetup(appConfig types.AppConfig) {
 	// Migrate the schema
 	err := dbEnv.Db.AutoMigrate(&Album{}, &Photo{}, &Setting{}, &Job{}, &User{})
 	if err != nil {

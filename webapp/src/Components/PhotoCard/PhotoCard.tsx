@@ -3,6 +3,7 @@ import {Photo} from '../../Models/Photo';
 import {ActionIcon, Button, Card, Flex, Group, Image, Overlay, Text} from '@mantine/core';
 import {useNavigate} from "react-router-dom";
 import {IconArrowLeftDashed, IconArrowRightDashed, IconX} from "@tabler/icons-react";
+import {useHotkeys} from "@mantine/hooks";
 
 interface IProps {
     source: Photo;
@@ -16,28 +17,10 @@ interface IProps {
 export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const navigate = useNavigate()
 
-    useEffect(() => {
-        document.addEventListener('keydown', keyPress);
-        return () => {
-            document.removeEventListener('keydown', keyPress);
-        }
-    }, []);
-
-    const keyPress = (e: any) => {
-        switch (e.which) {
-            case 37: {
-                // left
-                props.previousPhoto();
-                break
-            }
-            case 39: {
-                // right
-                props.nextPhoto();
-                break
-            }
-            default:
-        }
-    }
+    useHotkeys([
+        ['ArrowLeft', () => props.previousPhoto()],
+        ['ArrowRight', () => props.nextPhoto()],
+    ]);
 
     const previousButton = () => {
         if (!props.firstInAlbum) {

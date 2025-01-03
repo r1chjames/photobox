@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/disintegration/imaging"
 	"github.com/rwcarlsen/goexif/exif"
+	. "gitlab.com/r1chjames/photobox/api/internal/apiServer"
 	"gitlab.com/r1chjames/photobox/api/internal/database"
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
 	"gitlab.com/r1chjames/photobox/api/internal/utils"

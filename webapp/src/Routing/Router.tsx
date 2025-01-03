@@ -11,16 +11,14 @@ import {PhotosAdapter} from "../Adapters/PhotosAdapter";
 import {SettingsAdapter} from "../Adapters/SettingsAdapter";
 import {LoginCard} from "../Components/LoginCard/LoginCard";
 import {UsersAdapter} from "../Adapters/UsersAdapter";
+import {AppBar, Labels} from "../Components/AppBar/AppBar";
+import {PhotoDetail} from "../Components/PhotoDetail/PhotoDetail";
 
 interface IProps {
     baseApiUrl: string;
 }
 
-interface IPRProps {
-    children: React.ReactNode;
-}
-
-const ProtectedRoute = (props: IPRProps) => {
+const ProtectedRoute = (props: { children: React.ReactNode }) => {
     const token = localStorage.getItem('token');
     if (token == null) {
         return <Navigate to={"/login"}/>;
@@ -38,10 +36,12 @@ export default class Router extends Component<IProps> {
                     path="/"
                     element={
                         <ProtectedRoute>
-                            <Dashboard
-                                albumsAdapter={new AlbumsAdapter(new RestApiAdapter(this.props.baseApiUrl))}
-                                photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
-                            />
+                            <AppBar activeLink={Labels.Dashboard}>
+                                <Dashboard
+                                    albumsAdapter={new AlbumsAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                                    photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                                />
+                            </AppBar>
                         </ProtectedRoute>
                     }
                 />
@@ -57,9 +57,21 @@ export default class Router extends Component<IProps> {
                     path="/photos"
                     element={
                         <ProtectedRoute>
-                            <PhotoGrid
-                                photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
-                            />
+                            <AppBar activeLink={Labels.Photos}>
+                                <PhotoGrid
+                                    photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                                />
+                            </AppBar>
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/photo/:id"
+                    element={
+                        <ProtectedRoute>
+                            <AppBar activeLink={Labels.Photos}>
+                                <PhotoDetail />
+                            </AppBar>
                         </ProtectedRoute>
                     }
                 />
@@ -67,10 +79,12 @@ export default class Router extends Component<IProps> {
                     path="/albums"
                     element={
                         <ProtectedRoute>
-                            <AlbumGrid
-                                albumsAdapter={new AlbumsAdapter(new RestApiAdapter(this.props.baseApiUrl))}
-                                photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
-                            />
+                            <AppBar activeLink={Labels.Albums}>
+                                <AlbumGrid
+                                    albumsAdapter={new AlbumsAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                                    photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                                />
+                            </AppBar>
                         </ProtectedRoute>
                     }
                 />
@@ -78,9 +92,11 @@ export default class Router extends Component<IProps> {
                     path="/album/:albumid"
                     element={
                         <ProtectedRoute>
-                            <PhotoGrid
-                                photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
-                            />
+                            <AppBar activeLink={Labels.Albums}>
+                                <PhotoGrid
+                                    photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                                />
+                            </AppBar>
                         </ProtectedRoute>
                     }
                 />
@@ -98,9 +114,11 @@ export default class Router extends Component<IProps> {
                     path="/settings"
                     element={
                         <ProtectedRoute>
-                            <SettingsView
-                                settingsAdapter={new SettingsAdapter(new RestApiAdapter(this.props.baseApiUrl))}
-                            />
+                            <AppBar activeLink={Labels.Settings}>
+                                <SettingsView
+                                    settingsAdapter={new SettingsAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                                />
+                            </AppBar>
                         </ProtectedRoute>
                     }
                 />

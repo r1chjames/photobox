@@ -1,11 +1,11 @@
-package types
+package apiServer
 
 import (
 	"gorm.io/datatypes"
 	"time"
 )
 
-type Album struct {
+type AlbumResponse struct {
 	ID          string         `gorm:"primarykey" json:"id"`
 	Name        string         `json:"name"`
 	Description string         `json:"description"`
@@ -16,7 +16,7 @@ type Album struct {
 	Thumnail    string         `json:"thumbnail"`
 }
 
-type Photo struct {
+type PhotoResponse struct {
 	ID             string         `gorm:"primarykey" json:"id"`
 	Name           string         `json:"name"`
 	FilesystemPath string         `json:"filesystemPath"`
@@ -29,7 +29,7 @@ type Photo struct {
 	Thumbnail      []byte         `json:"thumbnail"`
 }
 
-type Setting struct {
+type SettingResponse struct {
 	Key          string    `gorm:"primarykey" json:"key"`
 	Value        string    `json:"value"`
 	FriendlyName string    `json:"friendlyName"`
@@ -41,11 +41,11 @@ type Setting struct {
 	UpdatedAt    time.Time `json:"-"`
 }
 
-type Settings struct {
-	Settings []Setting `binding:"required"`
+type SettingsResponse struct {
+	Settings []SettingResponse `binding:"required"`
 }
 
-type Job struct {
+type JobResponse struct {
 	Name      string    `gorm:"primarykey" json:"name"`
 	Status    string    `json:"status"`
 	LastRun   time.Time `json:"-"`
@@ -67,11 +67,10 @@ const (
 	CONTRIBUTOR   UserRole = "contributor"
 )
 
-type User struct {
+type UserResponse struct {
 	ID       string   `gorm:"primarykey" json:"id"`
 	Username string   `json:"username"`
 	Role     UserRole `json:"role"`
 	Email    string   `json:"email"`
 	Approved bool     `json:"-"`
-	Password string   `json:"-"`
 }

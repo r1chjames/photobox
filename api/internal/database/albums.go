@@ -2,7 +2,6 @@ package database
 
 import (
 	"github.com/google/uuid"
-	. "gitlab.com/r1chjames/photobox/api/internal/types"
 )
 
 func (dbEnv *Env) GetAlbumById(albumId string) (Album, error) {

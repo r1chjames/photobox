@@ -32,8 +32,8 @@ type loginRequest struct {
 }
 
 type loginResponse struct {
-	AccessToken string `json:"access_token"`
-	User        User   `json:"user"`
+	AccessToken string       `json:"access_token"`
+	User        UserResponse `json:"user"`
 }
 
 func (server *Server) defineUserResources(appConfig AppConfig) {
@@ -69,7 +69,7 @@ func (server *Server) login(ctx *gin.Context) {
 	}
 
 	// Create and send an access token
-	accessToken, err := server.tokenMaker.CreateToken(req.Username, time.Minute)
+	accessToken, err := server.tokenMaker.CreateToken(req.Username, time.Hour)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -89,7 +89,7 @@ func CreateUser(req CreationOrUpdateRequest, approved bool) error {
 		return errors.New("Error creating hash")
 	}
 
-	var user = User{
+	var user = UserResponse{
 		ID:       uuid.NewString(),
 		Username: req.Username,
 		Email:    req.Email,
@@ -142,17 +142,17 @@ func (server *Server) updateUser(ctx *gin.Context) {
 		return
 	}
 
-	var userToUpdate User
+	var userToUpdate UserResponse
 	var username, role, _ = server.verifyAuthorizedUserRole(ctx)
 	if role == ADMINISTRATOR {
-		userToUpdate = User{
+		userToUpdate = UserResponse{
 			Username: req.Username,
 			Email:    req.Email,
 			Role:     req.Role,
 			Approved: req.Approved,
 		}
 	} else if username == req.Username {
-		userToUpdate = User{
+		userToUpdate = UserResponse{
 			Email:    req.Email,
 			Password: req.Password,
 		}
@@ -184,7 +184,7 @@ func (server *Server) registerUser(ctx *gin.Context) {
 		return
 	}
 
-	var user = User{
+	var user = UserResponse{
 		ID:       uuid.NewString(),
 		Username: req.Username,
 		Email:    req.Email,

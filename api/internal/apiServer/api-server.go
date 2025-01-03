@@ -7,6 +7,7 @@ import (
 	"gitlab.com/r1chjames/photobox/api/internal/token"
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
 	"log"
+	"time"
 )
 
 var dbEnv *database.Env
@@ -35,7 +36,16 @@ func NewServer(appConfig AppConfig) *Server {
 
 func (server *Server) setupRouter(appConfig AppConfig) {
 	router := gin.Default()
-	router.Use(cors.Default())
+	//router.Use(cors.Default())
+	config := cors.DefaultConfig()
+	config.AllowAllOrigins = true
+	config.AllowMethods = []string{"POST", "GET", "PUT", "OPTIONS"}
+	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization", "Accept", "UserResponse-Agent", "Cache-Control", "Pragma"}
+	config.ExposeHeaders = []string{"Content-Length"}
+	config.AllowCredentials = true
+	config.MaxAge = 12 * time.Hour
+
+	router.Use(cors.New(config))
 	server.router = router
 
 	server.defineAlbumsResources(appConfig)
