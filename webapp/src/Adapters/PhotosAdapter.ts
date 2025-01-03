@@ -1,57 +1,60 @@
-import { RestApiAdapter } from './RestApiAdapter';
+import {IRestApiAdapter} from "./RestApiAdapter";
+import {IPhotosAdapter} from "./IPhotosAdapter";
+import {Photo} from "../Models/Photo";
 
-export class PhotosAdapter extends RestApiAdapter {
+export class PhotosAdapter implements IPhotosAdapter {
 
-  private readonly baseApiPath: string;
+  private restApiAdapter: IRestApiAdapter;
 
-  constructor(baseApiPath: string) {
-    super();
-    this.baseApiPath = `${baseApiPath}`;
+  constructor(restApiAdapter: IRestApiAdapter) {
+    this.restApiAdapter = restApiAdapter;
   }
 
-  private static buildHeaders = (additionalHeaders: Record<string, string> = {}) => {
+  private buildHeaders = (additionalHeaders: Record<string, string> = {}) => {
     const standardHeaders = {
       'Content-Type': 'application/json'
     };
     return { ...standardHeaders, ...additionalHeaders };
   }
 
-  public getAllPhotosInfo = async () => {
-    const getAllPhotosPath = `${this.baseApiPath}/photos`;
-    return this.getApiCall(getAllPhotosPath, PhotosAdapter.buildHeaders(), {});
+  public getAllPhotosInfo = async (offset: number, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
+    const getAllPhotosPath = `photos?page=${offset}&limit=${limit}&thumbnail=${includeThumbnails}`;
+    return this.restApiAdapter.getApiCall(getAllPhotosPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 
-  public getPhotoInfoById = async (photoId: string) => {
-    const getAllPhotosPath = `${this.baseApiPath}/photo/${photoId}`;
-    return this.getApiCall(getAllPhotosPath, PhotosAdapter.buildHeaders(), {});
+  public getPhotoInfoById = async (photoId: string): Promise<Photo> => {
+    const getAllPhotosPath = `photo/${photoId}`;
+    return this.restApiAdapter.getApiCall(getAllPhotosPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 
-  public getPhotosInfoInAlbum = async (albumId: string, page: number, limit: number) => {
-    const getPhotosInAlbumPath = `${this.baseApiPath}/photos?page=${page}&limit=${limit}`;
+  public getPhotosInfoInAlbum = async (albumId: string, offset: number, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
+    const getPhotosInAlbumPath = `photos?page=${offset}&limit=${limit}&thumbnail=${includeThumbnails}`;
     const params = {
       albumId,
     };
-    return this.getApiCall(getPhotosInAlbumPath, PhotosAdapter.buildHeaders(), params);
+    return this.restApiAdapter.getApiCall(getPhotosInAlbumPath, this.buildHeaders(this.restApiAdapter.authHeader()), params);
   }
 
   public getPhotoCountInAlbum = async (albumId: string) => {
-    const getPhotosInAlbumPath = `${this.baseApiPath}/photos/count?albumId=${albumId}`;
+    const getPhotosInAlbumPath = `photos/count?albumId=${albumId}`;
     const params = {
       albumId,
     };
-    return this.getApiCall(getPhotosInAlbumPath, PhotosAdapter.buildHeaders(), params);
+    return this.restApiAdapter.getApiCall(getPhotosInAlbumPath, this.buildHeaders(this.restApiAdapter.authHeader()), params);
   }
 
   public getPhotoImage = async (photoId: string) => {
-    const getPhotosImagePath = `${this.baseApiPath}/photo/bin`;
+    const getPhotosImagePath = `photo/bin`;
     const params = {
       photoId,
     };
-    return this.getApiCall(getPhotosImagePath, PhotosAdapter.buildHeaders(), params);
+    return this.restApiAdapter.getApiCall(getPhotosImagePath, this.buildHeaders(this.restApiAdapter.authHeader()), params);
   }
 
   public uploadPhoto = async (body: Record<string, unknown>) => {
-    const postSettingPath = `${this.baseApiPath}/photo`;
-    return this.postApiCall(postSettingPath, body, PhotosAdapter.buildHeaders());
+    const postSettingPath = `photo`;
+    return this.restApiAdapter.postApiCall(postSettingPath, body, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 }
+
+

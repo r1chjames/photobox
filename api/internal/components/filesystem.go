@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"github.com/disintegration/imaging"
 	"github.com/rwcarlsen/goexif/exif"
+	. "gitlab.com/r1chjames/photobox/api/internal/apiServer"
 	"gitlab.com/r1chjames/photobox/api/internal/database"
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
 	"gitlab.com/r1chjames/photobox/api/internal/utils"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -25,15 +25,23 @@ var wg sync.WaitGroup
 
 func PerformPhotoIndex(appConfig AppConfig, dbEnv *database.Env) {
 	_ = dbEnv.JobStarting("Photo_index")
+	log.Print("Starting photo index")
 
 	defer func(dbEnv *database.Env, jobName string) {
 		_ = dbEnv.JobCompleted(jobName)
+		log.Print("Finished photo index")
 	}(dbEnv, "Photo_index")
 
-	photoChan := make(chan PhotoFile, runtime.GOMAXPROCS(runtime.NumCPU()))
+	photoChan := make(chan string, runtime.NumCPU())
 	defer close(photoChan)
-	go func(photoChan chan PhotoFile) {
-		for photo := range photoChan {
+	go func(photoChan chan string) {
+		for path := range photoChan {
+			log.Printf("Processing photo: %s", path)
+			photoFile, err := os.Lstat(path)
+			if err != nil {
+				log.Printf("Unable to process photo at path %s", err)
+			}
+			photo := getMetaData(path, photoFile.Name(), photoFile.Size())
 			dbEnv.SavePhotoRecordToDatabase(photo)
 		}
 	}(photoChan)
@@ -44,7 +52,7 @@ func createDirectoryIfNotExists(basePhotoPath string, directoryName string) {
 	fullPath := fmt.Sprintf("%s/%s", basePhotoPath, directoryName)
 	err := os.Mkdir(fullPath, os.ModePerm) //TODO check if exists, swallow error if so
 	if err != nil {
-		log.Print("Unable to create album folder. Check the value of setting default_new_albums_dir exists and is writable")
+		log.Printf("Unable to create album folder. Check the value of setting default_new_albums_dir exists and is writable, %s", err)
 	}
 }
 
@@ -61,18 +69,18 @@ func WriteFileToFilesystem(dbEnv *database.Env, photo PhotoUpload) PhotoFile {
 	value := strings.Split(photo.BinaryContent, ",")
 
 	decodedData, err := b64.StdEncoding.DecodeString(value[1])
-	err = ioutil.WriteFile(fileSavePath, decodedData, 0644)
+	err = os.WriteFile(fileSavePath, decodedData, 0644)
 	if err != nil {
 		log.Print("Unable to save photo from upload")
 	}
 
 	fileInfo, _ := os.Lstat(fileSavePath)
 
-	return getMetaData(fileSavePath, fileInfo)
+	return getMetaData(fileSavePath, fileInfo.Name(), fileInfo.Size())
 
 }
 
-func ScanFilesystem(appConfig AppConfig, photoChan chan PhotoFile) {
+func ScanFilesystem(appConfig AppConfig, photoChan chan string) {
 
 	photosRoot := appConfig.PhotoDir
 
@@ -81,7 +89,7 @@ func ScanFilesystem(appConfig AppConfig, photoChan chan PhotoFile) {
 	wg.Wait()
 }
 
-func walkDir(dir string, photoChan chan PhotoFile) {
+func walkDir(dir string, photoChan chan string) {
 	defer wg.Done()
 
 	visit := func(path string, d os.DirEntry, err error) error {
@@ -93,10 +101,7 @@ func walkDir(dir string, photoChan chan PhotoFile) {
 		}
 
 		if d.Type().IsRegular() && isImageFile(d.Name()) {
-			log.Printf("Processing file: %s", path)
-			info, _ := d.Info()
-			data := getMetaData(path, info)
-			photoChan <- data
+			photoChan <- path
 		}
 		return nil
 	}
@@ -113,42 +118,46 @@ func isImageFile(fileName string) bool {
 	return utils.Exists(imageFileTypes, fileType)
 }
 
-func getMetaData(path string, info os.FileInfo) PhotoFile {
+func getMetaData(path string, name string, size int64) PhotoFile {
 	slashIndices := utils.AllIndicesOfChar(path, "/")
 	photoDirectory := path[slashIndices[len(slashIndices)-2]+1 : slashIndices[len(slashIndices)-1]]
-	exifData, thumbnail := getExifDataAndThumbnail(path)
+	exifData := getExifData(path)
+	thumbnail := generateThumbnail(path, exifData)
 	return PhotoFile{
 		MD5:       getSum(path),
 		Path:      path,
 		Directory: photoDirectory,
-		Size:      getSize(info),
+		Size:      size,
 		Extension: getExtension(path),
-		Name:      info.Name(), //GetFileName(path)
+		Name:      name, //GetFileName(path)
 		Exif:      exifData,
 		Mime:      getFileType(path),
 		Thumbnail: thumbnail,
 	}
 }
 
-func getExifDataAndThumbnail(path string) (exif.Exif, []byte) {
+func getExifData(path string) exif.Exif {
 	file, err := os.Open(path)
 	if err != nil {
-		log.Print("Unable to open file")
-		return exif.Exif{}, []byte{}
+		log.Printf("Unable to open file, %s", err)
+		return exif.Exif{}
 	}
 	var exifData *exif.Exif
-	var parsedThumbnail []byte
 
 	exifData, err = exif.Decode(file)
 	if err != nil {
 		exifData = &exif.Exif{}
 	}
 
-	parsedThumbnail = getThumbnail(exifData)
+	return *exifData
+}
+
+func generateThumbnail(path string, exifData exif.Exif) []byte {
+	parsedThumbnail := getThumbnail(&exifData)
 	if len(parsedThumbnail) == 0 {
 		parsedThumbnail = generateMissingThumbnail(path)
 	}
-	return *exifData, parsedThumbnail
+	return parsedThumbnail
 }
 
 func getThumbnail(exif *exif.Exif) []byte {
@@ -160,7 +169,7 @@ func generateMissingThumbnail(path string) []byte {
 	extension := getFileExtension(path)
 	img, err := imaging.Open(path)
 	if err != nil {
-		log.Print("Unable to open file")
+		log.Printf("Unable to open file, %s", err)
 		return nil
 	}
 	thumb := imaging.Thumbnail(img, 600, 600, imaging.CatmullRom)
@@ -195,7 +204,7 @@ func getSize(info os.FileInfo) int64 {
 func getSum(path string) string {
 	f, err := os.Open(path)
 	if err != nil {
-		log.Print("Unable to generate checksum")
+		log.Printf("Unable to generate checksum, %s", err)
 		return ""
 	}
 

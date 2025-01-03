@@ -2,20 +2,26 @@ package apiServer
 
 import (
 	"github.com/gin-gonic/gin"
+	"gitlab.com/r1chjames/photobox/api/internal/token"
 	. "gitlab.com/r1chjames/photobox/api/internal/types"
 	"log"
 	"strings"
 )
 import "net/http"
 
-func defineServerResources(router *gin.Engine, appConfig AppConfig) {
+type Server struct {
+	tokenMaker *token.PasetoMaker
+	router     *gin.Engine
+}
+
+func (server *Server) defineServerResources(appConfig AppConfig) {
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
 
-	server := router.Group(urlBasePath)
+	settings := server.router.Group(urlBasePath).Use(authMiddleware(*server.tokenMaker))
 	{
-		server.GET("/health", healthCheck)
-		server.GET("/settings", getAllSettings)
-		server.POST("/settings", updateAllSettings)
+		settings.GET("/health", healthCheck)
+		settings.GET("/settings", getAllSettings)
+		settings.POST("/settings", updateAllSettings)
 	}
 }
 
@@ -38,7 +44,7 @@ func getAllSettings(c *gin.Context) {
 }
 
 func updateAllSettings(c *gin.Context) {
-	var settings Settings
+	var settings SettingsResponse
 	err := c.BindJSON(&settings)
 	if err != nil {
 		log.Println(err.Error())

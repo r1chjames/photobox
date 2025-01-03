@@ -62,6 +62,10 @@ go-test:
 	@echo "Running tests"
 	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go test ./...
 
+run-db:
+	@echo "Starting local DB"
+	./scripts/db.sh
+
 .PHONY: help
 all: help
 help: Makefile

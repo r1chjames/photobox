@@ -1,4 +1,8 @@
 CREATE DATABASE photobox;
 
-CREATE USER 'photobox'@'%' IDENTIFIED BY 'photobox';
-GRANT ALL privileges ON photobox.* TO 'photobox'@'%';
+CREATE USER photobox_usr WITH ENCRYPTED PASSWORD 'photobox';
+\c photobox;
+CREATE SCHEMA photobox;
+GRANT ALL PRIVILEGES ON DATABASE photobox TO photobox_usr;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA photobox TO photobox_usr;
+GRANT USAGE,CREATE ON SCHEMA photobox TO photobox_usr;

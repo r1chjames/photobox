@@ -6,7 +6,7 @@ stages:
 build-api:
   stage: build-depdendencies
   image:
-    name: golang:alpine3.15
+    name: golang:alpine3.19
   before_script:
     - apk add make git
   script:
@@ -36,7 +36,7 @@ build-image:
     - docker:dind
   before_script:
     - apk add make
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
   script:
     - make docker-push
 

@@ -10,9 +10,9 @@
       "node_modules/@types"
     ],
     "allowJs": true,
-    "target": "es6",
+    "target": "ESNext",
     "lib": [
-      "es6",
+      "ESNext",
       "dom"
     ],
     "skipLibCheck": true,
@@ -36,5 +36,6 @@
   "exclude": [
     "node_modules",
     "./src/**/*.scss"
-  ]
+  ],
+  "types": ["vite/client"]
 }

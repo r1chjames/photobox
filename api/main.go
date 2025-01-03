@@ -16,21 +16,40 @@ func main() {
 
 	dbEnv := database.InitDbConnection(appConfig)
 	dbEnv.PerformDbSetup(appConfig)
+	apiServer.NewDBEnv(dbEnv)
 
 	components.InitScheduler(appConfig)
 	components.StopAllRunningJobs(dbEnv)
 	components.AddScheduledJobs(appConfig, dbEnv)
+	addDefaultAdminUser(dbEnv)
+	apiServer.NewServer(appConfig)
 
-	apiServer.Start(appConfig, dbEnv)
+}
+
+func addDefaultAdminUser(dbEnv *database.Env) {
+	defaultAdminUsername := utils.GetEnv("DEFAULT_ADMIN_USERNAME", "admin")
+	defaultAdminPassword := utils.GetEnv("DEFAULT_ADMIN_PASSWORD", "password")
+	user, err := dbEnv.GetUserByUsername(defaultAdminUsername)
+	if user.ID == "" || err != nil {
+		err := apiServer.CreateUser(apiServer.CreationOrUpdateRequest{
+			Username: defaultAdminUsername,
+			Password: defaultAdminPassword,
+			Role:     apiServer.ADMINISTRATOR,
+		}, true)
+		if err != nil {
+			return
+		}
+	}
 }
 
 func parseAppVariables() types.AppConfig {
 	dbHost := utils.GetEnv("DB_HOST", "localhost")
-	dbPort := utils.GetEnv("DB_PORT", "3306")
+	dbPort := utils.GetEnv("DB_PORT", "5432")
 	dbUser := utils.GetEnv("DB_USER", "photobox")
 	dbPassword := utils.GetEnv("DB_PASSWORD", "photobox")
 	dbName := utils.GetEnv("DB_NAME", "photobox")
-	dbURL := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
+
+	dbURL := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s", dbHost, dbUser, dbPassword, dbName, dbPort)
 	resetSettings, _ := strconv.ParseBool(utils.GetEnv("RESET_SETTINGS", "false"))
 	debugMode, _ := strconv.ParseBool(utils.GetEnv("DEBUG_MODE", "false"))
 	timezone, _ := time.LoadLocation(utils.GetEnv("TIMEZONE", "Europe/London"))

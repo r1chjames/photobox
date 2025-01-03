@@ -3,14 +3,14 @@ package database
 import (
 	"database/sql"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
-	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"testing"
 )
 
 func MockDB(t *testing.T) (*Env, sqlmock.Sqlmock, *sql.DB) {
 	dbConn, mock, err := sqlmock.New()
-	mockedDB, err := gorm.Open(mysql.New(mysql.Config{DSN: "test_db", Conn: dbConn, SkipInitializeWithVersion: true}), &gorm.Config{})
+	mockedDB, err := gorm.Open(postgres.New(postgres.Config{DSN: "test_db", Conn: dbConn}), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}

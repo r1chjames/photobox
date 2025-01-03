@@ -47,3 +47,5 @@ api/api
 
 requirements.lock
 charts/
+
+*storybook.log
