@@ -30,7 +30,6 @@ func NewServer(appConfig AppConfig) *Server {
 	if err != nil {
 		log.Fatalf("Error starting API Server, %s", err)
 	}
-
 	return server
 }
 
