@@ -4,28 +4,28 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"gitlab.com/r1chjames/photobox/api/internal/components"
-	. "gitlab.com/r1chjames/photobox/api/internal/types"
+	"gitlab.com/r1chjames/photobox/api/internal/types"
 	"strconv"
 	"strings"
 )
 import "net/http"
 
-var config AppConfig
+var config types.AppConfig
 
-func definePhotosResources(router *gin.Engine, appConfig AppConfig) {
+func (server *Server) definePhotosResources(appConfig types.AppConfig) {
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
 	config = appConfig
 
-	photos := router.Group(fmt.Sprintf("%s/photos", urlBasePath))
+	photos := server.router.Group(fmt.Sprintf("%s/photos", urlBasePath)).Use(authMiddleware(*server.tokenMaker))
 	{
 		photos.GET("", getPhotos)
 		photos.GET("/count", getPhotoCount)
 		photos.POST("/index", indexPhotos)
 	}
 
-	photo := router.Group(fmt.Sprintf("%s/photo", urlBasePath))
+	photo := server.router.Group(fmt.Sprintf("%s/photo", urlBasePath)).Use(authMiddleware(*server.tokenMaker))
 	{
-		photo.POST("", addPhoto)
+		//photo.POST("", addPhoto)
 		photo.GET("/:id", getPhoto)
 		photo.GET("/:id/thumbnail", getThumbnail)
 		photo.GET("/:id/bin", getPhotoBin)
@@ -36,7 +36,7 @@ func indexPhotos(c *gin.Context) {
 	isRunning, _ := dbEnv.IsJobRunning("Photo_index")
 
 	if isRunning {
-		c.IndentedJSON(http.StatusConflict, "Photo Index already running")
+		c.IndentedJSON(http.StatusConflict, "PhotoResponse Index already running")
 	} else {
 		c.Status(http.StatusAccepted)
 		go func() {
@@ -49,16 +49,22 @@ func getPhotos(c *gin.Context) {
 	albumId := c.Query("albumId")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	includeThumbnail, err := strconv.ParseBool(c.DefaultQuery("thumbnail", "false"))
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, "thumbnail query parameter must be either true or false")
+	}
 
 	if albumId != "" {
-		resp, err := dbEnv.GetAllPhotosInfoInAlbum(albumId, page, limit)
+		resp, err := dbEnv.GetAllPhotosInfoInAlbum(albumId, page, limit, includeThumbnail)
+		setPhotoSourcePaths(resp)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusNotFound, apiError{http.StatusNotFound, notFoundError("album")})
 		} else {
 			c.IndentedJSON(http.StatusOK, resp)
 		}
 	} else {
-		resp, err := dbEnv.GetAllPhotos(page, limit)
+		resp, err := dbEnv.GetAllPhotos(page, limit, includeThumbnail)
+		setPhotoSourcePaths(resp)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusNotFound, "No photos found")
 		} else {
@@ -69,28 +75,33 @@ func getPhotos(c *gin.Context) {
 
 func getPhoto(c *gin.Context) {
 	photoId := c.Param("id")
+	includeThumbnail, err := strconv.ParseBool(c.DefaultQuery("thumbnail", "false"))
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, "thumbnail query parameter must be either true or false")
+	}
 
-	resp, err := dbEnv.GetPhotoInfoById(photoId)
+	resp, err := dbEnv.GetPhotoInfoById(photoId, includeThumbnail)
+	setPhotoSourcePath(resp)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, apiError{http.StatusNotFound, notFoundError("photo")})
 	} else {
-		c.IndentedJSON(http.StatusOK, resp)
+		c.IndentedJSON(http.StatusOK, &resp)
 	}
 }
 
-func addPhoto(c *gin.Context) {
-	var photo PhotoUpload
-	err := c.BindJSON(&photo)
-
-	photoFile := components.WriteFileToFilesystem(dbEnv, photo)
-	dbEnv.SavePhotoRecordsToDatabase([]PhotoFile{photoFile})
-
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, invalidRequest()})
-	} else {
-		c.Status(http.StatusCreated)
-	}
-}
+//func addPhoto(c *gin.Context) {
+//	var photo PhotoUpload
+//	err := c.BindJSON(&photo)
+//
+//	photoFile := components.WriteFileToFilesystem(dbEnv, photo)
+//	dbEnv.SavePhotoRecordsToDatabase([]PhotoFile{photoFile})
+//
+//	if err != nil {
+//		c.AbortWithStatusJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, invalidRequest()})
+//	} else {
+//		c.Status(http.StatusCreated)
+//	}
+//}
 
 func getPhotoCount(c *gin.Context) {
 	albumId := c.Query("albumId")
@@ -110,7 +121,7 @@ func getPhotoBin(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, missingQueryParam("photo ID")})
 	} else {
 
-		photoInfo, err := dbEnv.GetPhotoInfoById(photoId)
+		photoInfo, err := dbEnv.GetPhotoInfoById(photoId, false)
 		if err != nil {
 			c.IndentedJSON(http.StatusNotFound, notFoundError("photo"))
 		} else {
@@ -125,11 +136,21 @@ func getThumbnail(c *gin.Context) {
 	if photoId == "" {
 		c.IndentedJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, missingQueryParam("photo ID")})
 	} else {
-		photoInfo, err := dbEnv.GetPhotoInfoById(photoId)
+		photoInfo, err := dbEnv.GetPhotoInfoById(photoId, true)
 		if err != nil {
 			c.IndentedJSON(http.StatusNotFound, notFoundError("thumbnail"))
 		} else {
 			c.Data(http.StatusOK, "application/octet-stream", photoInfo.Thumbnail)
 		}
+	}
+}
+
+func setPhotoSourcePath(photo *PhotoResponse) {
+	photo.SourcePath = fmt.Sprintf("%s/photo/%s}/bin", config.ApiBasePath, photo.ID)
+}
+
+func setPhotoSourcePaths(photos []*PhotoResponse) {
+	for _, photo := range photos {
+		setPhotoSourcePath(photo)
 	}
 }

@@ -1,13 +1,12 @@
-import { RestApiAdapter } from './RestApiAdapter';
 import { Setting } from '../Models/Setting';
+import {IRestApiAdapter} from "./RestApiAdapter";
 
-export class SettingsAdapter extends RestApiAdapter {
+export class SettingsAdapter {
 
-  private readonly baseApiPath: string;
+  private restApiAdapter: IRestApiAdapter;
 
-  constructor(baseApiPath: string) {
-    super();
-    this.baseApiPath = `${baseApiPath}`;
+  constructor(restApiAdapter: IRestApiAdapter) {
+    this.restApiAdapter = restApiAdapter;
   }
 
   private buildHeaders = (additionalHeaders: Record<string, string> = {}) => {
@@ -18,23 +17,23 @@ export class SettingsAdapter extends RestApiAdapter {
   }
 
   public getAllSettings = async () => {
-    const getAllSettingsPath = `${this.baseApiPath}/settings`;
-    return this.getApiCall(getAllSettingsPath, this.buildHeaders(), {});
+    const getAllSettingsPath = "settings";
+    return this.restApiAdapter.getApiCall(getAllSettingsPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 
   public updateSettings = async (settings: Setting[]) => {
-    const postAllSettingsPath = `${this.baseApiPath}/settings`;
+    const postAllSettingsPath = "settings";
     const body = {
       settings
     };
-    return this.postApiCall(postAllSettingsPath, body, this.buildHeaders());
+    return this.restApiAdapter.postApiCall(postAllSettingsPath, body, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 
   public updateSetting = async (setting: Setting) => {
-    const postSettingPath = `${this.baseApiPath}/setting`;
+    const postSettingPath = "setting";
     const body = {
       setting
     };
-    return this.postApiCall(postSettingPath, body, this.buildHeaders());
+    return this.restApiAdapter.postApiCall(postSettingPath, body, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 }

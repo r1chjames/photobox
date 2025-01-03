@@ -5,25 +5,26 @@ help:
 clean: ## Clean working directory
 	rm -f .env
 	rm -rf build/*
+	rm -rf node_modules
 
 .PHONY: install
-install: ## Install Go dependencies
+install: ## Install NPM dependencies
 	npm install
 
 .PHONY: run
-run:
+run: ## Run web app
 	npm run start
 
 .PHONY: test
-test: install## Start Kafka and Kafka Connect containers and run test hardness pack
+test: install ## Run web app tests
 	npm test
 
 .PHONY: build_app
-build_app: clean install
+build_app: clean install ## Build web app
 	npm run build
 
 .PHONY: build_app_artifact
-build_app_artifact: build_app
+build_app_artifact: build_app ## Package web app artifact
 	tar -zcvf webapp.tar.gz build
 
 build_all: build_app_artifact

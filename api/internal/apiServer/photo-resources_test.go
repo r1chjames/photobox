@@ -5,7 +5,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"gitlab.com/r1chjames/photobox/api/internal/database"
-	"gitlab.com/r1chjames/photobox/api/internal/types"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 	"net/http"
 	"testing"
@@ -13,14 +12,15 @@ import (
 
 func TestGetPhotoByPhotoId(t *testing.T) {
 	expectedBody := gin.H{
-		"id": "photo1",
-		"name": "name1",
+		"id":             "photo1",
+		"name":           "name1",
 		"filesystemPath": "/dir1",
-		"albumId": "album1",
-		"tags": "",
-		"metadata": "",
-		"createdAt": "0001-01-01T00:00:00Z",
-		"updatedAt": "0001-01-01T00:00:00Z",
+		"sourcePath":     "https://4.img-dpreview.com/files/p/E~TS1180x0~articles/3925134721/0266554465.jpeg",
+		"albumId":        "album1",
+		"tags":           "",
+		"metadata":       "",
+		"createdAt":      "0001-01-01T00:00:00Z",
+		"updatedAt":      "0001-01-01T00:00:00Z",
 	}
 
 	router := setupRouter(TestAppConfig())
@@ -37,6 +37,7 @@ func TestGetPhotoByPhotoId(t *testing.T) {
 	assert.Equal(t, expectedBody["id"], response["id"])
 	assert.Equal(t, expectedBody["name"], response["name"])
 	assert.Equal(t, expectedBody["filesystemPath"], response["filesystemPath"])
+	assert.Equal(t, expectedBody["sourcePath"], response["sourcePath"])
 	assert.Equal(t, expectedBody["albumId"], response["albumId"])
 	assert.Equal(t, expectedBody["tags"], response["tags"])
 	assert.Equal(t, expectedBody["metadata"], response["metadata"])
@@ -64,19 +65,20 @@ func TestGetPhotoByPhotoIdWhenIdDoesNotExist(t *testing.T) {
 }
 
 func TestGetPhotoByAlbumId(t *testing.T) {
-	photo1 := types.Photo{
-		ID: "photo1",
-		Name: "name1",
+	photo1 := PhotoResponse{
+		ID:             "photo1",
+		Name:           "name1",
 		FilesystemPath: "/dir1",
-		AlbumId: "album1",
+		SourcePath:     "https://4.img-dpreview.com/files/p/E~TS1180x0~articles/3925134721/0266554465.jpeg",
+		AlbumId:        "album1",
 	}
-	photo2 := types.Photo{
-		ID: "photo2",
-		Name: "name2",
+	photo2 := PhotoResponse{
+		ID:             "photo2",
+		Name:           "name2",
 		FilesystemPath: "/dir1",
-		AlbumId: "album1",
+		SourcePath:     "https://4.img-dpreview.com/files/p/E~TS1180x0~articles/3925134721/0266554465.jpeg",
+		AlbumId:        "album1",
 	}
-
 
 	router := setupRouter(TestAppConfig())
 	mockEnv, mock, _ := database.MockDB(t)
@@ -92,27 +94,30 @@ func TestGetPhotoByAlbumId(t *testing.T) {
 	assert.Equal(t, photo1.ID, response[0]["id"])
 	assert.Equal(t, photo1.Name, response[0]["name"])
 	assert.Equal(t, photo1.FilesystemPath, response[0]["filesystemPath"])
+	assert.Equal(t, photo1.SourcePath, response[0]["sourcePath"])
 	assert.Equal(t, photo1.AlbumId, response[0]["albumId"])
 	assert.Equal(t, photo2.ID, response[1]["id"])
 	assert.Equal(t, photo2.Name, response[1]["name"])
 	assert.Equal(t, photo2.FilesystemPath, response[1]["filesystemPath"])
+	assert.Equal(t, photo2.SourcePath, response[1]["sourcePath"])
 	assert.Equal(t, photo2.AlbumId, response[1]["albumId"])
 }
 
 func TestGetAllPhotos(t *testing.T) {
-	photo1 := types.Photo{
-		ID: "photo1",
-		Name: "name1",
+	photo1 := PhotoResponse{
+		ID:             "photo1",
+		Name:           "name1",
+		SourcePath:     "https://4.img-dpreview.com/files/p/E~TS1180x0~articles/3925134721/0266554465.jpeg",
 		FilesystemPath: "/dir1",
-		AlbumId: "album1",
+		AlbumId:        "album1",
 	}
-	photo2 := types.Photo{
-		ID: "photo2",
-		Name: "name2",
+	photo2 := PhotoResponse{
+		ID:             "photo2",
+		Name:           "name2",
+		SourcePath:     "https://4.img-dpreview.com/files/p/E~TS1180x0~articles/3925134721/0266554465.jpeg",
 		FilesystemPath: "/dir1",
-		AlbumId: "album1",
+		AlbumId:        "album1",
 	}
-
 
 	router := setupRouter(TestAppConfig())
 	mockEnv, mock, _ := database.MockDB(t)
@@ -127,10 +132,12 @@ func TestGetAllPhotos(t *testing.T) {
 
 	assert.Equal(t, photo1.ID, response[0]["id"])
 	assert.Equal(t, photo1.Name, response[0]["name"])
+	assert.Equal(t, photo1.SourcePath, response[0]["sourcePath"])
 	assert.Equal(t, photo1.FilesystemPath, response[0]["filesystemPath"])
 	assert.Equal(t, photo1.AlbumId, response[0]["albumId"])
 	assert.Equal(t, photo2.ID, response[1]["id"])
 	assert.Equal(t, photo2.Name, response[1]["name"])
+	assert.Equal(t, photo2.SourcePath, response[1]["sourcePath"])
 	assert.Equal(t, photo2.FilesystemPath, response[1]["filesystemPath"])
 	assert.Equal(t, photo2.AlbumId, response[1]["albumId"])
 }

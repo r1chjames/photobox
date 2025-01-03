@@ -14,7 +14,7 @@ func PerformRequest(r http.Handler, method, path string, queryParams map[string]
 	if body != nil {
 		payload, err := json.Marshal(&body)
 		if err != nil {
-			log.Fatal("unable to marshall JSON body payload")
+			log.Fatalf("unable to marshall JSON body payload, %s", err)
 		}
 		bodyPayload := bytes.NewBuffer(payload)
 		req, _ = http.NewRequest(method, path, bodyPayload)
@@ -29,7 +29,6 @@ func PerformRequest(r http.Handler, method, path string, queryParams map[string]
 		}
 		req.URL.RawQuery = q.Encode()
 	}
-
 
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)

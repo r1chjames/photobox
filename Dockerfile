@@ -29,7 +29,7 @@
 
 
 # APP IMAGE BUILD STAGE
-FROM alpine:3.13.5
+FROM alpine:3.19
 
 RUN apk add file git tzdata
 

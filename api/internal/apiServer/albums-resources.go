@@ -3,17 +3,17 @@ package apiServer
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	. "gitlab.com/r1chjames/photobox/api/internal/types"
+	"gitlab.com/r1chjames/photobox/api/internal/types"
 	"strconv"
 	"strings"
 )
 import "net/http"
 
-func defineAlbumsResources(router *gin.Engine, appConfig AppConfig) {
+func (server *Server) defineAlbumsResources(appConfig types.AppConfig) {
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
 
-	router.GET(fmt.Sprintf("%s/album/:id", urlBasePath), getAlbumById)
-	albums := router.Group(fmt.Sprintf("%s/albums", urlBasePath))
+	server.router.GET(fmt.Sprintf("%s/album/:id", urlBasePath), getAlbumById)
+	albums := server.router.Group(fmt.Sprintf("%s/albums", urlBasePath)).Use(authMiddleware(*server.tokenMaker))
 	{
 		albums.GET("", getAllAlbums)
 		albums.GET("/count", countAllAlbums)
@@ -30,7 +30,7 @@ func countAllAlbums(c *gin.Context) {
 
 func getAllAlbums(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "100"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "30"))
 
 	resp, err := dbEnv.GetAllAlbums(page, limit)
 

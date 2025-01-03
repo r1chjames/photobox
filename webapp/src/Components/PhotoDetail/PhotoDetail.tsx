@@ -1,82 +1,77 @@
-import React, {useEffect, useState} from 'react';
-import './PhotoDetail.css';
+import React from 'react';
 import {Photo} from '../../Models/Photo';
-import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
-import { MainContent } from '../MainContent/MainContent';
-import { useParams } from 'react-router-dom';
-import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
-import { LoadingScreen } from '../LoadingScreen/LoadingScreen';
-import {Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from '@material-ui/core';
+import {useDisclosure} from '@mantine/hooks';
+import {Button, Dialog, Group, Image, Loader, Table} from '@mantine/core';
+import {valueType} from "../../utils/TypeUtils.js";
 
 interface IProps {
-  baseApiUrl: string;
+    photo: Photo;
 }
 
-const getPhoto = async(baseApiUrl: string, photoId: string) => {
-  const photosAdapter = new PhotosAdapter(baseApiUrl);
-  return photosAdapter.getPhotoInfoById(photoId);
-};
-
 export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
-  const [photo, setPhoto] = useState<Photo>();
-  const { id } = useParams();
+    const [opened, {toggle, close}] = useDisclosure(true);
 
-  useEffect(() => {
-    if (id !== undefined) {
-      (async function retrievePhoto() {
-        const retrievedPhoto = await getPhoto(props.baseApiUrl, id);
-        setPhoto(retrievedPhoto);
-      })();
-    }
-  },        [setPhoto, id, props.baseApiUrl]);
+    const tableRow = (key: string, value: string) => {
+        return (
+            <Table.Tr>
+                <Table.Td>{key}</Table.Td>
+                <Table.Td>{value}</Table.Td>
+            </Table.Tr>
+        );
+    };
 
-  const content = () => {
-    if (photo !== undefined) {
-      return (
-        <MainContent title={photo.name}>
-          <div className="photoDetail__contentWrapper">
-              <img
-                src={`${props.baseApiUrl}/photo/${id}/bin`}
-                alt={photo.name}
-                className="photoDetail__mainImage"
-              />
-            <div className="photoDetail__imageMetadata">
-              <TableContainer component={Paper}>
-                <Table aria-label="metadata table">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Parameter</TableCell>
-                      <TableCell>Value</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {Object.entries(photo.metadata).map(([key, value]) => {
-                      if (value !== null) {
-                        return (
-                          <TableRow key={key}>
-                            <TableCell component="th" scope="row">{key}</TableCell>
-                            <TableCell>{JSON.stringify(value)}</TableCell>
-                          </TableRow>
-                        );
-                      }
-                      return;
-                    })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </div>
-          </div>
-        </MainContent>
-      );
-    }
+    const buildRows = (metadata: Record<string, any>) => {
+        return Object.entries(metadata).map(([key, value]) => {
+            switch (valueType(value)) {
+                case ('json'):
+                    return buildRows(JSON.parse(value));
+                case ('object'):
+                    return tableRow(Object.entries(value).find(e => typeof e !== 'undefined')[0], Object.entries(value).find(e => typeof e !== 'undefined')[1]);
+                case ('string'):
+                    return tableRow(key, value);
+                default:
+                    return;
+            }
+        })
+    };
+
+    const content = () => {
+        if (props.photo !== undefined) {
+            return (
+                <>
+                    <Image
+                        radius={"md"}
+                        src={props.photo.sourcePath}
+                    />
+                    <Group justify="center">
+                        <Button onClick={toggle} mt={50}>Metadata</Button>
+                    </Group>
+                    <Dialog opened={opened} withCloseButton onClose={close} size="lg" radius="md"
+                            position={{top: "30%", right: 50}}>
+                        <Table>
+                            <Table.Thead>
+                                <Table.Tr>
+                                    <Table.Th>Parameter</Table.Th>
+                                    <Table.Th>Value</Table.Th>
+                                </Table.Tr>
+                            </Table.Thead>
+                            <Table.Tbody>
+                                {props.photo.metadata.map(metadataElement => buildRows(metadataElement))}
+                            </Table.Tbody>
+                        </Table>
+                    </Dialog>
+                </>
+            );
+        }
+
+        return (
+            <Loader size={"md"}/>
+        );
+    };
+
     return (
-      <LoadingScreen />
+        <div>
+            {content()}
+        </div>
     );
-  };
-
-  return (
-    <MuiThemeProvider>
-      {content()}
-    </MuiThemeProvider>
-  );
-};
+}

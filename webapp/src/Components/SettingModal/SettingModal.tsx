@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './SettingModal.css';
-import { TextField } from '@material-ui/core';
 import { InputModal } from '../InputModal/InputModal';
+import {TextInput} from '@mantine/core';
 
 interface IProps {
   isOpen: boolean;
@@ -68,46 +68,38 @@ export const SettingModal: React.FunctionComponent<IProps> = (props) => {
       handleSave={handleSave}
       handleClose={props.handleClose}
     >
-        <TextField
+        <TextInput
           required={true}
           id="key"
           label="Setting"
-          variant="outlined"
           error={keyErrorText.length !== 0}
-          helperText={keyErrorText}
           onChange={e => handleKeyChange(e.target.value)}
         />
         <p/>
-        <TextField
+        <TextInput
           required={true}
           id="value"
           label="Value"
-          variant="outlined"
           error={valueErrorText.length !== 0}
-          helperText={valueErrorText}
           onChange={e => handleValueChange(e.target.value)}
         />
         <p/>
-        <TextField
+        <TextInput
           id="friendlyName"
           label="Friendly Name"
-          variant="outlined"
           onChange={e => setFriendlyName(e.target.value)}
         />
         <p/>
-        <TextField
+        <TextInput
           id="category"
           label="Category"
-          variant="outlined"
           error={categoryErrorText.length !== 0}
-          helperText={categoryErrorText}
           onChange={e => handleCategoryChange(e.target.value)}
         />
         <p/>
-        <TextField
+        <TextInput
           id="description"
           label="Description"
-          variant="outlined"
           onChange={e => setDescription(e.target.value)}
         />
     </InputModal>

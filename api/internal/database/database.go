@@ -2,10 +2,10 @@ package database
 
 import (
 	"errors"
-	"fmt"
-	. "gitlab.com/r1chjames/photobox/api/internal/types"
-	"gorm.io/driver/mysql"
+	"gitlab.com/r1chjames/photobox/api/internal/types"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 	"log"
 )
 
@@ -13,22 +13,26 @@ type Env struct {
 	Db *gorm.DB
 }
 
-func InitDbConnection(appConfig AppConfig) *Env {
-	db, err := gorm.Open(mysql.New(mysql.Config{
-		DSN: fmt.Sprintf("%s?charset=utf8mb4&parseTime=True&loc=Local", appConfig.DbUrl),
-	}), &gorm.Config{})
+func InitDbConnection(appConfig types.AppConfig) *Env {
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		DSN: appConfig.DbUrl,
+	}), &gorm.Config{
+		NamingStrategy: schema.NamingStrategy{
+			TablePrefix:   "photobox.",
+			SingularTable: false,
+		}})
 
 	if err != nil {
-		log.Fatal("failed to connect database")
+		log.Fatalf("failed to connect database, %s", err)
 	}
 	return &Env{Db: db}
 }
 
-func (dbEnv *Env) PerformDbSetup(appConfig AppConfig) {
+func (dbEnv *Env) PerformDbSetup(appConfig types.AppConfig) {
 	// Migrate the schema
-	err := dbEnv.Db.AutoMigrate(&Album{}, &Photo{}, &Setting{}, &Job{})
+	err := dbEnv.Db.AutoMigrate(&Album{}, &Photo{}, &Setting{}, &Job{}, &User{})
 	if err != nil {
-		log.Fatal("failed to perform database migration")
+		log.Fatalf("failed to perform database migration, %s", err)
 	}
 
 	dbEnv.createBaseSettings(appConfig.ResetSettings)

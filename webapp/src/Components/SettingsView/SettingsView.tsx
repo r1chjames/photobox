@@ -1,39 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import './SettingsView.css';
-import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
-import EditIcon from '@material-ui/icons/Edit';
-import SaveIcon from '@material-ui/icons/Save';
-import AddIcon from '@material-ui/icons/Add';
-import CancelIcon from '@material-ui/icons/Cancel';
-import { MainContent } from '../MainContent/MainContent';
-import {
-  Fab,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField
-} from '@material-ui/core';
 import { Setting } from '../../Models/Setting';
 import { SettingsAdapter } from '../../Adapters/SettingsAdapter';
 import { SettingModal } from '../SettingModal/SettingModal';
 import {InfoSnackbar} from '../Snackbar/InfoSnackbar';
+import {ActionIcon, Table, TextInput} from '@mantine/core';
+import {MdAdd, MdCancel, MdSave} from 'react-icons/md';
+import {ImPencil} from 'react-icons/im';
 
 interface IProps {
-  baseApiUrl: string;
+    settingsAdapter: SettingsAdapter;
 }
 
-const getAllSettings = async (baseApiUrl: string) => {
-  const settingsAdapter = new SettingsAdapter(baseApiUrl);
+const getAllSettings = async (propsSettingsAdapter: SettingsAdapter) => {
+  const settingsAdapter = propsSettingsAdapter;
   const allSettings: Setting[] = await settingsAdapter.getAllSettings();
   return allSettings;
 };
 
-const handleSaveSettings = async (settings: Setting[], baseApiUrl: string) => {
-  const settingsAdapter = new SettingsAdapter(baseApiUrl);
+const handleSaveSettings = async (settings: Setting[], propsSettingsAdapter: SettingsAdapter) => {
+  const settingsAdapter = propsSettingsAdapter;
   await settingsAdapter.updateSettings(settings);
 };
 
@@ -46,10 +32,10 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
 
   useEffect(() => {
     (async function retrieveAllSettings() {
-      const retrievedSettings = await getAllSettings(props.baseApiUrl);
+      const retrievedSettings = await getAllSettings(props.settingsAdapter);
       setSettings(retrievedSettings);
     })();
-  },        [setSettings, props.baseApiUrl]);
+  },        [setSettings, props.settingsAdapter]);
 
   const handleValueChange = (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>, setting: Setting) => {
     const i = settings.findIndex(k => k.key === setting.key);
@@ -59,76 +45,80 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
   const tableRow = (setting: Setting) => {
     if (editing) {
       return (
-        <TableRow key={setting.key}>
-          <TableCell component="th" scope="row">{setting.key}</TableCell>
-          <TableCell>
-            <TextField
+        <tr key={setting.key}>
+          <td>
+            {setting.key}
+          </td>
+          <td>
+            <TextInput
               defaultValue={setting.value}
               onChange={event => handleValueChange(event, setting)}
             />
-          </TableCell>
-          <TableCell>
-            <TextField
+          </td>
+          <td>
+            <TextInput
               defaultValue={setting.friendlyName}
               onChange={event => handleValueChange(event, setting)}
             />
-          </TableCell>
-          <TableCell>
-            <TextField
+          </td>
+          <td>
+            <TextInput
               defaultValue={setting.category}
               onChange={event => handleValueChange(event, setting)}
             />
-          </TableCell>
-          <TableCell>
-            <TextField
+          </td>
+          <td>
+            <TextInput
               defaultValue={setting.description}
               onChange={event => handleValueChange(event, setting)}
             />
-          </TableCell>
-        </TableRow>
+          </td>
+        </tr>
       );
     }
     return (
-      <TableRow key={setting.key}>
-        <TableCell component="th" scope="row">{setting.key}</TableCell>
-        <TableCell>
+      <tr key={setting.key}>
+        <td>
+          {setting.key}
+        </td>
+        <td>
           {setting.value}
-        </TableCell>
-        <TableCell>
+        </td>
+        <td>
           {setting.friendlyName}
-        </TableCell>
-        <TableCell>
+        </td>
+        <td>
           {setting.category}
-        </TableCell>
-        <TableCell>
+        </td>
+        <td>
           {setting.description}
-        </TableCell>
-      </TableRow>
+        </td>
+      </tr>
     );
   };
 
   const resetForm = () => {
     setEditing(false);
-    window.location.reload(false); // not very elegant
+    window.location.reload(); // TODO: not very elegant
   };
 
   const addCancelButton = () => {
     if (editing) {
       return (
-        <CancelIcon onClick={() => resetForm()} />
+        <MdCancel onClick={() => resetForm()} />
       );
     }
     return (
-      <EditIcon onClick={() => setEditing(true)} />
+      <ImPencil onClick={() => setEditing(true)} />
     );
   };
 
   const editingButton = () => {
     if (editing) {
       return (
-        <SaveIcon
+        <MdSave
           onClick={() => {
-            handleSaveSettings(settings, props.baseApiUrl);
+            handleSaveSettings(settings, props.settingsAdapter);
             setEditing(false);
             setShowSnackbar(true);
           }}
@@ -136,7 +126,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
       );
     }
     return (
-      <AddIcon onClick={() => setShowModal(true)} />
+      <MdAdd onClick={() => setShowModal(true)} />
     );
   };
 
@@ -149,39 +139,35 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
   };
 
   return (
-    <MuiThemeProvider>
-      <MainContent title="Settings">
+    <div>
         <SettingModal
           isOpen={showModal}
           handleSave={handleModalSave}
           handleClose={() => setShowModal(false)}
         />
-        <TableContainer component={Paper}>
           <Table aria-label="settings table">
-            <TableHead>
-              <TableRow>
-                <TableCell>Setting</TableCell>
-                <TableCell>Value</TableCell>
-                <TableCell>Friendly Name</TableCell>
-                <TableCell>Category</TableCell>
-                <TableCell>Description</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
+            <thead>
+              <tr>
+                <th>Setting</th>
+                <th>Value</th>
+                <th>Friendly Name</th>
+                <th>Category</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
               {settings.map((setting: Setting) => (
                 tableRow(setting)
               ))}
-            </TableBody>
+            </tbody>
           </Table>
-        </TableContainer>
         <InfoSnackbar text={'Settings saved'} show={showSnackbar} handleStopShowing={() => setShowSnackbar(false)}/>
-        <Fab color="primary" aria-label="add" className="settingsView__addButton">
+        <ActionIcon color="primary" aria-label="add" className="settingsView__addButton">
           {addCancelButton()}
-        </Fab>
-        <Fab color="primary" aria-label="edit" className="settingsView__saveEditButton">
+        </ActionIcon>
+        <ActionIcon color="primary" aria-label="edit" className="settingsView__saveEditButton">
           {editingButton()}
-        </Fab>
-      </MainContent>
-    </MuiThemeProvider>
+        </ActionIcon>
+    </div>
   );
 };
