@@ -97,6 +97,9 @@ func validationError(ctx *gin.Context, err error) {
 
 // handleError determines the status code of an error and returns a JSON response with the error message and status code
 func handleError(ctx *gin.Context, err error) {
+	if err == nil {
+		return
+	}
 	statusCode, ok := errorStatusMap[err]
 	if !ok {
 		statusCode = http.StatusInternalServerError

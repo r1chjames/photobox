@@ -27,7 +27,7 @@ func (pr *PhotoRepository) GetPhotoById(photoId string, includeThumbnail bool) (
 	if result.RowsAffected == 0 {
 		return nil, domain.ErrDataNotFound
 	}
-	return photo, result.Error
+	return photo, nil
 }
 
 func (pr *PhotoRepository) ListAllPhotos(pageNumber int, pageSize int, includeThumbnail bool) ([]*domain.Photo, error) {
@@ -40,7 +40,7 @@ func (pr *PhotoRepository) ListAllPhotos(pageNumber int, pageSize int, includeTh
 	if result.RowsAffected == 0 {
 		return nil, domain.ErrDataNotFound
 	}
-	return photos, result.Error
+	return photos, nil
 }
 
 func (pr *PhotoRepository) ListAllPhotosInAlbum(albumId string, pageNumber int, pageSize int, includeThumbnail bool) ([]*domain.Photo, error) {
@@ -53,7 +53,7 @@ func (pr *PhotoRepository) ListAllPhotosInAlbum(albumId string, pageNumber int, 
 	if result.RowsAffected == 0 {
 		return nil, domain.ErrDataNotFound
 	}
-	return photos, result.Error
+	return photos, nil
 }
 
 func (pr *PhotoRepository) GetPhotosInAlbumCount(albumId string) (int64, error) {
@@ -62,7 +62,7 @@ func (pr *PhotoRepository) GetPhotosInAlbumCount(albumId string) (int64, error) 
 	if result.RowsAffected == 0 {
 		return 0, nil
 	}
-	return count, result.Error
+	return count, nil
 }
 
 func (pr *PhotoRepository) CreatePhotoInfo(photo domain.Photo) error {

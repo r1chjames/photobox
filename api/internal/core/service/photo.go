@@ -109,12 +109,16 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 
 func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 	result, err := ps.albumRepo.GetAlbumByName(photo.Directory)
-	if err != nil {
-		albumId, albErr := ps.albumRepo.CreateAlbum(photo.Directory)
+	var albumId string
+	if result == nil || err != nil {
+		newAlbumId, albErr := ps.albumRepo.CreateAlbum(photo.Directory)
 		if albErr != nil {
 			log.Printf("unable to insert album record, %s", albErr)
 		}
+		albumId = newAlbumId.ID
 		log.Printf("created album name: %s, id: %s", photo.Directory, albumId)
+	} else {
+		albumId = result.ID
 	}
 	photoHash := b64.StdEncoding.EncodeToString([]byte(photo.Path))
 	photoMetadata, _ := json.Marshal(&photo)
@@ -122,7 +126,7 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 		ID:             photoHash,
 		Name:           utils.EscapeInvalidCharacters(photo.Name),
 		FilesystemPath: utils.EscapeInvalidCharacters(photo.Path),
-		AlbumId:        result.ID,
+		AlbumId:        albumId,
 		Tags:           "",
 		Metadata:       photoMetadata,
 		Thumbnail:      photo.Thumbnail,

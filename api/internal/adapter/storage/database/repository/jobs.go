@@ -27,7 +27,7 @@ func (jr *JobRepository) IsJobRunning(name string) (bool, error) {
 	if job.Status == "RUNNING" {
 		return true, result.Error
 	}
-	return false, result.Error
+	return false, nil
 }
 
 func (jr *JobRepository) UpdateJobStatus(name string, status string) error {

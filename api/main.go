@@ -21,6 +21,9 @@ func main() {
 	dbEnv.PerformDbSetup()
 
 	services := setupAppServices(dbEnv, appConfig)
+	services.scheduler.StopAllRunningJobs()
+	services.scheduler.AddScheduledJobs()
+
 	http.NewDBEnv(dbEnv)
 	router, err := setupHttpHandlers(appConfig, services)
 	if err != nil {
@@ -34,8 +37,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	services.scheduler.StopAllRunningJobs()
-	services.scheduler.AddScheduledJobs()
 	//addDefaultAdminUser(dbEnv)
 	//dbEnv.createBaseSettings(appConfig.ResetSettings)
 	//dbEnv.createBaseJobs()

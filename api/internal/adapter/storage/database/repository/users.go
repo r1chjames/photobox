@@ -22,7 +22,7 @@ func (ur *UserRepository) ListUsers(skip, limit uint64) ([]domain.User, error) {
 	if result.RowsAffected == 0 {
 		return nil, domain.ErrDataNotFound
 	}
-	return user, result.Error
+	return user, nil
 }
 
 func (ur *UserRepository) GetUserById(id string) (*domain.User, error) {
@@ -31,7 +31,7 @@ func (ur *UserRepository) GetUserById(id string) (*domain.User, error) {
 	if result.RowsAffected == 0 {
 		return nil, domain.ErrDataNotFound
 	}
-	return user, result.Error
+	return user, nil
 }
 
 func (ur *UserRepository) GetUserByUsername(username string) (*domain.User, error) {
@@ -40,7 +40,7 @@ func (ur *UserRepository) GetUserByUsername(username string) (*domain.User, erro
 	if result.RowsAffected == 0 {
 		return nil, domain.ErrDataNotFound
 	}
-	return user, result.Error
+	return user, nil
 }
 
 func (ur *UserRepository) GetApprovedUserByUsername(username string) (*domain.User, error) {
@@ -49,14 +49,14 @@ func (ur *UserRepository) GetApprovedUserByUsername(username string) (*domain.Us
 	if result.RowsAffected == 0 {
 		return nil, domain.ErrDataNotFound
 	}
-	return user, result.Error
+	return user, nil
 }
 
 func (ur *UserRepository) CreateUser(user *domain.User) (*domain.User, error) {
-	result := ur.dbEnv.Db.Clauses(clause.OnConflict{
+	ur.dbEnv.Db.Clauses(clause.OnConflict{
 		DoNothing: true,
 	}).Create(&user)
-	return user, result.Error
+	return user, nil
 }
 
 func (ur *UserRepository) UpdateUser(user *domain.User) error {

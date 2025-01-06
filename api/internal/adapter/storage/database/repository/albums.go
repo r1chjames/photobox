@@ -18,13 +18,13 @@ func NewAlbumRepository(dbEnv *database.Env) *AlbumRepository {
 }
 
 func (ar *AlbumRepository) GetAlbumById(id string) (*domain.Album, error) {
-	var album *domain.Album
+	var album domain.Album
 	album.ID = id
 	result := ar.dbEnv.Db.First(&album)
 	if result.RowsAffected == 0 {
 		return nil, domain.ErrDataNotFound
 	}
-	return album, result.Error
+	return &album, result.Error
 }
 
 func (ar *AlbumRepository) GetAlbumByName(name string) (*domain.Album, error) {
@@ -33,26 +33,26 @@ func (ar *AlbumRepository) GetAlbumByName(name string) (*domain.Album, error) {
 	if result.RowsAffected == 0 {
 		return nil, domain.ErrDataNotFound
 	}
-	return album, result.Error
+	return album, nil
 }
 
 func (ar *AlbumRepository) CreateAlbum(name string) (*domain.Album, error) {
-	var album *domain.Album
+	var album domain.Album
 	album.ID = uuid.New().String()
 	album.Name = name
-	result := ar.dbEnv.Db.Create(&album)
-	return album, result.Error
+	ar.dbEnv.Db.Create(&album)
+	return &album, nil
 }
 
 func (ar *AlbumRepository) CreateAlbumIfNotExists(name string) (*domain.Album, error) {
-	var album *domain.Album
+	var album domain.Album
 	album.ID = uuid.New().String()
 	album.Name = name
 
-	result := ar.dbEnv.Db.Clauses(clause.OnConflict{
+	ar.dbEnv.Db.Clauses(clause.OnConflict{
 		DoNothing: true,
 	}).Create(&album)
-	return album, result.Error
+	return &album, nil
 }
 
 func (ar *AlbumRepository) ListAllAlbums(page int, limit int) ([]*domain.Album, error) {
@@ -61,7 +61,7 @@ func (ar *AlbumRepository) ListAllAlbums(page int, limit int) ([]*domain.Album, 
 	if result.RowsAffected == 0 {
 		return nil, domain.ErrDataNotFound
 	}
-	return albums, result.Error
+	return albums, nil
 }
 
 func (ar *AlbumRepository) AlbumCount() (int64, error) {
@@ -70,5 +70,5 @@ func (ar *AlbumRepository) AlbumCount() (int64, error) {
 	if result.RowsAffected == 0 {
 		return 0, nil
 	}
-	return result.RowsAffected, result.Error
+	return result.RowsAffected, nil
 }
