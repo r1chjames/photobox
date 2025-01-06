@@ -1,65 +1,131 @@
 package main
 
 import (
-	"fmt"
-	"gitlab.com/r1chjames/photobox/api/internal/apiServer"
+	"gitlab.com/r1chjames/photobox/api/internal/adapter/handler/auth"
+	"gitlab.com/r1chjames/photobox/api/internal/adapter/handler/http"
+	"gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
+	"gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database/repository"
+	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"gitlab.com/r1chjames/photobox/api/internal/components"
-	"gitlab.com/r1chjames/photobox/api/internal/database"
-	"gitlab.com/r1chjames/photobox/api/internal/types"
-	"gitlab.com/r1chjames/photobox/api/internal/utils"
-	"strconv"
-	"time"
+	"gitlab.com/r1chjames/photobox/api/internal/core/port"
+	"gitlab.com/r1chjames/photobox/api/internal/core/service"
+	"log/slog"
+	"os"
 )
 
 func main() {
-	appConfig := parseAppVariables()
+	appConfig := appconfig.New()
 
 	dbEnv := database.InitDbConnection(appConfig)
 	dbEnv.PerformDbSetup(appConfig)
-	apiServer.NewDBEnv(dbEnv)
 
-	components.InitScheduler(appConfig)
-	components.StopAllRunningJobs(dbEnv)
-	components.AddScheduledJobs(appConfig, dbEnv)
-	addDefaultAdminUser(dbEnv)
-	apiServer.NewServer(appConfig)
+	services := setupAppServices(dbEnv, appConfig)
+	http.NewDBEnv(dbEnv)
+	router, err := setupHttpHandlers(appConfig, services)
+	if err != nil {
+		slog.Error("Error initializing router", "error", err)
+		os.Exit(1)
+	}
+
+	err = router.Run()
+	if err != nil {
+		slog.Error("Error initializing router", "error", err)
+		os.Exit(1)
+	}
+
+	services.scheduler.StopAllRunningJobs()
+	services.scheduler.AddScheduledJobs()
+	//addDefaultAdminUser(dbEnv)
 
 }
 
-func addDefaultAdminUser(dbEnv *database.Env) {
-	defaultAdminUsername := utils.GetEnv("DEFAULT_ADMIN_USERNAME", "admin")
-	defaultAdminPassword := utils.GetEnv("DEFAULT_ADMIN_PASSWORD", "password")
-	user, err := dbEnv.GetUserByUsername(defaultAdminUsername)
-	if user.ID == "" || err != nil {
-		err := apiServer.CreateUser(apiServer.CreationOrUpdateRequest{
-			Username: defaultAdminUsername,
-			Password: defaultAdminPassword,
-			Role:     apiServer.ADMINISTRATOR,
-		}, true)
-		if err != nil {
-			return
-		}
+//func addDefaultAdminUser(dbEnv *database.Env) {
+//	defaultAdminUsername := utils.GetEnv("DEFAULT_ADMIN_USERNAME", "admin")
+//	defaultAdminPassword := utils.GetEnv("DEFAULT_ADMIN_PASSWORD", "password")
+//	user, err := dbEnv.GetUserByUsername(defaultAdminUsername)
+//	if user.ID == "" || err != nil {
+//		err := http2.CreateUser(http2.CreationOrUpdateRequest{
+//			Username: defaultAdminUsername,
+//			Password: defaultAdminPassword,
+//			Role:     domain.ADMINISTRATOR,
+//		}, true)
+//		if err != nil {
+//			return
+//		}
+//	}
+//}
+
+type AppServices struct {
+	scheduler      *components.Scheduler
+	tokenService   port.TokenService
+	userService    *service.UserService
+	authService    *service.AuthService
+	photoService   *service.PhotoService
+	albumService   *service.AlbumService
+	jobService     *service.JobService
+	utilityService *service.UtilityService
+}
+
+func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServices {
+	token, err := auth.New(config.Token, config.TokenDuration)
+	if err != nil {
+		slog.Error("Error initializing token service", "error", err)
+		os.Exit(1)
+	}
+
+	// User
+	userRepo := repository.NewUserRepository(dbEnv)
+	userService := service.NewUserService(userRepo)
+
+	// Auth
+	authService := service.NewAuthService(userRepo, token)
+
+	// Photo
+	photoRepo := repository.NewPhotoRepository(dbEnv)
+	photoService := service.NewPhotoService(photoRepo, *config)
+
+	// Album
+	albumRepo := repository.NewAlbumRepository(dbEnv)
+	albumService := service.NewAlbumService(albumRepo, *config)
+
+	// Utility
+	utilityRepo := repository.NewUtilityRepository(dbEnv)
+	utilityService := service.NewUtilityService(utilityRepo)
+
+	// Job
+	jobRepo := repository.NewJobRepository(dbEnv)
+	jobService := service.NewJobService(jobRepo)
+
+	// Cron
+	return &AppServices{
+		components.NewScheduler(utilityService, jobService, *config),
+		token,
+		userService,
+		authService,
+		photoService,
+		albumService,
+		jobService,
+		utilityService,
 	}
 }
 
-func parseAppVariables() types.AppConfig {
-	dbHost := utils.GetEnv("DB_HOST", "localhost")
-	dbPort := utils.GetEnv("DB_PORT", "5432")
-	dbUser := utils.GetEnv("DB_USER", "photobox")
-	dbPassword := utils.GetEnv("DB_PASSWORD", "photobox")
-	dbName := utils.GetEnv("DB_NAME", "photobox")
+func setupHttpHandlers(
+	config *appconfig.AppConfig,
+	appServices *AppServices) (*http.Router, error) {
 
-	dbURL := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s", dbHost, dbUser, dbPassword, dbName, dbPort)
-	resetSettings, _ := strconv.ParseBool(utils.GetEnv("RESET_SETTINGS", "false"))
-	debugMode, _ := strconv.ParseBool(utils.GetEnv("DEBUG_MODE", "false"))
-	timezone, _ := time.LoadLocation(utils.GetEnv("TIMEZONE", "Europe/London"))
+	userHandler := http.NewUserHandler(appServices.userService)
+	authHandler := http.NewAuthHandler(appServices.authService)
+	photoHandler := http.NewPhotoHandler(appServices.photoService, appServices.jobService)
+	albumHandler := http.NewAlbumHandler(appServices.albumService)
+	utilityHandler := http.NewUtilityHandler(appServices.utilityService)
 
-	return types.AppConfig{
-		PhotoDir:      utils.GetEnv("PHOTO_DIR", "/photos"),
-		ApiBasePath:   utils.GetEnv("API_BASE_PATH", "/api"),
-		DbUrl:         dbURL,
-		ResetSettings: resetSettings,
-		DebugMode:     debugMode,
-		Timezone:      timezone,
-	}
+	return http.NewRouter(
+		*config,
+		appServices.tokenService,
+		*authHandler,
+		*photoHandler,
+		*albumHandler,
+		*utilityHandler,
+		*userHandler,
+	)
 }
