@@ -24,6 +24,9 @@ func (pr *PhotoRepository) GetPhotoById(photoId string, includeThumbnail bool) (
 		result.Omit("thumbnail")
 	}
 	result.First(&photo)
+	if result.RowsAffected == 0 {
+		return nil, domain.ErrDataNotFound
+	}
 	return photo, result.Error
 }
 
@@ -34,6 +37,9 @@ func (pr *PhotoRepository) ListAllPhotos(pageNumber int, pageSize int, includeTh
 		result.Omit("thumbnail")
 	}
 	result.Find(&photos)
+	if result.RowsAffected == 0 {
+		return nil, domain.ErrDataNotFound
+	}
 	return photos, result.Error
 }
 
@@ -44,12 +50,18 @@ func (pr *PhotoRepository) ListAllPhotosInAlbum(albumId string, pageNumber int, 
 		result.Omit("thumbnail")
 	}
 	result.Find(&photos, "album_id = ?", albumId)
+	if result.RowsAffected == 0 {
+		return nil, domain.ErrDataNotFound
+	}
 	return photos, result.Error
 }
 
 func (pr *PhotoRepository) GetPhotosInAlbumCount(albumId string) (int64, error) {
 	var count int64
 	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("album_id = ?", albumId).Count(&count)
+	if result.RowsAffected == 0 {
+		return 0, nil
+	}
 	return count, result.Error
 }
 

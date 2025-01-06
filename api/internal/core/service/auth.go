@@ -27,8 +27,8 @@ func NewAuthService(repo port.UserRepository, ts port.TokenService) *AuthService
 }
 
 // Login gives a registered user an access token if the credentials are valid
-func (as *AuthService) Login(ctx context.Context, email, password string) (string, error) {
-	user, err := as.repo.GetUserByEmail(ctx, email)
+func (as *AuthService) Login(ctx context.Context, username, password string) (string, error) {
+	user, err := as.repo.GetUserByUsername(username)
 	if err != nil {
 		if errors.Is(err, domain.ErrDataNotFound) {
 			return "", domain.ErrInvalidCredentials

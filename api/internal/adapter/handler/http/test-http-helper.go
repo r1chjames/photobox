@@ -3,7 +3,7 @@ package http
 import (
 	"bytes"
 	"encoding/json"
-	config2 "gitlab.com/r1chjames/photobox/api/internal/adapter/config"
+	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -35,6 +35,6 @@ func PerformRequest(r http.Handler, method, path string, queryParams map[string]
 	return w
 }
 
-func TestAppConfig() config2.AppConfig {
-	return config2.AppConfig{ApiBasePath: "test"}
+func TestAppConfig() appconfig.AppConfig {
+	return appconfig.AppConfig{ApiBasePath: "test"}
 }

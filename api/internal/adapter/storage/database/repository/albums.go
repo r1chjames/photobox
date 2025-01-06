@@ -21,12 +21,18 @@ func (ar *AlbumRepository) GetAlbumById(id string) (*domain.Album, error) {
 	var album *domain.Album
 	album.ID = id
 	result := ar.dbEnv.Db.First(&album)
+	if result.RowsAffected == 0 {
+		return nil, domain.ErrDataNotFound
+	}
 	return album, result.Error
 }
 
 func (ar *AlbumRepository) GetAlbumByName(name string) (*domain.Album, error) {
 	var album *domain.Album
 	result := ar.dbEnv.Db.First(&album, "name = ?", name)
+	if result.RowsAffected == 0 {
+		return nil, domain.ErrDataNotFound
+	}
 	return album, result.Error
 }
 
@@ -52,11 +58,17 @@ func (ar *AlbumRepository) CreateAlbumIfNotExists(name string) (*domain.Album, e
 func (ar *AlbumRepository) ListAllAlbums(page int, limit int) ([]*domain.Album, error) {
 	var albums []*domain.Album
 	result := ar.dbEnv.Db.Scopes(database.Paginate(page, limit)).Find(&albums)
+	if result.RowsAffected == 0 {
+		return nil, domain.ErrDataNotFound
+	}
 	return albums, result.Error
 }
 
 func (ar *AlbumRepository) AlbumCount() (int64, error) {
 	var albums []domain.Album
 	result := ar.dbEnv.Db.Find(&albums)
+	if result.RowsAffected == 0 {
+		return 0, nil
+	}
 	return result.RowsAffected, result.Error
 }

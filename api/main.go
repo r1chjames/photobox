@@ -5,6 +5,7 @@ import (
 	"gitlab.com/r1chjames/photobox/api/internal/adapter/handler/http"
 	"gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database/repository"
+	filesystemRepos "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/filesystem/repository"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"gitlab.com/r1chjames/photobox/api/internal/components"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
@@ -17,7 +18,7 @@ func main() {
 	appConfig := appconfig.New()
 
 	dbEnv := database.InitDbConnection(appConfig)
-	dbEnv.PerformDbSetup(appConfig)
+	dbEnv.PerformDbSetup()
 
 	services := setupAppServices(dbEnv, appConfig)
 	http.NewDBEnv(dbEnv)
@@ -36,6 +37,8 @@ func main() {
 	services.scheduler.StopAllRunningJobs()
 	services.scheduler.AddScheduledJobs()
 	//addDefaultAdminUser(dbEnv)
+	//dbEnv.createBaseSettings(appConfig.ResetSettings)
+	//dbEnv.createBaseJobs()
 
 }
 
@@ -56,14 +59,15 @@ func main() {
 //}
 
 type AppServices struct {
-	scheduler      *components.Scheduler
-	tokenService   port.TokenService
-	userService    *service.UserService
-	authService    *service.AuthService
-	photoService   *service.PhotoService
-	albumService   *service.AlbumService
-	jobService     *service.JobService
-	utilityService *service.UtilityService
+	scheduler         *components.Scheduler
+	tokenService      port.TokenService
+	userService       *service.UserService
+	authService       *service.AuthService
+	photoService      *service.PhotoService
+	albumService      *service.AlbumService
+	jobService        *service.JobService
+	utilityService    *service.UtilityService
+	filesystemService *service.FilesystemService
 }
 
 func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServices {
@@ -80,13 +84,13 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 	// Auth
 	authService := service.NewAuthService(userRepo, token)
 
-	// Photo
-	photoRepo := repository.NewPhotoRepository(dbEnv)
-	photoService := service.NewPhotoService(photoRepo, *config)
-
 	// Album
 	albumRepo := repository.NewAlbumRepository(dbEnv)
 	albumService := service.NewAlbumService(albumRepo, *config)
+
+	// Photo
+	photoRepo := repository.NewPhotoRepository(dbEnv)
+	photoService := service.NewPhotoService(photoRepo, albumRepo, *config)
 
 	// Utility
 	utilityRepo := repository.NewUtilityRepository(dbEnv)
@@ -96,9 +100,12 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 	jobRepo := repository.NewJobRepository(dbEnv)
 	jobService := service.NewJobService(jobRepo)
 
+	filesystemRepo := filesystemRepos.NewFilesystemRepository(*config, jobService)
+	filesystemService := service.NewFilesystemService(filesystemRepo, jobService, utilityService, photoService)
+
 	// Cron
 	return &AppServices{
-		components.NewScheduler(utilityService, jobService, *config),
+		components.NewScheduler(utilityService, jobService, filesystemService, *config),
 		token,
 		userService,
 		authService,
@@ -106,6 +113,7 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 		albumService,
 		jobService,
 		utilityService,
+		filesystemService,
 	}
 }
 
@@ -115,7 +123,7 @@ func setupHttpHandlers(
 
 	userHandler := http.NewUserHandler(appServices.userService)
 	authHandler := http.NewAuthHandler(appServices.authService)
-	photoHandler := http.NewPhotoHandler(appServices.photoService, appServices.jobService)
+	photoHandler := http.NewPhotoHandler(appServices.photoService, appServices.jobService, appServices.filesystemService)
 	albumHandler := http.NewAlbumHandler(appServices.albumService)
 	utilityHandler := http.NewUtilityHandler(appServices.utilityService)
 

@@ -2,7 +2,6 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
-	"gitlab.com/r1chjames/photobox/api/internal/components"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 	"strconv"
@@ -11,15 +10,17 @@ import "net/http"
 
 // PhotoHandler represents the HTTP handler for photo-related requests
 type PhotoHandler struct {
-	photoSvc port.PhotoService
-	jobSvc   port.JobService
+	photoSvc      port.PhotoService
+	jobSvc        port.JobService
+	filesystemSvc port.FilesystemService
 }
 
 // NewPhotoHandler creates a new PhotoHandler instance
-func NewPhotoHandler(photoSvc port.PhotoService, jobSvc port.JobService) *PhotoHandler {
+func NewPhotoHandler(photoSvc port.PhotoService, jobSvc port.JobService, filesystemSvc port.FilesystemService) *PhotoHandler {
 	return &PhotoHandler{
 		photoSvc,
 		jobSvc,
+		filesystemSvc,
 	}
 }
 
@@ -113,7 +114,7 @@ func (ph *PhotoHandler) IndexPhotos(c *gin.Context) {
 	} else {
 		c.Status(http.StatusAccepted)
 		go func() {
-			components.PerformPhotoIndex()
+			ph.filesystemSvc.PerformPhotoIndex()
 		}()
 	}
 }

@@ -9,17 +9,19 @@ import (
 )
 
 type Scheduler struct {
-	cron    *cron.Cron
-	jobSvc  port.JobService
-	utilSvc port.UtilityService
-	config  appconfig.AppConfig
+	cron          *cron.Cron
+	jobSvc        port.JobService
+	utilSvc       port.UtilityService
+	filesystemSvc port.FilesystemService
+	config        appconfig.AppConfig
 }
 
-func NewScheduler(utilityService port.UtilityService, jobService port.JobService, appConfig appconfig.AppConfig) *Scheduler {
+func NewScheduler(utilityService port.UtilityService, jobService port.JobService, filesystemSvc port.FilesystemService, appConfig appconfig.AppConfig) *Scheduler {
 	var scheduler = &Scheduler{
 		cron.New(cron.WithLocation(appConfig.Timezone)),
 		jobService,
 		utilityService,
+		filesystemSvc,
 		appConfig,
 	}
 
@@ -33,7 +35,9 @@ func (s *Scheduler) AddScheduledJobs() {
 		log.Print("unable to get photo index cron expression from database. Index scheduling will not be enabled")
 	}
 
-	_, err = s.cron.AddFunc(setting.Value, func() { PerformPhotoIndex(appConfig, dbEnv) })
+	_, err = s.cron.AddFunc(setting.Value, func() {
+		s.filesystemSvc.PerformPhotoIndex()
+	})
 	if err != nil {
 		log.Printf("unable to add job schedule for %s. Parsed CRON expression: %s. Check CRON expression in settings", setting.Key, setting.Value)
 	}

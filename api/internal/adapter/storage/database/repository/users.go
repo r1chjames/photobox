@@ -19,24 +19,36 @@ func NewUserRepository(dbEnv *database.Env) *UserRepository {
 func (ur *UserRepository) ListUsers(skip, limit uint64) ([]domain.User, error) {
 	var user []domain.User
 	result := ur.dbEnv.Db.Find(&user)
+	if result.RowsAffected == 0 {
+		return nil, domain.ErrDataNotFound
+	}
 	return user, result.Error
 }
 
 func (ur *UserRepository) GetUserById(id string) (*domain.User, error) {
 	var user *domain.User
 	result := ur.dbEnv.Db.Find(&user, "id = ? ", id)
+	if result.RowsAffected == 0 {
+		return nil, domain.ErrDataNotFound
+	}
 	return user, result.Error
 }
 
 func (ur *UserRepository) GetUserByUsername(username string) (*domain.User, error) {
 	var user *domain.User
 	result := ur.dbEnv.Db.Find(&user, "username = ? ", username)
+	if result.RowsAffected == 0 {
+		return nil, domain.ErrDataNotFound
+	}
 	return user, result.Error
 }
 
 func (ur *UserRepository) GetApprovedUserByUsername(username string) (*domain.User, error) {
 	var user *domain.User
 	result := ur.dbEnv.Db.Find(&user, "username = ? AND approved = true", username)
+	if result.RowsAffected == 0 {
+		return nil, domain.ErrDataNotFound
+	}
 	return user, result.Error
 }
 

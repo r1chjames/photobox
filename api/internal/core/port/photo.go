@@ -34,6 +34,8 @@ type PhotoService interface {
 	PhotoBinary(photoId string) (string, error)
 	//PhotoThumbnail returns the binary photo from disk
 	PhotoThumbnail(photoId string) ([]byte, error)
-	//PhotoThumbnail returns the binary photo from disk
-	SavePhoto(photoId string) ([]byte, error)
+	//SavePhoto saves photo to database
+	SavePhoto(photo domain.PhotoFile) error
+	//SavePhotos saves photos to database
+	SavePhotos(photos []domain.PhotoFile) error
 }

@@ -3,6 +3,7 @@ package database
 import (
 	"errors"
 	. "gitlab.com/r1chjames/photobox/api/internal/appconfig"
+	. "gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -28,15 +29,12 @@ func InitDbConnection(appConfig *AppConfig) *Env {
 	return &Env{Db: db}
 }
 
-func (dbEnv *Env) PerformDbSetup(appConfig *AppConfig) {
+func (dbEnv *Env) PerformDbSetup() {
 	// Migrate the schema
 	err := dbEnv.Db.AutoMigrate(&Album{}, &Photo{}, &Setting{}, &Job{}, &User{})
 	if err != nil {
 		log.Fatalf("failed to perform database migration, %s", err)
 	}
-
-	dbEnv.createBaseSettings(appConfig.ResetSettings)
-	dbEnv.createBaseJobs()
 }
 
 func checkNotFoundError(err error) bool {

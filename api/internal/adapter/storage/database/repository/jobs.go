@@ -2,6 +2,7 @@ package repository
 
 import (
 	"gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
+	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gorm.io/gorm/clause"
 	"time"
 )
@@ -17,9 +18,12 @@ func NewJobRepository(dbEnv *database.Env) *JobRepository {
 }
 
 func (jr *JobRepository) IsJobRunning(name string) (bool, error) {
-	var job database.Job
+	var job domain.Job
 	job.Name = name
 	result := jr.dbEnv.Db.First(&job)
+	if result.RowsAffected == 0 {
+		return false, domain.ErrDataNotFound
+	}
 	if job.Status == "RUNNING" {
 		return true, result.Error
 	}
@@ -27,20 +31,20 @@ func (jr *JobRepository) IsJobRunning(name string) (bool, error) {
 }
 
 func (jr *JobRepository) UpdateJobStatus(name string, status string) error {
-	var job database.Job
+	var job domain.Job
 	job.Name = name
-	result := jr.dbEnv.Db.Model(&job).Where("name = ?", name).Updates(database.Job{Status: status, LastRun: time.Now()})
+	result := jr.dbEnv.Db.Model(&job).Where("name = ?", name).Updates(domain.Job{Status: status, LastRun: time.Now()})
 	return result.Error
 }
 
 func (jr *JobRepository) UpdateAllJobsStatus(status string) error {
-	result := jr.dbEnv.Db.Model(database.Job{}).Where("status = ?", "RUNNING").Update("Status", status)
+	result := jr.dbEnv.Db.Model(domain.Job{}).Where("status = ?", "RUNNING").Update("Status", status)
 	return result.Error
 }
 
 func (jr *JobRepository) CreateBaseJobs() error {
 	result := jr.dbEnv.Db.Clauses(clause.OnConflict{
 		UpdateAll: true,
-	}).Create(&database.Job{Name: "Photo_index", Status: "NOT_RUNNING", LastRun: time.Now()})
+	}).Create(&domain.Job{Name: "Photo_index", Status: "NOT_RUNNING", LastRun: time.Now()})
 	return result.Error
 }

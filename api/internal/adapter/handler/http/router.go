@@ -61,16 +61,14 @@ func defineResources(
 	userHandler UserHandler) {
 
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
-	router.Group(fmt.Sprintf("%s/", urlBasePath))
 
-	router.POST("/login", authHandler.Login)
+	router.POST(fmt.Sprintf("%s/login", urlBasePath), authHandler.Login)
 
 	user := router.Group(fmt.Sprintf("%s/user", urlBasePath))
 	{
 		user.POST("/register", userHandler.Register)
 		authUser := user.Use(authMiddleware(token))
 		{
-			authUser.POST("/update", userHandler.UpdateUser)
 			authUser.POST("/update", userHandler.UpdateUser)
 		}
 	}
