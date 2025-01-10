@@ -16,6 +16,8 @@ type AppConfig struct {
 	Timezone      *time.Location
 	Token         string
 	TokenDuration time.Duration
+	AdminUsername string
+	AdminPassword string
 }
 
 func New() *AppConfig {
@@ -33,6 +35,9 @@ func New() *AppConfig {
 	token := utils.GetEnv("TOKEN", "")
 	tokenDuration, _ := time.ParseDuration(utils.GetEnv("TOKEN_DURATION", "1h"))
 
+	adminUsername := utils.GetEnv("DEFAULT_ADMIN_USERNAME", "admin")
+	adminPassword := utils.GetEnv("DEFAULT_ADMIN_PASSWORD", "password")
+
 	return &AppConfig{
 		PhotoDir:      utils.GetEnv("PHOTO_DIR", "/photos"),
 		ApiBasePath:   utils.GetEnv("API_BASE_PATH", "/api"),
@@ -42,5 +47,7 @@ func New() *AppConfig {
 		Timezone:      timezone,
 		Token:         token,
 		TokenDuration: tokenDuration,
+		AdminUsername: adminUsername,
+		AdminPassword: adminPassword,
 	}
 }

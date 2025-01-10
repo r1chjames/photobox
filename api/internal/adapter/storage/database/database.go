@@ -37,8 +37,13 @@ func (dbEnv *Env) PerformDbSetup() {
 	}
 }
 
-func checkNotFoundError(err error) bool {
-	return errors.Is(err, gorm.ErrRecordNotFound)
+func HandleError(result *gorm.DB) error {
+	if result.RowsAffected == 0 || errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return ErrDataNotFound
+	} else if result.Error != nil {
+		return result.Error
+	}
+	return nil
 }
 
 func Paginate(page int, limit int) func(db *gorm.DB) *gorm.DB {

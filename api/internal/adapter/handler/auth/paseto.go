@@ -49,6 +49,9 @@ func (maker *PasetoMaker) ParseToken(token string) (*domain.TokenPayload, error)
 
 func (maker *PasetoMaker) VerifyToken(token string) (*domain.TokenPayload, error) {
 	payload, err := maker.ParseToken(token)
+	if err != nil {
+		return nil, err
+	}
 
 	err = payload.Valid()
 	if err != nil {

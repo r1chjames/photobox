@@ -35,3 +35,7 @@ func (us *UtilityService) ListAllSettings() ([]*domain.Setting, error) {
 func (us *UtilityService) UpdateAllSettings(settings []*domain.Setting) error {
 	return us.repo.UpdateAllSettings(settings)
 }
+
+func (us *UtilityService) CreateBaseSettings(reset bool) error {
+	return us.repo.CreateBaseSettings(reset)
+}

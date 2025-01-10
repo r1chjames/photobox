@@ -1,16 +1,16 @@
 package repository
 
 import (
-	"gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
+	. "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gorm.io/gorm/clause"
 )
 
 type PhotoRepository struct {
-	dbEnv *database.Env
+	dbEnv *Env
 }
 
-func NewPhotoRepository(dbEnv *database.Env) *PhotoRepository {
+func NewPhotoRepository(dbEnv *Env) *PhotoRepository {
 	return &PhotoRepository{
 		dbEnv,
 	}
@@ -24,15 +24,16 @@ func (pr *PhotoRepository) GetPhotoById(photoId string, includeThumbnail bool) (
 		result.Omit("thumbnail")
 	}
 	result.First(&photo)
-	if result.RowsAffected == 0 {
-		return nil, domain.ErrDataNotFound
+	err := HandleError(result)
+	if err != nil {
+		return nil, err
 	}
 	return photo, nil
 }
 
-func (pr *PhotoRepository) ListAllPhotos(pageNumber int, pageSize int, includeThumbnail bool) ([]*domain.Photo, error) {
+func (pr *PhotoRepository) ListAllPhotos(pageNumber, pageSize int, includeThumbnail bool) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
-	result := pr.dbEnv.Db.Scopes(database.Paginate(pageNumber, pageSize))
+	result := pr.dbEnv.Db.Scopes(Paginate(pageNumber, pageSize))
 	if !includeThumbnail {
 		result.Omit("thumbnail")
 	}
@@ -43,15 +44,16 @@ func (pr *PhotoRepository) ListAllPhotos(pageNumber int, pageSize int, includeTh
 	return photos, nil
 }
 
-func (pr *PhotoRepository) ListAllPhotosInAlbum(albumId string, pageNumber int, pageSize int, includeThumbnail bool) ([]*domain.Photo, error) {
+func (pr *PhotoRepository) ListAllPhotosInAlbum(albumId string, pageNumber, pageSize int, includeThumbnail bool) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
-	result := pr.dbEnv.Db.Scopes(database.Paginate(pageNumber, pageSize))
+	result := pr.dbEnv.Db.Scopes(Paginate(pageNumber, pageSize))
 	if !includeThumbnail {
 		result.Omit("thumbnail")
 	}
 	result.Find(&photos, "album_id = ?", albumId)
-	if result.RowsAffected == 0 {
-		return nil, domain.ErrDataNotFound
+	err := HandleError(result)
+	if err != nil {
+		return nil, err
 	}
 	return photos, nil
 }
@@ -59,8 +61,9 @@ func (pr *PhotoRepository) ListAllPhotosInAlbum(albumId string, pageNumber int, 
 func (pr *PhotoRepository) GetPhotosInAlbumCount(albumId string) (int64, error) {
 	var count int64
 	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("album_id = ?", albumId).Count(&count)
-	if result.RowsAffected == 0 {
-		return 0, nil
+	err := HandleError(result)
+	if err != nil {
+		return 0, err
 	}
 	return count, nil
 }

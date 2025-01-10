@@ -74,10 +74,10 @@ func (us *UserService) GetUser(id string) (*domain.User, error) {
 }
 
 // ListUsers lists all users
-func (us *UserService) ListUsers(skip, limit uint64) ([]domain.User, error) {
+func (us *UserService) ListUsers(pageNumber, pageSize int) ([]domain.User, error) {
 	var users []domain.User
 
-	users, err := us.repo.ListUsers(skip, limit)
+	users, err := us.repo.ListUsers(pageNumber, pageSize)
 	if err != nil {
 		return nil, domain.ErrInternal
 	}

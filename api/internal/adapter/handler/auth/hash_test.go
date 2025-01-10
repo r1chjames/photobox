@@ -1,71 +1,45 @@
 package auth
 
 import (
+	"github.com/stretchr/testify/assert"
 	"regexp"
-	"strings"
 	"testing"
 )
 
 func TestCreateHash(t *testing.T) {
-	hashRX, err := regexp.Compile(`^\$argon2id\$v=19\$m=65536,t=2,p=[0-9]{1,4}\$[A-Za-z0-9+/]{22}\$[A-Za-z0-9+/]{43}$`)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	hashRX := TokenFormatRegEx()
 	hash1, err := CreateHash("pa$$word", DefaultArgon2idHash())
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
-	if !hashRX.MatchString(hash1) {
-		t.Errorf("hash %q not in correct format", hash1)
-	}
+	assert.True(t, hashRX.MatchString(hash1), "Hash not in correct format")
 
 	hash2, err := CreateHash("pa$$word", DefaultArgon2idHash())
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
-	if strings.Compare(hash1, hash2) == 0 {
-		t.Error("hashes must be unique")
-	}
+	assert.NotEqual(t, hash1, hash2, "hashes must be unique")
 }
 
 func TestComparePasswordAndHash(t *testing.T) {
 	hash, err := CreateHash("pa$$word", DefaultArgon2idHash())
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	match, err := ComparePasswordAndHash("pa$$word", hash)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
-	if !match {
-		t.Error("expected password and hash to match")
-	}
+	assert.True(t, match, "expected password and hash to match")
 
 	match, err = ComparePasswordAndHash("otherPa$$word", hash)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
-	if match {
-		t.Error("expected password and hash to not match")
-	}
+	assert.False(t, match, "expected password and hash to not match")
 }
 
 func TestDecodeHash(t *testing.T) {
 	hash, err := CreateHash("pa$$word", DefaultArgon2idHash())
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	params, _, _, err := DecodeHash(hash)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 	if *params != *DefaultArgon2idHash() {
 		t.Fatalf("expected %#v got %#v", *DefaultArgon2idHash(), *params)
 	}
@@ -74,18 +48,12 @@ func TestDecodeHash(t *testing.T) {
 func TestStrictDecoding(t *testing.T) {
 	// "bug" valid hash: $argon2id$v=19$m=65536,t=1,p=2$UDk0zEuIzbt0x3bwkf8Bgw$ihSfHWUJpTgDvNWiojrgcN4E0pJdUVmqCEdRZesx9tE
 	ok, _, err := CheckHash("bug", "$argon2id$v=19$m=65536,t=1,p=2$UDk0zEuIzbt0x3bwkf8Bgw$ihSfHWUJpTgDvNWiojrgcN4E0pJdUVmqCEdRZesx9tE")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !ok {
-		t.Fatal("expected password to match")
-	}
+	assert.NoError(t, err)
+	assert.True(t, ok, "expected password to match")
 
 	// changed one last character of the hash
 	ok, _, err = CheckHash("bug", "$argon2id$v=19$m=65536,t=1,p=2$UDk0zEuIzbt0x3bwkf8Bgw$ihSfHWUJpTgDvNWiojrgcN4E0pJdUVmqCEdRZesx9tF")
-	if err == nil {
-		t.Fatal("Hash validation should fail")
-	}
+	assert.Error(t, err, "Hash validation should fail")
 
 	if ok {
 		t.Fatal("Hash validation should fail")
@@ -98,4 +66,12 @@ func TestVariant(t *testing.T) {
 	if err != ErrIncompatibleVariant {
 		t.Fatalf("expected error %s", ErrIncompatibleVariant)
 	}
+}
+
+func TokenFormatRegEx() *regexp.Regexp {
+	hashRX, err := regexp.Compile(`^\$argon2id\$v=19\$m=65536,t=1,p=[0-9]{1,4}\$[A-Za-z0-9+/]{22}\$[A-Za-z0-9+/]{43}$`)
+	if err != nil {
+		return nil
+	}
+	return hashRX
 }

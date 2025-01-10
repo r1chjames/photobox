@@ -1,26 +1,27 @@
 package repository
 
 import (
-	"gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
+	. "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gorm.io/gorm/clause"
 )
 
 type UserRepository struct {
-	dbEnv *database.Env
+	dbEnv *Env
 }
 
-func NewUserRepository(dbEnv *database.Env) *UserRepository {
+func NewUserRepository(dbEnv *Env) *UserRepository {
 	return &UserRepository{
 		dbEnv,
 	}
 }
 
-func (ur *UserRepository) ListUsers(skip, limit uint64) ([]domain.User, error) {
+func (ur *UserRepository) ListUsers(pageNumber, pageSize int) ([]domain.User, error) {
 	var user []domain.User
-	result := ur.dbEnv.Db.Find(&user)
-	if result.RowsAffected == 0 {
-		return nil, domain.ErrDataNotFound
+	result := ur.dbEnv.Db.Scopes(Paginate(pageNumber, pageSize)).Find(&user)
+	err := HandleError(result)
+	if err != nil {
+		return nil, err
 	}
 	return user, nil
 }
@@ -28,8 +29,9 @@ func (ur *UserRepository) ListUsers(skip, limit uint64) ([]domain.User, error) {
 func (ur *UserRepository) GetUserById(id string) (*domain.User, error) {
 	var user *domain.User
 	result := ur.dbEnv.Db.Find(&user, "id = ? ", id)
-	if result.RowsAffected == 0 {
-		return nil, domain.ErrDataNotFound
+	err := HandleError(result)
+	if err != nil {
+		return nil, err
 	}
 	return user, nil
 }
@@ -37,8 +39,9 @@ func (ur *UserRepository) GetUserById(id string) (*domain.User, error) {
 func (ur *UserRepository) GetUserByUsername(username string) (*domain.User, error) {
 	var user *domain.User
 	result := ur.dbEnv.Db.Find(&user, "username = ? ", username)
-	if result.RowsAffected == 0 {
-		return nil, domain.ErrDataNotFound
+	err := HandleError(result)
+	if err != nil {
+		return nil, err
 	}
 	return user, nil
 }
@@ -46,8 +49,9 @@ func (ur *UserRepository) GetUserByUsername(username string) (*domain.User, erro
 func (ur *UserRepository) GetApprovedUserByUsername(username string) (*domain.User, error) {
 	var user *domain.User
 	result := ur.dbEnv.Db.Find(&user, "username = ? AND approved = true", username)
-	if result.RowsAffected == 0 {
-		return nil, domain.ErrDataNotFound
+	err := HandleError(result)
+	if err != nil {
+		return nil, err
 	}
 	return user, nil
 }

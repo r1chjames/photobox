@@ -27,13 +27,13 @@ func newResponse(success bool, message string, data any) response {
 
 // meta represents metadata for a paginated response
 type meta struct {
-	Total uint64 `json:"total" example:"100"`
-	Limit uint64 `json:"limit" example:"10"`
-	Skip  uint64 `json:"skip" example:"0"`
+	Total int `json:"total" example:"100"`
+	Limit int `json:"limit" example:"10"`
+	Skip  int `json:"skip" example:"0"`
 }
 
 // newMeta is a helper function to create metadata for a paginated response
-func newMeta(total, limit, skip uint64) meta {
+func newMeta(total, limit, skip int) meta {
 	return meta{
 		Total: total,
 		Limit: limit,

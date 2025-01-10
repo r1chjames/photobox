@@ -11,7 +11,7 @@ type UserRepository interface {
 	// CreateUser inserts a new user into the database
 	CreateUser(user *domain.User) (*domain.User, error)
 	// ListUsers selects a list of users with pagination
-	ListUsers(skip, limit uint64) ([]domain.User, error)
+	ListUsers(pageNumber, pageSize int) ([]domain.User, error)
 	// GetUserById selects a user by id
 	GetUserById(id string) (*domain.User, error)
 	// GetUserByUsername selects a user by id
@@ -33,7 +33,7 @@ type UserService interface {
 	// GetUser returns a user by id
 	GetUser(id string) (*domain.User, error)
 	// ListUsers returns a list of users with pagination
-	ListUsers(skip, limit uint64) ([]domain.User, error)
+	ListUsers(pageNumber, pageSize int) ([]domain.User, error)
 	// UpdateUser updates a user
 	UpdateUser(user *domain.User) (*domain.User, error)
 	// DeleteUser deletes a user

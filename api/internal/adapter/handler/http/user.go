@@ -66,8 +66,8 @@ func (uh *UserHandler) Register(ctx *gin.Context) {
 
 // listUsersRequest represents the request body for listing users
 type listUsersRequest struct {
-	Skip  uint64 `form:"skip" binding:"required,min=0" example:"0"`
-	Limit uint64 `form:"limit" binding:"required,min=5" example:"5"`
+	Skip  int `form:"skip" binding:"required,min=0" example:"0"`
+	Limit int `form:"limit" binding:"required,min=5" example:"5"`
 }
 
 // ListUsers godoc
@@ -103,7 +103,7 @@ func (uh *UserHandler) ListUsers(ctx *gin.Context) {
 		usersList = append(usersList, newUserResponse(&user))
 	}
 
-	total := uint64(len(usersList))
+	total := len(usersList)
 	meta := newMeta(total, req.Limit, req.Skip)
 	rsp := toMap(meta, usersList, "users")
 

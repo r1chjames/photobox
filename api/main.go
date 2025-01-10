@@ -8,6 +8,7 @@ import (
 	filesystemRepos "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/filesystem/repository"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"gitlab.com/r1chjames/photobox/api/internal/components"
+	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 	"gitlab.com/r1chjames/photobox/api/internal/core/service"
 	"log/slog"
@@ -21,8 +22,11 @@ func main() {
 	dbEnv.PerformDbSetup()
 
 	services := setupAppServices(dbEnv, appConfig)
+	services.utilityService.CreateBaseSettings(appConfig.ResetSettings)
+	services.jobService.CreateBaseJobs()
 	services.scheduler.StopAllRunningJobs()
 	services.scheduler.AddScheduledJobs()
+	addDefaultAdminUser(services.userService, appConfig)
 
 	http.NewDBEnv(dbEnv)
 	router, err := setupHttpHandlers(appConfig, services)
@@ -36,28 +40,18 @@ func main() {
 		slog.Error("Error initializing router", "error", err)
 		os.Exit(1)
 	}
-
-	//addDefaultAdminUser(dbEnv)
-	//dbEnv.createBaseSettings(appConfig.ResetSettings)
-	//dbEnv.createBaseJobs()
-
 }
 
-//func addDefaultAdminUser(dbEnv *database.Env) {
-//	defaultAdminUsername := utils.GetEnv("DEFAULT_ADMIN_USERNAME", "admin")
-//	defaultAdminPassword := utils.GetEnv("DEFAULT_ADMIN_PASSWORD", "password")
-//	user, err := dbEnv.GetUserByUsername(defaultAdminUsername)
-//	if user.ID == "" || err != nil {
-//		err := http2.CreateUser(http2.CreationOrUpdateRequest{
-//			Username: defaultAdminUsername,
-//			Password: defaultAdminPassword,
-//			Role:     domain.ADMINISTRATOR,
-//		}, true)
-//		if err != nil {
-//			return
-//		}
-//	}
-//}
+func addDefaultAdminUser(userService *service.UserService, config *appconfig.AppConfig) {
+	_, err := userService.CreateUser(&domain.User{
+		Username: config.AdminUsername,
+		Password: config.AdminPassword,
+	})
+
+	if err != nil {
+		slog.Info("Error creating default admin user", "error", err)
+	}
+}
 
 type AppServices struct {
 	scheduler         *components.Scheduler

@@ -1,16 +1,16 @@
 package repository
 
 import (
-	"gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
+	. "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gorm.io/gorm/clause"
 )
 
 type UtilityRepository struct {
-	dbEnv *database.Env
+	dbEnv *Env
 }
 
-func NewUtilityRepository(dbEnv *database.Env) *UtilityRepository {
+func NewUtilityRepository(dbEnv *Env) *UtilityRepository {
 	return &UtilityRepository{
 		dbEnv,
 	}
@@ -19,8 +19,9 @@ func NewUtilityRepository(dbEnv *database.Env) *UtilityRepository {
 func (ur *UtilityRepository) GetAllSettings() ([]*domain.Setting, error) {
 	var setting []*domain.Setting
 	result := ur.dbEnv.Db.Find(&setting)
-	if result.RowsAffected == 0 {
-		return nil, domain.ErrDataNotFound
+	err := HandleError(result)
+	if err != nil {
+		return nil, err
 	}
 	return setting, nil
 }
@@ -29,8 +30,9 @@ func (ur *UtilityRepository) GetSetting(key string) (*domain.Setting, error) {
 	var setting domain.Setting
 	setting.Key = key
 	result := ur.dbEnv.Db.Find(&setting)
-	if result.RowsAffected == 0 {
-		return nil, domain.ErrDataNotFound
+	err := HandleError(result)
+	if err != nil {
+		return nil, err
 	}
 	return &setting, nil
 }

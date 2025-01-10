@@ -30,4 +30,6 @@ type UtilityService interface {
 	ListAllSettings() ([]*domain.Setting, error)
 	//UpdateAllSettings updates all settings
 	UpdateAllSettings(settings []*domain.Setting) error
+	//CreateBaseSettings creates initial settings required for new instance
+	CreateBaseSettings(reset bool) error
 }

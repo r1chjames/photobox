@@ -1,17 +1,17 @@
 package repository
 
 import (
-	"gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
+	. "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gorm.io/gorm/clause"
 	"time"
 )
 
 type JobRepository struct {
-	dbEnv *database.Env
+	dbEnv *Env
 }
 
-func NewJobRepository(dbEnv *database.Env) *JobRepository {
+func NewJobRepository(dbEnv *Env) *JobRepository {
 	return &JobRepository{
 		dbEnv,
 	}
@@ -21,11 +21,12 @@ func (jr *JobRepository) IsJobRunning(name string) (bool, error) {
 	var job domain.Job
 	job.Name = name
 	result := jr.dbEnv.Db.First(&job)
-	if result.RowsAffected == 0 {
-		return false, domain.ErrDataNotFound
+	err := HandleError(result)
+	if err != nil {
+		return false, err
 	}
 	if job.Status == "RUNNING" {
-		return true, result.Error
+		return true, nil
 	}
 	return false, nil
 }
