@@ -17,7 +17,7 @@ func NewPhotoRepository(dbEnv *Env) *PhotoRepository {
 }
 
 func (pr *PhotoRepository) GetPhotoById(photoId string, includeThumbnail bool) (*domain.Photo, error) {
-	var photo *domain.Photo
+	var photo domain.Photo
 	photo.ID = photoId
 	result := pr.dbEnv.Db
 	if !includeThumbnail {
@@ -28,7 +28,7 @@ func (pr *PhotoRepository) GetPhotoById(photoId string, includeThumbnail bool) (
 	if err != nil {
 		return nil, err
 	}
-	return photo, nil
+	return &photo, nil
 }
 
 func (pr *PhotoRepository) ListAllPhotos(pageNumber, pageSize int, includeThumbnail bool) ([]*domain.Photo, error) {

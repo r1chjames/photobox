@@ -59,7 +59,7 @@ export const AlbumGrid: React.FunctionComponent<IProps> = (propsIn) => {
               align="flex-start"
               wrap="wrap"
           >
-          {albums.slice(0, props.maxDisplayed).map((album: Album) => {
+          {albums && albums.slice(0, props.maxDisplayed).map((album: Album) => {
             return(
               <article key={album.id}>
                 <AlbumCard

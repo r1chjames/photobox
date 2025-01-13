@@ -38,7 +38,7 @@ func (dbEnv *Env) PerformDbSetup() {
 }
 
 func HandleError(result *gorm.DB) error {
-	if result.RowsAffected == 0 || errors.Is(result.Error, gorm.ErrRecordNotFound) {
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return ErrDataNotFound
 	} else if result.Error != nil {
 		return result.Error

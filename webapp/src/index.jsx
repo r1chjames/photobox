@@ -4,15 +4,14 @@ import './index.css';
 import App from './App.tsx';
 import '@mantine/core/styles.css';
 import {BrowserRouter} from "react-router-dom";
-
-const baseApiUrl = "http://photobox:8080/api";
+import './appGlobals';
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
 root.render(
     <React.StrictMode>
         <BrowserRouter>
-            <App baseApiUrl={baseApiUrl}/>
+            <App baseApiUrl={globalThis.app.baseApiUrl}/>
         </BrowserRouter>
     </React.StrictMode>
 );

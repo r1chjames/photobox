@@ -1,11 +1,13 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Photo} from '../../Models/Photo';
 import {ActionIcon, Button, Card, Flex, Group, Image, Overlay, Text} from '@mantine/core';
 import {useNavigate} from "react-router-dom";
 import {IconArrowLeftDashed, IconArrowRightDashed, IconX} from "@tabler/icons-react";
 import {useHotkeys} from "@mantine/hooks";
+import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 
 interface IProps {
+    photosAdapter: IPhotosAdapter
     source: Photo;
     previousPhoto: () => void;
     nextPhoto: () => void;
@@ -16,6 +18,21 @@ interface IProps {
 
 export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const navigate = useNavigate()
+    const [fetchedImage, setFetchedImage] = useState<string | undefined>();
+    const img: React.Ref<HTMLImageElement> = React.createRef();
+
+    const fetchImage = async () => {
+        const data = await props.photosAdapter.getPhotoImage(props.source.id)
+        const blob = new Blob([data], {
+            type: 'image/jpeg',
+        });
+        const objectURL = URL.createObjectURL(blob)
+        setFetchedImage(objectURL);
+    }
+
+    useEffect(() => {
+        fetchImage();
+    }, [props.source])
 
     useHotkeys([
         ['ArrowLeft', () => props.previousPhoto()],
@@ -46,13 +63,16 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
         <Card shadow="sm" radius="md" padding={"xs"}
               onClick={() => navigate(`/photo/${props.source.id}`)}>
             <Card.Section>
-                <Image
-                    h={"500px"}
-                    fit={"cover"}
-                    w={"auto"}
-                    src={props.source.sourcePath}
-                    alt={props.source.name}
-                />
+                {fetchedImage ?
+                    <Image
+                        h={"500px"}
+                        fit={"cover"}
+                        w={"auto"}
+                        ref={img}
+                        src={fetchedImage}
+                        alt={props.source.name}
+                    /> :
+                    'Loading...'}
                 <Overlay color="#000" backgroundOpacity={0} opacity={0.5}>
                     <Flex direction="row" style={{width: "100%", justifyContent: "right"}}>
                         <ActionIcon color="dark" size="l" opacity={1}>
@@ -70,7 +90,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                     </Flex>
                 </Overlay>
             </Card.Section>
-            <Group justify="space-between" mt="md" mb="xs" >
+            <Group justify="space-between" mt="md" mb="xs">
                 <Text fw={500}>{props.source.name}</Text>
                 <Button onClick={() => navigate(`/photo/${props.source.id}`)} mt={50}>View</Button>
             </Group>

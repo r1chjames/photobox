@@ -5,23 +5,24 @@ export class Photo {
   private readonly _name: string;
   private readonly _filesystemPath: string;
   private readonly _sourcePath: string;
-  private readonly _thumbnailPath: string;
   private readonly _albumId: string;
   private readonly _tags: string;
   private readonly _metadata: Record<string, any>[];
   private readonly _createdAt: string;
+  private readonly _thumbnail: string;
+
 
   constructor(id: string, name: string, filesystemPath: string, sourcePath: string, thumbnailPath: string, albumId: string, tags: string,
-              metadata: Record<string, any>[], createdAt: string, apiBasePath: string) {
+              metadata: Record<string, any>[], createdAt: string, thumbnail: string) {
     this._id = id;
     this._name = name;
     this._filesystemPath = filesystemPath;
-    this._sourcePath = `${apiBasePath}/${sourcePath}`;
+    this._sourcePath = sourcePath;
     this._albumId = albumId;
     this._tags = tags;
     this._metadata = metadata;
     this._createdAt = createdAt;
-    this._thumbnailPath = `${apiBasePath}/${thumbnailPath}`
+    this._thumbnail = thumbnail;
   }
 
   get id(): string {
@@ -40,10 +41,6 @@ export class Photo {
     return this._sourcePath;
   }
 
-  get thumbnailPath(): string {
-    return this._thumbnailPath;
-  }
-
   get albumId(): string {
     return this._albumId;
   }
@@ -58,6 +55,11 @@ export class Photo {
 
   get createdAt(): string {
     return this._createdAt;
+  }
+
+
+  get thumbnail(): string {
+    return this._thumbnail;
   }
 
   getPhotoDate(): string {

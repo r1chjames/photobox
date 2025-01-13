@@ -14,7 +14,7 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumId: string) => {
         } else {
             retrievedPhotos = await photosAdapter.getAllPhotosInfo(nextGroupKey, count, true);
         }
-        if (retrievedPhotos.length > 0) {
+        if (retrievedPhotos && retrievedPhotos.length > 0) {
             setPhotos([...photos, ...retrievedPhotos])
         } else {
             setAllRetrieved(true);

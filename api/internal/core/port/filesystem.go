@@ -18,7 +18,7 @@ type FilesystemRepository interface {
 // FilesystemService is an interface for interacting with filesystem-related business logic
 type FilesystemService interface {
 	// PerformPhotoIndex initiates an index of image files on filesystem
-	PerformPhotoIndex()
+	PerformPhotoIndex(save func(PhotoFile) error)
 	// WriteFileToFilesystem writes a photo to the filesystem
 	WriteFileToFilesystem(photo PhotoUpload) PhotoFile
 	GenerateThumbnail(path string, exifData exif.Exif) []byte

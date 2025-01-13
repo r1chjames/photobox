@@ -83,10 +83,6 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 	albumRepo := repository.NewAlbumRepository(dbEnv)
 	albumService := service.NewAlbumService(albumRepo, *config)
 
-	// Photo
-	photoRepo := repository.NewPhotoRepository(dbEnv)
-	photoService := service.NewPhotoService(photoRepo, albumRepo, *config)
-
 	// Utility
 	utilityRepo := repository.NewUtilityRepository(dbEnv)
 	utilityService := service.NewUtilityService(utilityRepo)
@@ -96,11 +92,15 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 	jobService := service.NewJobService(jobRepo)
 
 	filesystemRepo := filesystemRepos.NewFilesystemRepository(*config, jobService)
-	filesystemService := service.NewFilesystemService(filesystemRepo, jobService, utilityService, photoService)
+	filesystemService := service.NewFilesystemService(filesystemRepo, jobService, utilityService)
+
+	// Photo
+	photoRepo := repository.NewPhotoRepository(dbEnv)
+	photoService := service.NewPhotoService(photoRepo, albumService, filesystemService, *config)
 
 	// Cron
 	return &AppServices{
-		components.NewScheduler(utilityService, jobService, filesystemService, *config),
+		components.NewScheduler(utilityService, jobService, photoService, *config),
 		token,
 		userService,
 		authService,
@@ -118,7 +118,7 @@ func setupHttpHandlers(
 
 	userHandler := http.NewUserHandler(appServices.userService)
 	authHandler := http.NewAuthHandler(appServices.authService)
-	photoHandler := http.NewPhotoHandler(appServices.photoService, appServices.jobService, appServices.filesystemService)
+	photoHandler := http.NewPhotoHandler(appServices.photoService, appServices.jobService)
 	albumHandler := http.NewAlbumHandler(appServices.albumService)
 	utilityHandler := http.NewUtilityHandler(appServices.utilityService)
 

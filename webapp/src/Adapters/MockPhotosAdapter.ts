@@ -17,8 +17,8 @@ export class MockPhotosAdapter implements IPhotosAdapter {
     return toReturn;
   }
 
-  public getPhotoInfoById = async (photoId: string): Promise<Photo[]> => {
-    return this._photos.filter(p => `p${p.id}` === photoId);
+  public getPhotoInfoById = async (photoId: string): Promise<Photo> => {
+    return this._photos.filter(p => `p${p.id}` === photoId)[0];
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

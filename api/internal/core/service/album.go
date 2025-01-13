@@ -19,8 +19,12 @@ func NewAlbumService(repo port.AlbumRepository, config appconfig.AppConfig) *Alb
 	}
 }
 
-func (as *AlbumService) GetAlbum(id string) (*domain.Album, error) {
+func (as *AlbumService) GetAlbumById(id string) (*domain.Album, error) {
 	return as.repo.GetAlbumById(id)
+}
+
+func (as *AlbumService) GetAlbumByName(name string) (*domain.Album, error) {
+	return as.repo.GetAlbumByName(name)
 }
 
 func (as *AlbumService) ListAlbums(page, limit int) ([]*domain.Album, error) {
@@ -29,4 +33,8 @@ func (as *AlbumService) ListAlbums(page, limit int) ([]*domain.Album, error) {
 
 func (as *AlbumService) AlbumCount() (int64, error) {
 	return as.repo.AlbumCount()
+}
+
+func (as *AlbumService) CreateAlbum(name string) (*domain.Album, error) {
+	return as.repo.CreateAlbum(name)
 }

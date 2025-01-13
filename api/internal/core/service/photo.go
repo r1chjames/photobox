@@ -12,16 +12,18 @@ import (
 )
 
 type PhotoService struct {
-	photoRepo port.PhotoRepository
-	albumRepo port.AlbumRepository
-	config    appconfig.AppConfig
+	photoRepo     port.PhotoRepository
+	albumSvc      port.AlbumService
+	filesystemSvc port.FilesystemService
+	config        appconfig.AppConfig
 }
 
 // NewPhotoService creates a new Photo service instance
-func NewPhotoService(photoRepo port.PhotoRepository, albumRepo port.AlbumRepository, config appconfig.AppConfig) *PhotoService {
+func NewPhotoService(photoRepo port.PhotoRepository, albumRepo port.AlbumService, filesystemSvc port.FilesystemService, config appconfig.AppConfig) *PhotoService {
 	return &PhotoService{
 		photoRepo,
 		albumRepo,
+		filesystemSvc,
 		config,
 	}
 }
@@ -51,6 +53,10 @@ func (ps *PhotoService) GetPhoto(photoId string, includeThumbnail bool) (*domain
 		return nil, domain.ErrDataNotFound
 	}
 	return resp, nil
+}
+
+func (ps *PhotoService) PerformPhotoIndex() {
+	ps.filesystemSvc.PerformPhotoIndex(ps.SavePhoto)
 }
 
 //func addPhoto(c *gin.Context) {
@@ -88,7 +94,7 @@ func (ps *PhotoService) PhotoThumbnail(photoId string) ([]byte, error) {
 }
 
 func (ps *PhotoService) setPhotoSourcePath(photo *domain.Photo) {
-	photo.SourcePath = fmt.Sprintf("%s/photo/%s}/bin", ps.config.ApiBasePath, photo.ID)
+	photo.SourcePath = fmt.Sprintf("photo/%s/bin", photo.ID)
 }
 
 func (ps *PhotoService) setPhotosSourcePath(photos []*domain.Photo) {
@@ -108,10 +114,10 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 }
 
 func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
-	result, err := ps.albumRepo.GetAlbumByName(photo.Directory)
+	result, err := ps.albumSvc.GetAlbumByName(photo.Directory)
 	var albumId string
 	if result == nil || err != nil {
-		newAlbumId, albErr := ps.albumRepo.CreateAlbum(photo.Directory)
+		newAlbumId, albErr := ps.albumSvc.CreateAlbum(photo.Directory)
 		if albErr != nil {
 			log.Printf("unable to insert album record, %s", albErr)
 		}

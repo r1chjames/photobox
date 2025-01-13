@@ -24,7 +24,7 @@ func (ah *AlbumHandler) GetAlbum(ctx *gin.Context) {
 		ctx.IndentedJSON(http.StatusBadRequest, &apiError{http.StatusNotFound, missingQueryParam("album ID")})
 	}
 
-	resp, err := ah.svc.GetAlbum(albumId)
+	resp, err := ah.svc.GetAlbumById(albumId)
 	handleError(ctx, err)
 	handleSuccess(ctx, resp)
 }

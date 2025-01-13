@@ -38,4 +38,6 @@ type PhotoService interface {
 	SavePhoto(photo domain.PhotoFile) error
 	//SavePhotos saves photos to database
 	SavePhotos(photos []domain.PhotoFile) error
+	// PerformPhotoIndex initiates an index of image files on filesystem
+	PerformPhotoIndex()
 }

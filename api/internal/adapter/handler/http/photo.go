@@ -10,17 +10,15 @@ import "net/http"
 
 // PhotoHandler represents the HTTP handler for photo-related requests
 type PhotoHandler struct {
-	photoSvc      port.PhotoService
-	jobSvc        port.JobService
-	filesystemSvc port.FilesystemService
+	photoSvc port.PhotoService
+	jobSvc   port.JobService
 }
 
 // NewPhotoHandler creates a new PhotoHandler instance
-func NewPhotoHandler(photoSvc port.PhotoService, jobSvc port.JobService, filesystemSvc port.FilesystemService) *PhotoHandler {
+func NewPhotoHandler(photoSvc port.PhotoService, jobSvc port.JobService) *PhotoHandler {
 	return &PhotoHandler{
 		photoSvc,
 		jobSvc,
-		filesystemSvc,
 	}
 }
 
@@ -114,7 +112,7 @@ func (ph *PhotoHandler) IndexPhotos(c *gin.Context) {
 	} else {
 		c.Status(http.StatusAccepted)
 		go func() {
-			ph.filesystemSvc.PerformPhotoIndex()
+			ph.photoSvc.PerformPhotoIndex()
 		}()
 	}
 }

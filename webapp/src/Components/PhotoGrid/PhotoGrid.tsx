@@ -53,7 +53,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         <div className="item">
             <div className="thumbnail">
                 <img
-                    src={photo.thumbnailPath}
+                    src={`data:image/png;base64,${photo.thumbnail}`}
                     alt={photo.name}
                     onClick={() => toggleModal(index)}
                     // data-grid-maintained-target="true"
@@ -113,6 +113,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                     transitionProps={{transition: 'fade', duration: 200}}
                     onClose={() => toggleModal(0)}>
                     <PhotoCard
+                        photosAdapter={props.photosAdapter}
                         source={photos[currentIndex]}
                         previousPhoto={() => handlePreviousPhoto()}
                         nextPhoto={() => handleNextPhoto()}

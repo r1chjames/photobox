@@ -24,10 +24,14 @@ type AlbumRepository interface {
 
 // AlbumService is an interface for interacting with Album-related business logic
 type AlbumService interface {
-	//GetAlbum returns a Album
-	GetAlbum(id string) (*domain.Album, error)
+	// GetAlbumById returns an album using its ID
+	GetAlbumById(id string) (*domain.Album, error)
+	// GetAlbumByName returns an album using its name
+	GetAlbumByName(name string) (*domain.Album, error)
 	// ListAlbums returns all albums
 	ListAlbums(page, limit int) ([]*domain.Album, error)
 	// AlbumCount returns a count of all albums
 	AlbumCount() (int64, error)
+	// CreateAlbum creates an album
+	CreateAlbum(name string) (*domain.Album, error)
 }

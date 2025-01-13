@@ -100,6 +100,10 @@ func handleError(ctx *gin.Context, err error) {
 	if err == nil {
 		return
 	}
+
+	if errors.Is(err, domain.ErrDataNotFound) {
+		return
+	}
 	statusCode, ok := errorStatusMap[err]
 	if !ok {
 		statusCode = http.StatusInternalServerError

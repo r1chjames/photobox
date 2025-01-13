@@ -9,19 +9,19 @@ import (
 )
 
 type Scheduler struct {
-	cron          *cron.Cron
-	jobSvc        port.JobService
-	utilSvc       port.UtilityService
-	filesystemSvc port.FilesystemService
-	config        appconfig.AppConfig
+	cron     *cron.Cron
+	jobSvc   port.JobService
+	utilSvc  port.UtilityService
+	photoSvc port.PhotoService
+	config   appconfig.AppConfig
 }
 
-func NewScheduler(utilityService port.UtilityService, jobService port.JobService, filesystemSvc port.FilesystemService, appConfig appconfig.AppConfig) *Scheduler {
+func NewScheduler(utilityService port.UtilityService, jobService port.JobService, photoSvc port.PhotoService, appConfig appconfig.AppConfig) *Scheduler {
 	var scheduler = &Scheduler{
 		cron.New(cron.WithLocation(appConfig.Timezone)),
 		jobService,
 		utilityService,
-		filesystemSvc,
+		photoSvc,
 		appConfig,
 	}
 
@@ -36,7 +36,7 @@ func (s *Scheduler) AddScheduledJobs() {
 	}
 
 	_, err = s.cron.AddFunc(setting.Value, func() {
-		s.filesystemSvc.PerformPhotoIndex()
+		s.photoSvc.PerformPhotoIndex()
 	})
 	if err != nil {
 		log.Printf("unable to add job schedule for %s. Parsed CRON expression: %s. Check CRON expression in settings", setting.Key, setting.Value)

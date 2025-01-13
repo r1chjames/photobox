@@ -21,20 +21,18 @@ type FilesystemService struct {
 	fsRepo     port.FilesystemRepository
 	jobSvc     port.JobService
 	utilitySvc port.UtilityService
-	photoSvc   port.PhotoService
 }
 
 // NewFilesystemService creates a new filesystem service instance
-func NewFilesystemService(fsRepo port.FilesystemRepository, jobSvc port.JobService, utilitySvc port.UtilityService, photoSvc port.PhotoService) *FilesystemService {
+func NewFilesystemService(fsRepo port.FilesystemRepository, jobSvc port.JobService, utilitySvc port.UtilityService) *FilesystemService {
 	return &FilesystemService{
 		fsRepo,
 		jobSvc,
 		utilitySvc,
-		photoSvc,
 	}
 }
 
-func (fss *FilesystemService) PerformPhotoIndex() {
+func (fss *FilesystemService) PerformPhotoIndex(save func(PhotoFile) error) {
 	_ = fss.jobSvc.JobStart("Photo_index")
 	log.Print("Starting photo index")
 
@@ -53,7 +51,10 @@ func (fss *FilesystemService) PerformPhotoIndex() {
 				log.Printf("Unable to process photo at path %s", err)
 			}
 			photo := fss.getMetaData(path, photoFile.Name(), photoFile.Size())
-			fss.photoSvc.SavePhoto(photo)
+			err = save(photo)
+			if err != nil {
+				log.Printf("Unable to save photo %s", err)
+			}
 		}
 	}(photoChan)
 	fss.fsRepo.ScanFilesystem(photoChan)

@@ -81,18 +81,6 @@ export const LoginCard: React.FunctionComponent<IProps> = (props) => {
             />
         ));
 
-
-    const keyPress = (e: any) => {
-        switch (e.which) {
-            case 37: {
-                // left
-                props.previousPhoto();
-                break
-            }
-            default:
-        }
-    }
-
     const handleSubmit = async () => {
         let token;
         switch (segmentedValue) {
@@ -103,7 +91,7 @@ export const LoginCard: React.FunctionComponent<IProps> = (props) => {
                 token = await props.usersAdapter.register(new User(username, email, registrationPassword));
                 break;
         }
-        localStorage.setItem("token", token.access_token);
+        localStorage.setItem("token", token.token);
         navigate("/")
     };
 

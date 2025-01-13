@@ -32,7 +32,7 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, id: string) => {
                         (
                             <PhotoCard
                                 src={imageSource.sourcePath}
-                                thumbnail={imageSource.sourcePath}
+                                thumbail={`data:image/png;base64,${imageSource.thumbnail}`}
                                 groupKey={groupKey}
                                 key={start + i}
                                 source={imageSource}

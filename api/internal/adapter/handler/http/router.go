@@ -80,19 +80,19 @@ func defineResources(
 		albums.GET("/count", albumHandler.AlbumCount)
 	}
 
-	photos := router.Group(fmt.Sprintf("%s/photos", urlBasePath)).Use(authMiddleware(token))
-	{
-		photos.GET("", photoHandler.ListPhotos)
-		photos.GET("/count", photoHandler.GetPhotoCount)
-		photos.POST("/index", photoHandler.IndexPhotos)
-	}
-
 	photo := router.Group(fmt.Sprintf("%s/photo", urlBasePath)).Use(authMiddleware(token))
 	{
 		//photo.POST("", addPhoto)
 		photo.GET("/:id", photoHandler.GetPhoto)
 		photo.GET("/:id/thumbnail", photoHandler.GetPhotoThumbnail)
 		photo.GET("/:id/bin", photoHandler.GetPhotoBin)
+	}
+
+	photos := router.Group(fmt.Sprintf("%s/photos", urlBasePath)).Use(authMiddleware(token))
+	{
+		photos.GET("", photoHandler.ListPhotos)
+		photos.GET("/count", photoHandler.GetPhotoCount)
+		photos.POST("/index", photoHandler.IndexPhotos)
 	}
 
 	settings := router.Group(urlBasePath).Use(authMiddleware(token))

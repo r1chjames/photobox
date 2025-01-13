@@ -17,8 +17,8 @@ export class UsersAdapter implements IUsersAdapter {
     return { ...standardHeaders, ...additionalHeaders };
   }
 
-  public login = async (user: User): Promise<string> => {
-    const loginPath = "user/login";
+  public login = async (user: User): Promise<Token> => {
+    const loginPath = "login";
     const body = {
       username: user.getUsername(),
       password: user.getPassword(),
@@ -26,7 +26,7 @@ export class UsersAdapter implements IUsersAdapter {
     return this.restApiAdapter.postApiCall(loginPath, body, this.buildHeaders());
   }
 
-  public register = async (user: User) => {
+  public register = async (user: User): Promise<User> => {
     const registerPath = "user/register";
     const body = {
       username: user.getUsername(),
@@ -34,5 +34,18 @@ export class UsersAdapter implements IUsersAdapter {
       password: user.getPassword(),
     };
     return this.restApiAdapter.postApiCall(registerPath, body, this.buildHeaders());
+  }
+}
+
+export class Token {
+
+  private readonly _token: string;
+
+  constructor(token: string) {
+    this._token = token;
+  }
+
+  get token() {
+    return this._token;
   }
 }
