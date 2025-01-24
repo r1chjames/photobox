@@ -1,24 +1,29 @@
 import React, { useEffect, useState } from 'react';
-import './SettingsView.css';
 import { Setting } from '../../Models/Setting';
-import { SettingsAdapter } from '../../Adapters/SettingsAdapter';
 import { SettingModal } from '../SettingModal/SettingModal';
 import {InfoSnackbar} from '../Snackbar/InfoSnackbar';
-import {ActionIcon, Table, TextInput} from '@mantine/core';
-import {MdAdd, MdCancel, MdSave} from 'react-icons/md';
-import {ImPencil} from 'react-icons/im';
+import {ActionIcon, Button, Flex, Table, TextInput} from '@mantine/core';
+import {
+    IconDeviceFloppy,
+    IconLayoutGridAdd,
+    IconPencil,
+    IconPencilCancel
+} from "@tabler/icons-react";
+import {ISettingsAdapter} from "../../Adapters/ISettingsAdapter";
+import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 
 interface IProps {
-    settingsAdapter: SettingsAdapter;
+    settingsAdapter: ISettingsAdapter;
+    photosAdapter: IPhotosAdapter;
 }
 
-const getAllSettings = async (propsSettingsAdapter: SettingsAdapter) => {
+const getAllSettings = async (propsSettingsAdapter: ISettingsAdapter) => {
   const settingsAdapter = propsSettingsAdapter;
   const allSettings: Setting[] = await settingsAdapter.getAllSettings();
   return allSettings;
 };
 
-const handleSaveSettings = async (settings: Setting[], propsSettingsAdapter: SettingsAdapter) => {
+const handleSaveSettings = async (settings: Setting[], propsSettingsAdapter: ISettingsAdapter) => {
   const settingsAdapter = propsSettingsAdapter;
   await settingsAdapter.updateSettings(settings);
 };
@@ -35,7 +40,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
       const retrievedSettings = await getAllSettings(props.settingsAdapter);
       setSettings(retrievedSettings);
     })();
-  },        [setSettings, props.settingsAdapter]);
+  },[setSettings]);
 
   const handleValueChange = (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>, setting: Setting) => {
     const i = settings.findIndex(k => k.key === setting.key);
@@ -45,55 +50,55 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
   const tableRow = (setting: Setting) => {
     if (editing) {
       return (
-        <tr key={setting.key}>
-          <td>
+        <Table.Tr>
+          <Table.Td>
             {setting.key}
-          </td>
-          <td>
+          </Table.Td>
+          <Table.Td>
             <TextInput
               defaultValue={setting.value}
               onChange={event => handleValueChange(event, setting)}
             />
-          </td>
-          <td>
+          </Table.Td>
+          <Table.Td>
             <TextInput
               defaultValue={setting.friendlyName}
               onChange={event => handleValueChange(event, setting)}
             />
-          </td>
-          <td>
+          </Table.Td>
+          <Table.Td>
             <TextInput
               defaultValue={setting.category}
               onChange={event => handleValueChange(event, setting)}
             />
-          </td>
-          <td>
+          </Table.Td>
+          <Table.Td>
             <TextInput
               defaultValue={setting.description}
               onChange={event => handleValueChange(event, setting)}
             />
-          </td>
-        </tr>
+          </Table.Td>
+        </Table.Tr>
       );
     }
     return (
-      <tr key={setting.key}>
-        <td>
+      <Table.Tr>
+        <Table.Td>
           {setting.key}
-        </td>
-        <td>
+        </Table.Td>
+        <Table.Td>
           {setting.value}
-        </td>
-        <td>
+        </Table.Td>
+        <Table.Td>
           {setting.friendlyName}
-        </td>
-        <td>
+        </Table.Td>
+        <Table.Td>
           {setting.category}
-        </td>
-        <td>
+        </Table.Td>
+        <Table.Td>
           {setting.description}
-        </td>
-      </tr>
+        </Table.Td>
+      </Table.Tr>
     );
   };
 
@@ -105,29 +110,39 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
   const addCancelButton = () => {
     if (editing) {
       return (
-        <MdCancel onClick={() => resetForm()} />
+        <IconPencilCancel onClick={() => resetForm()} />
       );
     }
     return (
-      <ImPencil onClick={() => setEditing(true)} />
+      <IconPencil onClick={() => setEditing(true)} />
     );
   };
 
   const editingButton = () => {
     if (editing) {
       return (
-        <MdSave
-          onClick={() => {
-            handleSaveSettings(settings, props.settingsAdapter);
-            setEditing(false);
-            setShowSnackbar(true);
-          }}
-        />
+          <IconDeviceFloppy size="2.125rem"
+              onClick={() => {
+                handleSaveSettings(settings, props.settingsAdapter);
+                setEditing(false);
+                setShowSnackbar(true);
+              }}
+          />
       );
     }
     return (
-      <MdAdd onClick={() => setShowModal(true)} />
+        <IconLayoutGridAdd size="2.125rem" onClick={() => setShowModal(true)}/>
     );
+  };
+
+  const handleIndex = async () => {
+      return await props.photosAdapter.index();
+  }
+
+  const snackbar = () => {
+      if (showSnackbar) {
+          return(<InfoSnackbar text={'Settings saved'} show={showSnackbar} handleStopShowing={() => setShowSnackbar(false)}/>)
+      }
   };
 
   const handleModalSave = (key: string, value: string, friendlyName: string, category: string, description: string) => {
@@ -145,29 +160,34 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
           handleSave={handleModalSave}
           handleClose={() => setShowModal(false)}
         />
-          <Table aria-label="settings table">
-            <thead>
-              <tr>
-                <th>Setting</th>
-                <th>Value</th>
-                <th>Friendly Name</th>
-                <th>Category</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
+        <Table>
+            <Table.Thead>
+                <Table.Tr>
+                    <Table.Th>Setting</Table.Th>
+                    <Table.Th>Value</Table.Th>
+                    <Table.Th>Friendly Name</Table.Th>
+                    <Table.Th>Category</Table.Th>
+                    <Table.Th>Description</Table.Th>
+                </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
               {settings.map((setting: Setting) => (
                 tableRow(setting)
               ))}
-            </tbody>
+            </ Table.Tbody>
           </Table>
-        <InfoSnackbar text={'Settings saved'} show={showSnackbar} handleStopShowing={() => setShowSnackbar(false)}/>
-        <ActionIcon color="primary" aria-label="add" className="settingsView__addButton">
-          {addCancelButton()}
-        </ActionIcon>
-        <ActionIcon color="primary" aria-label="edit" className="settingsView__saveEditButton">
-          {editingButton()}
-        </ActionIcon>
+        <Flex direction="row" style={{width: "100%", justifyContent: "right"}}>
+            <ActionIcon color="dark" size="xl" m={"1rem"}>
+              {addCancelButton()}
+            </ActionIcon>
+            <ActionIcon color="dark" size="xl" m={"1rem"}>
+              {editingButton()}
+            </ActionIcon>
+        </Flex>
+        <Button onClick={() => handleIndex()}>
+            Index
+        </Button>
+        {snackbar()}
     </div>
   );
 };

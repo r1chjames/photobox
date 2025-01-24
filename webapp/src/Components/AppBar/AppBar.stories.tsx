@@ -8,6 +8,9 @@ import React from 'react';
 import {PhotoGrid} from "../PhotoGrid/PhotoGrid";
 import {Dashboard} from "../Dashboard/Dashboard";
 import {PhotoDetail} from "../PhotoDetail/PhotoDetail";
+import {SettingsView} from "../SettingsView/SettingsView";
+import {MockSettingsAdapter} from "../../Adapters/MockSettingsAdapter";
+import {Setting} from "../../Models/Setting";
 
 const meta: Meta<typeof AppBar> = {
     component: AppBar,
@@ -75,6 +78,24 @@ export const Albums: Story = {
                 photosAdapter={new MockPhotosAdapter()
                                 .withPhotos(albumWithPhotos.getPhotos())}
                 maxDisplayed={20}
+            />
+        </AppBar>
+    )
+};
+
+const settings = [
+    new Setting("thumbnail_width", "600", "Thumbnail width", "Photo", "Thumbnail width used during thumbnail generation"),
+    new Setting("thumbnail_height", "600", "Thumbnail height", "Photo", "Thumbnail height used during thumbnail generation"),
+    new Setting("default_new_albums_dir", "/photos", "New album storage location", "System", "Default location on disk to store new albums"),
+    new Setting("index_frequency_cron", "0 1 * * *", "CRON expression for indexing", "System", "CRON expression used to initiate indexing")
+];
+
+export const Settings: Story = {
+    render: () => (
+        <AppBar activeLink={Labels.Settings}>
+            <SettingsView
+                settingsAdapter={new MockSettingsAdapter()
+            .withSettings(settings)}
             />
         </AppBar>
     )

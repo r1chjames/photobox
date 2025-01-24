@@ -1,7 +1,8 @@
 import { Setting } from '../Models/Setting';
 import {IRestApiAdapter} from "./RestApiAdapter";
+import {ISettingsAdapter} from "./ISettingsAdapter";
 
-export class SettingsAdapter {
+export class SettingsAdapter implements ISettingsAdapter {
 
   private restApiAdapter: IRestApiAdapter;
 
@@ -16,7 +17,7 @@ export class SettingsAdapter {
     return { ...standardHeaders, ...additionalHeaders };
   }
 
-  public getAllSettings = async () => {
+  public getAllSettings = async (): Promise<Setting[]> => {
     const getAllSettingsPath = "settings";
     return this.restApiAdapter.getApiCall(getAllSettingsPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }

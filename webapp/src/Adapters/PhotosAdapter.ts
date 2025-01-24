@@ -50,8 +50,13 @@ export class PhotosAdapter implements IPhotosAdapter {
   }
 
   public uploadPhoto = async (body: Record<string, unknown>) => {
-    const postSettingPath = `photo`;
-    return this.restApiAdapter.postApiCall(postSettingPath, body, this.buildHeaders(this.restApiAdapter.authHeader()));
+    const uploadPhotoPath = `photo`;
+    return this.restApiAdapter.postApiCall(uploadPhotoPath, body, this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
+
+  public index = async () => {
+    const indexPath = 'photos/index';
+    return this.restApiAdapter.postApiCall(indexPath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 }
 

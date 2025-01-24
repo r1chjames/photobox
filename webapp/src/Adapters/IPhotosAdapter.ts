@@ -8,4 +8,5 @@ export interface IPhotosAdapter {
   getPhotoCountInAlbum(albumId: string): Promise<any>;
   getPhotoImage(photoId: string): Promise<any>;
   uploadPhoto(body: Record<string, unknown>): Promise<any>;
+  index(): Promise<any>;
 }

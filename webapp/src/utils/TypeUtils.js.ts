@@ -9,6 +9,6 @@ export const isJson = (str: string) => {
 
 export const valueType = (value: any) => {
     if (isJson(value)) return 'json'
-    if (typeof value === 'object' || Array.isArray(value)) return 'object'
     if (typeof value === 'string') return 'string'
+    if (typeof value === 'object' || Array.isArray(value)) return 'object'
 }

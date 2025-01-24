@@ -5,6 +5,7 @@ import {useNavigate} from "react-router-dom";
 import {IconArrowLeftDashed, IconArrowRightDashed, IconX} from "@tabler/icons-react";
 import {useHotkeys} from "@mantine/hooks";
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
+import {fetchPhotoBinWithAuth} from "../../utils/ImageUtils";
 
 interface IProps {
     photosAdapter: IPhotosAdapter
@@ -22,12 +23,8 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const img: React.Ref<HTMLImageElement> = React.createRef();
 
     const fetchImage = async () => {
-        const data = await props.photosAdapter.getPhotoImage(props.source.id)
-        const blob = new Blob([data], {
-            type: 'image/jpeg',
-        });
-        const objectURL = URL.createObjectURL(blob)
-        setFetchedImage(objectURL);
+        const imageUrl = await fetchPhotoBinWithAuth(props.photosAdapter, props.source.id);
+        setFetchedImage(imageUrl);
     }
 
     useEffect(() => {

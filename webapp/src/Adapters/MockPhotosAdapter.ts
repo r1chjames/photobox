@@ -39,4 +39,8 @@ export class MockPhotosAdapter implements IPhotosAdapter {
   public uploadPhoto = async (body: Record<string, unknown>) => {
     return null;
   }
+
+  public index = async () => {
+    return null;
+  }
 }

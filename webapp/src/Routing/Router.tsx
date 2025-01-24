@@ -20,7 +20,7 @@ interface IProps {
 
 const ProtectedRoute = (props: { children: React.ReactNode }) => {
     const token = localStorage.getItem('token');
-    if (token == null) {
+    if (token === null) {
         return <Navigate to={"/login"}/>;
     }
 
@@ -70,7 +70,7 @@ export default class Router extends Component<IProps> {
                     element={
                         <ProtectedRoute>
                             <AppBar activeLink={Labels.Photos}>
-                                <PhotoDetail />
+                                <PhotoDetail photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}/>
                             </AppBar>
                         </ProtectedRoute>
                     }
@@ -117,6 +117,7 @@ export default class Router extends Component<IProps> {
                             <AppBar activeLink={Labels.Settings}>
                                 <SettingsView
                                     settingsAdapter={new SettingsAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                                    photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
                                 />
                             </AppBar>
                         </ProtectedRoute>

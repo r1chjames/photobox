@@ -65,21 +65,21 @@ export const AlbumGrid: React.FunctionComponent<IProps> = (propsIn) => {
                 <AlbumCard
                   photosAdapter={props.photosAdapter}
                   source={album}
-                  albumViewCallback={() => navigate(`album/${album.id}`)}
+                  albumViewCallback={() => navigate(`../album/${album.id}`)}
                 />
               </article>
             );
           })}
           </Flex>
         </section>
-        <Button
-          color="primary"
-          aria-label="add"
-          className="albumIndexView__addButton"
-          onClick={() => handleCreateNewAlbum()}
-        >
-          <MdAddCircle/>
-        </Button>
+        {/*<Button*/}
+        {/*  color="primary"*/}
+        {/*  aria-label="add"*/}
+        {/*  className="albumIndexView__addButton"*/}
+        {/*  onClick={() => handleCreateNewAlbum()}*/}
+        {/*>*/}
+        {/*  <MdAddCircle/>*/}
+        {/*</Button>*/}
     </div>
   );
 };

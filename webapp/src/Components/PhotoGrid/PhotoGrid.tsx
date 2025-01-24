@@ -119,7 +119,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                         nextPhoto={() => handleNextPhoto()}
                         firstInAlbum={currentIndex === 0}
                         lastInAlbum={currentIndex === photos.length}
-                        closeModal={() => setImageModalOpen(false)}
+                        closeModal={() => toggleModal(0)}
                     />
                 </Modal>
             </>
