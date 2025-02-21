@@ -9,6 +9,7 @@ import (
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 	"gitlab.com/r1chjames/photobox/api/internal/core/utils"
 	"log"
+	"time"
 )
 
 type PhotoService struct {
@@ -28,8 +29,8 @@ func NewPhotoService(photoRepo port.PhotoRepository, albumRepo port.AlbumService
 	}
 }
 
-func (ps *PhotoService) ListPhotosInAlbum(albumId string, page, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
-	resp, err := ps.photoRepo.ListAllPhotosInAlbum(albumId, page, limit, includeThumbnail)
+func (ps *PhotoService) ListPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	resp, err := ps.photoRepo.ListAllPhotosInAlbum(albumId, fromId, limit, includeThumbnail)
 	ps.setPhotosSourcePath(resp)
 	if err != nil {
 		return nil, domain.ErrDataNotFound
@@ -37,8 +38,8 @@ func (ps *PhotoService) ListPhotosInAlbum(albumId string, page, limit int, inclu
 	return resp, nil
 }
 
-func (ps *PhotoService) ListPhotos(page, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
-	resp, err := ps.photoRepo.ListAllPhotos(page, limit, includeThumbnail)
+func (ps *PhotoService) ListPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	resp, err := ps.photoRepo.ListAllPhotos(fromId, limit, includeThumbnail)
 	ps.setPhotosSourcePath(resp)
 	if err != nil {
 		return nil, domain.ErrDataNotFound
@@ -136,6 +137,7 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 		Tags:           "",
 		Metadata:       photoMetadata,
 		Thumbnail:      photo.Thumbnail,
+		CreatedEpoch:   time.Now().UnixMilli(),
 	}
 
 	log.Printf("Adding photo: %s to album: %s", photo.Name, photo.Directory)

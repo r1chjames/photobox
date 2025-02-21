@@ -22,6 +22,12 @@ func NewPhotoHandler(photoSvc port.PhotoService, jobSvc port.JobService) *PhotoH
 	}
 }
 
+func photosPaginationParams(resp []*domain.Photo) (string, string) {
+	fromId := strconv.FormatInt(resp[0].CreatedEpoch, 10)
+	toId := strconv.FormatInt(resp[len(resp)-1].CreatedEpoch, 10)
+	return fromId, toId
+}
+
 // ListPhotos godoc
 //
 //	@Summary		Get photos
@@ -38,7 +44,7 @@ func NewPhotoHandler(photoSvc port.PhotoService, jobSvc port.JobService) *PhotoH
 //	@Security		BearerAuth
 func (ph *PhotoHandler) ListPhotos(ctx *gin.Context) {
 	albumId := ctx.Query("albumId")
-	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	fromId := ctx.Query("fromId")
 	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
 	includeThumbnail, err := strconv.ParseBool(ctx.DefaultQuery("thumbnail", "false"))
 	if err != nil {
@@ -48,14 +54,15 @@ func (ph *PhotoHandler) ListPhotos(ctx *gin.Context) {
 	var photoResp []*domain.Photo
 
 	if albumId != "" {
-		photoResp, err = ph.photoSvc.ListPhotosInAlbum(albumId, page, limit, includeThumbnail)
+		photoResp, err = ph.photoSvc.ListPhotosInAlbum(albumId, fromId, limit, includeThumbnail)
 		handleError(ctx, err)
 	} else {
-		photoResp, err = ph.photoSvc.ListPhotos(page, limit, includeThumbnail)
+		photoResp, err = ph.photoSvc.ListPhotos(fromId, limit, includeThumbnail)
 		handleError(ctx, err)
 	}
 
-	handlePaginatedSuccess(ctx, photoResp, photoResp[0].ID, photoResp[len(photoResp)-1].ID, len(photoResp))
+	fromId, toId := photosPaginationParams(photoResp)
+	handlePaginatedSuccess(ctx, photoResp, fromId, toId, len(photoResp))
 }
 
 func (ph *PhotoHandler) GetPhoto(ctx *gin.Context) {

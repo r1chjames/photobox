@@ -1,10 +1,12 @@
 package repository
 
 import (
+	b64 "encoding/base64"
 	"github.com/google/uuid"
 	. "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gorm.io/gorm/clause"
+	"time"
 )
 
 type AlbumRepository struct {
@@ -42,6 +44,7 @@ func (ar *AlbumRepository) CreateAlbum(name string) (*domain.Album, error) {
 	var album domain.Album
 	album.ID = uuid.New().String()
 	album.Name = name
+	album.CreatedEpoch = time.Now().UnixMilli()
 	ar.dbEnv.Db.Create(&album)
 	return &album, nil
 }
@@ -50,6 +53,7 @@ func (ar *AlbumRepository) CreateAlbumIfNotExists(name string) (*domain.Album, e
 	var album domain.Album
 	album.ID = uuid.New().String()
 	album.Name = name
+	album.CreatedEpoch = time.Now().UnixMilli()
 
 	ar.dbEnv.Db.Clauses(clause.OnConflict{
 		DoNothing: true,
@@ -57,9 +61,14 @@ func (ar *AlbumRepository) CreateAlbumIfNotExists(name string) (*domain.Album, e
 	return &album, nil
 }
 
-func (ar *AlbumRepository) ListAllAlbums(page int, limit int) ([]*domain.Album, error) {
+func (ar *AlbumRepository) ListAllAlbums(fromId string, limit int) ([]*domain.Album, error) {
 	var albums []*domain.Album
-	result := ar.dbEnv.Db.Scopes(Paginate(page, limit)).Find(&albums)
+	result := ar.dbEnv.Db.Model(&[]domain.Album{}).Limit(limit)
+	if fromId != "" {
+		fromEpoch, _ := b64.StdEncoding.DecodeString(fromId)
+		result.Where("created_epoch > ?", fromEpoch)
+	}
+	result.Find(&albums)
 	err := HandleError(result)
 	if err != nil {
 		return nil, err

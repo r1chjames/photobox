@@ -1,6 +1,7 @@
 package repository
 
 import (
+	b64 "encoding/base64"
 	. "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gorm.io/gorm/clause"
@@ -31,9 +32,13 @@ func (pr *PhotoRepository) GetPhotoById(photoId string, includeThumbnail bool) (
 	return &photo, nil
 }
 
-func (pr *PhotoRepository) ListAllPhotos(pageNumber, pageSize int, includeThumbnail bool) ([]*domain.Photo, error) {
+func (pr *PhotoRepository) ListAllPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
-	result := pr.dbEnv.Db.Scopes(Paginate(pageNumber, pageSize))
+	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Limit(limit)
+	if fromId != "" {
+		fromEpoch, _ := b64.StdEncoding.DecodeString(fromId)
+		result.Where("created_epoch > ?", fromEpoch)
+	}
 	if !includeThumbnail {
 		result.Omit("thumbnail")
 	}
@@ -44,9 +49,13 @@ func (pr *PhotoRepository) ListAllPhotos(pageNumber, pageSize int, includeThumbn
 	return photos, nil
 }
 
-func (pr *PhotoRepository) ListAllPhotosInAlbum(albumId string, pageNumber, pageSize int, includeThumbnail bool) ([]*domain.Photo, error) {
+func (pr *PhotoRepository) ListAllPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
-	result := pr.dbEnv.Db.Scopes(Paginate(pageNumber, pageSize))
+	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Limit(limit)
+	if fromId != "" {
+		fromEpoch, _ := b64.StdEncoding.DecodeString(fromId)
+		result.Where("created_epoch > ?", fromEpoch)
+	}
 	if !includeThumbnail {
 		result.Omit("thumbnail")
 	}

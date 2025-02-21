@@ -14,6 +14,7 @@ type Photo struct {
 	Tags           string         `json:"tags"`
 	Metadata       datatypes.JSON `json:"metadata"`
 	CreatedAt      time.Time      `json:"createdAt"`
+	CreatedEpoch   int64          `json:"createdEpoch"`
 	UpdatedAt      time.Time      `json:"updatedAt"`
 	Thumbnail      []byte         `json:"thumbnail"`
 }

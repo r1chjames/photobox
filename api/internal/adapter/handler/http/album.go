@@ -2,6 +2,7 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
+	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 	"net/http"
 	"strconv"
@@ -29,13 +30,21 @@ func (ah *AlbumHandler) GetAlbum(ctx *gin.Context) {
 	handleSuccess(ctx, resp)
 }
 
+func albumPaginationParams(resp []*domain.Album) (string, string) {
+	fromId := strconv.FormatInt(resp[0].CreatedEpoch, 10)
+	toId := strconv.FormatInt(resp[len(resp)-1].CreatedEpoch, 10)
+	return fromId, toId
+}
+
 func (ah *AlbumHandler) ListAlbums(ctx *gin.Context) {
-	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	fromId := ctx.Query("fromId")
 	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "30"))
 
-	resp, err := ah.svc.ListAlbums(page, limit)
+	resp, err := ah.svc.ListAlbums(fromId, limit)
 	handleError(ctx, err)
-	handlePaginatedSuccess(ctx, resp, resp[0].ID, resp[len(resp)-1].ID, len(resp))
+	fromId, toId := albumPaginationParams(resp)
+
+	handlePaginatedSuccess(ctx, resp, fromId, toId, len(resp))
 }
 
 func (ah *AlbumHandler) AlbumCount(ctx *gin.Context) {

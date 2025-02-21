@@ -24,7 +24,7 @@ func (ar *AlbumRepositoryMock) GetAlbumById(id string) (*domain.Album, error) {
 		Metadata:    make(datatypes.JSON, 0),
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
-		Thumnail:    "tn",
+		Thumbnail:   "tn",
 	}
 	return &album, nil
 }
@@ -38,7 +38,7 @@ func (ar *AlbumRepositoryMock) GetAlbumByName(name string) (*domain.Album, error
 		Metadata:    make(datatypes.JSON, 0),
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
-		Thumnail:    "tn",
+		Thumbnail:   "tn",
 	}
 	return &album, nil
 }
@@ -52,7 +52,7 @@ func (ar *AlbumRepositoryMock) CreateAlbum(name string) (*domain.Album, error) {
 		Metadata:    make(datatypes.JSON, 0),
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
-		Thumnail:    "tn",
+		Thumbnail:   "tn",
 	}
 	return &album, nil
 }
@@ -66,7 +66,7 @@ func (ar *AlbumRepositoryMock) CreateAlbumIfNotExists(name string) (*domain.Albu
 		Metadata:    make(datatypes.JSON, 0),
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
-		Thumnail:    "tn",
+		Thumbnail:   "tn",
 	}
 	return &album, nil
 }
@@ -81,7 +81,7 @@ func (ar *AlbumRepositoryMock) ListAllAlbums(page int, limit int) ([]*domain.Alb
 			Metadata:    make(datatypes.JSON, 0),
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
-			Thumnail:    "tn",
+			Thumbnail:   "tn",
 		},
 		{
 			ID:          "id2",
@@ -91,7 +91,7 @@ func (ar *AlbumRepositoryMock) ListAllAlbums(page int, limit int) ([]*domain.Alb
 			Metadata:    make(datatypes.JSON, 0),
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
-			Thumnail:    "tn",
+			Thumbnail:   "tn",
 		},
 	}, nil
 }

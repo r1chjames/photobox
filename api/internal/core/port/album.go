@@ -17,7 +17,7 @@ type AlbumRepository interface {
 	// CreateAlbumIfNotExists creates an album if it doesn't exist
 	CreateAlbumIfNotExists(name string) (*domain.Album, error)
 	// ListAllAlbums returns all stored albums
-	ListAllAlbums(pageNumber int, pageSize int) ([]*domain.Album, error)
+	ListAllAlbums(fromId string, pageSize int) ([]*domain.Album, error)
 	// AlbumCount returns a count of all albums
 	AlbumCount() (int64, error)
 }
@@ -29,7 +29,7 @@ type AlbumService interface {
 	// GetAlbumByName returns an album using its name
 	GetAlbumByName(name string) (*domain.Album, error)
 	// ListAlbums returns all albums
-	ListAlbums(page, limit int) ([]*domain.Album, error)
+	ListAlbums(fromId string, limit int) ([]*domain.Album, error)
 	// AlbumCount returns a count of all albums
 	AlbumCount() (int64, error)
 	// CreateAlbum creates an album

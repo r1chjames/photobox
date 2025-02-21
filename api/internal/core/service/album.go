@@ -27,8 +27,8 @@ func (as *AlbumService) GetAlbumByName(name string) (*domain.Album, error) {
 	return as.repo.GetAlbumByName(name)
 }
 
-func (as *AlbumService) ListAlbums(page, limit int) ([]*domain.Album, error) {
-	return as.repo.ListAllAlbums(page, limit)
+func (as *AlbumService) ListAlbums(fromId string, limit int) ([]*domain.Album, error) {
+	return as.repo.ListAllAlbums(fromId, limit)
 }
 
 func (as *AlbumService) AlbumCount() (int64, error) {

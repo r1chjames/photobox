@@ -1,6 +1,7 @@
 package http
 
 import (
+	b64 "encoding/base64"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -40,16 +41,16 @@ func newResponse(success bool, message string, data any) response {
 }
 
 // newResponse is a helper function to create a response body
-func newPageableResponse(success bool, message string, data any, id string, toId string, count int) pageableResponse {
+func newPageableResponse(success bool, message string, data any, fromId string, toId string, count int) pageableResponse {
 	return pageableResponse{
 		Success: success,
 		Message: message,
 		Data:    data,
 		Metadata: paginationMetadata{
-			FromId:   id,
-			ToId:     toId,
+			FromId:   b64.StdEncoding.EncodeToString([]byte(fromId)),
+			ToId:     b64.StdEncoding.EncodeToString([]byte(toId)),
 			Count:    count,
-			NextPage: "",
+			NextPage: "", //TODO
 		},
 	}
 }
