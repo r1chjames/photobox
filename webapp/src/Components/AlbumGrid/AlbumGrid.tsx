@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Album } from '../../Models/Album';
 import { AlbumCard } from '../AlbumCard/AlbumCard';
 import { InputModal } from '../InputModal/InputModal';
-import {Button, Flex, TextInput} from '@mantine/core';
-import {MdAddCircle} from 'react-icons/md';
+import {Flex, TextInput} from '@mantine/core';
 import {useNavigate} from "react-router-dom";
 import useAlbumGrid from "./useAlbumGrid";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
@@ -29,9 +28,9 @@ export const AlbumGrid: React.FunctionComponent<IProps> = (propsIn) => {
     navigate(`/album/new/${newAlbumName}`);
   };
 
-  const handleCreateNewAlbum = () => {
-    setShowNewAlbumModal(true);
-  };
+  // const handleCreateNewAlbum = () => {
+  //   setShowNewAlbumModal(true);
+  // };
 
   return (
     <div>

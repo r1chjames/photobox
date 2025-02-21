@@ -1,11 +1,11 @@
-import React, {useEffect, useState} from 'react';
-import {Photo} from '../../Models/Photo';
+import React from 'react';
 import {useDisclosure} from '@mantine/hooks';
 import {Button, Dialog, Group, Image, Loader, ScrollArea, Table} from '@mantine/core';
 import {valueType} from "../../utils/TypeUtils.js";
 import {IPhotosAdapter} from '../../Adapters/IPhotosAdapter';
 import {useParams} from "react-router-dom";
 import {fetchPhotoBinWithAuth} from "../../utils/ImageUtils";
+import {useQuery} from "@tanstack/react-query";
 
 interface IProps {
     photosAdapter: IPhotosAdapter;
@@ -13,27 +13,39 @@ interface IProps {
 
 export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
     const {id} = useParams();
-    const [photo, setPhoto] = useState<Photo>();
-    const [photoUrl, setPhotoUrl] = useState<string>();
+    // const [photo, setPhoto] = useState<Photo>();
+    // const [photoUrl, setPhotoUrl] = useState<string>();
     const [opened, {toggle, close}] = useDisclosure(true);
     const img: React.Ref<HTMLImageElement> = React.createRef();
 
-    const fetchPhoto = async (id: string) => {
-        const photo = await props.photosAdapter.getPhotoInfoById(id);
-        setPhoto(photo);
-    }
-
-    const fetchPhotoBin = async (id: string) => {
-        const fetchedPhotoUrl = await fetchPhotoBinWithAuth(props.photosAdapter, id);
-        setPhotoUrl(fetchedPhotoUrl);
-    }
-
-    useEffect(() => {
+    const fetchPhoto = async () => {
         if (id !== undefined) {
-            fetchPhoto(id);
-            fetchPhotoBin(id);
+            return props.photosAdapter.getPhotoInfoById(id);
         }
-    }, []);
+    }
+
+    const fetchPhotoBin = async () => {
+        if (id !== undefined) {
+            return fetchPhotoBinWithAuth(props.photosAdapter, id);
+        }
+    }
+
+    const {data: photo} = useQuery({
+        queryKey: ['fetchPhoto'],
+        queryFn: fetchPhoto
+    });
+
+    const {data: photoUrl} = useQuery({
+        queryKey: ['fetchPhotoBin'],
+        queryFn: fetchPhotoBin
+    });
+
+    // useEffect(() => {
+    //     if (id !== undefined) {
+    //         fetchPhoto(id);
+    //         fetchPhotoBin(id);
+    //     }
+    // }, []);
 
     const tableRow = (key: string, value: string) =>
         <Table.Tr>

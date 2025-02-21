@@ -101,12 +101,10 @@ export const LoginCard: React.FunctionComponent<IProps> = (props) => {
                 <TextInput
                     value={username}
                     label="Username"
-                    error="Invalid username"
                     placeholder="username"
                     width="75%"
                     required
                     onChange={setUsername}
-                    rightSection={<IconAlertTriangle stroke={1.5} size={18} className={classes.icon}/>}
                 />
                 <PasswordInput
                     value={password}

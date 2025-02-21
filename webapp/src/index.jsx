@@ -5,13 +5,17 @@ import App from './App.tsx';
 import '@mantine/core/styles.css';
 import {BrowserRouter} from "react-router-dom";
 import './appGlobals';
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
+const queryClient = new QueryClient();
 
 root.render(
     <React.StrictMode>
         <BrowserRouter>
-            <App baseApiUrl={globalThis.app.baseApiUrl}/>
+            <QueryClientProvider client={queryClient}>
+                <App baseApiUrl={globalThis.app.baseApiUrl}/>
+            </QueryClientProvider>
         </BrowserRouter>
     </React.StrictMode>
 );
