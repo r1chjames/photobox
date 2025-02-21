@@ -19,7 +19,7 @@ export class PhotosAdapter implements IPhotosAdapter {
 
   public getAllPhotosInfo = async (offset: number, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
     const getAllPhotosPath = `photos?page=${offset}&limit=${limit}&thumbnail=${includeThumbnails}`;
-    return this.restApiAdapter.getApiCall(getAllPhotosPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
+    return this.restApiAdapter.getPaginatedApiCall(getAllPhotosPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 
   public getPhotoInfoById = async (photoId: string): Promise<Photo> => {
@@ -32,7 +32,7 @@ export class PhotosAdapter implements IPhotosAdapter {
     const params = {
       albumId,
     };
-    return this.restApiAdapter.getApiCall(getPhotosInAlbumPath, this.buildHeaders(this.restApiAdapter.authHeader()), params);
+    return this.restApiAdapter.getPaginatedApiCall(getPhotosInAlbumPath, this.buildHeaders(this.restApiAdapter.authHeader()), params);
   }
 
   public getPhotoCountInAlbum = async (albumId: string) => {

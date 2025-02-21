@@ -22,10 +22,13 @@ func NewPhotoHandler(photoSvc port.PhotoService, jobSvc port.JobService) *PhotoH
 	}
 }
 
-func photosPaginationParams(resp []*domain.Photo) (string, string) {
-	fromId := strconv.FormatInt(resp[0].CreatedEpoch, 10)
-	toId := strconv.FormatInt(resp[len(resp)-1].CreatedEpoch, 10)
-	return fromId, toId
+func photosPaginationParams(resp []*domain.Photo) (string, string, string) {
+	if resp != nil || len(resp) == 0 {
+		fromId := strconv.FormatInt(resp[0].CreatedEpoch, 10)
+		toId := strconv.FormatInt(resp[len(resp)-1].CreatedEpoch, 10)
+		return fromId, toId, "/api/photos?limit=10&fromId=%s"
+	}
+	return "", "", ""
 }
 
 // ListPhotos godoc
@@ -61,8 +64,8 @@ func (ph *PhotoHandler) ListPhotos(ctx *gin.Context) {
 		handleError(ctx, err)
 	}
 
-	fromId, toId := photosPaginationParams(photoResp)
-	handlePaginatedSuccess(ctx, photoResp, fromId, toId, len(photoResp))
+	fromId, toId, nextPage := photosPaginationParams(photoResp)
+	handlePaginatedSuccess(ctx, photoResp, fromId, toId, len(photoResp), nextPage)
 }
 
 func (ph *PhotoHandler) GetPhoto(ctx *gin.Context) {

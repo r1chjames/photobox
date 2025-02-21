@@ -8,6 +8,8 @@ export interface IRestApiAdapter {
 
     getApiCall(path: string, headers: Record<string, string>, params: Record<string, unknown>): Promise<any>
 
+    getPaginatedApiCall(path: string, headers: Record<string, string>, params: Record<string, unknown>): Promise<any>
+
     getBinaryApiCall(path: string, headers: Record<string, string>, params: Record<string, unknown>): Promise<any>
 
     authHeader(): Record<string, string>
@@ -31,6 +33,10 @@ export class RestApiAdapter implements IRestApiAdapter {
 
     async getApiCall<T>(path: string, headers: Record<string, string>, params: Record<string, any>) {
         return this.apiCall<T>('get', headers, {}, path, params);
+    }
+
+    async getPaginatedApiCall<T>(path: string, headers: Record<string, string>, params: Record<string, any>) {
+        return this.paginatedApiCall<T>('get', headers, {}, path, params);
     }
 
     async getBinaryApiCall(path: string, headers: Record<string, string>, params: Record<string, any>) {
@@ -83,6 +89,28 @@ export class RestApiAdapter implements IRestApiAdapter {
             });
     };
 
+    private async paginatedApiCall <T>(method: string, headers: Record<string, string>, body: Record<string, any>, url: string, params: Record<string, any>) {
+        const parsedUrl = `${this.baseApiPath}/${url}`;
+        const options: AxiosRequestConfig = {
+            method,
+            headers,
+            data: JSON.stringify(body),
+            url: parsedUrl,
+            params,
+        };
+        return await axios<PaginatedServerResponse<T>>(options)
+            .then(function (response) {
+                return response.data.data;
+            })
+            .catch(function (error) {
+                if (error.response) {
+                    if (error.response.data.error === "Access Token Not Valid") {
+                        localStorage.removeItem("token");
+                    }
+                }
+            });
+    };
+
 
     authHeader() {
         return {
@@ -95,4 +123,15 @@ interface ServerResponse<T> {
     success: boolean;
     message: string;
     data: T
+}
+
+interface PaginatedMetadata {
+    fromId: string;
+    toId: string;
+    count: number;
+    nextPage: string;
+}
+
+interface PaginatedServerResponse<T> extends ServerResponse<T>{
+    metaData: PaginatedMetadata
 }

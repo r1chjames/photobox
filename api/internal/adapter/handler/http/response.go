@@ -3,6 +3,7 @@ package http
 import (
 	b64 "encoding/base64"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
@@ -41,7 +42,7 @@ func newResponse(success bool, message string, data any) response {
 }
 
 // newResponse is a helper function to create a response body
-func newPageableResponse(success bool, message string, data any, fromId string, toId string, count int) pageableResponse {
+func newPageableResponse(success bool, message string, data any, fromId string, toId string, count int, nextPage string) pageableResponse {
 	return pageableResponse{
 		Success: success,
 		Message: message,
@@ -50,7 +51,7 @@ func newPageableResponse(success bool, message string, data any, fromId string, 
 			FromId:   b64.StdEncoding.EncodeToString([]byte(fromId)),
 			ToId:     b64.StdEncoding.EncodeToString([]byte(toId)),
 			Count:    count,
-			NextPage: "", //TODO
+			NextPage: fmt.Sprintf(nextPage, b64.StdEncoding.EncodeToString([]byte(fromId))),
 		},
 	}
 }
@@ -192,7 +193,7 @@ func handleSuccess(ctx *gin.Context, data any) {
 }
 
 // handleSuccess sends a success response with the specified status code and optional data
-func handlePaginatedSuccess(ctx *gin.Context, data any, fromId string, toId string, count int) {
-	rsp := newPageableResponse(true, "Success", data, fromId, toId, count)
+func handlePaginatedSuccess(ctx *gin.Context, data any, fromId string, toId string, count int, nextPage string) {
+	rsp := newPageableResponse(true, "Success", data, fromId, toId, count, nextPage)
 	ctx.JSON(http.StatusOK, rsp)
 }

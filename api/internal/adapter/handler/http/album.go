@@ -30,10 +30,13 @@ func (ah *AlbumHandler) GetAlbum(ctx *gin.Context) {
 	handleSuccess(ctx, resp)
 }
 
-func albumPaginationParams(resp []*domain.Album) (string, string) {
-	fromId := strconv.FormatInt(resp[0].CreatedEpoch, 10)
-	toId := strconv.FormatInt(resp[len(resp)-1].CreatedEpoch, 10)
-	return fromId, toId
+func albumPaginationParams(resp []*domain.Album) (string, string, string) {
+	if (resp == nil) || (len(resp) == 0) {
+		fromId := strconv.FormatInt(resp[0].CreatedEpoch, 10)
+		toId := strconv.FormatInt(resp[len(resp)-1].CreatedEpoch, 10)
+		return fromId, toId, "/api/albums?limit=10&fromId=%s"
+	}
+	return "", "", ""
 }
 
 func (ah *AlbumHandler) ListAlbums(ctx *gin.Context) {
@@ -42,9 +45,9 @@ func (ah *AlbumHandler) ListAlbums(ctx *gin.Context) {
 
 	resp, err := ah.svc.ListAlbums(fromId, limit)
 	handleError(ctx, err)
-	fromId, toId := albumPaginationParams(resp)
+	fromId, toId, nextPage := albumPaginationParams(resp)
 
-	handlePaginatedSuccess(ctx, resp, fromId, toId, len(resp))
+	handlePaginatedSuccess(ctx, resp, fromId, toId, len(resp), nextPage)
 }
 
 func (ah *AlbumHandler) AlbumCount(ctx *gin.Context) {
