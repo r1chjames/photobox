@@ -35,7 +35,7 @@ func (ah *AlbumHandler) ListAlbums(ctx *gin.Context) {
 
 	resp, err := ah.svc.ListAlbums(page, limit)
 	handleError(ctx, err)
-	handleSuccess(ctx, resp)
+	handlePaginatedSuccess(ctx, resp, resp[0].ID, resp[len(resp)-1].ID, len(resp))
 }
 
 func (ah *AlbumHandler) AlbumCount(ctx *gin.Context) {

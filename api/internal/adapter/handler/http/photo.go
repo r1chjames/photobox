@@ -55,7 +55,7 @@ func (ph *PhotoHandler) ListPhotos(ctx *gin.Context) {
 		handleError(ctx, err)
 	}
 
-	handleSuccess(ctx, photoResp)
+	handlePaginatedSuccess(ctx, photoResp, photoResp[0].ID, photoResp[len(photoResp)-1].ID, len(photoResp))
 }
 
 func (ph *PhotoHandler) GetPhoto(ctx *gin.Context) {

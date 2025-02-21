@@ -16,12 +16,41 @@ type response struct {
 	Data    any    `json:"data,omitempty"`
 }
 
+type paginationMetadata struct {
+	FromId   string `json:"fromId" example:"1"`
+	ToId     string `json:"toId" example:"1"`
+	Count    int    `json:"count" example:"1"`
+	NextPage string `json:"nextPage" example:"1"`
+}
+
+type pageableResponse struct {
+	Success  bool               `json:"success" example:"true"`
+	Message  string             `json:"message" example:"Success"`
+	Data     any                `json:"data,omitempty"`
+	Metadata paginationMetadata `json:"metadata,omitempty"`
+}
+
 // newResponse is a helper function to create a response body
 func newResponse(success bool, message string, data any) response {
 	return response{
 		Success: success,
 		Message: message,
 		Data:    data,
+	}
+}
+
+// newResponse is a helper function to create a response body
+func newPageableResponse(success bool, message string, data any, id string, toId string, count int) pageableResponse {
+	return pageableResponse{
+		Success: success,
+		Message: message,
+		Data:    data,
+		Metadata: paginationMetadata{
+			FromId:   id,
+			ToId:     toId,
+			Count:    count,
+			NextPage: "",
+		},
 	}
 }
 
@@ -158,5 +187,11 @@ func newErrorResponse(errMsgs []string) errorResponse {
 // handleSuccess sends a success response with the specified status code and optional data
 func handleSuccess(ctx *gin.Context, data any) {
 	rsp := newResponse(true, "Success", data)
+	ctx.JSON(http.StatusOK, rsp)
+}
+
+// handleSuccess sends a success response with the specified status code and optional data
+func handlePaginatedSuccess(ctx *gin.Context, data any, fromId string, toId string, count int) {
+	rsp := newPageableResponse(true, "Success", data, fromId, toId, count)
 	ctx.JSON(http.StatusOK, rsp)
 }
