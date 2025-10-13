@@ -87,6 +87,11 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
         />
     ));
 
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+    }
+
     const colourSchemeButton = (colourScheme: string) => {
         return colourScheme === 'light' ?
             <IconMoon className={cx(classes.icon, classes.light)} stroke={1.5}/>
@@ -105,71 +110,72 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
             }}
             padding="md"
         >
-            <div className={classes.header}>
-                <Container fluid>
-                    <Group justify="space-between" gap="xl">
-                        <Burger
-                            opened={opened}
-                            onClick={toggle}
-                            hiddenFrom="sm"
-                            size="sm"
-                        />
-                        <Group>
-                            <IconLibraryPhoto size="4rem" stroke={1.5} color={"#5474b4"}/>
-                            <Text size="xl" fw={900} c={"#5474b4"}>
-                                Photobox
-                            </Text>
-                        </Group>
-
+            <AppShell.Header>
+                <div className={classes.header}>
+                    <Container fluid>
                         <Group justify="space-between" gap="xl">
-                            <Menu
-                                width={260}
-                                position="bottom-end"
-                                transitionProps={{transition: 'pop-top-right'}}
-                                onClose={() => console.log("close")}
-                                onOpen={() => console.log("open")}
-                                withinPortal
-                            >
-                                <Menu.Target>
-                                    <UnstyledButton
-                                        className={cx(classes.user, {[classes.userActive]: true})}
-                                    >
-                                        <Group gap={7}>
-                                            <Avatar src={"user.image"} alt={"user.name"} radius="xl" size={20}/>
-                                            <Text fw={500} size="sm" lh={1} mr={3}>
-                                                {"Rich"}
-                                            </Text>
-                                            <IconChevronDown size={12} stroke={1.5}/>
-                                        </Group>
-                                    </UnstyledButton>
-                                </Menu.Target>
-                                <Menu.Dropdown>
-                                    <Menu.Item
-                                        leftSection={<IconMessage size={16} color={"blue"} stroke={1.5}/>}
-                                    >
-                                        Your comments
-                                    </Menu.Item>
-                                    <Menu.Label>Settings</Menu.Label>
-                                    <Menu.Item leftSection={<IconSettings size={16} stroke={1.5}/>}>
-                                        Account settings
-                                    </Menu.Item>
-                                    <Menu.Divider/>
-                                    <Menu.Item leftSection={<IconLogout size={16} stroke={1.5}/>}>Logout</Menu.Item>
-                                </Menu.Dropdown>
-                            </Menu>
-                            <ActionIcon
-                                onClick={() => setColorScheme(computedColorScheme === 'light' ? 'dark' : 'light')}
-                                variant="default"
-                                size="xl"
-                                aria-label="Toggle color scheme"
-                            >
-                                {colourSchemeButton(colorScheme)}
-                            </ActionIcon>
-                        </Group>
-                    </Group>
-                </Container>
+                            <Burger
+                                opened={opened}
+                                onClick={toggle}
+                                hiddenFrom="sm"
+                                size="sm"
+                            />
+                            <Group>
+                                <IconLibraryPhoto size="4rem" stroke={1.5} color={"#5474b4"}/>
+                                <Text size="xl" fw={900} c={"#5474b4"}>
+                                    Photobox
+                                </Text>
+                            </Group>
 
-            </div>
+                            <Group justify="space-between" gap="xl">
+                                <Menu
+                                    width={260}
+                                    position="bottom-end"
+                                    transitionProps={{transition: 'pop-top-right'}}
+                                    onClose={() => console.log("close")}
+                                    onOpen={() => console.log("open")}
+                                    withinPortal
+                                >
+                                    <Menu.Target>
+                                        <UnstyledButton
+                                            className={cx(classes.user, {[classes.userActive]: true})}
+                                        >
+                                            <Group gap={7}>
+                                                <Avatar src={"user.image"} alt={"user.name"} radius="xl" size={20}/>
+                                                <Text fw={500} size="sm" lh={1} mr={3}>
+                                                    {"Rich"}
+                                                </Text>
+                                                <IconChevronDown size={12} stroke={1.5}/>
+                                            </Group>
+                                        </UnstyledButton>
+                                    </Menu.Target>
+                                    <Menu.Dropdown>
+                                        <Menu.Item
+                                            leftSection={<IconMessage size={16} color={"blue"} stroke={1.5}/>}
+                                        >
+                                            Your comments
+                                        </Menu.Item>
+                                        <Menu.Label>Settings</Menu.Label>
+                                        <Menu.Item leftSection={<IconSettings size={16} stroke={1.5}/>}>
+                                            Account settings
+                                        </Menu.Item>
+                                        <Menu.Divider/>
+                                        <Menu.Item onClick={handleLogout} leftSection={<IconLogout size={16} stroke={1.5}/>}>Logout</Menu.Item>
+                                    </Menu.Dropdown>
+                                </Menu>
+                                <ActionIcon
+                                    onClick={() => setColorScheme(computedColorScheme === 'light' ? 'dark' : 'light')}
+                                    variant="default"
+                                    size="xl"
+                                    aria-label="Toggle color scheme"
+                                >
+                                    {colourSchemeButton(colorScheme)}
+                                </ActionIcon>
+                            </Group>
+                        </Group>
+                    </Container>
+                </div>
+            </AppShell.Header>
 
             <AppShell.Navbar p="md">
                 {navBarItems}

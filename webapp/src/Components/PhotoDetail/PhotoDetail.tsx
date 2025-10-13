@@ -13,8 +13,6 @@ interface IProps {
 
 export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
     const {id} = useParams();
-    // const [photo, setPhoto] = useState<Photo>();
-    // const [photoUrl, setPhotoUrl] = useState<string>();
     const [opened, {toggle, close}] = useDisclosure(true);
     const img: React.Ref<HTMLImageElement> = React.createRef();
 
@@ -31,31 +29,32 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
     }
 
     const {data: photo} = useQuery({
-        queryKey: ['fetchPhoto'],
+        queryKey: ['fetchPhoto', id],
         queryFn: fetchPhoto
     });
 
     const {data: photoUrl} = useQuery({
-        queryKey: ['fetchPhotoBin'],
-        queryFn: fetchPhotoBin
+        queryKey: ['fetchPhotoBin', id],
+        queryFn: fetchPhotoBin,
+        onSuccess: (data) => {
+            if (img.current && data) {
+                img.current.src = data;
+            }
+        }
     });
 
-    // useEffect(() => {
-    //     if (id !== undefined) {
-    //         fetchPhoto(id);
-    //         fetchPhotoBin(id);
-    //     }
-    // }, []);
-
     const tableRow = (key: string, value: string) =>
-        <Table.Tr>
+        <Table.Tr key={key}>
             <Table.Td>{key}</Table.Td>
             <Table.Td>{value}</Table.Td>
         </Table.Tr>
 
     const buildRows = (metadata: Record<string, any>) => {
+        if (!metadata) {
+            return null;
+        }
         return Object.entries(metadata)
-            .filter(([key, value]) => (typeof value !== 'undefined') && (![...Array(100).keys()].map(v => v.toString()).includes(key)) && (value !== ""))
+            .filter(([key, value]) => (value !== undefined) && (![...Array(100).keys()].map(v => v.toString()).includes(key)) && (value !== ""))
             .map(([key, value]) => {
                 switch (valueType(value)) {
                     case ('json'):
@@ -65,7 +64,7 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                     case ('string'):
                         return tableRow(key, value);
                     default:
-                        return;
+                        return null;
                 }
             })
     };
@@ -76,9 +75,7 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                 <Image
                     radius={"md"}
                     ref={img}
-                    // mah="100"
                     mah="600px"
-                    // maw={"100%"}
                     fit="scale-down"
                     src={photoUrl}
                 />
@@ -96,7 +93,7 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                                 </Table.Tr>
                             </Table.Thead>
                             <Table.Tbody>
-                                {buildRows(photo.metadata)}
+                                {photo.metadata && buildRows(photo.metadata)}
                             </Table.Tbody>
                         </Table>
                     </ScrollArea>
