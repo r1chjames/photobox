@@ -17,8 +17,8 @@ export class PhotosAdapter implements IPhotosAdapter {
     return { ...standardHeaders, ...additionalHeaders };
   }
 
-  public getAllPhotosInfo = async (offset: number, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
-    const getAllPhotosPath = `photos?page=${offset}&limit=${limit}&thumbnail=${includeThumbnails}`;
+  public getAllPhotosInfo = async (fromId: string, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
+    const getAllPhotosPath = `photos?fromId=${fromId}&limit=${limit}&thumbnail=${includeThumbnails}`;
     return this.restApiAdapter.getPaginatedApiCall(getAllPhotosPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 
@@ -27,8 +27,8 @@ export class PhotosAdapter implements IPhotosAdapter {
     return this.restApiAdapter.getApiCall(getAllPhotosPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 
-  public getPhotosInfoInAlbum = async (albumId: string, offset: number, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
-    const getPhotosInAlbumPath = `photos?page=${offset}&limit=${limit}&thumbnail=${includeThumbnails}`;
+  public getPhotosInfoInAlbum = async (albumId: string, fromId: string, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
+    const getPhotosInAlbumPath = `photos?fromId=${fromId}&limit=${limit}&thumbnail=${includeThumbnails}`;
     const params = {
       albumId,
     };

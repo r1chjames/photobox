@@ -27,7 +27,7 @@ export class AlbumsAdapter implements IAlbumsAdapter {
   }
 
   public getAlbumInfoById = async (albumId: string) => {
-    const getAlbumInfoPath = `/album/${albumId}`;
+    const getAlbumInfoPath = `album/${albumId}`;
     return this.restApiAdapter.getApiCall(getAlbumInfoPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 }

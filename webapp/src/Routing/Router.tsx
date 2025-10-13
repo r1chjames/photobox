@@ -60,6 +60,7 @@ export default class Router extends Component<IProps> {
                             <AppBar activeLink={Labels.Photos}>
                                 <PhotoGrid
                                     photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                                    albumsAdapter={new AlbumsAdapter(new RestApiAdapter(this.props.baseApiUrl))}
                                 />
                             </AppBar>
                         </ProtectedRoute>
@@ -89,12 +90,13 @@ export default class Router extends Component<IProps> {
                     }
                 />
                 <Route
-                    path="/album/:albumid"
+                    path="/album/:id"
                     element={
                         <ProtectedRoute>
                             <AppBar activeLink={Labels.Albums}>
                                 <PhotoGrid
                                     photosAdapter={new PhotosAdapter(new RestApiAdapter(this.props.baseApiUrl))}
+                                    albumsAdapter={new AlbumsAdapter(new RestApiAdapter(this.props.baseApiUrl))}
                                 />
                             </AppBar>
                         </ProtectedRoute>

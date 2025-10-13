@@ -1,11 +1,12 @@
 package http
 
 import (
+	"net/http"
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
-	"net/http"
-	"strconv"
 )
 
 type AlbumHandler struct {
@@ -31,7 +32,7 @@ func (ah *AlbumHandler) GetAlbum(ctx *gin.Context) {
 }
 
 func albumPaginationParams(resp []*domain.Album) (string, string, string) {
-	if (resp == nil) || (len(resp) == 0) {
+	if (resp == nil) || (len(resp) != 0) {
 		fromId := strconv.FormatInt(resp[0].CreatedEpoch, 10)
 		toId := strconv.FormatInt(resp[len(resp)-1].CreatedEpoch, 10)
 		return fromId, toId, "/api/albums?limit=10&fromId=%s"

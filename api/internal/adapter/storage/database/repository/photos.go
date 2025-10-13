@@ -2,6 +2,7 @@ package repository
 
 import (
 	b64 "encoding/base64"
+
 	. "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gorm.io/gorm/clause"
@@ -36,8 +37,8 @@ func (pr *PhotoRepository) ListAllPhotos(fromId string, limit int, includeThumbn
 	var photos []*domain.Photo
 	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Limit(limit)
 	if fromId != "" {
-		fromEpoch, _ := b64.StdEncoding.DecodeString(fromId)
-		result.Where("created_epoch > ?", fromEpoch)
+		fromPhoto, _ := pr.GetPhotoById(fromId, false)
+		result.Where("created_epoch > ?", fromPhoto.CreatedEpoch)
 	}
 	if !includeThumbnail {
 		result.Omit("thumbnail")

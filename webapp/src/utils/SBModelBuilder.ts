@@ -1,10 +1,17 @@
 import {Photo} from "../Models/Photo";
 import {Album} from "../Models/Album";
+// import {faker} from "@faker-js/faker";
 
 export class SBModelBuilder {
 
     private photos: Photo[] = [];
     private albums: Album[] = [];
+
+    public newEmptyAlbum(): this {
+        const albumId = getRandomInt(50);
+        this.albums.push(newAlbum(`${albumId}`));
+        return this;
+    }
 
     public newAlbumWithPhotos(photoCount: number): this {
         const albumId = getRandomInt(50);

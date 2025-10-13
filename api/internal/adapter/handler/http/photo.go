@@ -1,10 +1,11 @@
 package http
 
 import (
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
-	"strconv"
 )
 import "net/http"
 
@@ -23,7 +24,7 @@ func NewPhotoHandler(photoSvc port.PhotoService, jobSvc port.JobService) *PhotoH
 }
 
 func photosPaginationParams(resp []*domain.Photo) (string, string, string) {
-	if resp != nil || len(resp) == 0 {
+	if resp != nil || len(resp) != 0 {
 		fromId := strconv.FormatInt(resp[0].CreatedEpoch, 10)
 		toId := strconv.FormatInt(resp[len(resp)-1].CreatedEpoch, 10)
 		return fromId, toId, "/api/photos?limit=10&fromId=%s"
