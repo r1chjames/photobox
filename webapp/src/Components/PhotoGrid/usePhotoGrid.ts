@@ -1,45 +1,63 @@
-import {useEffect, useState} from 'react';
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
-import {Photo} from "../../Models/Photo";
-import {useInfiniteQuery} from "@tanstack/react-query";
+import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 
-const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumId: string) => {
-
-    // const [photos, setPhotos] = useState<Photo[]>([]);
-    const [allRetrieved, setAllRetrieved] = useState(false);
-    const [page, setPage] = useState(1);
+const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapter, albumId: string | undefined) => {
     const limit = 30;
 
-    async function retrievePhotos() {
-        let retrievedPhotos: Photo[];
-        if (albumId !== 'undefined') {
-            retrievedPhotos = await photosAdapter.getPhotosInfoInAlbum(albumId, page, limit, true);
-        } else {
-            retrievedPhotos = await photosAdapter.getAllPhotosInfo(page, limit, true);
-        }
-        if (retrievedPhotos && retrievedPhotos.length > 0) {
-            setPhotos([...photos, ...retrievedPhotos])
-        } else {
-            setAllRetrieved(true);
-        }
-    }
+    const { data: album } = useQuery({
+        queryKey: ['album', albumId],
+        queryFn: () => albumsAdapter.getAlbumInfoById(albumId!),
+        enabled: !!albumId,
+    });
+    const albumName = albumId ? album?.name : "All Photos";
 
-    // useEffect(() => {
-    //     retrievePhotos(1, 30);
-    // },[]);
+    async function fetchPhotos({ pageParam = "" }) {
+        const fromId = pageParam;
+        const retrievedPhotos = albumId !== undefined
+            ? await photosAdapter.getPhotosInfoInAlbum(albumId!, fromId, limit, true)
+            : await photosAdapter.getAllPhotosInfo(fromId, limit, true);
 
-    const {data: photos,
+        const photosData = retrievedPhotos ?? [];
+
+        return {
+            data: photosData,
+            nextCursor: photosData.length === limit ? photosData[photosData.length - 1].id : undefined,
+        };
+    };
+
+    const {
+        data,
         fetchNextPage,
         hasNextPage,
-        isFetching,
-        isFetchingNextPage} = useInfiniteQuery({
-        queryKey: ['albumPhotos'],
-        queryFn: retrievePhotos,
-        initialPageParam: 0,
-        getNextPageParam: (lastPage, pages) => lastPage.nextCursor,
+        isFetchingNextPage,
+    } = useInfiniteQuery({
+        queryKey: ['albumPhotos', albumId],
+        queryFn: fetchPhotos,
+        initialPageParam: "",
+        getNextPageParam: (lastPage) => lastPage.nextCursor,
+        // The select function transforms the paged data into a single, flat, de-duplicated array.
+        select: (data) => {
+            // 1. Flatten all photos from all pages and filter out any null/undefined items.
+            const allPhotos = data.pages.flatMap(page => page.data).filter(Boolean);
+
+            // 2. De-duplicate the flat list using a Map to ensure uniqueness based on photo.id.
+            const uniquePhotos = Array.from(new Map(allPhotos.map(photo => [photo.id, photo])).values());
+
+            // 3. Return a simplified structure containing the flat list.
+            return {
+                pages: data.pages, // Keep original pages for react-query's internal logic
+                pageParams: data.pageParams,
+                // This new top-level 'photos' array is the clean, de-duplicated data.
+                photos: uniquePhotos,
+            };
+        }
     });
 
-    return [{photos, allRetrieved, fetchNextPage, setPage}]
+    // The component will consume this flat 'photos' array.
+    const photos = data?.photos ?? [];
+
+    return { photos, albumName, allRetrieved: !hasNextPage, fetchNextPage, isFetchingNextPage };
 };
 
 export default usePhotoGrid;
