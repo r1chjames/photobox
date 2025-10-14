@@ -23,16 +23,22 @@ const defaultProps = {
 
 // By adding a custom comparison function to React.memo, we prevent re-renders unless the photo's ID changes.
 const GridImageItem = React.memo(
-    ({photo, onImageClick}: { photo: Photo, onImageClick: (id: string) => void }) => (
-        <div className="item" onClick={() => onImageClick(photo.id)}>
-            <div className="thumbnail">
-                <img
-                    src={`data:image/png;base64,${photo.thumbnail}`}
-                    alt={photo.name}
-                />
+    ({photo, onImageClick}: { photo: Photo, onImageClick: (id: string) => void }) => {
+        const imgSrc = photo.thumbnail && (photo.thumbnail.startsWith('http') || photo.thumbnail.startsWith('data:image'))
+            ? photo.thumbnail
+            : `data:image/png;base64,${photo.thumbnail}`;
+
+        return (
+            <div className="item" onClick={() => onImageClick(photo.id)}>
+                <div className="thumbnail">
+                    <img
+                        src={imgSrc}
+                        alt={photo.name}
+                    />
+                </div>
             </div>
-        </div>
-    ),
+        );
+    },
     (prevProps, nextProps) => prevProps.photo.id === nextProps.photo.id
 );
 GridImageItem.displayName = 'GridImageItem';

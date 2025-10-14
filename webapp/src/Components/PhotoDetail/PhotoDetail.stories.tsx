@@ -21,10 +21,17 @@ export default meta;
 type Story = StoryObj<typeof PhotoDetail>;
 
 const albumsAndPhotos = new SBModelBuilder().newAlbumWithPhotos(1);
+const photoId = albumsAndPhotos.getPhotos()[0].id;
 
 export const Primary: Story = {
     args: {
         photosAdapter: new MockPhotosAdapter()
             .withPhotos(albumsAndPhotos.getPhotos()),
     },
+    parameters: {
+        reactRouter: {
+            initialEntries: [`/photo/${photoId}`],
+            routePath: '/photo/:id',
+        }
+    }
 };

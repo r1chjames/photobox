@@ -26,10 +26,12 @@ export class MockAlbumsAdapter implements IAlbumsAdapter {
     };
   }
 
-  public getAlbumInfoById = async (albumId: string): Promise<Album> => {
-    const album = this._albums.find(a => `a${a.id}` === albumId);
+  public getAlbumInfoById = async (albumIdentifier: string): Promise<Album> => {
+    // In Storybook, the identifier might be a name like "Album 1" from the route.
+    // In real scenarios, it would be an ID. This mock handles both.
+    const album = this._albums.find(a => a.id === albumIdentifier || a.name === albumIdentifier);
     if (!album) {
-      return Promise.reject(`Album with id ${albumId} not found in mock adapter`);
+      return Promise.reject(`Album with identifier ${albumIdentifier} not found in mock adapter`);
     }
     return album;
   }
