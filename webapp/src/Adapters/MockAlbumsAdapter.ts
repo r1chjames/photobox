@@ -26,7 +26,11 @@ export class MockAlbumsAdapter implements IAlbumsAdapter {
     };
   }
 
-  public getAlbumInfoById = async (albumId: string) => {
-    return this._albums.filter(a => `a${a.id}` === albumId);
+  public getAlbumInfoById = async (albumId: string): Promise<Album> => {
+    const album = this._albums.find(a => `a${a.id}` === albumId);
+    if (!album) {
+      return Promise.reject(`Album with id ${albumId} not found in mock adapter`);
+    }
+    return album;
   }
 }

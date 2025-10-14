@@ -109,10 +109,9 @@ func defineResources(
 
 	photo := router.Group(fmt.Sprintf("%s/photo", urlBasePath)).Use(authMiddleware(token))
 	{
-		//photo.POST("", addPhoto)
-		photo.GET("/:id", photoHandler.GetPhoto)
-		photo.GET("/:id/thumbnail", photoHandler.GetPhotoThumbnail)
-		photo.GET("/:id/bin", photoHandler.GetPhotoBin)
+		photo.GET("/info/*id", photoHandler.GetPhoto)
+		photo.GET("/thumbnail/*id", photoHandler.GetPhotoThumbnail)
+		photo.GET("/bin/*id", photoHandler.GetPhotoBin)
 	}
 
 	photos := router.Group(fmt.Sprintf("%s/photos", urlBasePath)).Use(authMiddleware(token))

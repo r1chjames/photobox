@@ -61,6 +61,8 @@ export const Photos: Story = {
             <PhotoGrid
                 photosAdapter={new MockPhotosAdapter()
                     .withPhotos(albumWithPhotos.getPhotos())}
+                albumsAdapter={new MockAlbumsAdapter()
+                    .withAlbums(albumWithPhotos.getAlbums())}
                 maxDisplayed={20}
             />
         </AppBar>
@@ -71,7 +73,8 @@ export const PhotoInfo: Story = {
     render: () => (
         <AppBar activeLink={Labels.Photos}>
             <PhotoDetail
-                photo={albumWithPhotos.getPhotos()[0]}
+                photosAdapter={new MockPhotosAdapter()
+                    .withPhotos(albumWithPhotos.getPhotos())}
             />
         </AppBar>
     )
@@ -103,7 +106,9 @@ export const Settings: Story = {
         <AppBar activeLink={Labels.Settings}>
             <SettingsView
                 settingsAdapter={new MockSettingsAdapter()
-            .withSettings(settings)}
+                    .withSettings(settings)}
+                photosAdapter={new MockPhotosAdapter()
+                    .withPhotos(albumWithPhotos.getPhotos())}
             />
         </AppBar>
     )

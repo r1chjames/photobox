@@ -12,17 +12,23 @@ export class MockPhotosAdapter implements IPhotosAdapter {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public getAllPhotosInfo = async (offset: number, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
+  public getAllPhotosInfo = async (fromId: string, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
+    const offset = parseInt(fromId, 10) || 0;
     const toReturn = paginate(this._photos, limit, offset);
     return toReturn;
   }
 
   public getPhotoInfoById = async (photoId: string): Promise<Photo> => {
-    return this._photos.filter(p => `p${p.id}` === photoId)[0];
+    const photo = this._photos.find(p => `p${p.id}` === photoId);
+    if (!photo) {
+      return Promise.reject(`Photo with id ${photoId} not found in mock adapter`);
+    }
+    return photo;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public getPhotosInfoInAlbum = async (albumId: string, offset: number, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
+  public getPhotosInfoInAlbum = async (albumId: string, fromId: string, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
+    const offset = parseInt(fromId, 10) || 0;
     const toReturn = paginate(this._photos.filter(p => `${p.albumId}` === albumId), limit, offset);
     return toReturn;
   }
@@ -32,7 +38,8 @@ export class MockPhotosAdapter implements IPhotosAdapter {
   }
 
   public getPhotoImage = async (photoId: string) => {
-    return this._photos.filter(p => `p${p.id}` === photoId);
+    const photo = this._photos.find(p => `p${p.id}` === photoId);
+    return photo?.thumbnail;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

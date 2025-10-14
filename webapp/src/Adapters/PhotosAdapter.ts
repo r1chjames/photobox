@@ -23,7 +23,7 @@ export class PhotosAdapter implements IPhotosAdapter {
   }
 
   public getPhotoInfoById = async (photoId: string): Promise<Photo> => {
-    const getAllPhotosPath = `photo/${encodeURIComponent(photoId)}`;
+    const getAllPhotosPath = `photo/info/${photoId}`;
     return this.restApiAdapter.getApiCall(getAllPhotosPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 
@@ -44,8 +44,8 @@ export class PhotosAdapter implements IPhotosAdapter {
   }
 
   public getPhotoImage = async (photoId: string) => {
-    const getPhotosImagePath = `photo/${encodeURIComponent(photoId)}/bin`;
-    return await this.restApiAdapter.getBinaryApiCall(getPhotosImagePath, this.buildHeaders(this.restApiAdapter.authHeader()), {responseType: 'blob'});
+    const getPhotosImagePath = `photo/bin/${photoId}`;
+    return await this.restApiAdapter.getBinaryApiCall(getPhotosImagePath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 
   public uploadPhoto = async (body: Record<string, unknown>) => {
@@ -58,3 +58,5 @@ export class PhotosAdapter implements IPhotosAdapter {
     return this.restApiAdapter.postApiCall(indexPath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 }
+
+

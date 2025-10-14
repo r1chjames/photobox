@@ -1,6 +1,5 @@
 import {Photo} from "../Models/Photo";
 import {Album} from "../Models/Album";
-// import {faker} from "@faker-js/faker";
 
 export class SBModelBuilder {
 
@@ -40,12 +39,12 @@ const getRandomInt = (max: number)=> Math.floor(Math.random() * max);
 
 const getRandomPhotoImage = ()=> {
     const images: string[] = [
-        "files/p/E~TS1180x0~articles/3925134721/0266554465.jpeg",
-        "files/p/TS1800x1200~sample_galleries/4369435632/9827023079.jpg",
-        "files/p/TS1800x1200~sample_galleries/4369435632/9931531280.jpg",
-        "files/p/TS1800x1200~sample_galleries/4369435632/4352589276.jpg",
-        "files/p/TS1800x1200~sample_galleries/2020427155/7573953117.jpg",
-        "files/p/TS1800x1200~sample_galleries/2020427155/6463140671.jpg"
+        "https://1.img-dpreview.com/files/p/E~TS1180x0~articles/3925134721/0266554465.jpeg",
+        "https://2.img-dpreview.com/files/p/TS1800x1200~sample_galleries/4369435632/9827023079.jpg",
+        "https://3.img-dpreview.com/files/p/TS1800x1200~sample_galleries/4369435632/9931531280.jpg",
+        "https://4.img-dpreview.com/files/p/TS1800x1200~sample_galleries/4369435632/4352589276.jpg",
+        "https://1.img-dpreview.com/files/p/TS1800x1200~sample_galleries/2020427155/7573953117.jpg",
+        "https://2.img-dpreview.com/files/p/TS1800x1200~sample_galleries/2020427155/6463140671.jpg"
     ];
     return images[getRandomInt(images.length - 1)];
 }
@@ -56,7 +55,7 @@ export const newPhoto = (photoId: string, albumId: string) => {
         {"exif": "[{\"DateTime\": \"2024-01-01T10:00.000\"}, {\"ApertureValue\": \"101/32\"}]"},
         {"camera": "A7Cii"}
     ];
-    return new Photo(`p${photoId}`, `Photo ${photoId}`, `/tmp/photo${photoId}.jpg`, randomPhotoImage, randomPhotoImage, albumId, "", metadata, "2024-01-01T10:00.000", "https://4.img-dpreview.com");
+    return new Photo(`p${photoId}`, `Photo ${photoId}`, `/tmp/photo${photoId}.jpg`, randomPhotoImage, randomPhotoImage, albumId, "", metadata, "2024-01-01T10:00.000", randomPhotoImage);
 }
 
 export const newAlbum = (id: string)=> {
