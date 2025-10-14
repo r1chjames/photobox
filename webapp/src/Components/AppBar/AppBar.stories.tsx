@@ -11,9 +11,17 @@ import {PhotoDetail} from "../PhotoDetail/PhotoDetail";
 import {SettingsView} from "../SettingsView/SettingsView";
 import {MockSettingsAdapter} from "../../Adapters/MockSettingsAdapter";
 import {Setting} from "../../Models/Setting";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
 const meta: Meta<typeof AppBar> = {
     component: AppBar,
+    decorators: [
+        (Story) => (
+            <QueryClientProvider client={new QueryClient()}>
+                <Story />
+            </QueryClientProvider>
+        ),
+    ],
 };
 
 const albumWithPhotos = new SBModelBuilder()

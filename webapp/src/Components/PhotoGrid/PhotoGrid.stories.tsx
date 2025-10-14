@@ -6,13 +6,11 @@ import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import React from "react";
 import {MockAlbumsAdapter} from "../../Adapters/MockAlbumsAdapter";
 
-const queryClient = new QueryClient();
-
 const meta: Meta<typeof PhotoGrid> = {
     component: PhotoGrid,
     decorators: [
         (Story) => (
-            <QueryClientProvider client={queryClient}>
+            <QueryClientProvider client={new QueryClient()}>
                 <Story />
             </QueryClientProvider>
         ),

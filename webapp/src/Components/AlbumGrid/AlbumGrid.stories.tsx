@@ -3,10 +3,19 @@ import {AlbumGrid} from './AlbumGrid';
 import {SBModelBuilder} from "../../utils/SBModelBuilder";
 import {MockAlbumsAdapter} from "../../Adapters/MockAlbumsAdapter";
 import {MockPhotosAdapter} from "../../Adapters/MockPhotosAdapter";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import React from "react";
 
 
 const meta: Meta<typeof AlbumGrid> = {
     component: AlbumGrid,
+    decorators: [
+        (Story) => (
+            <QueryClientProvider client={new QueryClient()}>
+                <Story />
+            </QueryClientProvider>
+        ),
+    ],
 };
 
 const albumWithPhotos = new SBModelBuilder()
