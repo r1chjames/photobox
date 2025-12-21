@@ -14,33 +14,25 @@ interface IProps {
 export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
     const {id} = useParams();
     const [opened, {toggle, close}] = useDisclosure(true);
-    const img: React.Ref<HTMLImageElement> = React.createRef();
 
     const fetchPhoto = async () => {
-        if (id !== undefined) {
-            return props.photosAdapter.getPhotoInfoById(id);
-        }
+        return props.photosAdapter.getPhotoInfoById(id!);
     }
 
     const fetchPhotoBin = async () => {
-        if (id !== undefined) {
-            return fetchPhotoBinWithAuth(props.photosAdapter, id);
-        }
+        return fetchPhotoBinWithAuth(props.photosAdapter, id!);
     }
 
     const {data: photo} = useQuery({
         queryKey: ['fetchPhoto', id],
-        queryFn: fetchPhoto
+        queryFn: fetchPhoto,
+        enabled: !!id,
     });
 
     const {data: photoUrl} = useQuery({
         queryKey: ['fetchPhotoBin', id],
         queryFn: fetchPhotoBin,
-        onSuccess: (data) => {
-            if (img.current && data) {
-                img.current.src = data;
-            }
-        }
+        enabled: !!id,
     });
 
     const tableRow = (key: string, value: string) =>
@@ -74,7 +66,6 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
             <>
                 <Image
                     radius={"md"}
-                    ref={img}
                     mah="600px"
                     fit="scale-down"
                     src={photoUrl}
