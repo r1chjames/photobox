@@ -1,4 +1,4 @@
-import type {Meta, StoryObj} from '@storybook/react';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 import {Dashboard} from "./Dashboard";
 import {SBModelBuilder} from "../../utils/SBModelBuilder";
 import {MockPhotosAdapter} from "../../Adapters/MockPhotosAdapter";

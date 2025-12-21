@@ -1,4 +1,4 @@
-import type {Meta, StoryObj} from '@storybook/react';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 import {AlbumGrid} from './AlbumGrid';
 import {SBModelBuilder} from "../../utils/SBModelBuilder";
 import {MockAlbumsAdapter} from "../../Adapters/MockAlbumsAdapter";

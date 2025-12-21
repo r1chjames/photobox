@@ -1,4 +1,4 @@
-import type {Meta, StoryObj} from '@storybook/react';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 
 import {SBModelBuilder} from "../../utils/SBModelBuilder";
 import {PhotoCard} from "./PhotoCard";
