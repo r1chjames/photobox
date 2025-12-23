@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useCallback, useRef, useState} from 'react';
 import { useParams } from "react-router-dom";
 import {JustifiedInfiniteGrid} from '@egjs/react-infinitegrid';
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
@@ -24,6 +24,7 @@ const defaultProps = {
 // By adding a custom comparison function to React.memo, we prevent re-renders unless the photo's ID changes.
 const GridImageItem = React.memo(
     ({photo, onImageClick}: { photo: Photo, onImageClick: (id: string) => void }) => {
+        const [isLoaded, setIsLoaded] = useState(false);
         const imgSrc = photo.thumbnail && (photo.thumbnail.startsWith('http') || photo.thumbnail.startsWith('data:image'))
             ? photo.thumbnail
             : `data:image/png;base64,${photo.thumbnail}`;
@@ -31,9 +32,18 @@ const GridImageItem = React.memo(
         return (
             <div className="item" onClick={() => onImageClick(photo.id)}>
                 <div className="thumbnail">
+                    {!isLoaded && (
+                        <Skeleton
+                            height="100%"
+                            width="100%"
+                            style={{position: 'absolute', top: 0, left: 0}}
+                        />
+                    )}
                     <img
                         src={imgSrc}
                         alt={photo.name}
+                        onLoad={() => setIsLoaded(true)}
+                        style={{opacity: isLoaded ? 1 : 0, transition: 'opacity 0.2s'}}
                     />
                 </div>
             </div>
@@ -53,28 +63,12 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     // The hook now provides a simple, flat, de-duplicated array of photos.
     const {photos, albumName, allRetrieved, fetchNextPage, isFetchingNextPage} = usePhotoGrid(props.photosAdapter, props.albumsAdapter, id);
 
-    useEffect(() => {
-        // This effect checks if the page content is enough to be scrollable.
-        // If not, it fetches more photos until the viewport is full.
-        const checkAndLoadMore = () => {
-            const hasOverflow = document.documentElement.scrollHeight > window.innerHeight;
-            if (!hasOverflow && !allRetrieved && !isFetchingNextPage) {
-                fetchNextPage();
-            }
-        };
-
-        // Use a timeout to ensure the grid has had time to render.
-        const timer = setTimeout(checkAndLoadMore, 300);
-        return () => clearTimeout(timer);
-    }, [photos, allRetrieved, isFetchingNextPage, fetchNextPage]);
-
-
     const photosRef = useRef(photos);
     photosRef.current = photos;
 
     const appendDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
-    const onRequestAppend = useCallback(() => {
+    const onRequestAppend = useCallback((e: any) => {
         if (isFetchingNextPage || allRetrieved) {
             return;
         }
@@ -83,22 +77,9 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         }
         appendDebounceRef.current = setTimeout(() => {
             appendDebounceRef.current = null;
-        }, 500);
+        }, 100);
         fetchNextPage();
     }, [isFetchingNextPage, allRetrieved, fetchNextPage]);
-
-    useEffect(() => {
-        const handleScroll = () => {
-            // Check if we are near the bottom of the page.
-            if (window.innerHeight + document.documentElement.scrollTop < document.documentElement.offsetHeight - 300) {
-                return;
-            }
-            onRequestAppend();
-        };
-
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [onRequestAppend]);
 
     const onImageClick = useCallback((photoId: string) => {
         const photoIndex = photosRef.current.findIndex(p => p.id === photoId);
@@ -120,67 +101,67 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         setCurrentIndex(prevIndex => prevIndex < photosRef.current.length - 1 ? prevIndex + 1 : prevIndex);
     }
 
-    const EmptyAlbumContent = () => (
-        <>
-            <AlbumTitle/>
-            <Flex justify="center" align="center" direction="column" wrap="wrap" pos={"absolute"} w={"100%"} h={"100%"}>
-                <ThemeIcon radius="md" size="xl" color="orange"><IconPhotoX size="5rem"/></ThemeIcon>
-                <Space h="md"/>
-                <Text size="h4">This album is empty</Text>
-            </Flex>
-        </>
-    );
-
     const AlbumTitle = () => <Title size="h4">{albumName}</Title>;
 
-    const GridContent = () => {
+    if (photos.length === 0) {
         return (
-            <div>
+            <>
                 <AlbumTitle/>
-                <JustifiedInfiniteGrid
-                    placeholder={<Skeleton height={7} mt={6} radius="md"/>}
-                    className="container"
-                    gap={10}
-                    stretch={true}
-                    passUnstretchRow={true}
-                    onRequestAppend={onRequestAppend}
-                    threshold={300}
-                >
-                    {photos.map((photo: Photo, index: number) => (
-                        <GridImageItem
-                            data-grid-groupkey={Math.floor(index / 30)}
-                            key={photo.id}
-                            photo={photo}
-                            onImageClick={onImageClick}
-                        />
-                    ))}
-                </JustifiedInfiniteGrid>
-                {isImageModalOpen && (
-                    <Modal
-                        opened={isImageModalOpen}
-                        withCloseButton={false}
-                        aria-labelledby="customized-dialog-title"
-                        size="auto"
-                        padding={"0"}
-                        m={"0"}
-                        overlayProps={{backgroundOpacity: 0.55}}
-                        fullScreen={isMobile}
-                        transitionProps={{transition: 'fade', duration: 200}}
-                        onClose={closeModal}>
-                        <PhotoCard
-                            photosAdapter={props.photosAdapter}
-                            source={photos[currentIndex]}
-                            previousPhoto={handlePreviousPhoto}
-                            nextPhoto={handleNextPhoto}
-                            firstInAlbum={currentIndex === 0}
-                            lastInAlbum={currentIndex === photos.length - 1}
-                            closeModal={closeModal}
-                        />
-                    </Modal>
-                )}
-            </div>
-        )
+                <Flex justify="center" align="center" direction="column" wrap="wrap" pos={"absolute"} w={"100%"} h={"100%"}>
+                    <ThemeIcon radius="md" size="xl" color="orange"><IconPhotoX size="5rem"/></ThemeIcon>
+                    <Space h="md"/>
+                    <Text size="h4">This album is empty</Text>
+                </Flex>
+            </>
+        );
     }
 
-    return (photos && photos.length > 0) ? <GridContent/> : <EmptyAlbumContent/>;
+    return (
+        <div>
+            <AlbumTitle/>
+            <JustifiedInfiniteGrid
+                placeholder={<Skeleton height={7} mt={6} radius="md"/>}
+                className="container"
+                gap={10}
+                stretch={true}
+                passUnstretchRow={true}
+                onRequestAppend={onRequestAppend}
+                threshold={800}
+                useRecycle={false}
+                preserveUIOnDestroy={true}
+            >
+                {photos.map((photo: Photo, index: number) => (
+                    <GridImageItem
+                        data-grid-groupkey={Math.floor(index / 30)}
+                        key={photo.id}
+                        photo={photo}
+                        onImageClick={onImageClick}
+                    />
+                ))}
+            </JustifiedInfiniteGrid>
+            {isImageModalOpen && (
+                <Modal
+                    opened={isImageModalOpen}
+                    withCloseButton={false}
+                    aria-labelledby="customized-dialog-title"
+                    size="auto"
+                    padding={"0"}
+                    m={"0"}
+                    overlayProps={{backgroundOpacity: 0.55}}
+                    fullScreen={isMobile}
+                    transitionProps={{transition: 'fade', duration: 200}}
+                    onClose={closeModal}>
+                    <PhotoCard
+                        photosAdapter={props.photosAdapter}
+                        source={photos[currentIndex]}
+                        previousPhoto={handlePreviousPhoto}
+                        nextPhoto={handleNextPhoto}
+                        firstInAlbum={currentIndex === 0}
+                        lastInAlbum={currentIndex === photos.length - 1}
+                        closeModal={closeModal}
+                    />
+                </Modal>
+            )}
+        </div>
+    );
 };

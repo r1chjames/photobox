@@ -39,8 +39,11 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const previousButton = () => {
         if (!props.firstInAlbum) {
             return (
-                <ActionIcon color="dark" size="xl">
-                    <IconArrowLeftDashed size="2.125rem" onClick={() => props.previousPhoto()}/>
+                <ActionIcon color="dark" size="xl" onClick={(e) => {
+                    e.stopPropagation();
+                    props.previousPhoto();
+                }}>
+                    <IconArrowLeftDashed size="2.125rem"/>
                 </ActionIcon>
             );
         }
@@ -49,22 +52,26 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const nextButton = () => {
         if (!props.lastInAlbum) {
             return (
-                <ActionIcon color="dark" size="xl">
-                    <IconArrowRightDashed size="2.125rem" onClick={() => props.nextPhoto()}/>
+                <ActionIcon color="dark" size="xl" onClick={(e) => {
+                    e.stopPropagation();
+                    props.nextPhoto();
+                }}>
+                    <IconArrowRightDashed size="2.125rem"/>
                 </ActionIcon>
             );
         }
     };
 
     return (
-        <Card shadow="sm" radius="md" padding={"xs"}
+        <Card shadow="sm" radius="md" padding={0}
               onClick={() => navigate(`/photo/${props.source.id}`)}>
-            <Card.Section>
+            <Card.Section inheritPadding={false} withBorder={false}>
                 {fetchedImage ?
                     <Image
                         h={"500px"}
                         fit={"cover"}
                         w={"auto"}
+                        radius={0}
                         ref={img}
                         src={fetchedImage}
                         alt={props.source.name}
@@ -72,8 +79,11 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                     'Loading...'}
                 <Overlay color="#000" backgroundOpacity={0} opacity={0.5}>
                     <Flex direction="row" style={{width: "100%", justifyContent: "right"}}>
-                        <ActionIcon color="dark" size="l" opacity={1}>
-                            <IconX size="1.75rem" onClick={() => props.closeModal()}/>
+                        <ActionIcon color="dark" size="l" opacity={1} onClick={(e) => {
+                            e.stopPropagation();
+                            props.closeModal();
+                        }}>
+                            <IconX size="1.75rem"/>
                         </ActionIcon>
                     </Flex>
                     <Flex direction="row" style={{
@@ -87,7 +97,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                     </Flex>
                 </Overlay>
             </Card.Section>
-            <Group justify="space-between" mt="md" mb="xs">
+            <Group justify="space-between" mt="md" mb="xs" px="xs">
                 <Text fw={500}>{props.source.name}</Text>
                 <Button onClick={() => navigate(`/photo/${props.source.id}`)} mt={50}>View</Button>
             </Group>
