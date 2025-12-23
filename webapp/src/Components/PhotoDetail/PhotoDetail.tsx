@@ -41,13 +41,13 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
             <Table.Td>{value}</Table.Td>
         </Table.Tr>
 
-    const buildRows = (metadata: Record<string, any>) => {
+    const buildRows = (metadata: Record<string, any>): React.ReactNode => {
         if (!metadata) {
             return null;
         }
         return Object.entries(metadata)
             .filter(([key, value]) => (value !== undefined) && (![...Array(100).keys()].map(v => v.toString()).includes(key)) && (value !== ""))
-            .map(([key, value]) => {
+            .map(([key, value]): React.ReactNode => {
                 switch (valueType(value)) {
                     case ('json'):
                         return buildRows(JSON.parse(value));

@@ -44,8 +44,8 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     }
 
     useEffect(() => {
-        fetchImage();
-        fetchAlbumName();
+        void fetchImage();
+        void fetchAlbumName();
     }, [props.source])
 
     useHotkeys([
@@ -56,7 +56,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const previousButton = () => {
         if (!props.firstInAlbum) {
             return (
-                <ActionIcon color="dark" size="xl" onClick={(e) => {
+                <ActionIcon color="dark" size="xl" onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
                     props.previousPhoto();
                 }}>
@@ -69,7 +69,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const nextButton = () => {
         if (!props.lastInAlbum) {
             return (
-                <ActionIcon color="dark" size="xl" onClick={(e) => {
+                <ActionIcon color="dark" size="xl" onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
                     props.nextPhoto();
                 }}>
@@ -96,7 +96,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                     'Loading...'}
                 <Overlay color="#000" backgroundOpacity={0} opacity={0.5}>
                     <Flex direction="row" style={{width: "100%", justifyContent: "right"}}>
-                        <ActionIcon color="dark" size="l" opacity={1} onClick={(e) => {
+                        <ActionIcon color="dark" size="l" opacity={1} onClick={(e: React.MouseEvent) => {
                             e.stopPropagation();
                             props.closeModal();
                         }}>
@@ -127,7 +127,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                         </Badge>
                     )}
                 </Group>
-                <Button onClick={(e) => {
+                <Button onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
                     navigate(`/photo/${props.source.id}`);
                 }} fullWidth>
