@@ -29,6 +29,7 @@ export const Dashboard: React.FunctionComponent<IProps> = (props) => {
                 <Space h="md" />
                 <PhotoGrid
                     photosAdapter={props.photosAdapter}
+                    albumsAdapter={props.albumsAdapter}
                     maxDisplayed={50}
                 />
             </div>

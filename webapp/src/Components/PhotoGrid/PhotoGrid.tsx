@@ -153,6 +153,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                     onClose={closeModal}>
                     <PhotoCard
                         photosAdapter={props.photosAdapter}
+                        albumsAdapter={props.albumsAdapter}
                         source={photos[currentIndex]}
                         previousPhoto={handlePreviousPhoto}
                         nextPhoto={handleNextPhoto}

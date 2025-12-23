@@ -1,14 +1,16 @@
 import React, {useEffect, useState} from 'react';
 import {Photo} from '../../Models/Photo';
-import {ActionIcon, Button, Card, Flex, Group, Image, Overlay, Text} from '@mantine/core';
+import {ActionIcon, Badge, Button, Card, Flex, Group, Image, Overlay, Stack} from '@mantine/core';
 import {useNavigate} from "react-router-dom";
-import {IconArrowLeftDashed, IconArrowRightDashed, IconX} from "@tabler/icons-react";
+import {IconArrowLeftDashed, IconArrowRightDashed, IconCalendar, IconFolder, IconX} from "@tabler/icons-react";
 import {useHotkeys} from "@mantine/hooks";
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
+import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 import {fetchPhotoBinWithAuth} from "../../utils/ImageUtils";
 
 interface IProps {
-    photosAdapter: IPhotosAdapter
+    photosAdapter: IPhotosAdapter;
+    albumsAdapter: IAlbumsAdapter;
     source: Photo;
     previousPhoto: () => void;
     nextPhoto: () => void;
@@ -20,6 +22,7 @@ interface IProps {
 export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const navigate = useNavigate()
     const [fetchedImage, setFetchedImage] = useState<string | undefined>();
+    const [albumName, setAlbumName] = useState<string | undefined>();
     const img: React.Ref<HTMLImageElement> = React.createRef();
 
     const fetchImage = async () => {
@@ -27,8 +30,22 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
         setFetchedImage(imageUrl);
     }
 
+    const fetchAlbumName = async () => {
+        if (props.source.albumId) {
+            try {
+                const album = await props.albumsAdapter.getAlbumInfoById(props.source.albumId);
+                setAlbumName(album?.name);
+            } catch (error) {
+                console.error('Failed to fetch album name:', error);
+            }
+        } else {
+            console.log('No albumId on photo');
+        }
+    }
+
     useEffect(() => {
         fetchImage();
+        fetchAlbumName();
     }, [props.source])
 
     useHotkeys([
@@ -97,10 +114,26 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                     </Flex>
                 </Overlay>
             </Card.Section>
-            <Group justify="space-between" mt="md" mb="xs" px="xs">
-                <Text fw={500}>{props.source.name}</Text>
-                <Button onClick={() => navigate(`/photo/${props.source.id}`)} mt={50}>View</Button>
-            </Group>
+            <Stack gap="xs" mt="md" mb="xs" px="xs" style={{width: '100%', minWidth: 0}}>
+                <Group gap="xs" style={{flexWrap: 'wrap'}}>
+                    {props.source.createdAt && (
+                        <Badge leftSection={<IconCalendar size={14} />} variant="light" color="blue">
+                            {new Date(props.source.createdAt).toLocaleString()}
+                        </Badge>
+                    )}
+                    {albumName && (
+                        <Badge leftSection={<IconFolder size={14} />} variant="light" color="teal">
+                            {albumName}
+                        </Badge>
+                    )}
+                </Group>
+                <Button onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/photo/${props.source.id}`);
+                }} fullWidth>
+                    View Details
+                </Button>
+            </Stack>
         </Card>
     );
 };
