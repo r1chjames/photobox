@@ -3,7 +3,6 @@ package http
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -42,8 +41,8 @@ func responseLogger() gin.HandlerFunc {
 
 		c.Next()
 
-		log.Printf("Response status: %d", c.Writer.Status())
-		log.Printf("Response body: %s", blw.body.String())
+		//log.Printf("Response status: %d", c.Writer.Status())
+		//log.Printf("Response body: %s", blw.body.String())
 	}
 }
 

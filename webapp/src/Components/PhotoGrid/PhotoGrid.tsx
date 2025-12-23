@@ -146,9 +146,9 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                     onRequestAppend={onRequestAppend}
                     threshold={300}
                 >
-                    {photos.map((photo: Photo) => (
+                    {photos.map((photo: Photo, index: number) => (
                         <GridImageItem
-                            data-grid-groupkey={photo.id}
+                            data-grid-groupkey={Math.floor(index / 30)}
                             key={photo.id}
                             photo={photo}
                             onImageClick={onImageClick}

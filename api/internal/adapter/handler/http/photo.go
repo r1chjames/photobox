@@ -1,13 +1,14 @@
 package http
 
 import (
+	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 )
-import "net/http"
 
 // PhotoHandler represents the HTTP handler for photo-related requests
 type PhotoHandler struct {
@@ -70,7 +71,7 @@ func (ph *PhotoHandler) ListPhotos(ctx *gin.Context) {
 }
 
 func (ph *PhotoHandler) GetPhoto(ctx *gin.Context) {
-	photoId := ctx.Param("id")
+	photoId := ctx.Param("id")[1:] // Strip leading slash from catch-all parameter
 	includeThumbnail, err := strconv.ParseBool(ctx.DefaultQuery("thumbnail", "false"))
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, "thumbnail query parameter must be either true or false")
@@ -94,18 +95,22 @@ func (ph *PhotoHandler) GetPhotoCount(ctx *gin.Context) {
 }
 
 func (ph *PhotoHandler) GetPhotoBin(ctx *gin.Context) {
-	photoId := ctx.Param("id")
+	photoId := ctx.Param("id")[1:] // Strip leading slash from catch-all parameter
 	if photoId == "" {
 		ctx.IndentedJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, missingQueryParam("photo ID")})
+		return
 	}
 
 	photoBinary, err := ph.photoSvc.PhotoBinary(photoId)
 	handleError(ctx, err)
-	ctx.File(photoBinary)
+
+	// Unescape single quotes in filesystem path
+	unescapedPath := strings.ReplaceAll(photoBinary, `\'`, `'`)
+	ctx.File(unescapedPath)
 }
 
 func (ph *PhotoHandler) GetPhotoThumbnail(ctx *gin.Context) {
-	photoId := ctx.Param("id")
+	photoId := ctx.Param("id")[1:] // Strip leading slash from catch-all parameter
 	if photoId == "" {
 		ctx.IndentedJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, missingQueryParam("photo ID")})
 	}
