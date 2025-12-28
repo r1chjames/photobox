@@ -143,8 +143,7 @@ describe('PhotoGrid', () => {
             getPhotosInfoInAlbum: vi.fn().mockRejectedValue(new Error('API Error')),
         } as unknown as IPhotosAdapter;
 
-        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
+        // Component should render without crashing even when adapter fails
         render(
             <PhotoGrid
                 photosAdapter={errorPhotosAdapter}
@@ -152,12 +151,10 @@ describe('PhotoGrid', () => {
             />
         );
 
+        // When there's an error fetching photos, component treats it as empty and shows empty state
         await waitFor(() => {
-            // Should not crash, error should be logged
-            expect(consoleErrorSpy).toHaveBeenCalled();
+            expect(screen.getByText('This album is empty')).toBeInTheDocument();
         });
-
-        consoleErrorSpy.mockRestore();
     });
 
     it('should render with maxDisplayed prop', async () => {

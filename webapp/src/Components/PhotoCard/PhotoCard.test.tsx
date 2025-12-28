@@ -132,13 +132,17 @@ describe('PhotoCard', () => {
         const user = userEvent.setup();
         render(<PhotoCard {...mockProps} />);
 
-        await waitFor(async () => {
+        // Wait for all buttons to render
+        await waitFor(() => {
             const buttons = screen.getAllByRole('button');
-            // Find and click the first action button (previous)
-            if (buttons[0]) {
-                await user.click(buttons[0]);
-            }
+            // Should have at least 4 buttons: close, previous, next, view details
+            expect(buttons.length).toBeGreaterThanOrEqual(4);
         });
+
+        const buttons = screen.getAllByRole('button');
+        // Buttons order: [0] = close (X), [1] = previous (left arrow), [2] = next (right arrow), [3] = View Details
+        // Click the previous button (second button, index 1)
+        await user.click(buttons[1]);
 
         // The previousPhoto should be called
         expect(mockProps.previousPhoto).toHaveBeenCalled();
