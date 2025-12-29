@@ -2,37 +2,107 @@ package http
 
 import (
 	"encoding/json"
-	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/assert"
-	"gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database/repository"
-	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
-	"gitlab.com/r1chjames/photobox/api/internal/core/service"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
+	"gorm.io/datatypes"
 )
 
-func setup() (*AlbumHandler, *httptest.ResponseRecorder, *gin.Context) {
-	albumHandler := NewAlbumHandler(service.NewAlbumService(repository.NewAlbumRepositoryMock(), appconfig.AppConfig{}))
-	w := httptest.NewRecorder()
-	ctx, _ := gin.CreateTestContext(w)
-	return albumHandler, w, ctx
+// MockAlbumService is a mock implementation of port.AlbumService
+type MockAlbumService struct {
+	mock.Mock
 }
 
-func TestGetAlbum(t *testing.T) {
+func (m *MockAlbumService) GetAlbumById(id string) (*domain.Album, error) {
+	args := m.Called(id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Album), args.Error(1)
+}
+
+func (m *MockAlbumService) GetAlbumByName(name string) (*domain.Album, error) {
+	args := m.Called(name)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Album), args.Error(1)
+}
+
+func (m *MockAlbumService) ListAlbums(fromId string, pageSize int) ([]*domain.Album, error) {
+	args := m.Called(fromId, pageSize)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Album), args.Error(1)
+}
+
+func (m *MockAlbumService) AlbumCount() (int64, error) {
+	args := m.Called()
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *MockAlbumService) CreateAlbum(name string) (*domain.Album, error) {
+	args := m.Called(name)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Album), args.Error(1)
+}
+
+func (m *MockAlbumService) CreateAlbumIfNotExists(name string) (*domain.Album, error) {
+	args := m.Called(name)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Album), args.Error(1)
+}
+
+// TestAlbumHandler_GetAlbum_Success tests successful album retrieval
+func TestAlbumHandler_GetAlbum_Success(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	albumHandler, _, _ := setup()
+
+	mockService := new(MockAlbumService)
+	handler := NewAlbumHandler(mockService)
+
+	expectedAlbum := &domain.Album{
+		ID:          "1",
+		Name:        "Test Album",
+		Description: "Test Description",
+		Tags:        "test,album",
+		Metadata:    datatypes.JSON([]byte("{}")),
+	}
+
+	mockService.On("GetAlbumById", "1").Return(expectedAlbum, nil)
+
+	// Use a router to properly set up the context
+	router := gin.Default()
+	router.GET("/albums/:id", handler.GetAlbum)
 
 	w := httptest.NewRecorder()
-	ctx, _ := gin.CreateTestContext(w)
-	ctx.Params = []gin.Param{{Key: "id", Value: "1"}}
+	req := httptest.NewRequest(http.MethodGet, "/albums/1", nil)
+	router.ServeHTTP(w, req)
 
-	albumHandler.GetAlbum(ctx)
 	assert.Equal(t, http.StatusOK, w.Code)
-	var response map[string]string
-	err := json.Unmarshal([]byte(w.Body.String()), &response)
+
+	var response struct {
+		Success bool          `json:"success"`
+		Message string        `json:"message"`
+		Data    domain.Album  `json:"data"`
+	}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
-	assert.Equal(t, "1", response["id"])
+	assert.True(t, response.Success)
+	assert.Equal(t, "1", response.Data.ID)
+	assert.Equal(t, "Test Album", response.Data.Name)
+	assert.Equal(t, "Test Description", response.Data.Description)
+
+	mockService.AssertExpectations(t)
 }
 
 //func TestGetAlbumById(t *testing.T) {

@@ -23,9 +23,9 @@ func (pr *PhotoRepository) GetPhotoById(photoId string, includeThumbnail bool) (
 	photo.ID = photoId
 	result := pr.dbEnv.Db
 	if !includeThumbnail {
-		result.Omit("thumbnail")
+		result = result.Omit("thumbnail")
 	}
-	result.First(&photo)
+	result = result.First(&photo)
 	err := HandleError(result)
 	if err != nil {
 		return nil, err
@@ -37,13 +37,16 @@ func (pr *PhotoRepository) ListAllPhotos(fromId string, limit int, includeThumbn
 	var photos []*domain.Photo
 	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Limit(limit)
 	if fromId != "" {
-		fromPhoto, _ := pr.GetPhotoById(fromId, false)
-		result.Where("created_epoch > ?", fromPhoto.CreatedEpoch)
+		fromPhoto, err := pr.GetPhotoById(fromId, false)
+		if err != nil {
+			return nil, err
+		}
+		result = result.Where("created_epoch > ?", fromPhoto.CreatedEpoch)
 	}
 	if !includeThumbnail {
-		result.Omit("thumbnail")
+		result = result.Omit("thumbnail")
 	}
-	result.Find(&photos)
+	result = result.Find(&photos)
 	if result.RowsAffected == 0 {
 		return nil, domain.ErrDataNotFound
 	}
@@ -55,15 +58,14 @@ func (pr *PhotoRepository) ListAllPhotosInAlbum(albumId string, fromId string, l
 	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Limit(limit)
 	if fromId != "" {
 		fromEpoch, _ := b64.StdEncoding.DecodeString(fromId)
-		result.Where("created_epoch > ?", fromEpoch)
+		result = result.Where("created_epoch > ?", fromEpoch)
 	}
 	if !includeThumbnail {
-		result.Omit("thumbnail")
+		result = result.Omit("thumbnail")
 	}
-	result.Find(&photos, "album_id = ?", albumId)
-	err := HandleError(result)
-	if err != nil {
-		return nil, err
+	result = result.Find(&photos, "album_id = ?", albumId)
+	if result.RowsAffected == 0 {
+		return nil, domain.ErrDataNotFound
 	}
 	return photos, nil
 }

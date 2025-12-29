@@ -71,7 +71,7 @@ func (ar *AlbumRepositoryMock) CreateAlbumIfNotExists(name string) (*domain.Albu
 	return &album, nil
 }
 
-func (ar *AlbumRepositoryMock) ListAllAlbums(page int, limit int) ([]*domain.Album, error) {
+func (ar *AlbumRepositoryMock) ListAllAlbums(fromId string, pageSize int) ([]*domain.Album, error) {
 	return []*domain.Album{
 		{
 			ID:          "id1",

@@ -31,28 +31,28 @@ func NewPhotoService(photoRepo port.PhotoRepository, albumRepo port.AlbumService
 
 func (ps *PhotoService) ListPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
 	resp, err := ps.photoRepo.ListAllPhotosInAlbum(albumId, fromId, limit, includeThumbnail)
-	ps.setPhotosSourcePath(resp)
 	if err != nil {
 		return nil, domain.ErrDataNotFound
 	}
+	ps.setPhotosSourcePath(resp)
 	return resp, nil
 }
 
 func (ps *PhotoService) ListPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
 	resp, err := ps.photoRepo.ListAllPhotos(fromId, limit, includeThumbnail)
-	ps.setPhotosSourcePath(resp)
 	if err != nil {
 		return nil, domain.ErrDataNotFound
 	}
+	ps.setPhotosSourcePath(resp)
 	return resp, nil
 }
 
 func (ps *PhotoService) GetPhoto(photoId string, includeThumbnail bool) (*domain.Photo, error) {
 	resp, err := ps.photoRepo.GetPhotoById(photoId, includeThumbnail)
-	ps.setPhotoSourcePath(resp)
 	if err != nil {
 		return nil, domain.ErrDataNotFound
 	}
+	ps.setPhotoSourcePath(resp)
 	return resp, nil
 }
 
@@ -121,9 +121,11 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 		newAlbumId, albErr := ps.albumSvc.CreateAlbum(photo.Directory)
 		if albErr != nil {
 			log.Printf("unable to insert album record, %s", albErr)
+			albumId = "" // Use empty album ID if creation fails
+		} else {
+			albumId = newAlbumId.ID
+			log.Printf("created album name: %s, id: %s", photo.Directory, albumId)
 		}
-		albumId = newAlbumId.ID
-		log.Printf("created album name: %s, id: %s", photo.Directory, albumId)
 	} else {
 		albumId = result.ID
 	}
