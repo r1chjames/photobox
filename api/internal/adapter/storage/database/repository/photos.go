@@ -86,3 +86,14 @@ func (pr *PhotoRepository) CreatePhotoInfo(photo domain.Photo) error {
 	}).Create(&photo)
 	return result.Error
 }
+
+// CreatePhotosInfo creates multiple photo records in a single batch operation
+func (pr *PhotoRepository) CreatePhotosInfo(photos []domain.Photo) error {
+	if len(photos) == 0 {
+		return nil
+	}
+	result := pr.dbEnv.Db.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&photos)
+	return result.Error
+}

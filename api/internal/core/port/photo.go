@@ -18,6 +18,8 @@ type PhotoRepository interface {
 	GetPhotosInAlbumCount(albumId string) (int64, error)
 	// CreatePhotoInfo selects a user by email
 	CreatePhotoInfo(photo domain.Photo) error
+	// CreatePhotosInfo creates multiple photo records in a single batch operation
+	CreatePhotosInfo(photos []domain.Photo) error
 }
 
 // PhotoService is an interface for interacting with photo-related business logic

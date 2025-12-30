@@ -4,20 +4,22 @@ import (
 	"fmt"
 	"gitlab.com/r1chjames/photobox/api/internal/core/utils"
 	"strconv"
+	"strings"
 	"time"
 )
 
 type AppConfig struct {
-	PhotoDir      string
-	ApiBasePath   string
-	DbUrl         string
-	ResetSettings bool
-	DebugMode     bool
-	Timezone      *time.Location
-	Token         string
-	TokenDuration time.Duration
-	AdminUsername string
-	AdminPassword string
+	PhotoDir           string
+	ApiBasePath        string
+	DbUrl              string
+	ResetSettings      bool
+	DebugMode          bool
+	Timezone           *time.Location
+	Token              string
+	TokenDuration      time.Duration
+	AdminUsername      string
+	AdminPassword      string
+	CorsAllowedOrigins []string
 }
 
 func New() *AppConfig {
@@ -38,16 +40,28 @@ func New() *AppConfig {
 	adminUsername := utils.GetEnv("DEFAULT_ADMIN_USERNAME", "admin")
 	adminPassword := utils.GetEnv("DEFAULT_ADMIN_PASSWORD", "password")
 
+	// Parse CORS allowed origins - comma-separated list
+	corsOriginsStr := utils.GetEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000")
+	var corsOrigins []string
+	if corsOriginsStr != "" {
+		corsOrigins = strings.Split(corsOriginsStr, ",")
+		// Trim whitespace from each origin
+		for i, origin := range corsOrigins {
+			corsOrigins[i] = strings.TrimSpace(origin)
+		}
+	}
+
 	return &AppConfig{
-		PhotoDir:      utils.GetEnv("PHOTO_DIR", "/photos"),
-		ApiBasePath:   utils.GetEnv("API_BASE_PATH", "/api"),
-		DbUrl:         dbURL,
-		ResetSettings: resetSettings,
-		DebugMode:     debugMode,
-		Timezone:      timezone,
-		Token:         token,
-		TokenDuration: tokenDuration,
-		AdminUsername: adminUsername,
-		AdminPassword: adminPassword,
+		PhotoDir:           utils.GetEnv("PHOTO_DIR", "/photos"),
+		ApiBasePath:        utils.GetEnv("API_BASE_PATH", "/api"),
+		DbUrl:              dbURL,
+		ResetSettings:      resetSettings,
+		DebugMode:          debugMode,
+		Timezone:           timezone,
+		Token:              token,
+		TokenDuration:      tokenDuration,
+		AdminUsername:      adminUsername,
+		AdminPassword:      adminPassword,
+		CorsAllowedOrigins: corsOrigins,
 	}
 }

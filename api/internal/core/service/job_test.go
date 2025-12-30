@@ -33,6 +33,11 @@ func (m *MockJobRepository) CreateBaseJobs() error {
 	return args.Error(0)
 }
 
+func (m *MockJobRepository) StartJobIfNotRunning(name string) error {
+	args := m.Called(name)
+	return args.Error(0)
+}
+
 // TestIsJobRunning tests checking if a job is running
 func TestIsJobRunning(t *testing.T) {
 	tests := []struct {

@@ -1,0 +1,816 @@
+openapi: 3.0.3
+info:
+  title: Photobox API
+  description: Complete API specification for Photobox backend - a photo management system
+  version: 1.0.0
+  contact:
+    name: Photobox API Support
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: https://api.photobox.example.com
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: Authentication and authorization endpoints
+  - name: Users
+    description: User registration and profile management
+  - name: Albums
+    description: Album management and listing
+  - name: Photos
+    description: Photo management, indexing, and retrieval
+  - name: Settings
+    description: Application settings and configuration
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: PASETO
+      description: PASETO token authentication. Use the /api/login endpoint to obtain a token.
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: User unique identifier
+        name:
+          type: string
+          description: Username
+        email:
+          type: string
+          format: email
+          description: User email address
+        created_at:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    Album:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Album unique identifier
+        name:
+          type: string
+          description: Album name
+        description:
+          type: string
+          description: Album description
+        tags:
+          type: string
+          description: Album tags
+        metadata:
+          type: object
+          description: Additional metadata
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        createdEpoch:
+          type: integer
+          description: Creation epoch time
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        thumbnail:
+          type: string
+          description: Thumbnail path or data
+
+    Photo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Photo unique identifier
+        name:
+          type: string
+          description: Photo name
+        filesystemPath:
+          type: string
+          description: Path on filesystem
+        sourcePath:
+          type: string
+          description: Original source path
+        albumId:
+          type: string
+          format: uuid
+          description: Parent album ID
+        tags:
+          type: string
+          description: Photo tags
+        metadata:
+          type: object
+          description: Photo metadata (EXIF, etc.)
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        createdEpoch:
+          type: integer
+          description: Creation epoch time
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        thumbnail:
+          type: string
+          format: byte
+          description: Thumbnail binary data (optional)
+
+    Setting:
+      type: object
+      properties:
+        key:
+          type: string
+          description: Setting key (primary key)
+        value:
+          type: string
+          description: Setting value
+        friendlyName:
+          type: string
+          description: Human-readable name
+        category:
+          type: string
+          description: Setting category
+        type:
+          type: string
+          description: Value type
+        options:
+          type: string
+          description: Available options
+        description:
+          type: string
+          description: Setting description
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Success
+        data:
+          type: object
+          description: Response data (varies by endpoint)
+
+    PaginatedResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Success
+        data:
+          type: array
+          items: {}
+        metadata:
+          type: object
+          properties:
+            fromId:
+              type: string
+              description: Base64 encoded starting epoch
+            toId:
+              type: string
+              description: Base64 encoded ending epoch
+            count:
+              type: integer
+              description: Number of items returned
+            nextPage:
+              type: string
+              description: URL to next page
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        messages:
+          type: array
+          items:
+            type: string
+          description: Array of error messages
+
+paths:
+  /api/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and receive PASETO token
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: admin
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: password123
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Success
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        description: PASETO authentication token
+        '400':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/user/register:
+    post:
+      tags:
+        - Users
+      summary: Register new user
+      description: Create a new user account
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - password
+              properties:
+                username:
+                  type: string
+                  example: newuser
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: password123
+      responses:
+        '200':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/user/update:
+    post:
+      tags:
+        - Users
+      summary: Update user profile
+      description: Update current authenticated user's profile
+      operationId: updateUser
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: updatedusername
+                email:
+                  type: string
+                  format: email
+                  example: newemail@example.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                role:
+                  type: string
+                  enum: [administrator, viewer, contributor]
+                  example: contributor
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/album/{id}:
+    get:
+      tags:
+        - Albums
+      summary: Get album by ID
+      description: Retrieve a specific album by its unique identifier
+      operationId: getAlbum
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Album UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Album found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Album'
+        '404':
+          description: Album not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/albums:
+    get:
+      tags:
+        - Albums
+      summary: List albums
+      description: Get paginated list of all albums
+      operationId: listAlbums
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
+            default: 30
+        - name: fromId
+          in: query
+          description: Base64 encoded epoch for pagination
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Albums retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Album'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/albums/count:
+    get:
+      tags:
+        - Albums
+      summary: Count albums
+      description: Get total count of albums
+      operationId: countAlbums
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Count retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/photo/info/{id}:
+    get:
+      tags:
+        - Photos
+      summary: Get photo metadata
+      description: Retrieve photo information and optionally thumbnail data
+      operationId: getPhotoInfo
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Photo UUID
+          schema:
+            type: string
+            format: uuid
+        - name: thumbnail
+          in: query
+          description: Include thumbnail binary data
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Photo info retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Photo'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Photo not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/photo/thumbnail/{id}:
+    get:
+      tags:
+        - Photos
+      summary: Get photo thumbnail
+      description: Retrieve photo thumbnail as binary image data
+      operationId: getPhotoThumbnail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Photo UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Thumbnail retrieved successfully
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Unauthorized
+        '404':
+          description: Photo not found
+
+  /api/photo/bin/{id}:
+    get:
+      tags:
+        - Photos
+      summary: Get full photo
+      description: Retrieve full photo as binary image data
+      operationId: getPhotoBinary
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Photo UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Photo retrieved successfully
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Unauthorized
+        '404':
+          description: Photo not found
+
+  /api/photos:
+    get:
+      tags:
+        - Photos
+      summary: List photos
+      description: Get paginated list of photos for a specific album
+      operationId: listPhotos
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: albumId
+          in: query
+          required: true
+          description: Album UUID to filter photos
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
+            default: 10
+        - name: fromId
+          in: query
+          description: Base64 encoded epoch for pagination
+          schema:
+            type: string
+        - name: thumbnail
+          in: query
+          description: Include thumbnail data in response
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Photos retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Photo'
+        '400':
+          description: Missing required albumId parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/photos/count:
+    get:
+      tags:
+        - Photos
+      summary: Count photos
+      description: Get total count of photos in a specific album
+      operationId: countPhotos
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: albumId
+          in: query
+          required: true
+          description: Album UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Count retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+        '400':
+          description: Missing required albumId parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/photos/index:
+    post:
+      tags:
+        - Photos
+      summary: Start photo indexing
+      description: Start asynchronous photo indexing job
+      operationId: indexPhotos
+      security:
+        - bearerAuth: []
+      responses:
+        '202':
+          description: Indexing job started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Indexing job already running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/health:
+    get:
+      tags:
+        - Settings
+      summary: Health check
+      description: Check API health status
+      operationId: healthCheck
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/settings:
+    get:
+      tags:
+        - Settings
+      summary: List settings
+      description: Get all application settings
+      operationId: listSettings
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Setting'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Settings
+      summary: Update settings
+      description: Update application settings (async operation)
+      operationId: updateSettings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Setting'
+      responses:
+        '202':
+          description: Settings update accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

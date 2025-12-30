@@ -77,11 +77,11 @@ func (ar *AlbumRepository) ListAllAlbums(fromId string, limit int) ([]*domain.Al
 }
 
 func (ar *AlbumRepository) AlbumCount() (int64, error) {
-	var albums []domain.Album
-	result := ar.dbEnv.Db.Find(&albums)
+	var count int64
+	result := ar.dbEnv.Db.Model(&domain.Album{}).Count(&count)
 	err := HandleError(result)
 	if err != nil {
 		return 0, err
 	}
-	return result.RowsAffected, nil
+	return count, nil
 }

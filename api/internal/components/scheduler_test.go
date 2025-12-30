@@ -45,6 +45,11 @@ func (m *MockJobService) CreateBaseJobs() error {
 	return args.Error(0)
 }
 
+func (m *MockJobService) StartJobIfNotRunning(jobName string) error {
+	args := m.Called(jobName)
+	return args.Error(0)
+}
+
 // MockUtilityService is a mock implementation of port.UtilityService
 type MockUtilityService struct {
 	mock.Mock

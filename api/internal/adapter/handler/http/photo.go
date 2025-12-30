@@ -121,14 +121,15 @@ func (ph *PhotoHandler) GetPhotoThumbnail(ctx *gin.Context) {
 }
 
 func (ph *PhotoHandler) IndexPhotos(c *gin.Context) {
-	isRunning, _ := ph.jobSvc.IsJobRunning("Photo_index")
-
-	if isRunning {
-		c.IndentedJSON(http.StatusConflict, "Photo Index already running")
-	} else {
-		c.Status(http.StatusAccepted)
-		go func() {
-			ph.photoSvc.PerformPhotoIndex()
-		}()
+	// Atomically start the job - returns error if already running
+	err := ph.jobSvc.StartJobIfNotRunning("Photo_index")
+	if err != nil {
+		handleError(c, err)
+		return
 	}
+
+	c.Status(http.StatusAccepted)
+	go func() {
+		ph.photoSvc.PerformPhotoIndex()
+	}()
 }

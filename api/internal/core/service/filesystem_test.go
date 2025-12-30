@@ -65,6 +65,11 @@ func (m *MockJobServiceFS) CreateBaseJobs() error {
 	return args.Error(0)
 }
 
+func (m *MockJobServiceFS) StartJobIfNotRunning(jobName string) error {
+	args := m.Called(jobName)
+	return args.Error(0)
+}
+
 // MockUtilityServiceFS is a mock implementation of port.UtilityService for filesystem tests
 type MockUtilityServiceFS struct {
 	mock.Mock

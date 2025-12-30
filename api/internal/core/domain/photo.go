@@ -10,11 +10,11 @@ type Photo struct {
 	Name           string         `json:"name"`
 	FilesystemPath string         `json:"filesystemPath"`
 	SourcePath     string         `json:"sourcePath"`
-	AlbumId        string         `json:"albumId" gorm:"index"`
+	AlbumId        string         `json:"albumId" gorm:"index:idx_album_epoch,priority:1"`
 	Tags           string         `json:"tags"`
 	Metadata       datatypes.JSON `json:"metadata"`
 	CreatedAt      time.Time      `json:"createdAt"`
-	CreatedEpoch   int64          `json:"createdEpoch"`
+	CreatedEpoch   int64          `json:"createdEpoch" gorm:"index;index:idx_album_epoch,priority:2"`
 	UpdatedAt      time.Time      `json:"updatedAt"`
 	Thumbnail      []byte         `json:"thumbnail"`
 }

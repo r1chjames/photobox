@@ -295,7 +295,8 @@ func TestGetSum(t *testing.T) {
 			assert.NoError(t, err)
 			defer file.Close()
 
-			hash := GetSum(file)
+			hash, err := GetSum(file)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedHash, hash)
 		})
 	}
@@ -363,8 +364,8 @@ func TestGetFileType(t *testing.T) {
 		{
 			name:             "empty file",
 			content:          []byte(""),
-			expectedTypes:    []string{"application/x-empty", "inode/x-empty"}, // Platform-dependent
-			checkContainsAny: true,
+			expectedTypes:    []string{"text/plain"}, // http.DetectContentType returns text/plain for empty files
+			checkContainsAny: false,
 		},
 	}
 
@@ -377,7 +378,8 @@ func TestGetFileType(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Get file type
-			fileType := GetFileType(testFile)
+			fileType, err := GetFileType(testFile)
+			assert.NoError(t, err)
 
 			if tt.checkContainsAny {
 				// Check if fileType contains any of the expected types

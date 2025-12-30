@@ -38,3 +38,7 @@ func (js *JobService) JobComplete(name string) error {
 func (js *JobService) CreateBaseJobs() error {
 	return js.repo.CreateBaseJobs()
 }
+
+func (js *JobService) StartJobIfNotRunning(name string) error {
+	return js.repo.StartJobIfNotRunning(name)
+}

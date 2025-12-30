@@ -33,4 +33,6 @@ var (
 	ErrUnauthorized = errors.New("user is unauthorized to access the resource")
 	// ErrForbidden is an error for when the user is forbidden to access the resource
 	ErrForbidden = errors.New("user is forbidden to access the resource")
+	// ErrJobAlreadyRunning is an error for when a job is already running
+	ErrJobAlreadyRunning = errors.New("job is already running")
 )

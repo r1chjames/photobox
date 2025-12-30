@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
+	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 )
 
@@ -56,9 +57,10 @@ func NewRouter(
 	userHandler UserHandler) (*Router, error) {
 
 	router := gin.Default()
-	//router.Use(cors.Default())
+
+	// Configure CORS with environment-based allowed origins
 	config := cors.DefaultConfig()
-	config.AllowAllOrigins = true
+	config.AllowOrigins = appConfig.CorsAllowedOrigins
 	config.AllowMethods = []string{"POST", "GET", "PUT", "OPTIONS"}
 	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization", "Accept", "UserResponse-Agent", "Cache-Control", "Pragma"}
 	config.ExposeHeaders = []string{"Content-Length"}
@@ -69,7 +71,18 @@ func NewRouter(
 	//TODO add behind debug switch
 	router.Use(responseLogger())
 
-	defineResources(appConfig, router, token, authHandler, photoHandler, albumHandler, utilityHandler, userHandler)
+	// Add request timeout middleware (30 seconds for most requests)
+	router.Use(timeoutMiddleware(30 * time.Second))
+
+	// Create rate limiters
+	// Global rate limiter: 100 requests per second with burst of 200
+	globalLimiter := NewIPRateLimiter(100, 200)
+	router.Use(rateLimitMiddleware(globalLimiter))
+
+	// Strict rate limiter for auth endpoints: 5 requests per second with burst of 10
+	authLimiter := NewIPRateLimiter(5, 10)
+
+	defineResources(appConfig, router, token, authHandler, photoHandler, albumHandler, utilityHandler, userHandler, authLimiter)
 
 	return &Router{
 		router,
@@ -84,15 +97,18 @@ func defineResources(
 	photoHandler PhotoHandler,
 	albumHandler AlbumHandler,
 	utilityHandler UtilityHandler,
-	userHandler UserHandler) {
+	userHandler UserHandler,
+	authLimiter *IPRateLimiter) {
 
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
 
-	router.POST(fmt.Sprintf("%s/login", urlBasePath), authHandler.Login)
+	// Apply strict rate limiting to login endpoint to prevent brute force attacks
+	router.POST(fmt.Sprintf("%s/login", urlBasePath), rateLimitMiddleware(authLimiter), authHandler.Login)
 
 	user := router.Group(fmt.Sprintf("%s/user", urlBasePath))
 	{
-		user.POST("/register", userHandler.Register)
+		// Apply strict rate limiting to registration endpoint
+		user.POST("/register", rateLimitMiddleware(authLimiter), userHandler.Register)
 		authUser := user.Use(authMiddleware(token))
 		{
 			authUser.POST("/update", userHandler.UpdateUser)
@@ -117,15 +133,19 @@ func defineResources(
 	{
 		photos.GET("", photoHandler.ListPhotos)
 		photos.GET("/count", photoHandler.GetPhotoCount)
-		photos.POST("/index", photoHandler.IndexPhotos)
 	}
+
+	// Photo indexing is admin-only as it's a system operation
+	router.POST(fmt.Sprintf("%s/photos/index", urlBasePath), authMiddleware(token), requireRole(domain.ADMINISTRATOR), photoHandler.IndexPhotos)
 
 	settings := router.Group(urlBasePath).Use(authMiddleware(token))
 	{
 		settings.GET("/health", utilityHandler.HealthCheck)
-		settings.GET("/settings", utilityHandler.ListAllSettings)
-		settings.POST("/settings", utilityHandler.UpdateSettings)
 	}
+
+	// Settings management is admin-only
+	router.GET(fmt.Sprintf("%s/settings", urlBasePath), authMiddleware(token), requireRole(domain.ADMINISTRATOR), utilityHandler.ListAllSettings)
+	router.POST(fmt.Sprintf("%s/settings", urlBasePath), authMiddleware(token), requireRole(domain.ADMINISTRATOR), utilityHandler.UpdateSettings)
 
 }
 

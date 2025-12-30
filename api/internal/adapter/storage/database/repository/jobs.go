@@ -38,6 +38,26 @@ func (jr *JobRepository) UpdateJobStatus(name string, status string) error {
 	return result.Error
 }
 
+// StartJobIfNotRunning atomically starts a job only if it's not already running
+// Returns an error if the job is already running
+func (jr *JobRepository) StartJobIfNotRunning(name string) error {
+	// Atomic update: only set to RUNNING if current status is NOT_RUNNING
+	result := jr.dbEnv.Db.Model(&domain.Job{}).
+		Where("name = ? AND status != ?", name, "RUNNING").
+		Updates(domain.Job{Status: "RUNNING", LastRun: time.Now()})
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	// If no rows were affected, the job is already running
+	if result.RowsAffected == 0 {
+		return domain.ErrJobAlreadyRunning
+	}
+
+	return nil
+}
+
 func (jr *JobRepository) UpdateAllJobsStatus(status string) error {
 	result := jr.dbEnv.Db.Model(domain.Job{}).Where("status = ?", "RUNNING").Update("Status", status)
 	return result.Error

@@ -3,13 +3,13 @@ package utils
 import (
 	"crypto/md5"
 	"fmt"
-	"github.com/rwcarlsen/goexif/exif"
 	"io"
-	"log"
+	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/rwcarlsen/goexif/exif"
 )
 
 func GetFileExtension(path string) string {
@@ -42,12 +42,24 @@ func GetExifData(file *os.File) exif.Exif {
 	return *exifData
 }
 
-func GetFileType(path string) string {
-	out, err := exec.Command("file", "--brief", "--mime-type", path).Output()
+func GetFileType(path string) (string, error) {
+	// Open the file
+	file, err := os.Open(path)
 	if err != nil {
-		log.Fatal(err)
+		return "", fmt.Errorf("failed to open file for type detection %s: %w", path, err)
 	}
-	return strings.TrimSpace(string(out))
+	defer file.Close()
+
+	// Read the first 512 bytes for content type detection
+	buffer := make([]byte, 512)
+	n, err := file.Read(buffer)
+	if err != nil && err != io.EOF {
+		return "", fmt.Errorf("failed to read file for type detection %s: %w", path, err)
+	}
+
+	// Detect content type using Go's native detector
+	contentType := http.DetectContentType(buffer[:n])
+	return contentType, nil
 }
 
 func GetExtension(path string) string {
@@ -58,10 +70,10 @@ func GetSize(info os.FileInfo) int64 {
 	return info.Size()
 }
 
-func GetSum(file *os.File) string {
+func GetSum(file *os.File) (string, error) {
 	h := md5.New()
 	if _, err := io.Copy(h, file); err != nil {
-		log.Fatal(err)
+		return "", fmt.Errorf("failed to calculate MD5 sum: %w", err)
 	}
-	return fmt.Sprintf("%x", h.Sum(nil)) // TODO Optimize this, if possible
+	return fmt.Sprintf("%x", h.Sum(nil)), nil // TODO Optimize this, if possible
 }

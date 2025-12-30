@@ -3,6 +3,8 @@ package repository
 import (
 	"bytes"
 	"fmt"
+	"runtime"
+
 	"github.com/disintegration/imaging"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"gitlab.com/r1chjames/photobox/api/internal/core/service"
@@ -15,9 +17,10 @@ import (
 )
 
 type FilesystemRepository struct {
-	wg     sync.WaitGroup
-	jobSvc *service.JobService
-	config appconfig.AppConfig
+	wg      sync.WaitGroup
+	jobSvc  *service.JobService
+	config  appconfig.AppConfig
+	dirSem  chan struct{} // Semaphore to limit concurrent directory walking
 }
 
 func NewFilesystemRepository(config appconfig.AppConfig, jobService *service.JobService) *FilesystemRepository {
@@ -39,13 +42,22 @@ func (fs *FilesystemRepository) CreateDirectoryIfNotExists(basePhotoPath string,
 func (fs *FilesystemRepository) ScanFilesystem(photoChan chan string) {
 	photosRoot := fs.config.PhotoDir
 
+	// Initialize semaphore with limit of 4x CPU count for concurrent directory walkers
+	maxConcurrentDirs := runtime.NumCPU() * 4
+	fs.dirSem = make(chan struct{}, maxConcurrentDirs)
+
 	fs.wg.Add(1)
 	fs.walkDir(photosRoot, photoChan)
 	fs.wg.Wait()
 }
 
 func (fs *FilesystemRepository) walkDir(dir string, photoChan chan string) {
-	defer fs.wg.Done()
+	// Acquire semaphore slot
+	fs.dirSem <- struct{}{}
+	defer func() {
+		<-fs.dirSem // Release semaphore slot
+		fs.wg.Done()
+	}()
 
 	visit := func(path string, d os.DirEntry, err error) error {
 		if d.IsDir() && path != dir {

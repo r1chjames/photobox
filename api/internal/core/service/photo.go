@@ -105,13 +105,58 @@ func (ps *PhotoService) setPhotosSourcePath(photos []*domain.Photo) {
 }
 
 func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
-	for _, photo := range photos {
-		err := ps.SavePhoto(photo)
-		if err != nil {
-			return err
-		}
+	if len(photos) == 0 {
+		return nil
 	}
-	return nil
+
+	// Cache album lookups to avoid repeated queries
+	albumCache := make(map[string]string) // map[albumName]albumId
+
+	// Build all photo records
+	photoRecords := make([]domain.Photo, 0, len(photos))
+
+	for _, photo := range photos {
+		// Check cache first
+		albumId, found := albumCache[photo.Directory]
+
+		if !found {
+			// Look up or create album
+			result, err := ps.albumSvc.GetAlbumByName(photo.Directory)
+			if result == nil || err != nil {
+				newAlbum, albErr := ps.albumSvc.CreateAlbum(photo.Directory)
+				if albErr != nil {
+					log.Printf("unable to insert album record, %s", albErr)
+					albumId = "" // Use empty album ID if creation fails
+				} else {
+					albumId = newAlbum.ID
+					log.Printf("created album name: %s, id: %s", photo.Directory, albumId)
+				}
+			} else {
+				albumId = result.ID
+			}
+			// Cache the result
+			albumCache[photo.Directory] = albumId
+		}
+
+		photoHash := b64.StdEncoding.EncodeToString([]byte(photo.Path))
+		photoMetadata, _ := json.Marshal(&photo)
+		photoInfo := domain.Photo{
+			ID:             photoHash,
+			Name:           utils.EscapeInvalidCharacters(photo.Name),
+			FilesystemPath: utils.EscapeInvalidCharacters(photo.Path),
+			AlbumId:        albumId,
+			Tags:           "",
+			Metadata:       photoMetadata,
+			Thumbnail:      photo.Thumbnail,
+			CreatedEpoch:   time.Now().UnixMilli(),
+		}
+
+		log.Printf("Adding photo: %s to album: %s", photo.Name, photo.Directory)
+		photoRecords = append(photoRecords, photoInfo)
+	}
+
+	// Batch insert all photos
+	return ps.photoRepo.CreatePhotosInfo(photoRecords)
 }
 
 func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {

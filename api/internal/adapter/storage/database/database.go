@@ -2,12 +2,14 @@ package database
 
 import (
 	"errors"
+	"log"
+	"time"
+
 	. "gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	. "gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
-	"log"
 )
 
 type Env struct {
@@ -26,6 +28,22 @@ func InitDbConnection(appConfig *AppConfig) *Env {
 	if err != nil {
 		log.Fatalf("failed to connect database, %s", err)
 	}
+
+	// Configure connection pool
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatalf("failed to get database instance, %s", err)
+	}
+
+	// Set maximum number of idle connections in the pool
+	sqlDB.SetMaxIdleConns(10)
+
+	// Set maximum number of open connections to the database
+	sqlDB.SetMaxOpenConns(100)
+
+	// Set maximum lifetime of a connection (reuse connections for up to 1 hour)
+	sqlDB.SetConnMaxLifetime(time.Hour)
+
 	return &Env{Db: db}
 }
 

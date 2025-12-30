@@ -50,6 +50,11 @@ func (m *MockPhotoRepository) CreatePhotoInfo(photo domain.Photo) error {
 	return args.Error(0)
 }
 
+func (m *MockPhotoRepository) CreatePhotosInfo(photos []domain.Photo) error {
+	args := m.Called(photos)
+	return args.Error(0)
+}
+
 // MockAlbumService is a mock implementation of port.AlbumService
 type MockAlbumService struct {
 	mock.Mock
@@ -679,42 +684,37 @@ func TestSavePhotos(t *testing.T) {
 				{Name: "photo3.jpg", Path: "/photos/album2/photo3.jpg", Directory: "album2"},
 			},
 			mockSetup: func(mPhoto *MockPhotoRepository, mAlbum *MockAlbumService) {
-				// First two photos use album1
+				// Album lookups are cached, so album1 is only looked up once
 				mAlbum.On("GetAlbumByName", "album1").Return(&domain.Album{
 					ID:   "album-1",
 					Name: "album1",
-				}, nil).Times(2)
-				// Third photo uses album2
+				}, nil).Once()
+				// album2 is looked up once
 				mAlbum.On("GetAlbumByName", "album2").Return(&domain.Album{
 					ID:   "album-2",
 					Name: "album2",
 				}, nil).Once()
-				// All photos get saved
-				mPhoto.On("CreatePhotoInfo", mock.AnythingOfType("domain.Photo")).Return(nil).Times(3)
+				// All photos get saved in a single batch
+				mPhoto.On("CreatePhotosInfo", mock.AnythingOfType("[]domain.Photo")).Return(nil).Once()
 			},
 			validate: func(t *testing.T, err error) {
 				assert.NoError(t, err)
 			},
 		},
 		{
-			name: "fail to save second photo",
+			name: "fail to save batch",
 			photoFiles: []domain.PhotoFile{
 				{Name: "photo1.jpg", Path: "/photos/album1/photo1.jpg", Directory: "album1"},
 				{Name: "photo2.jpg", Path: "/photos/album1/photo2.jpg", Directory: "album1"},
 			},
 			mockSetup: func(mPhoto *MockPhotoRepository, mAlbum *MockAlbumService) {
-				// First photo succeeds
+				// Album lookup cached, called once
 				mAlbum.On("GetAlbumByName", "album1").Return(&domain.Album{
 					ID:   "album-1",
 					Name: "album1",
 				}, nil).Once()
-				mPhoto.On("CreatePhotoInfo", mock.AnythingOfType("domain.Photo")).Return(nil).Once()
-				// Second photo fails
-				mAlbum.On("GetAlbumByName", "album1").Return(&domain.Album{
-					ID:   "album-1",
-					Name: "album1",
-				}, nil).Once()
-				mPhoto.On("CreatePhotoInfo", mock.AnythingOfType("domain.Photo")).Return(errors.New("save error")).Once()
+				// Batch save fails
+				mPhoto.On("CreatePhotosInfo", mock.AnythingOfType("[]domain.Photo")).Return(errors.New("save error")).Once()
 			},
 			validate: func(t *testing.T, err error) {
 				assert.Error(t, err)
