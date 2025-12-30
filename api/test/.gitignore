@@ -1,0 +1,8 @@
+# Test artifacts
+coverage.out
+coverage.html
+coverage-integration.out
+coverage-integration.html
+
+# Temporary test directories
+/tmp/photobox-test-*

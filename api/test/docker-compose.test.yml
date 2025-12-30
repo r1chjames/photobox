@@ -1,0 +1,17 @@
+services:
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: photobox-test-db
+    environment:
+      POSTGRES_USER: photobox_test
+      POSTGRES_PASSWORD: photobox_test
+      POSTGRES_DB: photobox_test
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U photobox_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    tmpfs:
+      - /var/lib/postgresql/data
