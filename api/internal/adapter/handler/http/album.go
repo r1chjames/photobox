@@ -23,16 +23,20 @@ func NewAlbumHandler(svc port.AlbumService) *AlbumHandler {
 func (ah *AlbumHandler) GetAlbum(ctx *gin.Context) {
 	albumId := ctx.Param("id")
 	if albumId == "" {
-		ctx.IndentedJSON(http.StatusBadRequest, &apiError{http.StatusNotFound, missingQueryParam("album ID")})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "album ID is required"})
+		return
 	}
 
 	resp, err := ah.svc.GetAlbumById(albumId)
-	handleError(ctx, err)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
 	handleSuccess(ctx, resp)
 }
 
 func albumPaginationParams(resp []*domain.Album) (string, string, string) {
-	if (resp == nil) || (len(resp) != 0) {
+	if len(resp) > 0 {
 		fromId := strconv.FormatInt(resp[0].CreatedEpoch, 10)
 		toId := strconv.FormatInt(resp[len(resp)-1].CreatedEpoch, 10)
 		return fromId, toId, "/api/albums?limit=10&fromId=%s"
@@ -43,16 +47,27 @@ func albumPaginationParams(resp []*domain.Album) (string, string, string) {
 func (ah *AlbumHandler) ListAlbums(ctx *gin.Context) {
 	fromId := ctx.Query("fromId")
 	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "30"))
+	if limit <= 0 {
+		limit = 30
+	} else if limit > maxPageLimit {
+		limit = maxPageLimit
+	}
 
 	resp, err := ah.svc.ListAlbums(fromId, limit)
-	handleError(ctx, err)
-	fromId, toId, nextPage := albumPaginationParams(resp)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
 
+	fromId, toId, nextPage := albumPaginationParams(resp)
 	handlePaginatedSuccess(ctx, resp, fromId, toId, len(resp), nextPage)
 }
 
 func (ah *AlbumHandler) AlbumCount(ctx *gin.Context) {
 	resp, err := ah.svc.AlbumCount()
-	handleError(ctx, err)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
 	handleSuccess(ctx, resp)
 }

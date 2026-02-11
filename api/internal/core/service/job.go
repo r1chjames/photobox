@@ -32,7 +32,7 @@ func (js *JobService) JobStart(name string) error {
 }
 
 func (js *JobService) JobComplete(name string) error {
-	return js.repo.UpdateJobStatus(name, "RUNNING")
+	return js.repo.UpdateJobStatus(name, "NOT_RUNNING")
 }
 
 func (js *JobService) CreateBaseJobs() error {

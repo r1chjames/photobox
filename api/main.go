@@ -28,7 +28,6 @@ func main() {
 	services.scheduler.AddScheduledJobs()
 	addDefaultAdminUser(services.userService, appConfig)
 
-	http.NewDBEnv(dbEnv)
 	router, err := setupHttpHandlers(appConfig, services)
 	if err != nil {
 		slog.Error("Error initializing router", "error", err)
@@ -46,6 +45,7 @@ func addDefaultAdminUser(userService *service.UserService, config *appconfig.App
 	_, err := userService.CreateUser(&domain.User{
 		Username: config.AdminUsername,
 		Password: config.AdminPassword,
+		Role:     domain.ADMINISTRATOR,
 	})
 
 	if err != nil {

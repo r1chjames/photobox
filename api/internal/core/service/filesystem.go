@@ -3,16 +3,16 @@ package service
 import (
 	b64 "encoding/base64"
 	"fmt"
-	"sync"
-
-	"github.com/rwcarlsen/goexif/exif"
-	. "gitlab.com/r1chjames/photobox/api/internal/core/domain"
-	"gitlab.com/r1chjames/photobox/api/internal/core/port"
-	"gitlab.com/r1chjames/photobox/api/internal/core/utils"
-	"log"
+	"log/slog"
 	"os"
 	"runtime"
 	"strings"
+	"sync"
+
+	"github.com/rwcarlsen/goexif/exif"
+	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
+	"gitlab.com/r1chjames/photobox/api/internal/core/port"
+	"gitlab.com/r1chjames/photobox/api/internal/core/utils"
 )
 
 /**
@@ -34,13 +34,13 @@ func NewFilesystemService(fsRepo port.FilesystemRepository, jobSvc port.JobServi
 	}
 }
 
-func (fss *FilesystemService) PerformPhotoIndex(save func(PhotoFile) error) {
+func (fss *FilesystemService) PerformPhotoIndex(save func(domain.PhotoFile) error) {
 	_ = fss.jobSvc.JobStart("Photo_index")
-	log.Print("Starting photo index")
+	slog.Info("Starting photo index")
 
 	defer func(jobName string) {
 		_ = fss.jobSvc.JobComplete(jobName)
-		log.Print("Finished photo index")
+		slog.Info("Finished photo index")
 	}("Photo_index")
 
 	// Create buffered channel for photo paths
@@ -53,21 +53,21 @@ func (fss *FilesystemService) PerformPhotoIndex(save func(PhotoFile) error) {
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
-			log.Printf("Worker %d started", workerID)
+			slog.Info("Worker started", "workerID", workerID)
 			for path := range photoChan {
-				log.Printf("Worker %d processing photo: %s", workerID, path)
+				slog.Debug("Worker processing photo", "workerID", workerID, "path", path)
 				photoFile, err := os.Lstat(path)
 				if err != nil {
-					log.Printf("Worker %d unable to process photo at path %s: %v", workerID, path, err)
+					slog.Error("Unable to process photo", "workerID", workerID, "path", path, "error", err)
 					continue
 				}
 				photo := fss.getMetaData(path, photoFile.Name(), photoFile.Size())
 				err = save(photo)
 				if err != nil {
-					log.Printf("Worker %d unable to save photo %s: %v", workerID, photo.Name, err)
+					slog.Error("Unable to save photo", "workerID", workerID, "photo", photo.Name, "error", err)
 				}
 			}
-			log.Printf("Worker %d finished", workerID)
+			slog.Info("Worker finished", "workerID", workerID)
 		}(i)
 	}
 
@@ -81,14 +81,14 @@ func (fss *FilesystemService) PerformPhotoIndex(save func(PhotoFile) error) {
 	wg.Wait()
 }
 
-func (fss *FilesystemService) WriteFileToFilesystem(photo PhotoUpload) PhotoFile {
+func (fss *FilesystemService) WriteFileToFilesystem(photo domain.PhotoUpload) domain.PhotoFile {
 
 	if !utils.IsImageFile(photo.Name) {
 	}
 
 	basePath, _ := fss.utilitySvc.GetSetting("default_new_albums_dir")
 	fileSavePath := fmt.Sprintf("%s/%s/%s", basePath.Value, photo.AlbumName, photo.Name)
-	log.Printf("Saving photo to: %s", fileSavePath)
+	slog.Info("Saving photo", "path", fileSavePath)
 
 	fss.fsRepo.CreateDirectoryIfNotExists(basePath.Value, photo.AlbumName)
 	value := strings.Split(photo.BinaryContent, ",")
@@ -96,7 +96,7 @@ func (fss *FilesystemService) WriteFileToFilesystem(photo PhotoUpload) PhotoFile
 	decodedData, err := b64.StdEncoding.DecodeString(value[1])
 	err = os.WriteFile(fileSavePath, decodedData, 0644)
 	if err != nil {
-		log.Print("Unable to save photo from upload")
+		slog.Error("Unable to save photo from upload", "error", err)
 	}
 
 	fileInfo, _ := os.Lstat(fileSavePath)
@@ -105,15 +105,15 @@ func (fss *FilesystemService) WriteFileToFilesystem(photo PhotoUpload) PhotoFile
 
 }
 
-func (fss *FilesystemService) getMetaData(path string, name string, size int64) PhotoFile {
+func (fss *FilesystemService) getMetaData(path string, name string, size int64) domain.PhotoFile {
 	slashIndices := utils.AllIndicesOfChar(path, "/")
 	photoDirectory := path[slashIndices[len(slashIndices)-2]+1 : slashIndices[len(slashIndices)-1]]
 
 	file, err := utils.OpenFile(path)
 	if err != nil {
-		log.Printf("Unable to open file, %s", err)
-		// Return empty PhotoFile if file cannot be opened
-		return PhotoFile{
+		slog.Error("Unable to open file", "error", err)
+		// Return empty domain.PhotoFile if file cannot be opened
+		return domain.PhotoFile{
 			Path:      path,
 			Directory: photoDirectory,
 			Size:      size,
@@ -127,19 +127,19 @@ func (fss *FilesystemService) getMetaData(path string, name string, size int64) 
 
 	md5Sum, err := utils.GetSum(file)
 	if err != nil {
-		log.Printf("Unable to calculate MD5 sum for %s: %s", path, err)
+		slog.Error("Unable to calculate MD5 sum", "path", path, "error", err)
 		md5Sum = ""
 	}
 
 	mimeType, err := utils.GetFileType(path)
 	if err != nil {
-		log.Printf("Unable to get file type for %s: %s", path, err)
+		slog.Error("Unable to get file type", "path", path, "error", err)
 		mimeType = ""
 	}
 
 	exifData := utils.GetExifData(file)
 	thumbnail := fss.GenerateThumbnail(path, exifData)
-	return PhotoFile{
+	return domain.PhotoFile{
 		MD5:       md5Sum,
 		Path:      path,
 		Directory: photoDirectory,

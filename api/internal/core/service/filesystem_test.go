@@ -75,6 +75,11 @@ type MockUtilityServiceFS struct {
 	mock.Mock
 }
 
+func (m *MockUtilityServiceFS) Ping() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
 func (m *MockUtilityServiceFS) Healthcheck() ([]*domain.Setting, error) {
 	args := m.Called()
 	if args.Get(0) == nil {

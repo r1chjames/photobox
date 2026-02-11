@@ -26,6 +26,7 @@ func (us *UserService) Register(user *domain.User) (*domain.User, error) {
 	}
 
 	user.Password = hashedPassword
+	user.Role = domain.VIEWER
 
 	user, err = us.repo.CreateUser(user)
 	if err != nil {

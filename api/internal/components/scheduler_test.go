@@ -55,6 +55,11 @@ type MockUtilityService struct {
 	mock.Mock
 }
 
+func (m *MockUtilityService) Ping() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
 func (m *MockUtilityService) Healthcheck() ([]*domain.Setting, error) {
 	args := m.Called()
 	if args.Get(0) == nil {

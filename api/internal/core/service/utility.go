@@ -20,6 +20,10 @@ func NewUtilityService(repo port.UtilityRepository) *UtilityService {
 	}
 }
 
+func (us *UtilityService) Ping() error {
+	return us.repo.Ping()
+}
+
 func (us *UtilityService) Healthcheck() ([]*domain.Setting, error) {
 	return us.repo.GetAllSettings()
 }

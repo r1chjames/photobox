@@ -220,9 +220,7 @@ func TestJobComplete(t *testing.T) {
 			name:    "successful job completion",
 			jobName: "Photo_index",
 			mockSetup: func(m *MockJobRepository) {
-				// Note: There's a bug in the actual code - JobComplete sets status to "RUNNING" instead of "IDLE" or "COMPLETED"
-				// Testing the actual behavior, not the expected behavior
-				m.On("UpdateJobStatus", "Photo_index", "RUNNING").Return(nil)
+				m.On("UpdateJobStatus", "Photo_index", "NOT_RUNNING").Return(nil)
 			},
 			expectedError: nil,
 			validate: func(t *testing.T, err error) {
@@ -233,7 +231,7 @@ func TestJobComplete(t *testing.T) {
 			name:    "repository error completing job",
 			jobName: "Photo_index",
 			mockSetup: func(m *MockJobRepository) {
-				m.On("UpdateJobStatus", "Photo_index", "RUNNING").Return(domain.ErrInternal)
+				m.On("UpdateJobStatus", "Photo_index", "NOT_RUNNING").Return(domain.ErrInternal)
 			},
 			expectedError: domain.ErrInternal,
 			validate: func(t *testing.T, err error) {

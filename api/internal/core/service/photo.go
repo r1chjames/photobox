@@ -4,12 +4,13 @@ import (
 	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log/slog"
+	"time"
+
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 	"gitlab.com/r1chjames/photobox/api/internal/core/utils"
-	"log"
-	"time"
 )
 
 type PhotoService struct {
@@ -59,20 +60,6 @@ func (ps *PhotoService) GetPhoto(photoId string, includeThumbnail bool) (*domain
 func (ps *PhotoService) PerformPhotoIndex() {
 	ps.filesystemSvc.PerformPhotoIndex(ps.SavePhoto)
 }
-
-//func addPhoto(c *gin.Context) {
-//	var photo PhotoUpload
-//	err := c.BindJSON(&photo)
-//
-//	photoFile := components.WriteFileToFilesystem(dbEnv, photo)
-//	dbEnv.SavePhotoRecordsToDatabase([]PhotoFile{photoFile})
-//
-//	if err != nil {
-//		c.AbortWithStatusJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, invalidRequest()})
-//	} else {
-//		c.Status(http.StatusCreated)
-//	}
-//}
 
 func (ps *PhotoService) PhotoCount(albumId string) (int64, error) {
 	return ps.photoRepo.GetPhotosInAlbumCount(albumId)
@@ -125,11 +112,11 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 			if result == nil || err != nil {
 				newAlbum, albErr := ps.albumSvc.CreateAlbum(photo.Directory)
 				if albErr != nil {
-					log.Printf("unable to insert album record, %s", albErr)
+					slog.Error("Unable to insert album record", "error", albErr)
 					albumId = "" // Use empty album ID if creation fails
 				} else {
 					albumId = newAlbum.ID
-					log.Printf("created album name: %s, id: %s", photo.Directory, albumId)
+					slog.Info("Created album", "name", photo.Directory, "id", albumId)
 				}
 			} else {
 				albumId = result.ID
@@ -151,7 +138,7 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 			CreatedEpoch:   time.Now().UnixMilli(),
 		}
 
-		log.Printf("Adding photo: %s to album: %s", photo.Name, photo.Directory)
+		slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
 		photoRecords = append(photoRecords, photoInfo)
 	}
 
@@ -165,11 +152,11 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 	if result == nil || err != nil {
 		newAlbumId, albErr := ps.albumSvc.CreateAlbum(photo.Directory)
 		if albErr != nil {
-			log.Printf("unable to insert album record, %s", albErr)
+			slog.Error("Unable to insert album record", "error", albErr)
 			albumId = "" // Use empty album ID if creation fails
 		} else {
 			albumId = newAlbumId.ID
-			log.Printf("created album name: %s, id: %s", photo.Directory, albumId)
+			slog.Info("Created album", "name", photo.Directory, "id", albumId)
 		}
 	} else {
 		albumId = result.ID
@@ -187,7 +174,7 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 		CreatedEpoch:   time.Now().UnixMilli(),
 	}
 
-	log.Printf("Adding photo: %s to album: %s", photo.Name, photo.Directory)
+	slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
 
 	return ps.photoRepo.CreatePhotoInfo(photoInfo)
 }

@@ -10,6 +10,8 @@ import (
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 )
 
+const maxPageLimit = 100
+
 // PhotoHandler represents the HTTP handler for photo-related requests
 type PhotoHandler struct {
 	photoSvc port.PhotoService
@@ -25,7 +27,7 @@ func NewPhotoHandler(photoSvc port.PhotoService, jobSvc port.JobService) *PhotoH
 }
 
 func photosPaginationParams(resp []*domain.Photo) (string, string, string) {
-	if resp != nil || len(resp) != 0 {
+	if len(resp) > 0 {
 		fromId := strconv.FormatInt(resp[0].CreatedEpoch, 10)
 		toId := strconv.FormatInt(resp[len(resp)-1].CreatedEpoch, 10)
 		return fromId, toId, "/api/photos?limit=10&fromId=%s"
@@ -51,19 +53,28 @@ func (ph *PhotoHandler) ListPhotos(ctx *gin.Context) {
 	albumId := ctx.Query("albumId")
 	fromId := ctx.Query("fromId")
 	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
+	if limit <= 0 {
+		limit = 10
+	} else if limit > maxPageLimit {
+		limit = maxPageLimit
+	}
 	includeThumbnail, err := strconv.ParseBool(ctx.DefaultQuery("thumbnail", "false"))
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, "thumbnail query parameter must be either true or false")
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "thumbnail query parameter must be either true or false"})
+		return
 	}
 
 	var photoResp []*domain.Photo
 
 	if albumId != "" {
 		photoResp, err = ph.photoSvc.ListPhotosInAlbum(albumId, fromId, limit, includeThumbnail)
-		handleError(ctx, err)
 	} else {
 		photoResp, err = ph.photoSvc.ListPhotos(fromId, limit, includeThumbnail)
+	}
+
+	if err != nil {
 		handleError(ctx, err)
+		return
 	}
 
 	fromId, toId, nextPage := photosPaginationParams(photoResp)
@@ -74,11 +85,15 @@ func (ph *PhotoHandler) GetPhoto(ctx *gin.Context) {
 	photoId := ctx.Param("id")[1:] // Strip leading slash from catch-all parameter
 	includeThumbnail, err := strconv.ParseBool(ctx.DefaultQuery("thumbnail", "false"))
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, "thumbnail query parameter must be either true or false")
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "thumbnail query parameter must be either true or false"})
+		return
 	}
 
 	photoResp, err := ph.photoSvc.GetPhoto(photoId, includeThumbnail)
-	handleError(ctx, err)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
 
 	handleSuccess(ctx, photoResp)
 }
@@ -86,23 +101,30 @@ func (ph *PhotoHandler) GetPhoto(ctx *gin.Context) {
 func (ph *PhotoHandler) GetPhotoCount(ctx *gin.Context) {
 	albumId := ctx.Query("albumId")
 	if albumId == "" {
-		ctx.IndentedJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, missingQueryParam("album ID")})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "albumId query parameter is required"})
+		return
 	}
 
 	photoCount, err := ph.photoSvc.PhotoCount(albumId)
-	handleError(ctx, err)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
 	handleSuccess(ctx, photoCount)
 }
 
 func (ph *PhotoHandler) GetPhotoBin(ctx *gin.Context) {
 	photoId := ctx.Param("id")[1:] // Strip leading slash from catch-all parameter
 	if photoId == "" {
-		ctx.IndentedJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, missingQueryParam("photo ID")})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "photo ID is required"})
 		return
 	}
 
 	photoBinary, err := ph.photoSvc.PhotoBinary(photoId)
-	handleError(ctx, err)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
 
 	// Unescape single quotes in filesystem path
 	unescapedPath := strings.ReplaceAll(photoBinary, `\'`, `'`)
@@ -112,11 +134,15 @@ func (ph *PhotoHandler) GetPhotoBin(ctx *gin.Context) {
 func (ph *PhotoHandler) GetPhotoThumbnail(ctx *gin.Context) {
 	photoId := ctx.Param("id")[1:] // Strip leading slash from catch-all parameter
 	if photoId == "" {
-		ctx.IndentedJSON(http.StatusBadRequest, apiError{http.StatusBadRequest, missingQueryParam("photo ID")})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "photo ID is required"})
+		return
 	}
 
 	photoBinary, err := ph.photoSvc.PhotoThumbnail(photoId)
-	handleError(ctx, err)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
 	ctx.Data(http.StatusOK, "application/octet-stream", photoBinary)
 }
 

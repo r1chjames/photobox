@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 	"golang.org/x/time/rate"
@@ -93,12 +94,18 @@ func requireRole(roles ...domain.UserRole) gin.HandlerFunc {
 	}
 }
 
+type ipLimiterEntry struct {
+	limiter    *rate.Limiter
+	lastAccess time.Time
+}
+
 // IPRateLimiter manages rate limiters for each IP address
 type IPRateLimiter struct {
-	limiters map[string]*rate.Limiter
+	limiters map[string]*ipLimiterEntry
 	mu       sync.RWMutex
 	rate     rate.Limit
 	burst    int
+	ttl      time.Duration
 }
 
 // NewIPRateLimiter creates a new IP-based rate limiter
@@ -106,9 +113,10 @@ type IPRateLimiter struct {
 // burst: maximum burst size
 func NewIPRateLimiter(r rate.Limit, b int) *IPRateLimiter {
 	limiter := &IPRateLimiter{
-		limiters: make(map[string]*rate.Limiter),
+		limiters: make(map[string]*ipLimiterEntry),
 		rate:     r,
 		burst:    b,
+		ttl:      time.Hour,
 	}
 
 	// Start cleanup goroutine to prevent memory leaks
@@ -122,25 +130,33 @@ func (i *IPRateLimiter) GetLimiter(ip string) *rate.Limiter {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
-	limiter, exists := i.limiters[ip]
+	entry, exists := i.limiters[ip]
 	if !exists {
-		limiter = rate.NewLimiter(i.rate, i.burst)
-		i.limiters[ip] = limiter
+		entry = &ipLimiterEntry{
+			limiter:    rate.NewLimiter(i.rate, i.burst),
+			lastAccess: time.Now(),
+		}
+		i.limiters[ip] = entry
+	} else {
+		entry.lastAccess = time.Now()
 	}
 
-	return limiter
+	return entry.limiter
 }
 
-// cleanupStaleEntries removes rate limiters that haven't been used recently
+// cleanupStaleEntries removes rate limiters that haven't been used within the TTL
 func (i *IPRateLimiter) cleanupStaleEntries() {
 	ticker := time.NewTicker(time.Hour)
 	defer ticker.Stop()
 
 	for range ticker.C {
 		i.mu.Lock()
-		// Clear all limiters periodically to prevent unbounded memory growth
-		// This is a simple approach - in production, you might want to track last access time
-		i.limiters = make(map[string]*rate.Limiter)
+		cutoff := time.Now().Add(-i.ttl)
+		for ip, entry := range i.limiters {
+			if entry.lastAccess.Before(cutoff) {
+				delete(i.limiters, ip)
+			}
+		}
 		i.mu.Unlock()
 	}
 }
@@ -162,6 +178,39 @@ func rateLimitMiddleware(limiter *IPRateLimiter) gin.HandlerFunc {
 			return
 		}
 
+		ctx.Next()
+	}
+}
+
+const requestIDHeader = "X-Request-ID"
+
+// requestIDMiddleware generates a unique request ID for each request
+// and adds it to both the response headers and the gin context
+func requestIDMiddleware() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		requestID := ctx.GetHeader(requestIDHeader)
+		if requestID == "" {
+			requestID = uuid.New().String()
+		}
+		ctx.Set(requestIDHeader, requestID)
+		ctx.Header(requestIDHeader, requestID)
+		ctx.Next()
+	}
+}
+
+// contentTypeMiddleware validates that POST and PUT requests include
+// a Content-Type: application/json header
+func contentTypeMiddleware() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		if ctx.Request.Method == http.MethodPost || ctx.Request.Method == http.MethodPut {
+			contentType := ctx.ContentType()
+			if contentType != "application/json" {
+				ctx.AbortWithStatusJSON(http.StatusUnsupportedMediaType, gin.H{
+					"error": "Content-Type must be application/json",
+				})
+				return
+			}
+		}
 		ctx.Next()
 	}
 }

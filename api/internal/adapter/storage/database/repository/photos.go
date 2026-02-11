@@ -3,16 +3,16 @@ package repository
 import (
 	b64 "encoding/base64"
 
-	. "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
+	db "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gorm.io/gorm/clause"
 )
 
 type PhotoRepository struct {
-	dbEnv *Env
+	dbEnv *db.Env
 }
 
-func NewPhotoRepository(dbEnv *Env) *PhotoRepository {
+func NewPhotoRepository(dbEnv *db.Env) *PhotoRepository {
 	return &PhotoRepository{
 		dbEnv,
 	}
@@ -26,7 +26,7 @@ func (pr *PhotoRepository) GetPhotoById(photoId string, includeThumbnail bool) (
 		result = result.Omit("thumbnail")
 	}
 	result = result.First(&photo)
-	err := HandleError(result)
+	err := db.HandleError(result)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (pr *PhotoRepository) ListAllPhotosInAlbum(albumId string, fromId string, l
 func (pr *PhotoRepository) GetPhotosInAlbumCount(albumId string) (int64, error) {
 	var count int64
 	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("album_id = ?", albumId).Count(&count)
-	err := HandleError(result)
+	err := db.HandleError(result)
 	if err != nil {
 		return 0, err
 	}

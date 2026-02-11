@@ -1,14 +1,14 @@
 package repository
 
 import (
-	. "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
+	db "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gorm.io/datatypes"
 	"time"
 )
 
 type AlbumRepositoryMock struct {
-	dbEnv *Env
+	dbEnv *db.Env
 }
 
 func NewAlbumRepositoryMock() *AlbumRepositoryMock {

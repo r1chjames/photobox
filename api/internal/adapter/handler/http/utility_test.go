@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,6 +16,11 @@ import (
 // MockUtilityService is a mock implementation of port.UtilityService
 type MockUtilityService struct {
 	mock.Mock
+}
+
+func (m *MockUtilityService) Ping() error {
+	args := m.Called()
+	return args.Error(0)
 }
 
 func (m *MockUtilityService) Healthcheck() ([]*domain.Setting, error) {
@@ -74,6 +80,7 @@ func TestUtilityHandler_HealthCheck_Success(t *testing.T) {
 		},
 	}
 
+	mockService.On("Ping").Return(nil)
 	mockService.On("Healthcheck").Return(expectedHealth, nil)
 
 	w := httptest.NewRecorder()
@@ -86,14 +93,20 @@ func TestUtilityHandler_HealthCheck_Success(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response struct {
-		Success bool              `json:"success"`
-		Message string            `json:"message"`
-		Data    []domain.Setting  `json:"data"`
+		Success bool `json:"success"`
+		Message string `json:"message"`
+		Data    struct {
+			Status   string           `json:"status"`
+			Database string           `json:"database"`
+			Settings []domain.Setting `json:"settings"`
+		} `json:"data"`
 	}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.True(t, response.Success)
-	assert.Len(t, response.Data, 2)
+	assert.Equal(t, "up", response.Data.Status)
+	assert.Equal(t, "up", response.Data.Database)
+	assert.Len(t, response.Data.Settings, 2)
 
 	mockService.AssertExpectations(t)
 }
@@ -228,18 +241,8 @@ func TestUtilityHandler_HealthCheck_WithDBError(t *testing.T) {
 	mockService := new(MockUtilityService)
 	handler := NewUtilityHandler(mockService)
 
-	healthData := []*domain.Setting{
-		{
-			Key:   "status",
-			Value: "unhealthy",
-		},
-		{
-			Key:   "database",
-			Value: "connection failed",
-		},
-	}
-
-	mockService.On("Healthcheck").Return(healthData, nil)
+	mockService.On("Ping").Return(errors.New("connection refused"))
+	mockService.On("Healthcheck").Return([]*domain.Setting{}, nil)
 
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
@@ -251,13 +254,17 @@ func TestUtilityHandler_HealthCheck_WithDBError(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response struct {
-		Success bool             `json:"success"`
-		Data    []domain.Setting `json:"data"`
+		Success bool `json:"success"`
+		Data    struct {
+			Status   string           `json:"status"`
+			Database string           `json:"database"`
+			Settings []domain.Setting `json:"settings"`
+		} `json:"data"`
 	}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
-	assert.Len(t, response.Data, 2)
-	assert.Equal(t, "unhealthy", response.Data[0].Value)
+	assert.Equal(t, "up", response.Data.Status)
+	assert.Equal(t, "down", response.Data.Database)
 
 	mockService.AssertExpectations(t)
 }

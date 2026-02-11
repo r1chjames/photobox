@@ -1,50 +1,19 @@
 package http
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 )
 
-var dbEnv *database.Env
-
-func NewDBEnv(env *database.Env) *database.Env {
-	dbEnv = env
-	return dbEnv
-}
-
 type Router struct {
 	*gin.Engine
-}
-
-type bodyLogWriter struct {
-	gin.ResponseWriter
-	body *bytes.Buffer
-}
-
-func (w bodyLogWriter) Write(b []byte) (int, error) {
-	w.body.Write(b)
-	return w.ResponseWriter.Write(b)
-}
-
-func responseLogger() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		blw := &bodyLogWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
-		c.Writer = blw
-
-		c.Next()
-
-		//log.Printf("Response status: %d", c.Writer.Status())
-		//log.Printf("Response body: %s", blw.body.String())
-	}
 }
 
 func NewRouter(
@@ -68,8 +37,8 @@ func NewRouter(
 	config.MaxAge = 12 * time.Hour
 
 	router.Use(cors.New(config))
-	//TODO add behind debug switch
-	router.Use(responseLogger())
+	router.Use(requestIDMiddleware())
+	router.Use(contentTypeMiddleware())
 
 	// Add request timeout middleware (30 seconds for most requests)
 	router.Use(timeoutMiddleware(30 * time.Second))
@@ -147,8 +116,4 @@ func defineResources(
 	router.GET(fmt.Sprintf("%s/settings", urlBasePath), authMiddleware(token), requireRole(domain.ADMINISTRATOR), utilityHandler.ListAllSettings)
 	router.POST(fmt.Sprintf("%s/settings", urlBasePath), authMiddleware(token), requireRole(domain.ADMINISTRATOR), utilityHandler.UpdateSettings)
 
-}
-
-func setDbEnv(env *database.Env) {
-	dbEnv = env
 }

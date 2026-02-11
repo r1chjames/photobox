@@ -13,6 +13,11 @@ type MockUtilityRepository struct {
 	mock.Mock
 }
 
+func (m *MockUtilityRepository) Ping() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
 func (m *MockUtilityRepository) GetAllSettings() ([]*domain.Setting, error) {
 	args := m.Called()
 	if args.Get(0) == nil {

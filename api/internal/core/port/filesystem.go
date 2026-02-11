@@ -2,7 +2,7 @@ package port
 
 import (
 	"github.com/rwcarlsen/goexif/exif"
-	. "gitlab.com/r1chjames/photobox/api/internal/core/domain"
+	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 )
 
 //go:generate mockgen -source=filesystem.go -destination=mock/filesystem.go -package=mock
@@ -18,8 +18,8 @@ type FilesystemRepository interface {
 // FilesystemService is an interface for interacting with filesystem-related business logic
 type FilesystemService interface {
 	// PerformPhotoIndex initiates an index of image files on filesystem
-	PerformPhotoIndex(save func(PhotoFile) error)
+	PerformPhotoIndex(save func(domain.PhotoFile) error)
 	// WriteFileToFilesystem writes a photo to the filesystem
-	WriteFileToFilesystem(photo PhotoUpload) PhotoFile
+	WriteFileToFilesystem(photo domain.PhotoUpload) domain.PhotoFile
 	GenerateThumbnail(path string, exifData exif.Exif) []byte
 }

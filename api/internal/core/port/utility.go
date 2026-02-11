@@ -8,6 +8,8 @@ import (
 
 // UtilityRepository is an interface for interacting with utility-related business logic
 type UtilityRepository interface {
+	// Ping checks the database connection is alive
+	Ping() error
 	// GetSetting returns a setting by key
 	GetSetting(key string) (*domain.Setting, error)
 	// GetAllSettings returns all settings
@@ -22,6 +24,8 @@ type UtilityRepository interface {
 
 // UtilityService is an interface for interacting with user utility-related business logic
 type UtilityService interface {
+	// Ping checks the database connection is alive
+	Ping() error
 	// Healthcheck returns all settings as a healthcheck
 	Healthcheck() ([]*domain.Setting, error)
 	// GetSetting returns a setting by key

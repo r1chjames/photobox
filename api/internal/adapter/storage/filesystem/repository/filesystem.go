@@ -3,24 +3,24 @@ package repository
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"log/slog"
+	"os"
+	"path/filepath"
 	"runtime"
+	"sync"
 
 	"github.com/disintegration/imaging"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"gitlab.com/r1chjames/photobox/api/internal/core/service"
 	"gitlab.com/r1chjames/photobox/api/internal/core/utils"
-	"io"
-	"log"
-	"os"
-	"path/filepath"
-	"sync"
 )
 
 type FilesystemRepository struct {
-	wg      sync.WaitGroup
-	jobSvc  *service.JobService
-	config  appconfig.AppConfig
-	dirSem  chan struct{} // Semaphore to limit concurrent directory walking
+	wg     sync.WaitGroup
+	jobSvc *service.JobService
+	config appconfig.AppConfig
+	dirSem chan struct{} // Semaphore to limit concurrent directory walking
 }
 
 func NewFilesystemRepository(config appconfig.AppConfig, jobService *service.JobService) *FilesystemRepository {
@@ -33,9 +33,9 @@ func NewFilesystemRepository(config appconfig.AppConfig, jobService *service.Job
 
 func (fs *FilesystemRepository) CreateDirectoryIfNotExists(basePhotoPath string, directoryName string) {
 	fullPath := fmt.Sprintf("%s/%s", basePhotoPath, directoryName)
-	err := os.Mkdir(fullPath, os.ModePerm) //TODO check if exists, swallow error if so
+	err := os.Mkdir(fullPath, os.ModePerm)
 	if err != nil {
-		log.Printf("Unable to create album folder. Check the value of setting default_new_albums_dir exists and is writable, %s", err)
+		slog.Warn("Unable to create album folder, check default_new_albums_dir setting", "path", fullPath, "error", err)
 	}
 }
 
@@ -61,7 +61,7 @@ func (fs *FilesystemRepository) walkDir(dir string, photoChan chan string) {
 
 	visit := func(path string, d os.DirEntry, err error) error {
 		if d.IsDir() && path != dir {
-			log.Printf("Processing directory: %s", d.Name())
+			slog.Debug("Processing directory", "name", d.Name())
 			fs.wg.Add(1)
 			go fs.walkDir(path, photoChan)
 			return filepath.SkipDir
@@ -75,7 +75,7 @@ func (fs *FilesystemRepository) walkDir(dir string, photoChan chan string) {
 
 	err := filepath.WalkDir(dir, visit)
 	if err != nil {
-		log.Print(err)
+		slog.Error("Error walking directory", "dir", dir, "error", err)
 	}
 }
 
@@ -83,7 +83,7 @@ func (fs *FilesystemRepository) GenerateThumbnail(path string) []byte {
 	extension := utils.GetFileExtension(path)
 	img, err := imaging.Open(path)
 	if err != nil {
-		log.Printf("Unable to open file, %s", err)
+		slog.Error("Unable to open file for thumbnail", "path", path, "error", err)
 		return nil
 	}
 	thumb := imaging.Thumbnail(img, 600, 600, imaging.CatmullRom)

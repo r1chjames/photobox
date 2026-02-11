@@ -3,17 +3,17 @@ package repository
 import (
 	b64 "encoding/base64"
 	"github.com/google/uuid"
-	. "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
+	db "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gorm.io/gorm/clause"
 	"time"
 )
 
 type AlbumRepository struct {
-	dbEnv *Env
+	dbEnv *db.Env
 }
 
-func NewAlbumRepository(dbEnv *Env) *AlbumRepository {
+func NewAlbumRepository(dbEnv *db.Env) *AlbumRepository {
 	return &AlbumRepository{
 		dbEnv,
 	}
@@ -23,7 +23,7 @@ func (ar *AlbumRepository) GetAlbumById(id string) (*domain.Album, error) {
 	var album domain.Album
 	album.ID = id
 	result := ar.dbEnv.Db.First(&album)
-	err := HandleError(result)
+	err := db.HandleError(result)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func (ar *AlbumRepository) GetAlbumById(id string) (*domain.Album, error) {
 func (ar *AlbumRepository) GetAlbumByName(name string) (*domain.Album, error) {
 	var album *domain.Album
 	result := ar.dbEnv.Db.First(&album, "name = ?", name)
-	err := HandleError(result)
+	err := db.HandleError(result)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (ar *AlbumRepository) ListAllAlbums(fromId string, limit int) ([]*domain.Al
 		result.Where("created_epoch > ?", fromEpoch)
 	}
 	result.Find(&albums)
-	err := HandleError(result)
+	err := db.HandleError(result)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (ar *AlbumRepository) ListAllAlbums(fromId string, limit int) ([]*domain.Al
 func (ar *AlbumRepository) AlbumCount() (int64, error) {
 	var count int64
 	result := ar.dbEnv.Db.Model(&domain.Album{}).Count(&count)
-	err := HandleError(result)
+	err := db.HandleError(result)
 	if err != nil {
 		return 0, err
 	}

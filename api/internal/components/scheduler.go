@@ -1,11 +1,11 @@
 package components
 
 import (
-	"fmt"
+	"log/slog"
+
 	"github.com/robfig/cron/v3"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
-	"log"
 )
 
 type Scheduler struct {
@@ -32,16 +32,17 @@ func NewScheduler(utilityService port.UtilityService, jobService port.JobService
 func (s *Scheduler) AddScheduledJobs() {
 	setting, err := s.utilSvc.GetSetting("index_frequency_cron")
 	if err != nil {
-		log.Print("unable to get photo index cron expression from database. Index scheduling will not be enabled")
+		slog.Warn("Unable to get photo index cron expression from database, index scheduling will not be enabled")
+		return
 	}
 
 	_, err = s.cron.AddFunc(setting.Value, func() {
 		s.photoSvc.PerformPhotoIndex()
 	})
 	if err != nil {
-		log.Printf("unable to add job schedule for %s. Parsed CRON expression: %s. Check CRON expression in settings", setting.Key, setting.Value)
+		slog.Error("Unable to add job schedule, check CRON expression in settings", "key", setting.Key, "cron", setting.Value, "error", err)
 	}
-	log.Print(s.cron.Entries())
+	slog.Info("Scheduled jobs loaded", "entries", len(s.cron.Entries()))
 }
 
 func UpdateJobSchedule() {
@@ -51,7 +52,7 @@ func UpdateJobSchedule() {
 func (s *Scheduler) StopAllRunningJobs() {
 	res := s.cron.Stop()
 	if res.Err() != nil {
-		log.Print(fmt.Sprintf("unable to stop scheduler: %s", res.Err()))
+		slog.Error("Unable to stop scheduler", "error", res.Err())
 	}
 	s.jobSvc.UpdateAllJobsStatus("NOT_RUNNING")
 }

@@ -2,11 +2,12 @@ package database
 
 import (
 	"errors"
-	"log"
+	"log/slog"
+	"os"
 	"time"
 
-	. "gitlab.com/r1chjames/photobox/api/internal/appconfig"
-	. "gitlab.com/r1chjames/photobox/api/internal/core/domain"
+	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
+	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -16,7 +17,7 @@ type Env struct {
 	Db *gorm.DB
 }
 
-func InitDbConnection(appConfig *AppConfig) *Env {
+func InitDbConnection(appConfig *appconfig.AppConfig) *Env {
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN: appConfig.DbUrl,
 	}), &gorm.Config{
@@ -26,13 +27,15 @@ func InitDbConnection(appConfig *AppConfig) *Env {
 		}})
 
 	if err != nil {
-		log.Fatalf("failed to connect database, %s", err)
+		slog.Error("Failed to connect database", "error", err)
+		os.Exit(1)
 	}
 
 	// Configure connection pool
 	sqlDB, err := db.DB()
 	if err != nil {
-		log.Fatalf("failed to get database instance, %s", err)
+		slog.Error("Failed to get database instance", "error", err)
+		os.Exit(1)
 	}
 
 	// Set maximum number of idle connections in the pool
@@ -49,15 +52,25 @@ func InitDbConnection(appConfig *AppConfig) *Env {
 
 func (dbEnv *Env) PerformDbSetup() {
 	// Migrate the schema
-	err := dbEnv.Db.AutoMigrate(&Album{}, &Photo{}, &Setting{}, &Job{}, &User{})
+	err := dbEnv.Db.AutoMigrate(&domain.Album{}, &domain.Photo{}, &domain.Setting{}, &domain.Job{}, &domain.User{})
 	if err != nil {
-		log.Fatalf("failed to perform database migration, %s", err)
+		slog.Error("Failed to perform database migration", "error", err)
+		os.Exit(1)
 	}
+}
+
+// Ping checks the database connection is alive
+func (dbEnv *Env) Ping() error {
+	sqlDB, err := dbEnv.Db.DB()
+	if err != nil {
+		return err
+	}
+	return sqlDB.Ping()
 }
 
 func HandleError(result *gorm.DB) error {
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return ErrDataNotFound
+		return domain.ErrDataNotFound
 	} else if result.Error != nil {
 		return result.Error
 	}
