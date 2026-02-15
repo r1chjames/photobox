@@ -1,15 +1,15 @@
 // eslint-disable-next-line
 var app: globalAppVariables;
 
-// define the child properties and their types. 
+// define the child properties and their types.
 type globalAppVariables = {
     baseApiUrl: string;
-    // more can go here. 
+    // more can go here.
 };
 
 // set the values.
 globalThis.app = {
-    baseApiUrl: "http://localhost:8080/api"
+    baseApiUrl: import.meta.env.VITE_API_URL || "http://localhost:8080/api"
 };
 
 declare module "*.module.css";

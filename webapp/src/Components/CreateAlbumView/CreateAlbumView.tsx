@@ -2,19 +2,18 @@ import React, {useState} from 'react';
 import Dropzone from 'react-dropzone';
 import './CreateAlbumView.css';
 import {useParams} from 'react-router-dom';
-import {PhotosAdapter} from '../../Adapters/PhotosAdapter';
+import {IPhotosAdapter} from '../../Adapters/IPhotosAdapter';
 import {InfoSnackbar} from '../Snackbar/InfoSnackbar';
 
 interface IProps {
-  photosAdapter: PhotosAdapter;
+  photosAdapter: IPhotosAdapter;
 }
 
 type QueryParams = {
   name: string;
 }
 
-const uploadPhotoToApi = async (propsPhotosAdapter: PhotosAdapter, body: Record<string, unknown>) => {
-  const photosAdapter = propsPhotosAdapter;
+const uploadPhotoToApi = async (photosAdapter: IPhotosAdapter, body: Record<string, unknown>) => {
   await photosAdapter.uploadPhoto(body);
 };
 

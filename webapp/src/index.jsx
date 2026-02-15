@@ -6,6 +6,7 @@ import '@mantine/core/styles.css';
 import {BrowserRouter} from "react-router-dom";
 import './appGlobals';
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {AuthProvider} from "./Routing/AuthContext.tsx";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 const queryClient = new QueryClient();
@@ -13,9 +14,11 @@ const queryClient = new QueryClient();
 root.render(
     <React.StrictMode>
         <BrowserRouter>
-            <QueryClientProvider client={queryClient}>
-                <App baseApiUrl={globalThis.app.baseApiUrl}/>
-            </QueryClientProvider>
+            <AuthProvider>
+                <QueryClientProvider client={queryClient}>
+                    <App baseApiUrl={globalThis.app.baseApiUrl}/>
+                </QueryClientProvider>
+            </AuthProvider>
         </BrowserRouter>
     </React.StrictMode>
 );

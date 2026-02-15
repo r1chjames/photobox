@@ -15,6 +15,8 @@ import {
 } from "@mantine/core";
 import classes from './AppBar.module.css';
 import {useDisclosure} from "@mantine/hooks";
+import {useNavigate} from "react-router-dom";
+import {useAuth} from "../../Routing/AuthContext";
 import cx from 'clsx';
 import {
     IconAlbum,
@@ -73,6 +75,8 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
     const [active, setActive] = useState(activeLinkIndex(props.activeLink));
     const {colorScheme, setColorScheme} = useMantineColorScheme();
     const computedColorScheme = useComputedColorScheme('light', {getInitialValueInEffect: true});
+    const navigate = useNavigate();
+    const {logout} = useAuth();
 
     const navBarItems = navLinkData.map((item, index) => (
         <NavLink
@@ -88,8 +92,8 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
     ));
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        window.location.href = '/login';
+        logout();
+        navigate('/login');
     }
 
     const colourSchemeButton = (colourScheme: string) => {
@@ -121,8 +125,8 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
                                 size="sm"
                             />
                             <Group>
-                                <IconLibraryPhoto size="4rem" stroke={1.5} color={"#5474b4"}/>
-                                <Text size="xl" fw={900} c={"#5474b4"}>
+                                <IconLibraryPhoto size="4rem" stroke={1.5} color={"var(--mantine-primary-color-filled)"}/>
+                                <Text size="xl" fw={900} c={"var(--mantine-primary-color-filled)"}>
                                     Photobox
                                 </Text>
                             </Group>
@@ -132,8 +136,8 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
                                     width={260}
                                     position="bottom-end"
                                     transitionProps={{transition: 'pop-top-right'}}
-                                    onClose={() => console.log("close")}
-                                    onOpen={() => console.log("open")}
+                                    onClose={() => {}}
+                                    onOpen={() => {}}
                                     withinPortal
                                 >
                                     <Menu.Target>

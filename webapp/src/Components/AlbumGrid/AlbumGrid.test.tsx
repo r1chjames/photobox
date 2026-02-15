@@ -8,7 +8,8 @@ import { IPhotosAdapter } from '../../Adapters/IPhotosAdapter';
 
 // Mock react-router-dom
 const mockNavigate = vi.fn();
-vi.mock('react-router-dom', () => ({
+vi.mock('react-router-dom', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('react-router-dom')>()),
     useNavigate: () => mockNavigate,
 }));
 

@@ -63,15 +63,15 @@ export class Photo {
   }
 
   getPhotoDate(): string {
-    const exifVal = this._metadata.find((k) => k === 'exif');
-    return exifVal !== null ? exifVal.DateTime : this._createdAt;
+    const exifVal = this._metadata?.find((k) => k && typeof k === 'object' && 'DateTime' in k);
+    return exifVal?.DateTime ?? this._createdAt;
   };
 }
 
 export const previousPhotoInAlbum = (photos: Photo[], currentPhotoIndex: number) => {
-  return currentPhotoIndex > 0 ? photos![currentPhotoIndex - 1] : photos![0];
+  return currentPhotoIndex > 0 ? photos[currentPhotoIndex - 1] : photos[0];
 }
 
 export const nextPhotoInAlbum = (photos: Photo[], currentPhotoIndex: number) => {
-  return currentPhotoIndex < photos!.length ? photos![currentPhotoIndex + 1] : photos![currentPhotoIndex];
+  return currentPhotoIndex < photos.length - 1 ? photos[currentPhotoIndex + 1] : photos[currentPhotoIndex];
 }

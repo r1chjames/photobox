@@ -26,7 +26,7 @@ export class UsersAdapter implements IUsersAdapter {
     return this.restApiAdapter.postApiCall(loginPath, body, this.buildHeaders());
   }
 
-  public register = async (user: User): Promise<User> => {
+  public register = async (user: User): Promise<Token> => {
     const registerPath = "user/register";
     const body = {
       username: user.getUsername(),

@@ -17,14 +17,11 @@ interface IProps {
     photosAdapter: IPhotosAdapter;
 }
 
-const getAllSettings = async (propsSettingsAdapter: ISettingsAdapter) => {
-  const settingsAdapter = propsSettingsAdapter;
-  const allSettings: Setting[] = await settingsAdapter.getAllSettings();
-  return allSettings;
+const getAllSettings = async (settingsAdapter: ISettingsAdapter) => {
+  return settingsAdapter.getAllSettings();
 };
 
-const handleSaveSettings = async (settings: Setting[], propsSettingsAdapter: ISettingsAdapter) => {
-  const settingsAdapter = propsSettingsAdapter;
+const handleSaveSettings = async (settings: Setting[], settingsAdapter: ISettingsAdapter) => {
   await settingsAdapter.updateSettings(settings);
 };
 
@@ -102,9 +99,10 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
     );
   };
 
-  const resetForm = () => {
+  const resetForm = async () => {
     setEditing(false);
-    window.location.reload(); // TODO: not very elegant
+    const refreshedSettings = await getAllSettings(props.settingsAdapter);
+    setSettings(refreshedSettings);
   };
 
   const addCancelButton = () => {

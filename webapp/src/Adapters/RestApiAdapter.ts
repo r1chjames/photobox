@@ -1,4 +1,4 @@
-import axios, {AxiosRequestConfig} from 'axios';
+import axios, {AxiosRequestConfig, AxiosError} from 'axios';
 
 export interface IRestApiAdapter {
 
@@ -13,6 +13,12 @@ export interface IRestApiAdapter {
     getBinaryApiCall(path: string, headers: Record<string, string>, params: Record<string, unknown>): Promise<any>
 
     authHeader(): Record<string, string>
+}
+
+function handleUnauthorized(error: AxiosError<{ error?: string }>) {
+    if (error.response?.status === 401) {
+        localStorage.removeItem("token");
+    }
 }
 
 export class RestApiAdapter implements IRestApiAdapter {
@@ -43,7 +49,6 @@ export class RestApiAdapter implements IRestApiAdapter {
         return this.binaryApiCall('get', headers, {}, path, params);
     }
 
-
     private async binaryApiCall(method: string, headers: Record<string, string>, body: Record<string, any>, url: string, params: Record<string, any>) {
         const parsedUrl = `${this.baseApiPath}/${url}`;
         const options: AxiosRequestConfig = {
@@ -54,20 +59,16 @@ export class RestApiAdapter implements IRestApiAdapter {
             responseType: 'blob',
             params,
         };
-        return await axios(options)
-            .then(function (response) {
-                return response.data;
-            })
-            .catch(function (error) {
-                if (error.response) {
-                    if (error.response.data.error === "Access Token Not Valid") {
-                        localStorage.removeItem("token");
-                    }
-                }
-            });
-    };
+        try {
+            const response = await axios(options);
+            return response.data;
+        } catch (error) {
+            handleUnauthorized(error as AxiosError<{ error?: string }>);
+            throw error;
+        }
+    }
 
-    private async apiCall <T>(method: string, headers: Record<string, string>, body: Record<string, any>, url: string, params: Record<string, any>) {
+    private async apiCall<T>(method: string, headers: Record<string, string>, body: Record<string, any>, url: string, params: Record<string, any>) {
         const parsedUrl = `${this.baseApiPath}/${url}`;
         const options: AxiosRequestConfig = {
             method,
@@ -76,20 +77,16 @@ export class RestApiAdapter implements IRestApiAdapter {
             url: parsedUrl,
             params,
         };
-        return await axios<ServerResponse<T>>(options)
-            .then(function (response) {
-                return response.data.data;
-            })
-            .catch(function (error) {
-                if (error.response) {
-                    if (error.response.data.error === "Access Token Not Valid") {
-                        localStorage.removeItem("token");
-                    }
-                }
-            });
-    };
+        try {
+            const response = await axios<ServerResponse<T>>(options);
+            return response.data.data;
+        } catch (error) {
+            handleUnauthorized(error as AxiosError<{ error?: string }>);
+            throw error;
+        }
+    }
 
-    private async paginatedApiCall <T>(method: string, headers: Record<string, string>, body: Record<string, any>, url: string, params: Record<string, any>) {
+    private async paginatedApiCall<T>(method: string, headers: Record<string, string>, body: Record<string, any>, url: string, params: Record<string, any>) {
         const parsedUrl = `${this.baseApiPath}/${url}`;
         const options: AxiosRequestConfig = {
             method,
@@ -98,19 +95,14 @@ export class RestApiAdapter implements IRestApiAdapter {
             url: parsedUrl,
             params,
         };
-        return await axios<PaginatedServerResponse<T>>(options)
-            .then(function (response) {
-                return response.data.data;
-            })
-            .catch(function (error) {
-                if (error.response) {
-                    if (error.response.data.error === "Access Token Not Valid") {
-                        localStorage.removeItem("token");
-                    }
-                }
-            });
-    };
-
+        try {
+            const response = await axios<PaginatedServerResponse<T>>(options);
+            return response.data.data;
+        } catch (error) {
+            handleUnauthorized(error as AxiosError<{ error?: string }>);
+            throw error;
+        }
+    }
 
     authHeader() {
         return {

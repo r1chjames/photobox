@@ -5,7 +5,8 @@ import { IPhotosAdapter } from '../../Adapters/IPhotosAdapter';
 import { IAlbumsAdapter } from '../../Adapters/IAlbumsAdapter';
 
 // Mock react-router-dom
-vi.mock('react-router-dom', () => ({
+vi.mock('react-router-dom', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('react-router-dom')>()),
     useParams: () => ({ id: 'test-album-id' }),
     useNavigate: () => vi.fn(),
 }));

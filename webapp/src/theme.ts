@@ -5,4 +5,5 @@ export const theme = createTheme({
     fontFamilyMonospace: 'Monaco, Courier, monospace',
     headings: { fontFamily: 'Greycliff CF, sans-serif' },
     defaultRadius: 'md',
+    primaryColor: 'indigo',
 });

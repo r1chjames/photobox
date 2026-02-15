@@ -1,7 +1,5 @@
 import React from 'react';
-import './InputModal.css';
-import Modal from 'react-bootstrap/Modal';
-import { Button } from 'react-bootstrap';
+import {Button, Group, Modal} from '@mantine/core';
 
 interface IProps {
   isOpen: boolean;
@@ -13,29 +11,21 @@ interface IProps {
 export const InputModal: React.FunctionComponent<IProps> = (props) => {
 
   return (
-    <Modal show={props.isOpen} dialogClassName="inputModal__content" onHide={() => props.handleClose()}>
-      <Modal.Header className="inputModal__header">
-        <Modal.Title className="inputModal__title">{props.title}</Modal.Title>
-      </Modal.Header>
-      <Modal.Body className="inputModal__body">
-        {props.children}
-      </Modal.Body>
-      <Modal.Footer className="inputModal__footer">
-        <Button
-          className="inputModal__saveButton"
-          variant="primary"
-          onClick={() => props.handleSave()}
-        >
-          Save
-        </Button>
-        <Button
-          className="inputModal__closeButton"
-          variant="secondary"
-          onClick={() => props.handleClose()}
-        >
+    <Modal
+      opened={props.isOpen}
+      onClose={props.handleClose}
+      title={props.title}
+      centered
+    >
+      {props.children}
+      <Group justify="flex-end" mt="md">
+        <Button variant="default" onClick={props.handleClose}>
           Close
         </Button>
-      </Modal.Footer>
+        <Button onClick={props.handleSave}>
+          Save
+        </Button>
+      </Group>
     </Modal>
   );
 };

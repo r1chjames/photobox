@@ -4,9 +4,10 @@ import userEvent from '@testing-library/user-event';
 import { LoginCard } from './LoginCard';
 import { IUsersAdapter } from '../../Adapters/IUsersAdapter';
 
-// Mock react-router-dom
+// Mock react-router-dom - preserve other exports for MemoryRouter in test-utils
 const mockNavigate = vi.fn();
-vi.mock('react-router-dom', () => ({
+vi.mock('react-router-dom', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('react-router-dom')>()),
     useNavigate: () => mockNavigate,
 }));
 

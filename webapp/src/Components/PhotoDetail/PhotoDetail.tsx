@@ -1,10 +1,10 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {useDisclosure} from '@mantine/hooks';
 import {Button, Dialog, Group, Image, Loader, ScrollArea, Table} from '@mantine/core';
 import {valueType} from "../../utils/TypeUtils.js";
 import {IPhotosAdapter} from '../../Adapters/IPhotosAdapter';
 import {useParams} from "react-router-dom";
-import {fetchPhotoBinWithAuth} from "../../utils/ImageUtils";
+import {fetchPhotoBinWithAuth, revokeBlobUrl} from "../../utils/ImageUtils";
 import {useQuery} from "@tanstack/react-query";
 
 interface IProps {
@@ -34,6 +34,12 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
         queryFn: fetchPhotoBin,
         enabled: !!id,
     });
+
+    useEffect(() => {
+        return () => {
+            revokeBlobUrl(photoUrl);
+        };
+    }, [photoUrl]);
 
     const tableRow = (key: string, value: string) =>
         <Table.Tr key={key}>

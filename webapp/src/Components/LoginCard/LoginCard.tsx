@@ -22,6 +22,7 @@ import {IUsersAdapter} from "../../Adapters/IUsersAdapter";
 import {User} from "../../Models/User";
 import classes = Combobox.classes;
 import {useNavigate} from "react-router-dom";
+import {useAuth} from "../../Routing/AuthContext";
 
 interface IProps {
     usersAdapter: IUsersAdapter;
@@ -64,6 +65,7 @@ export const LoginCard: React.FunctionComponent<IProps> = (props) => {
     const [email, setEmail] = useInputState('');
     const [password, setPassword] = useInputState('');
     const navigate = useNavigate()
+    const {login} = useAuth();
     const checks = requirements.map((requirement, index) => (
         <PasswordRequirement key={index} label={requirement.label} meets={requirement.re.test(registrationPassword)}/>
     ));
@@ -82,16 +84,13 @@ export const LoginCard: React.FunctionComponent<IProps> = (props) => {
         ));
 
     const handleSubmit = async () => {
-        let token;
-        switch (segmentedValue) {
-            case 'Login':
-                token = await props.usersAdapter.login(new User(username, "", password));
-                break;
-            case 'Register':
-                token = await props.usersAdapter.register(new User(username, email, registrationPassword));
-                break;
+        let result;
+        if (segmentedValue === 'Register') {
+            result = await props.usersAdapter.register(new User(username, email, registrationPassword));
+        } else {
+            result = await props.usersAdapter.login(new User(username, "", password));
         }
-        localStorage.setItem("token", token.token);
+        login(result.token);
         navigate("/")
     };
 

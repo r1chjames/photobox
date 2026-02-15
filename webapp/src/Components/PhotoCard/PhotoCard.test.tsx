@@ -7,7 +7,8 @@ import { IPhotosAdapter } from '../../Adapters/IPhotosAdapter';
 import { IAlbumsAdapter } from '../../Adapters/IAlbumsAdapter';
 
 // Mock react-router-dom
-vi.mock('react-router-dom', () => ({
+vi.mock('react-router-dom', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('react-router-dom')>()),
     useNavigate: () => vi.fn(),
 }));
 
@@ -20,6 +21,7 @@ vi.mock('@mantine/hooks', () => ({
 // Mock ImageUtils
 vi.mock('../../utils/ImageUtils', () => ({
     fetchPhotoBinWithAuth: vi.fn().mockResolvedValue('data:image/png;base64,mockimage'),
+    revokeBlobUrl: vi.fn(),
 }));
 
 describe('PhotoCard', () => {

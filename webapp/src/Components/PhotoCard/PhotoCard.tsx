@@ -6,7 +6,7 @@ import {IconArrowLeftDashed, IconArrowRightDashed, IconCalendar, IconFolder, Ico
 import {useHotkeys} from "@mantine/hooks";
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
-import {fetchPhotoBinWithAuth} from "../../utils/ImageUtils";
+import {fetchPhotoBinWithAuth, revokeBlobUrl} from "../../utils/ImageUtils";
 
 interface IProps {
     photosAdapter: IPhotosAdapter;
@@ -38,14 +38,15 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
             } catch (error) {
                 console.error('Failed to fetch album name:', error);
             }
-        } else {
-            console.log('No albumId on photo');
         }
     }
 
     useEffect(() => {
         void fetchImage();
         void fetchAlbumName();
+        return () => {
+            revokeBlobUrl(fetchedImage);
+        };
     }, [props.source])
 
     useHotkeys([

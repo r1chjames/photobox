@@ -14,3 +14,9 @@ export const fetchPhotoBinWithAuth = async (photosAdapter: IPhotosAdapter, id: s
     });
     return URL.createObjectURL(blob);
 }
+
+export const revokeBlobUrl = (url: string | undefined) => {
+    if (url && url.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+    }
+}

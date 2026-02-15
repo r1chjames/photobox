@@ -1,4 +1,4 @@
-import React, {useCallback, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import { useParams } from "react-router-dom";
 import {JustifiedInfiniteGrid} from '@egjs/react-infinitegrid';
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
@@ -68,7 +68,15 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
 
     const appendDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
-    const onRequestAppend = useCallback((e: any) => {
+    useEffect(() => {
+        return () => {
+            if (appendDebounceRef.current) {
+                clearTimeout(appendDebounceRef.current);
+            }
+        };
+    }, []);
+
+    const onRequestAppend = useCallback(() => {
         if (isFetchingNextPage || allRetrieved) {
             return;
         }

@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '../../test/test-utils';
 import userEvent from '@testing-library/user-event';
 import { SettingModal } from './SettingModal';
 
-// Mock InputModal to render children directly without react-bootstrap Modal
+// Mock InputModal to render children directly without Mantine Modal
 // This avoids portal rendering issues in the test environment
 vi.mock('../InputModal/InputModal', () => ({
     InputModal: ({ isOpen, title, handleSave, handleClose, children }: any) => (

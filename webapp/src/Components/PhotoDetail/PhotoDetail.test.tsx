@@ -4,14 +4,16 @@ import userEvent from '@testing-library/user-event';
 import { PhotoDetail } from './PhotoDetail';
 import { IPhotosAdapter } from '../../Adapters/IPhotosAdapter';
 
-// Mock react-router-dom
-vi.mock('react-router-dom', () => ({
+// Mock react-router-dom - preserve other exports for MemoryRouter in test-utils
+vi.mock('react-router-dom', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('react-router-dom')>()),
     useParams: () => ({ id: 'test-photo-id' }),
 }));
 
 // Mock ImageUtils
 vi.mock('../../utils/ImageUtils', () => ({
     fetchPhotoBinWithAuth: vi.fn().mockResolvedValue('data:image/png;base64,mockimage'),
+    revokeBlobUrl: vi.fn(),
 }));
 
 // Mock @mantine/hooks

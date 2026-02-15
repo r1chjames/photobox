@@ -11,6 +11,6 @@ export class MockUsersAdapter implements IUsersAdapter {
 
   public register = async (user: User) => {
     console.log("MockUsersAdapter.register: " + JSON.stringify(user));
-    return user;
+    return new Token("mock-registration-token");
   }
 }

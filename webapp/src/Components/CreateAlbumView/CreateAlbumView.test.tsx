@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '../../test/test-utils';
 import { CreateAlbumView } from './CreateAlbumView';
-import { PhotosAdapter } from '../../Adapters/PhotosAdapter';
+import { IPhotosAdapter } from '../../Adapters/IPhotosAdapter';
 
 // Mock react-router-dom
-vi.mock('react-router-dom', () => ({
+vi.mock('react-router-dom', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('react-router-dom')>()),
     useParams: () => ({ name: 'test-album' }),
 }));
 
@@ -31,12 +32,12 @@ vi.mock('../Snackbar/InfoSnackbar', () => ({
 }));
 
 describe('CreateAlbumView', () => {
-    let mockPhotosAdapter: PhotosAdapter;
+    let mockPhotosAdapter: IPhotosAdapter;
 
     beforeEach(() => {
         mockPhotosAdapter = {
             uploadPhoto: vi.fn().mockResolvedValue(undefined),
-        } as unknown as PhotosAdapter;
+        } as unknown as IPhotosAdapter;
     });
 
     it('should render dropzone area', () => {

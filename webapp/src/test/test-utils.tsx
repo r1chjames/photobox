@@ -2,6 +2,8 @@ import { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { MantineProvider } from '@mantine/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider } from '../Routing/AuthContext';
+import { MemoryRouter } from 'react-router-dom';
 
 const createTestQueryClient = () => new QueryClient({
     defaultOptions: {
@@ -22,11 +24,15 @@ const AllTheProviders = ({ children }: AllTheProvidersProps) => {
     const queryClient = createTestQueryClient();
 
     return (
-        <QueryClientProvider client={queryClient}>
-            <MantineProvider>
-                {children}
-            </MantineProvider>
-        </QueryClientProvider>
+        <MemoryRouter>
+            <AuthProvider>
+                <QueryClientProvider client={queryClient}>
+                    <MantineProvider>
+                        {children}
+                    </MantineProvider>
+                </QueryClientProvider>
+            </AuthProvider>
+        </MemoryRouter>
     );
 };
 
