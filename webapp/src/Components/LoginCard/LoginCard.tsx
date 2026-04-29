@@ -20,6 +20,7 @@ import {getHotkeyHandler, useInputState} from "@mantine/hooks";
 import {useState} from 'react';
 import {IconAlertTriangle, IconCheck, IconX} from '@tabler/icons-react';
 import {IUsersAdapter} from "../../Adapters/IUsersAdapter";
+import {notifications} from '@mantine/notifications';
 
 import classes = Combobox.classes;
 import {useNavigate} from "react-router-dom";
@@ -94,13 +95,24 @@ export const LoginCard: React.FunctionComponent<IProps> = (props) => {
             let result;
             if (segmentedValue === 'Register') {
                 result = await props.usersAdapter.register({ username, email, password: registrationPassword });
+                notifications.show({
+                    title: 'Account created',
+                    message: 'Your account has been registered successfully',
+                    color: 'green',
+                });
             } else {
                 result = await props.usersAdapter.login({ username, email: "", password });
             }
             login(result.token);
             navigate("/")
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Authentication failed');
+            const message = e instanceof Error ? e.message : 'Authentication failed';
+            setError(message);
+            notifications.show({
+                title: 'Authentication failed',
+                message,
+                color: 'red',
+            });
         } finally {
             setIsSubmitting(false);
         }

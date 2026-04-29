@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Setting } from '../../Models/Setting';
 import { SettingModal } from '../SettingModal/SettingModal';
-import {InfoSnackbar} from '../Snackbar/InfoSnackbar';
+import { notifications } from '@mantine/notifications';
+import { modals } from '@mantine/modals';
 import {ActionIcon, Button, Flex, Table, TextInput} from '@mantine/core';
 import {
     IconDeviceFloppy,
@@ -79,7 +80,6 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
   const [settings, setSettings] = useState<Setting[]>([]);
   const [editing, setEditing] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [showSnackbar, setShowSnackbar] = useState(false);
 
   useEffect(() => {
     (async function retrieveAllSettings() {
@@ -100,27 +100,58 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
     setSettings(refreshedSettings);
   }, [props.settingsAdapter]);
 
-  const handleSave = useCallback(() => {
-    handleSaveSettings(settings, props.settingsAdapter);
-    setEditing(false);
-    setShowSnackbar(true);
+  const handleSave = useCallback(async () => {
+    try {
+      await handleSaveSettings(settings, props.settingsAdapter);
+      setEditing(false);
+      notifications.show({
+        title: 'Settings saved',
+        message: 'Your settings have been saved successfully',
+        color: 'green',
+      });
+    } catch (e) {
+      notifications.show({
+        title: 'Save failed',
+        message: e instanceof Error ? e.message : 'Failed to save settings',
+        color: 'red',
+      });
+    }
   }, [settings, props.settingsAdapter]);
 
-  const handleIndex = useCallback(async () => {
-      return await props.photosAdapter.index();
+  const handleIndex = useCallback(() => {
+    modals.openConfirmModal({
+      title: 'Start photo indexing?',
+      children: 'This will scan your photo directory and may take a while depending on the number of photos.',
+      labels: { confirm: 'Start indexing', cancel: 'Cancel' },
+      confirmProps: { color: 'blue' },
+      onConfirm: async () => {
+        try {
+          await props.photosAdapter.index();
+          notifications.show({
+            title: 'Indexing started',
+            message: 'Photo indexing is running in the background',
+            color: 'blue',
+          });
+        } catch (e) {
+          notifications.show({
+            title: 'Indexing failed',
+            message: e instanceof Error ? e.message : 'Failed to start indexing',
+            color: 'red',
+          });
+        }
+      },
+    });
   }, [props.photosAdapter]);
-
-  const snackbar = () => {
-      if (showSnackbar) {
-          return(<InfoSnackbar text={'Settings saved'} show={showSnackbar} handleStopShowing={() => setShowSnackbar(false)}/>)
-      }
-  };
 
   const handleModalSave = useCallback((key: string, value: string, friendlyName: string, category: string, description: string) => {
     const updatedSettings = settings.concat({ key, value, friendlyName, category, description });
     setSettings(updatedSettings);
     setShowModal(false);
-    setShowSnackbar(true);
+    notifications.show({
+      title: 'Setting added',
+      message: `Added ${friendlyName}`,
+      color: 'green',
+    });
     setEditing(true);
   }, [settings]);
 
@@ -163,7 +194,6 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
         <Button onClick={handleIndex}>
             Index
         </Button>
-        {snackbar()}
     </div>
   );
 };

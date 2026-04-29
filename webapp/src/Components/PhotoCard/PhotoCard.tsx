@@ -1,9 +1,10 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Photo} from '../../Models/Photo';
-import {ActionIcon, Badge, Button, Card, Flex, Group, Image, Overlay, Stack} from '@mantine/core';
+import {ActionIcon, Badge, Button, Card, Flex, Group, Image, Overlay, Stack, Tooltip} from '@mantine/core';
 import {useNavigate} from "react-router-dom";
-import {IconArrowLeftDashed, IconArrowRightDashed, IconCalendar, IconFolder, IconX} from "@tabler/icons-react";
+import {IconArrowLeftDashed, IconArrowRightDashed, IconCalendar, IconDownload, IconFolder, IconX} from "@tabler/icons-react";
 import {useHotkeys} from "@mantine/hooks";
+import {notifications} from '@mantine/notifications';
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 import {fetchPhotoBinWithAuth, revokeBlobUrl} from "../../utils/ImageUtils";
@@ -53,9 +54,28 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
         };
     }, [props.source, fetchImage, fetchAlbumName]);
 
+    const handleDownload = useCallback(async () => {
+        try {
+            await props.photosAdapter.downloadPhoto(props.source.id, props.source.name);
+            notifications.show({
+                title: 'Download started',
+                message: `Downloading ${props.source.name}`,
+                color: 'blue',
+            });
+        } catch (e) {
+            notifications.show({
+                title: 'Download failed',
+                message: e instanceof Error ? e.message : 'Failed to download photo',
+                color: 'red',
+            });
+        }
+    }, [props.photosAdapter, props.source.id, props.source.name]);
+
     useHotkeys([
         ['ArrowLeft', () => props.previousPhoto()],
         ['ArrowRight', () => props.nextPhoto()],
+        ['Escape', () => props.closeModal()],
+        ['d', () => handleDownload()],
     ]);
 
     const handleClose = useCallback((e: React.MouseEvent) => {
@@ -76,7 +96,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const previousButton = useCallback(() => {
         if (!props.firstInAlbum) {
             return (
-                <ActionIcon color="dark" size="xl" onClick={handlePrevious}>
+                <ActionIcon color="dark" size="xl" onClick={handlePrevious} aria-label="Previous photo">
                     <IconArrowLeftDashed size="2.125rem"/>
                 </ActionIcon>
             );
@@ -87,7 +107,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const nextButton = useCallback(() => {
         if (!props.lastInAlbum) {
             return (
-                <ActionIcon color="dark" size="xl" onClick={handleNext}>
+                <ActionIcon color="dark" size="xl" onClick={handleNext} aria-label="Next photo">
                     <IconArrowRightDashed size="2.125rem"/>
                 </ActionIcon>
             );
@@ -111,10 +131,17 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                     /> :
                     'Loading...'}
                 <Overlay color="#000" backgroundOpacity={0} opacity={0.5}>
-                    <Flex direction="row" style={{width: "100%", justifyContent: "right"}}>
-                        <ActionIcon color="dark" size="l" opacity={1} onClick={handleClose}>
-                            <IconX size="1.75rem"/>
-                        </ActionIcon>
+                    <Flex direction="row" style={{width: "100%", justifyContent: "right"}} gap="xs">
+                        <Tooltip label="Download (D)">
+                            <ActionIcon color="dark" size="l" opacity={1} onClick={handleDownload} aria-label="Download">
+                                <IconDownload size="1.75rem"/>
+                            </ActionIcon>
+                        </Tooltip>
+                        <Tooltip label="Close (Esc)">
+                            <ActionIcon color="dark" size="l" opacity={1} onClick={handleClose} aria-label="Close">
+                                <IconX size="1.75rem"/>
+                            </ActionIcon>
+                        </Tooltip>
                     </Flex>
                     <Flex direction="row" style={{
                         width: "100%",

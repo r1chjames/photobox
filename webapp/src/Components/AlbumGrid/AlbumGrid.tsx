@@ -1,12 +1,14 @@
 import React, { useCallback, useState } from 'react';
 import { Album } from '../../Models/Album';
 import { AlbumCard } from '../AlbumCard/AlbumCard';
+import { EmptyState } from '../EmptyState/EmptyState';
 import { InputModal } from '../InputModal/InputModal';
 import {Flex, TextInput} from '@mantine/core';
 import {useNavigate} from "react-router-dom";
 import useAlbumGrid from "./useAlbumGrid";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
+import {IconAlbumOff} from '@tabler/icons-react';
 
 interface IProps {
   albumsAdapter: IAlbumsAdapter;
@@ -54,7 +56,7 @@ export const AlbumGrid: React.FunctionComponent<IProps> = (propsIn) => {
               align="flex-start"
               wrap="wrap"
           >
-          {albums && albums.slice(0, props.maxDisplayed).map((album: Album) => {
+          {albums && albums.length > 0 ? albums.slice(0, props.maxDisplayed).map((album: Album) => {
             return(
               <article key={album.id}>
                 <AlbumCard
@@ -64,7 +66,17 @@ export const AlbumGrid: React.FunctionComponent<IProps> = (propsIn) => {
                 />
               </article>
             );
-          })}
+          }) : (
+              <EmptyState
+                  title="No albums yet"
+                  description="Albums appear automatically from your photo folders, or create one manually."
+                  icon={<IconAlbumOff size="2rem" />}
+                  action={{
+                      label: "Create album",
+                      onClick: () => setShowNewAlbumModal(true),
+                  }}
+              />
+          )}
           </Flex>
         </section>
     </div>

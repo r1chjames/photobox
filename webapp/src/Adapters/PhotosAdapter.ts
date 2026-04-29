@@ -48,6 +48,20 @@ export class PhotosAdapter implements IPhotosAdapter {
     return await this.restApiAdapter.getBinaryApiCall(getPhotosImagePath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 
+  public downloadPhoto = async (photoId: string, filename: string) => {
+    const data = await this.getPhotoImage(photoId);
+    const url = typeof data === 'string' ? data : URL.createObjectURL(new Blob([data], { type: 'image/jpeg' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    if (typeof data !== 'string') {
+      URL.revokeObjectURL(url);
+    }
+  }
+
   public uploadPhoto = async (body: Record<string, unknown>) => {
     const uploadPhotoPath = `photo`;
     return this.restApiAdapter.postApiCall(uploadPhotoPath, body, this.buildHeaders(this.restApiAdapter.authHeader()));

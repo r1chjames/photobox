@@ -3,7 +3,7 @@ import Dropzone from 'react-dropzone';
 import './CreateAlbumView.css';
 import {useParams} from 'react-router-dom';
 import {IPhotosAdapter} from '../../Adapters/IPhotosAdapter';
-import {InfoSnackbar} from '../Snackbar/InfoSnackbar';
+import {notifications} from '@mantine/notifications';
 
 interface IProps {
   photosAdapter: IPhotosAdapter;
@@ -31,7 +31,6 @@ const readUploadedFileAsText = (inputFile: File) => {
 
 export const CreateAlbumView: React.FunctionComponent<IProps> = (props) => {
 
-  const [showSnackbar, setShowSnackbar] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const {name} = useParams<QueryParams>();
@@ -39,6 +38,7 @@ export const CreateAlbumView: React.FunctionComponent<IProps> = (props) => {
   const handleFileUpload = async (acceptedFiles: File[]) => {
     setError(null);
     setIsUploading(true);
+    let uploadedCount = 0;
     try {
       for (const file of acceptedFiles) {
         const fileContent = await readUploadedFileAsText(file);
@@ -48,10 +48,21 @@ export const CreateAlbumView: React.FunctionComponent<IProps> = (props) => {
           binaryContent: fileContent,
         };
         await props.photosAdapter.uploadPhoto(photoContent);
-        setShowSnackbar(true);
+        uploadedCount++;
       }
+      notifications.show({
+        title: 'Upload complete',
+        message: `${uploadedCount} photo${uploadedCount !== 1 ? 's' : ''} uploaded successfully`,
+        color: 'green',
+      });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Upload failed');
+      const message = e instanceof Error ? e.message : 'Upload failed';
+      setError(message);
+      notifications.show({
+        title: 'Upload failed',
+        message,
+        color: 'red',
+      });
     } finally {
       setIsUploading(false);
     }
@@ -72,7 +83,6 @@ export const CreateAlbumView: React.FunctionComponent<IProps> = (props) => {
         </Dropzone>
       </div>
       {error && <p style={{ color: 'red' }}>{error}</p>}
-      <InfoSnackbar text={'Photo Uploaded'} show={showSnackbar} handleStopShowing={() => setShowSnackbar(false)}/>
     </div>
   );
 };

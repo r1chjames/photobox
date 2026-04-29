@@ -136,15 +136,12 @@ describe('PhotoCard', () => {
 
         // Wait for all buttons to render
         await waitFor(() => {
-            const buttons = screen.getAllByRole('button');
-            // Should have at least 4 buttons: close, previous, next, view details
-            expect(buttons.length).toBeGreaterThanOrEqual(4);
+            const prevButton = screen.getByLabelText('Previous photo');
+            expect(prevButton).toBeInTheDocument();
         });
 
-        const buttons = screen.getAllByRole('button');
-        // Buttons order: [0] = close (X), [1] = previous (left arrow), [2] = next (right arrow), [3] = View Details
-        // Click the previous button (second button, index 1)
-        await user.click(buttons[1]);
+        const prevButton = screen.getByLabelText('Previous photo');
+        await user.click(prevButton);
 
         // The previousPhoto should be called
         expect(mockProps.previousPhoto).toHaveBeenCalled();
@@ -154,14 +151,13 @@ describe('PhotoCard', () => {
         const user = userEvent.setup();
         render(<PhotoCard {...mockProps} />);
 
-        await waitFor(async () => {
-            const buttons = screen.getAllByRole('button');
-            // Find close button (usually the first or one with X icon)
-            const closeButton = buttons.find(btn => btn.querySelector('svg'));
-            if (closeButton) {
-                await user.click(closeButton);
-            }
+        await waitFor(() => {
+            const closeButton = screen.getByLabelText('Close');
+            expect(closeButton).toBeInTheDocument();
         });
+
+        const closeButton = screen.getByLabelText('Close');
+        await user.click(closeButton);
 
         expect(mockProps.closeModal).toHaveBeenCalled();
     });

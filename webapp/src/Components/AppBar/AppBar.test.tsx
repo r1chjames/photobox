@@ -27,10 +27,11 @@ describe('AppBar', () => {
     it('should render navigation links', () => {
         render(<AppBar activeLink={Labels.Dashboard}><div>Content</div></AppBar>);
 
-        expect(screen.getByText('Dashboard')).toBeInTheDocument();
-        expect(screen.getByText('Photos')).toBeInTheDocument();
-        expect(screen.getByText('Albums')).toBeInTheDocument();
-        expect(screen.getByText('Settings')).toBeInTheDocument();
+        // Use getAllByText because breadcrumbs also contain these labels
+        expect(screen.getAllByText('Dashboard').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText('Photos').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText('Albums').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText('Settings').length).toBeGreaterThanOrEqual(1);
     });
 
     it('should render user avatar and name', () => {

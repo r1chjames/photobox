@@ -14,6 +14,7 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 // Mock @mantine/hooks
 vi.mock('@mantine/hooks', () => ({
     useMediaQuery: () => false,
+    useHotkeys: vi.fn(),
 }));
 
 // Mock @egjs/react-infinitegrid

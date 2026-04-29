@@ -1,13 +1,15 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import {JustifiedInfiniteGrid} from '@egjs/react-infinitegrid';
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 import usePhotoGrid from "./usePhotoGrid";
 import {PhotoCard} from "../PhotoCard/PhotoCard";
-import {Flex, Modal, Skeleton, Space, Text, ThemeIcon, Title} from "@mantine/core";
-import {useMediaQuery} from "@mantine/hooks";
-import {IconPhotoX} from "@tabler/icons-react";
+import {EmptyState} from "../EmptyState/EmptyState";
+import {KeyboardShortcutsHelp} from "../KeyboardShortcutsHelp/KeyboardShortcutsHelp";
+import {Modal, Skeleton, Title} from "@mantine/core";
+import {useHotkeys, useMediaQuery} from "@mantine/hooks";
+import {IconPhotoOff} from "@tabler/icons-react";
 import './PhotoGrid.css';
 import {Photo} from "../../Models/Photo";
 
@@ -55,9 +57,11 @@ GridImageItem.displayName = 'GridImageItem';
 
 export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
     const props = {...defaultProps, ...propsIn};
     const [isImageModalOpen, setImageModalOpen] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
     const isMobile = useMediaQuery('(max-width: 50em)');
 
     // The hook now provides a simple, flat, de-duplicated array of photos.
@@ -109,17 +113,31 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         setCurrentIndex(prevIndex => prevIndex < photosRef.current.length - 1 ? prevIndex + 1 : prevIndex);
     }, []);
 
+    useHotkeys([
+        ['?', () => setShowShortcutsHelp(prev => !prev)],
+        ['Enter', () => {
+            if (!isImageModalOpen && photosRef.current.length > 0) {
+                setCurrentIndex(0);
+                setImageModalOpen(true);
+            }
+        }],
+    ]);
+
     const AlbumTitle = () => <Title size="h4">{albumName}</Title>;
 
     if (photos.length === 0) {
         return (
             <>
                 <AlbumTitle/>
-                <Flex justify="center" align="center" direction="column" wrap="wrap" pos={"absolute"} w={"100%"} h={"100%"}>
-                    <ThemeIcon radius="md" size="xl" color="orange"><IconPhotoX size="5rem"/></ThemeIcon>
-                    <Space h="md"/>
-                    <Text size="h4">This album is empty</Text>
-                </Flex>
+                <EmptyState
+                    title={id ? "This album is empty" : "No photos yet"}
+                    description={id ? "Upload photos to see them here." : "Your photo library is empty. Upload photos or configure your photo directory."}
+                    icon={<IconPhotoOff size="2rem" />}
+                    action={{
+                        label: "Upload photos",
+                        onClick: () => navigate('/album/new/General'),
+                    }}
+                />
             </>
         );
     }
@@ -171,6 +189,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                     />
                 </Modal>
             )}
+            <KeyboardShortcutsHelp opened={showShortcutsHelp} onClose={() => setShowShortcutsHelp(false)} />
         </div>
     );
 };

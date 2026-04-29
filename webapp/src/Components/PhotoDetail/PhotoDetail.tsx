@@ -1,11 +1,13 @@
-import React, {useEffect} from 'react';
+import React, {useCallback, useEffect} from 'react';
 import {useDisclosure} from '@mantine/hooks';
 import {Button, Dialog, Group, Image, Loader, ScrollArea, Table} from '@mantine/core';
+import {IconDownload} from '@tabler/icons-react';
 import {valueType} from "../../utils/TypeUtils";
 import {IPhotosAdapter} from '../../Adapters/IPhotosAdapter';
 import {useParams} from "react-router-dom";
 import {fetchPhotoBinWithAuth, revokeBlobUrl} from "../../utils/ImageUtils";
 import {useQuery} from "@tanstack/react-query";
+import {notifications} from '@mantine/notifications';
 
 interface IProps {
     photosAdapter: IPhotosAdapter;
@@ -34,6 +36,24 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
         queryFn: fetchPhotoBin,
         enabled: !!id,
     });
+
+    const handleDownload = useCallback(async () => {
+        if (!photo) return;
+        try {
+            await props.photosAdapter.downloadPhoto(photo.id, photo.name);
+            notifications.show({
+                title: 'Download started',
+                message: `Downloading ${photo.name}`,
+                color: 'blue',
+            });
+        } catch (e) {
+            notifications.show({
+                title: 'Download failed',
+                message: e instanceof Error ? e.message : 'Failed to download photo',
+                color: 'red',
+            });
+        }
+    }, [props.photosAdapter, photo]);
 
     const blobUrlRef = React.useRef<string | undefined>(undefined);
 
@@ -82,8 +102,9 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                     fit="scale-down"
                     src={photoUrl}
                 />
-                <Group justify="center">
-                    <Button onClick={toggle} mt={50}>Metadata</Button>
+                <Group justify="center" mt="md" gap="md">
+                    <Button onClick={handleDownload} leftSection={<IconDownload size={16} />}>Download</Button>
+                    <Button onClick={toggle}>Metadata</Button>
                 </Group>
                 <Dialog opened={opened} withCloseButton onClose={close} size="lg" radius="md" mah="50%"
                         position={{top: "30%", right: 50, bottom: 50}}>

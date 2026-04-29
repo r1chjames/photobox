@@ -25,6 +25,13 @@ vi.mock('../Snackbar/InfoSnackbar', () => ({
     )
 }));
 
+// Mock @mantine/modals to auto-confirm
+vi.mock('@mantine/modals', () => ({
+    modals: {
+        openConfirmModal: ({ onConfirm }: any) => onConfirm(),
+    },
+}));
+
 describe('SettingsView', () => {
     let mockSettingsAdapter: ISettingsAdapter;
     let mockPhotosAdapter: IPhotosAdapter;
