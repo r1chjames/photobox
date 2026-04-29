@@ -37,49 +37,50 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
       const retrievedSettings = await getAllSettings(props.settingsAdapter);
       setSettings(retrievedSettings);
     })();
-  },[setSettings]);
+  },[props.settingsAdapter]);
 
-  const handleValueChange = (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>, setting: Setting) => {
-    const i = settings.findIndex(k => k.key === setting.key);
-    settings[i].value = event.target.value;
+  const handleValueChange = (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>, setting: Setting, field: keyof Setting) => {
+    setSettings(prev => prev.map(s =>
+        s.key === setting.key ? { ...s, [field]: event.target.value } : s
+    ));
   };
 
   const tableRow = (setting: Setting) => {
     if (editing) {
       return (
-        <Table.Tr>
+        <Table.Tr key={setting.key}>
           <Table.Td>
             {setting.key}
           </Table.Td>
           <Table.Td>
             <TextInput
-              defaultValue={setting.value}
-              onChange={event => handleValueChange(event, setting)}
+              value={setting.value}
+              onChange={event => handleValueChange(event, setting, 'value')}
             />
           </Table.Td>
           <Table.Td>
             <TextInput
-              defaultValue={setting.friendlyName}
-              onChange={event => handleValueChange(event, setting)}
+              value={setting.friendlyName}
+              onChange={event => handleValueChange(event, setting, 'friendlyName')}
             />
           </Table.Td>
           <Table.Td>
             <TextInput
-              defaultValue={setting.category}
-              onChange={event => handleValueChange(event, setting)}
+              value={setting.category}
+              onChange={event => handleValueChange(event, setting, 'category')}
             />
           </Table.Td>
           <Table.Td>
             <TextInput
-              defaultValue={setting.description}
-              onChange={event => handleValueChange(event, setting)}
+              value={setting.description}
+              onChange={event => handleValueChange(event, setting, 'description')}
             />
           </Table.Td>
         </Table.Tr>
       );
     }
     return (
-      <Table.Tr>
+      <Table.Tr key={setting.key}>
         <Table.Td>
           {setting.key}
         </Table.Td>

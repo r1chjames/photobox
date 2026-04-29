@@ -35,9 +35,15 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
         enabled: !!id,
     });
 
+    const blobUrlRef = React.useRef<string | undefined>(undefined);
+
     useEffect(() => {
+        if (photoUrl && typeof photoUrl === 'string' && photoUrl.startsWith('blob:')) {
+            blobUrlRef.current = photoUrl;
+        }
         return () => {
-            revokeBlobUrl(photoUrl);
+            revokeBlobUrl(blobUrlRef.current);
+            blobUrlRef.current = undefined;
         };
     }, [photoUrl]);
 

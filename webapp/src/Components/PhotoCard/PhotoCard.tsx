@@ -24,9 +24,11 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const [fetchedImage, setFetchedImage] = useState<string | undefined>();
     const [albumName, setAlbumName] = useState<string | undefined>();
     const img: React.Ref<HTMLImageElement> = React.createRef();
+    const blobUrlRef = React.useRef<string | undefined>(undefined);
 
     const fetchImage = async () => {
         const imageUrl = await fetchPhotoBinWithAuth(props.photosAdapter, props.source.id);
+        blobUrlRef.current = imageUrl;
         setFetchedImage(imageUrl);
     }
 
@@ -42,10 +44,12 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     }
 
     useEffect(() => {
+        setFetchedImage(undefined);
         void fetchImage();
         void fetchAlbumName();
         return () => {
-            revokeBlobUrl(fetchedImage);
+            revokeBlobUrl(blobUrlRef.current);
+            blobUrlRef.current = undefined;
         };
     }, [props.source])
 

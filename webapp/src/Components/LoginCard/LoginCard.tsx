@@ -17,6 +17,7 @@ import {
     Title
 } from '@mantine/core';
 import {getHotkeyHandler, useInputState} from "@mantine/hooks";
+import {useState} from 'react';
 import {IconAlertTriangle, IconCheck, IconX} from '@tabler/icons-react';
 import {IUsersAdapter} from "../../Adapters/IUsersAdapter";
 
@@ -83,15 +84,26 @@ export const LoginCard: React.FunctionComponent<IProps> = (props) => {
             />
         ));
 
+    const [error, setError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const handleSubmit = async () => {
-        let result;
-        if (segmentedValue === 'Register') {
-            result = await props.usersAdapter.register({ username, email, password: registrationPassword });
-        } else {
-            result = await props.usersAdapter.login({ username, email: "", password });
+        setError(null);
+        setIsSubmitting(true);
+        try {
+            let result;
+            if (segmentedValue === 'Register') {
+                result = await props.usersAdapter.register({ username, email, password: registrationPassword });
+            } else {
+                result = await props.usersAdapter.login({ username, email: "", password });
+            }
+            login(result.token);
+            navigate("/")
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Authentication failed');
+        } finally {
+            setIsSubmitting(false);
         }
-        login(result.token);
-        navigate("/")
     };
 
     const loginForm = () => {
@@ -183,7 +195,12 @@ export const LoginCard: React.FunctionComponent<IProps> = (props) => {
                         Forgot password?
                     </Anchor>
                 </Group>
-                <Button fullWidth mt="xl" onClick={() => handleSubmit()}>
+                {error && (
+                    <Text c="red" size="sm" ta="center" mt="sm">
+                        {error}
+                    </Text>
+                )}
+                <Button fullWidth mt="xl" onClick={() => handleSubmit()} loading={isSubmitting} disabled={isSubmitting}>
                     {segmentedValue}
                 </Button>
             </Paper>

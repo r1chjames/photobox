@@ -13,21 +13,17 @@ type QueryParams = {
   name: string;
 }
 
-const uploadPhotoToApi = async (photosAdapter: IPhotosAdapter, body: Record<string, unknown>) => {
-  await photosAdapter.uploadPhoto(body);
-};
-
 const readUploadedFileAsText = (inputFile: File) => {
   const temporaryFileReader = new FileReader();
 
-  return new Promise((resolve, reject) => {
+  return new Promise<string>((resolve, reject) => {
     temporaryFileReader.onerror = () => {
       temporaryFileReader.abort();
       reject(new DOMException('Problem parsing input file.'));
     };
 
     temporaryFileReader.onload = () => {
-      resolve(temporaryFileReader.result);
+      resolve(temporaryFileReader.result as string);
     };
     temporaryFileReader.readAsDataURL(inputFile);
   });
@@ -36,34 +32,46 @@ const readUploadedFileAsText = (inputFile: File) => {
 export const CreateAlbumView: React.FunctionComponent<IProps> = (props) => {
 
   const [showSnackbar, setShowSnackbar] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const {name} = useParams<QueryParams>();
 
   const handleFileUpload = async (acceptedFiles: File[]) => {
-    for (const file of acceptedFiles) {
-      const fileContent = await readUploadedFileAsText(file);
-      const photoContent = {
-        name: file.name,
-        albumName: name,
-        binaryContent: fileContent,
-      };
-      uploadPhotoToApi(props.photosAdapter, photoContent).then(() => setShowSnackbar(true));
+    setError(null);
+    setIsUploading(true);
+    try {
+      for (const file of acceptedFiles) {
+        const fileContent = await readUploadedFileAsText(file);
+        const photoContent = {
+          name: file.name,
+          albumName: name,
+          binaryContent: fileContent,
+        };
+        await props.photosAdapter.uploadPhoto(photoContent);
+        setShowSnackbar(true);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Upload failed');
+    } finally {
+      setIsUploading(false);
     }
   };
 
   return (
           <div>
       <div className="createAlbumView__dropzone">
-        <Dropzone onDrop={acceptedFiles => handleFileUpload(acceptedFiles)}>
+        <Dropzone onDrop={acceptedFiles => handleFileUpload(acceptedFiles)} disabled={isUploading}>
           {({getRootProps, getInputProps}) => (
             <section>
               <div {...getRootProps()}>
                 <input {...getInputProps()} />
-                <p>Drag photos here to upload</p>
+                <p>{isUploading ? 'Uploading...' : 'Drag photos here to upload'}</p>
               </div>
             </section>
           )}
         </Dropzone>
       </div>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
       <InfoSnackbar text={'Photo Uploaded'} show={showSnackbar} handleStopShowing={() => setShowSnackbar(false)}/>
     </div>
   );
