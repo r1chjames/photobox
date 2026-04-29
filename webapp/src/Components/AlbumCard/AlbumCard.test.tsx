@@ -19,13 +19,13 @@ describe('AlbumCard', () => {
 
     beforeEach(() => {
         mockPhotosAdapter = {} as IPhotosAdapter;
-        mockAlbum = new Album(
-            'album-1',
-            'Test Album',
-            'Test Description',
-            'test,tags',
-            '{}'
-        );
+        mockAlbum = {
+            id: 'album-1',
+            name: 'Test Album',
+            description: 'Test Description',
+            tags: 'test,tags',
+            metadata: '{}'
+        };
         mockAlbumViewCallback = vi.fn();
 
         // Default mock implementation
@@ -190,13 +190,13 @@ describe('AlbumCard', () => {
     });
 
     it('should render with different album name', async () => {
-        const differentAlbum = new Album(
-            'album-2',
-            'Vacation Photos',
-            'Summer trip',
-            'vacation,summer',
-            '{}'
-        );
+        const differentAlbum = {
+            id: 'album-2',
+            name: 'Vacation Photos',
+            description: 'Summer trip',
+            tags: 'vacation,summer',
+            metadata: '{}'
+        };
 
         render(
             <AlbumCard

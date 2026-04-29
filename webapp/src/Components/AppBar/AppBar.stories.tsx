@@ -9,7 +9,7 @@ import {Dashboard} from "../Dashboard/Dashboard";
 import {PhotoDetail} from "../PhotoDetail/PhotoDetail";
 import {SettingsView} from "../SettingsView/SettingsView";
 import {MockSettingsAdapter} from "../../Adapters/MockSettingsAdapter";
-import {Setting} from "../../Models/Setting";
+
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
 const meta: Meta<typeof AppBar> = {
@@ -94,10 +94,10 @@ export const Albums: Story = {
 };
 
 const settings = [
-    new Setting("thumbnail_width", "600", "Thumbnail width", "Photo", "Thumbnail width used during thumbnail generation"),
-    new Setting("thumbnail_height", "600", "Thumbnail height", "Photo", "Thumbnail height used during thumbnail generation"),
-    new Setting("default_new_albums_dir", "/photos", "New album storage location", "System", "Default location on disk to store new albums"),
-    new Setting("index_frequency_cron", "0 1 * * *", "CRON expression for indexing", "System", "CRON expression used to initiate indexing")
+    { key: "thumbnail_width", value: "600", friendlyName: "Thumbnail width", category: "Photo", description: "Thumbnail width used during thumbnail generation" },
+    { key: "thumbnail_height", value: "600", friendlyName: "Thumbnail height", category: "Photo", description: "Thumbnail height used during thumbnail generation" },
+    { key: "default_new_albums_dir", value: "/photos", friendlyName: "New album storage location", category: "System", description: "Default location on disk to store new albums" },
+    { key: "index_frequency_cron", value: "0 1 * * *", friendlyName: "CRON expression for indexing", category: "System", description: "CRON expression used to initiate indexing" }
 ];
 
 export const Settings: Story = {

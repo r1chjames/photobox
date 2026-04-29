@@ -32,8 +32,8 @@ describe('SettingsView', () => {
 
     beforeEach(() => {
         mockSettings = [
-            new Setting('setting1', 'value1', 'Setting One', 'Category1', 'Description 1'),
-            new Setting('setting2', 'value2', 'Setting Two', 'Category2', 'Description 2'),
+            { key: 'setting1', value: 'value1', friendlyName: 'Setting One', category: 'Category1', description: 'Description 1' },
+            { key: 'setting2', value: 'value2', friendlyName: 'Setting Two', category: 'Category2', description: 'Description 2' },
         ];
 
         mockSettingsAdapter = {

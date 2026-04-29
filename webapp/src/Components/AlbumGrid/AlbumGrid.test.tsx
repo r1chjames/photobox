@@ -54,9 +54,9 @@ describe('AlbumGrid', () => {
         mockPhotosAdapter = {} as IPhotosAdapter;
 
         mockAlbums = [
-            new Album('album-1', 'Summer Vacation', 'Beach photos', 'summer,beach', '{}'),
-            new Album('album-2', 'Winter Trip', 'Snow photos', 'winter,snow', '{}'),
-            new Album('album-3', 'Family Reunion', 'Family gathering', 'family', '{}'),
+            { id: 'album-1', name: 'Summer Vacation', description: 'Beach photos', tags: 'summer,beach', metadata: '{}' },
+            { id: 'album-2', name: 'Winter Trip', description: 'Snow photos', tags: 'winter,snow', metadata: '{}' },
+            { id: 'album-3', name: 'Family Reunion', description: 'Family gathering', tags: 'family', metadata: '{}' },
         ];
 
         // Default mock implementation
@@ -259,7 +259,7 @@ describe('AlbumGrid', () => {
 
     it('should apply maxDisplayed default value', async () => {
         const manyAlbums = Array.from({ length: 25 }, (_, i) =>
-            new Album(`album-${i}`, `Album ${i}`, '', '', '{}')
+            ({ id: `album-${i}`, name: `Album ${i}`, description: '', tags: '', metadata: '{}' })
         );
 
         (useAlbumGrid as ReturnType<typeof vi.fn>).mockReturnValue([{

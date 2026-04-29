@@ -144,7 +144,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
   };
 
   const handleModalSave = (key: string, value: string, friendlyName: string, category: string, description: string) => {
-    const updatedSettings = settings.concat(new Setting(key, value, friendlyName, category, description));
+    const updatedSettings = settings.concat({ key, value, friendlyName, category, description });
     setSettings(updatedSettings);
     setShowModal(false);
     setShowSnackbar(true);

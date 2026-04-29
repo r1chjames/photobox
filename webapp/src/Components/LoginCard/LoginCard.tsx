@@ -19,7 +19,7 @@ import {
 import {getHotkeyHandler, useInputState} from "@mantine/hooks";
 import {IconAlertTriangle, IconCheck, IconX} from '@tabler/icons-react';
 import {IUsersAdapter} from "../../Adapters/IUsersAdapter";
-import {User} from "../../Models/User";
+
 import classes = Combobox.classes;
 import {useNavigate} from "react-router-dom";
 import {useAuth} from "../../Routing/AuthContext";
@@ -86,9 +86,9 @@ export const LoginCard: React.FunctionComponent<IProps> = (props) => {
     const handleSubmit = async () => {
         let result;
         if (segmentedValue === 'Register') {
-            result = await props.usersAdapter.register(new User(username, email, registrationPassword));
+            result = await props.usersAdapter.register({ username, email, password: registrationPassword });
         } else {
-            result = await props.usersAdapter.login(new User(username, "", password));
+            result = await props.usersAdapter.login({ username, email: "", password });
         }
         login(result.token);
         navigate("/")

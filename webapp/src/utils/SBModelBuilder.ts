@@ -49,16 +49,26 @@ const getRandomPhotoImage = ()=> {
     return images[getRandomInt(images.length - 1)];
 }
 
-export const newPhoto = (photoId: string, albumId: string) => {
+export const newPhoto = (photoId: string, albumId: string): Photo => {
     const randomPhotoImage = getRandomPhotoImage();
-    const metadata: Record<string, any>[] = [
-        {"exif": "[{\"DateTime\": \"2024-01-01T10:00.000\"}, {\"ApertureValue\": \"101/32\"}]"},
-        {"camera": "A7Cii"}
-    ];
-    return new Photo(`p${photoId}`, `Photo ${photoId}`, `/tmp/photo${photoId}.jpg`, randomPhotoImage, randomPhotoImage, albumId, "", metadata, "2024-01-01T10:00.000", randomPhotoImage);
+    const metadata: Record<string, unknown> = {
+        "exif": "[{\"DateTime\": \"2024-01-01T10:00.000\"}, {\"ApertureValue\": \"101/32\"}]",
+        "camera": "A7Cii"
+    };
+    return {
+        id: `p${photoId}`,
+        name: `Photo ${photoId}`,
+        filesystemPath: `/tmp/photo${photoId}.jpg`,
+        sourcePath: randomPhotoImage,
+        albumId,
+        tags: "",
+        metadata,
+        createdAt: "2024-01-01T10:00.000",
+        thumbnail: randomPhotoImage
+    };
 }
 
-export const newAlbum = (id: string)=> {
-    return new Album(`${id}`, `Album ${id}`, `Album ${id}`, "", "");
+export const newAlbum = (id: string): Album => {
+    return { id: `${id}`, name: `Album ${id}`, description: `Album ${id}`, tags: "", metadata: "" };
 }
 
