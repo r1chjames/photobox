@@ -12,7 +12,7 @@ interface IProps {
 
 export const AlbumCard: React.FunctionComponent<IProps> = (props) => {
 
-  const [{thumbnailUrl, photoCount, isLoading}] = useAlbumCard(props.photosAdapter, props.source);
+  const { thumbnailUrl, photoCount, isLoading } = useAlbumCard(props.photosAdapter, props.source);
 
   const content = () => {
     if (isLoading) {

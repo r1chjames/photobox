@@ -1,33 +1,26 @@
-import {useEffect, useState} from 'react';
-import {Photo} from "../../Models/Photo";
-import {Album} from "../../Models/Album";
-import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
+import { useQuery } from '@tanstack/react-query';
+import { Album } from "../../Models/Album";
+import { IPhotosAdapter } from "../../Adapters/IPhotosAdapter";
 
 const useAlbumCard = (photosAdapter: IPhotosAdapter, source: Album) => {
+    const { data: thumbnailUrl, isLoading: isThumbnailLoading } = useQuery({
+        queryKey: ['albumThumbnail', source.id],
+        queryFn: async () => {
+            const photos = await photosAdapter.getPhotosInfoInAlbum(source.id, "", 1, true);
+            return (photos && photos.length > 0) ? photos[0].thumbnail : 'no_image.png';
+        },
+        staleTime: 60_000,
+    });
 
-    const [thumbnailUrl, setThumbnailUrl] = useState('');
-    const [photoCount, setPhotoCount] = useState();
-    const [isLoading, setIsLoading] = useState(true);
+    const { data: photoCount, isLoading: isCountLoading } = useQuery({
+        queryKey: ['albumPhotoCount', source.id],
+        queryFn: () => photosAdapter.getPhotoCountInAlbum(source.id),
+        staleTime: 60_000,
+    });
 
+    const isLoading = isThumbnailLoading || isCountLoading;
 
-    const retrieveThumbnailUrl = async () => {
-        const photos: Photo[] = await photosAdapter.getPhotosInfoInAlbum(source.id, "", 1, true);
-        const firstPhotoInAlbum = (photos && photos.length > 0) ? photos[0].thumbnail : 'no_image.png';
-        setThumbnailUrl(firstPhotoInAlbum);
-    }
-
-    const getPhotoCountInAlbum = async () => {
-        const count = await photosAdapter.getPhotoCountInAlbum(source.id);
-        setPhotoCount(count);
-    };
-
-    useEffect(() => {
-        retrieveThumbnailUrl();
-        getPhotoCountInAlbum();
-        setIsLoading(false);
-    },[]);
-
-    return [{thumbnailUrl, photoCount, isLoading}]
+    return { thumbnailUrl: thumbnailUrl ?? '', photoCount: photoCount ?? 0, isLoading };
 };
 
 export default useAlbumCard;

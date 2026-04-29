@@ -29,11 +29,11 @@ describe('AlbumCard', () => {
         mockAlbumViewCallback = vi.fn();
 
         // Default mock implementation
-        (useAlbumCard as ReturnType<typeof vi.fn>).mockReturnValue([{
+        (useAlbumCard as ReturnType<typeof vi.fn>).mockReturnValue({
             thumbnailUrl: 'data:image/png;base64,mockthumb',
             photoCount: 10,
             isLoading: false
-        }]);
+        });
     });
 
     it('should render album card with name and photo count', async () => {
@@ -68,11 +68,11 @@ describe('AlbumCard', () => {
     });
 
     it('should show loader when loading', () => {
-        (useAlbumCard as ReturnType<typeof vi.fn>).mockReturnValue([{
+        (useAlbumCard as ReturnType<typeof vi.fn>).mockReturnValue({
             thumbnailUrl: '',
             photoCount: 0,
             isLoading: true
-        }]);
+        });
 
         const { container } = render(
             <AlbumCard
@@ -110,11 +110,11 @@ describe('AlbumCard', () => {
     });
 
     it('should handle thumbnail URL with http prefix', async () => {
-        (useAlbumCard as ReturnType<typeof vi.fn>).mockReturnValue([{
+        (useAlbumCard as ReturnType<typeof vi.fn>).mockReturnValue({
             thumbnailUrl: 'http://example.com/image.jpg',
             photoCount: 5,
             isLoading: false
-        }]);
+        });
 
         render(
             <AlbumCard
@@ -131,11 +131,11 @@ describe('AlbumCard', () => {
     });
 
     it('should handle thumbnail URL with data:image prefix', async () => {
-        (useAlbumCard as ReturnType<typeof vi.fn>).mockReturnValue([{
+        (useAlbumCard as ReturnType<typeof vi.fn>).mockReturnValue({
             thumbnailUrl: 'data:image/jpeg;base64,testdata',
             photoCount: 3,
             isLoading: false
-        }]);
+        });
 
         render(
             <AlbumCard
@@ -152,11 +152,11 @@ describe('AlbumCard', () => {
     });
 
     it('should prefix base64 data when thumbnail has no protocol', async () => {
-        (useAlbumCard as ReturnType<typeof vi.fn>).mockReturnValue([{
+        (useAlbumCard as ReturnType<typeof vi.fn>).mockReturnValue({
             thumbnailUrl: 'rawbase64data',
             photoCount: 7,
             isLoading: false
-        }]);
+        });
 
         render(
             <AlbumCard

@@ -21,7 +21,7 @@ const defaultProps = {
 export const AlbumGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const props = {...defaultProps, ...propsIn};
     const navigate = useNavigate()
-    const [showNewAlbumModal, setShowNewAlbumModal] = useState(Boolean);
+    const [showNewAlbumModal, setShowNewAlbumModal] = useState(false);
     const [{albums, createAlbumModalAlbumNameErrorText, newAlbumName, handleNewAlbumNameValueChange}] = useAlbumGrid(props.albumsAdapter);
 
   const newAlbumModalSaveClick = () => {
