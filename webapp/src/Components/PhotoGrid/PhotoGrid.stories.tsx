@@ -3,7 +3,6 @@ import {PhotoGrid} from "./PhotoGrid";
 import {SBModelBuilder} from "../../utils/SBModelBuilder";
 import {MockPhotosAdapter} from "../../Adapters/MockPhotosAdapter";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
-import React from "react";
 import {MockAlbumsAdapter} from "../../Adapters/MockAlbumsAdapter";
 
 const meta: Meta<typeof PhotoGrid> = {

@@ -2,7 +2,7 @@
   "compilerOptions": {
     "removeComments": true,
     "preserveConstEnums": true,
-    "jsx": "react",
+    "jsx": "react-jsx",
     "module": "esnext",
     "noImplicitAny": true,
     "typeRoots": [
@@ -17,8 +17,7 @@
     ],
     "skipLibCheck": true,
     "noUnusedLocals": true,
-    "moduleResolution": "node",
-//    "jsxFactory": "h",
+    "moduleResolution": "bundler",
     "esModuleInterop": true,
     "strict": true,
     "sourceMap": true,
@@ -26,7 +25,8 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true
+    "noEmit": true,
+    "types": ["vite/client"]
   },
   "include": [
     "./src/**/*.tsx",
@@ -36,6 +36,5 @@
   "exclude": [
     "node_modules",
     "./src/**/*.scss"
-  ],
-  "types": ["vite/client"]
+  ]
 }

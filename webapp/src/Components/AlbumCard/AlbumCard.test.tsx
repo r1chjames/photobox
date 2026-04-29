@@ -15,7 +15,7 @@ import useAlbumCard from './useAlbumCard';
 describe('AlbumCard', () => {
     let mockPhotosAdapter: IPhotosAdapter;
     let mockAlbum: Album;
-    let mockAlbumViewCallback: ReturnType<typeof vi.fn>;
+    let mockAlbumViewCallback: (albumId: string) => void;
 
     beforeEach(() => {
         mockPhotosAdapter = {} as IPhotosAdapter;

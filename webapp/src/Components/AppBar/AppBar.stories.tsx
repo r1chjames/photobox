@@ -4,7 +4,6 @@ import {AlbumGrid} from "../AlbumGrid/AlbumGrid";
 import {MockAlbumsAdapter} from "../../Adapters/MockAlbumsAdapter";
 import {MockPhotosAdapter} from "../../Adapters/MockPhotosAdapter";
 import {SBModelBuilder} from "../../utils/SBModelBuilder";
-import React from 'react';
 import {PhotoGrid} from "../PhotoGrid/PhotoGrid";
 import {Dashboard} from "../Dashboard/Dashboard";
 import {PhotoDetail} from "../PhotoDetail/PhotoDetail";

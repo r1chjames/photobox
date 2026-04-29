@@ -3,7 +3,6 @@ import type {Meta, StoryObj} from '@storybook/react-vite';
 import { PhotoDetail } from './PhotoDetail';
 import {SBModelBuilder} from "../../utils/SBModelBuilder";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
-import React from "react";
 import {MockPhotosAdapter} from "../../Adapters/MockPhotosAdapter";
 
 const meta: Meta<typeof PhotoDetail> = {

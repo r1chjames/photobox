@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '../../test/test-utils';
-import userEvent from '@testing-library/user-event';
 import { AppBar, Labels } from './AppBar';
 
 // Mock Mantine hooks

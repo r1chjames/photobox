@@ -218,7 +218,6 @@ describe('AlbumGrid', () => {
     });
 
     it('should navigate to create album page when modal save is clicked', async () => {
-        const user = userEvent.setup();
         const mockHandleChange = vi.fn();
 
         (useAlbumGrid as ReturnType<typeof vi.fn>).mockReturnValue([{
