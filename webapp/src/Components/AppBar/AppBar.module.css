@@ -26,3 +26,9 @@
 .userActive {
     background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-8));
 }
+
+.mobile-bottom-nav {
+    @media (min-width: 48em) {
+        display: none !important;
+    }
+}

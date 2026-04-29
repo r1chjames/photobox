@@ -66,11 +66,18 @@ const navLinkData = [
         description: 'All albums'
     },
     {
-        icon: IconAlbum,
+        icon: IconSettings,
         label: Labels.Settings,
         href: '/settings',
         description: 'Manage configuration'
     },
+];
+
+const bottomNavData = [
+    { icon: IconLibraryPhoto, label: 'Home', href: '/' },
+    { icon: IconPhoto, label: 'Photos', href: '/photos' },
+    { icon: IconAlbum, label: 'Albums', href: '/albums' },
+    { icon: IconSettings, label: 'Settings', href: '/settings' },
 ];
 
 const activeLinkIndex = (index: Labels) => navLinkData.map(item => item.label).indexOf(index);
@@ -244,6 +251,49 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
             <AppShell.Main>
                 {props.children}
             </AppShell.Main>
+
+            {/* Mobile bottom navigation */}
+            <div
+                className="mobile-bottom-nav"
+                style={{
+                    position: 'fixed',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: 64,
+                    background: 'var(--mantine-color-body)',
+                    borderTop: '1px solid var(--mantine-color-default-border)',
+                    display: 'flex',
+                    justifyContent: 'space-around',
+                    alignItems: 'center',
+                    zIndex: 100,
+                    paddingBottom: 'env(safe-area-inset-bottom)',
+                }}
+            >
+                {bottomNavData.map((item) => {
+                    const isActive = location.pathname === item.href || (item.href !== '/' && location.pathname.startsWith(item.href));
+                    return (
+                        <div
+                            key={item.href}
+                            onClick={() => navigate(item.href)}
+                            style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: 4,
+                                cursor: 'pointer',
+                                color: isActive ? 'var(--mantine-primary-color-filled)' : 'var(--mantine-color-dimmed)',
+                                fontSize: 12,
+                                padding: '8px 16px',
+                            }}
+                        >
+                            <item.icon size="1.5rem" stroke={isActive ? 2 : 1.5} />
+                            <span>{item.label}</span>
+                        </div>
+                    );
+                })}
+            </div>
+
             <KeyboardShortcutsHelp opened={showHelp} onClose={() => setShowHelp(false)} />
         </AppShell>
     );

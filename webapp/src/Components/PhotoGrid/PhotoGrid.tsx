@@ -5,6 +5,7 @@ import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 import usePhotoGrid from "./usePhotoGrid";
 import {PhotoCard} from "../PhotoCard/PhotoCard";
+import {Slideshow} from "../Slideshow/Slideshow";
 import {EmptyState} from "../EmptyState/EmptyState";
 import {BulkActionsToolbar} from "../BulkActionsToolbar/BulkActionsToolbar";
 import {KeyboardShortcutsHelp} from "../KeyboardShortcutsHelp/KeyboardShortcutsHelp";
@@ -50,6 +51,8 @@ const GridImageItem = React.memo(
             }
         };
 
+        const cameraModel = photo.metadata && typeof photo.metadata === 'object' && 'Model' in photo.metadata ? String(photo.metadata.Model) : undefined;
+
         return (
             <div className="item" onClick={handleClick} style={{ position: 'relative' }}>
                 {isSelectionMode && (
@@ -71,7 +74,35 @@ const GridImageItem = React.memo(
                         onLoad={() => setIsLoaded(true)}
                         style={{opacity: isLoaded ? 1 : 0, transition: 'opacity 0.2s'}}
                     />
+                    {!isSelectionMode && isLoaded && (
+                        <div className="photo-hover-overlay" style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            padding: '8px 12px',
+                            background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
+                            color: 'white',
+                            fontSize: 12,
+                            opacity: 0,
+                            transition: 'opacity 0.2s',
+                            pointerEvents: 'none',
+                        }}>
+                            <div style={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {photo.name}
+                            </div>
+                            <div style={{ opacity: 0.8, fontSize: 11 }}>
+                                {photo.createdAt ? new Date(photo.createdAt).toLocaleDateString() : ''}
+                                {cameraModel ? ` · ${cameraModel}` : ''}
+                            </div>
+                        </div>
+                    )}
                 </div>
+                <style>{`
+                    .item:hover .photo-hover-overlay {
+                        opacity: 1 !important;
+                    }
+                `}</style>
             </div>
         );
     },
@@ -91,6 +122,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [isSlideshowOpen, setIsSlideshowOpen] = useState(false);
     const isMobile = useMediaQuery('(max-width: 50em)');
 
     // The hook now provides a simple, flat, de-duplicated array of photos.
@@ -336,10 +368,19 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                         firstInAlbum={currentIndex === 0}
                         lastInAlbum={currentIndex === photos.length - 1}
                         closeModal={closeModal}
+                        onSlideshow={() => { setImageModalOpen(false); setIsSlideshowOpen(true); }}
                     />
                 </Modal>
             )}
             <KeyboardShortcutsHelp opened={showShortcutsHelp} onClose={() => setShowShortcutsHelp(false)} />
+            {isSlideshowOpen && (
+                <Slideshow
+                    photos={photos}
+                    startIndex={currentIndex}
+                    photosAdapter={props.photosAdapter}
+                    onClose={() => setIsSlideshowOpen(false)}
+                />
+            )}
         </div>
     );
 };

@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Photo} from '../../Models/Photo';
 import {ActionIcon, Badge, Button, Card, Flex, Group, Image, Overlay, Stack, Tooltip} from '@mantine/core';
 import {useNavigate} from "react-router-dom";
-import {IconArrowLeftDashed, IconArrowRightDashed, IconCalendar, IconDownload, IconFolder, IconX} from "@tabler/icons-react";
+import {IconArrowLeftDashed, IconArrowRightDashed, IconCalendar, IconDownload, IconFolder, IconPlayerPlay, IconX} from "@tabler/icons-react";
 import {useHotkeys} from "@mantine/hooks";
 import {notifications} from '@mantine/notifications';
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
@@ -18,6 +18,7 @@ interface IProps {
     firstInAlbum: boolean;
     lastInAlbum: boolean;
     closeModal: () => void;
+    onSlideshow?: () => void;
 }
 
 export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
@@ -132,6 +133,13 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                     'Loading...'}
                 <Overlay color="#000" backgroundOpacity={0} opacity={0.5}>
                     <Flex direction="row" style={{width: "100%", justifyContent: "right"}} gap="xs">
+                        {props.onSlideshow && (
+                            <Tooltip label="Slideshow">
+                                <ActionIcon color="dark" size="l" opacity={1} onClick={(e) => { e.stopPropagation(); props.onSlideshow!(); }} aria-label="Slideshow">
+                                    <IconPlayerPlay size="1.75rem"/>
+                                </ActionIcon>
+                            </Tooltip>
+                        )}
                         <Tooltip label="Download (D)">
                             <ActionIcon color="dark" size="l" opacity={1} onClick={handleDownload} aria-label="Download">
                                 <IconDownload size="1.75rem"/>
