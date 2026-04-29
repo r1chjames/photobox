@@ -4,6 +4,7 @@ import './CreateAlbumView.css';
 import {useParams} from 'react-router-dom';
 import {IPhotosAdapter} from '../../Adapters/IPhotosAdapter';
 import {notifications} from '@mantine/notifications';
+import {Progress, Text, Card, Stack} from '@mantine/core';
 
 interface IProps {
   photosAdapter: IPhotosAdapter;
@@ -33,11 +34,13 @@ export const CreateAlbumView: React.FunctionComponent<IProps> = (props) => {
 
   const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const {name} = useParams<QueryParams>();
 
   const handleFileUpload = async (acceptedFiles: File[]) => {
     setError(null);
     setIsUploading(true);
+    setUploadProgress({ current: 0, total: acceptedFiles.length });
     let uploadedCount = 0;
     try {
       for (const file of acceptedFiles) {
@@ -49,6 +52,7 @@ export const CreateAlbumView: React.FunctionComponent<IProps> = (props) => {
         };
         await props.photosAdapter.uploadPhoto(photoContent);
         uploadedCount++;
+        setUploadProgress({ current: uploadedCount, total: acceptedFiles.length });
       }
       notifications.show({
         title: 'Upload complete',
@@ -65,23 +69,32 @@ export const CreateAlbumView: React.FunctionComponent<IProps> = (props) => {
       });
     } finally {
       setIsUploading(false);
+      setUploadProgress({ current: 0, total: 0 });
     }
   };
 
   return (
-          <div>
+    <div>
       <div className="createAlbumView__dropzone">
         <Dropzone onDrop={acceptedFiles => handleFileUpload(acceptedFiles)} disabled={isUploading}>
           {({getRootProps, getInputProps}) => (
             <section>
               <div {...getRootProps()}>
                 <input {...getInputProps()} />
-                <p>{isUploading ? 'Uploading...' : 'Drag photos here to upload'}</p>
+                <p>{isUploading ? `Uploading ${uploadProgress.current} of ${uploadProgress.total}...` : 'Drag photos here to upload'}</p>
               </div>
             </section>
           )}
         </Dropzone>
       </div>
+      {isUploading && uploadProgress.total > 0 && (
+        <Card mt="md" p="sm" withBorder>
+          <Stack gap="xs">
+            <Text size="sm">Uploading {uploadProgress.current} of {uploadProgress.total} photos...</Text>
+            <Progress value={(uploadProgress.current / uploadProgress.total) * 100} size="lg" />
+          </Stack>
+        </Card>
+      )}
       {error && <p style={{ color: 'red' }}>{error}</p>}
     </div>
   );

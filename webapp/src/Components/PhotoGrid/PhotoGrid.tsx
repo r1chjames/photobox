@@ -6,10 +6,13 @@ import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 import usePhotoGrid from "./usePhotoGrid";
 import {PhotoCard} from "../PhotoCard/PhotoCard";
 import {EmptyState} from "../EmptyState/EmptyState";
+import {BulkActionsToolbar} from "../BulkActionsToolbar/BulkActionsToolbar";
 import {KeyboardShortcutsHelp} from "../KeyboardShortcutsHelp/KeyboardShortcutsHelp";
-import {Modal, Skeleton, Title} from "@mantine/core";
+import {ActionIcon, Checkbox, Modal, Skeleton, Title, Tooltip} from "@mantine/core";
 import {useHotkeys, useMediaQuery} from "@mantine/hooks";
-import {IconPhotoOff} from "@tabler/icons-react";
+import {IconPhotoOff, IconSelect} from "@tabler/icons-react";
+import { notifications } from '@mantine/notifications';
+import { modals } from '@mantine/modals';
 import './PhotoGrid.css';
 import {Photo} from "../../Models/Photo";
 
@@ -23,16 +26,37 @@ const defaultProps = {
     maxDisplayed: 20000000
 }
 
+interface GridImageItemProps {
+    photo: Photo;
+    isSelectionMode: boolean;
+    isSelected: boolean;
+    onImageClick: (id: string) => void;
+    onToggleSelect: (id: string) => void;
+}
+
 // By adding a custom comparison function to React.memo, we prevent re-renders unless the photo's ID changes.
 const GridImageItem = React.memo(
-    ({photo, onImageClick}: { photo: Photo, onImageClick: (id: string) => void }) => {
+    ({photo, isSelectionMode, isSelected, onImageClick, onToggleSelect}: GridImageItemProps) => {
         const [isLoaded, setIsLoaded] = useState(false);
         const imgSrc = photo.thumbnail && (photo.thumbnail.startsWith('http') || photo.thumbnail.startsWith('data:image'))
             ? photo.thumbnail
             : `data:image/png;base64,${photo.thumbnail}`;
 
+        const handleClick = () => {
+            if (isSelectionMode) {
+                onToggleSelect(photo.id);
+            } else {
+                onImageClick(photo.id);
+            }
+        };
+
         return (
-            <div className="item" onClick={() => onImageClick(photo.id)}>
+            <div className="item" onClick={handleClick} style={{ position: 'relative' }}>
+                {isSelectionMode && (
+                    <div style={{ position: 'absolute', top: 4, left: 4, zIndex: 2 }} onClick={(e) => { e.stopPropagation(); onToggleSelect(photo.id); }}>
+                        <Checkbox checked={isSelected} onChange={() => {}} size="md" />
+                    </div>
+                )}
                 <div className="thumbnail">
                     {!isLoaded && (
                         <Skeleton
@@ -51,7 +75,10 @@ const GridImageItem = React.memo(
             </div>
         );
     },
-    (prevProps, nextProps) => prevProps.photo.id === nextProps.photo.id
+    (prevProps, nextProps) =>
+        prevProps.photo.id === nextProps.photo.id &&
+        prevProps.isSelectionMode === nextProps.isSelectionMode &&
+        prevProps.isSelected === nextProps.isSelected
 );
 GridImageItem.displayName = 'GridImageItem';
 
@@ -62,6 +89,8 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const [isImageModalOpen, setImageModalOpen] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const isMobile = useMediaQuery('(max-width: 50em)');
 
     // The hook now provides a simple, flat, de-duplicated array of photos.
@@ -79,6 +108,12 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
             }
         };
     }, []);
+
+    useEffect(() => {
+        // Clear selection when photos change or album changes
+        setSelectedIds(new Set());
+        setIsSelectionMode(false);
+    }, [id]);
 
     const onRequestAppend = useCallback(() => {
         if (isFetchingNextPage || allRetrieved) {
@@ -101,6 +136,95 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         }
     }, []);
 
+    const onToggleSelect = useCallback((photoId: string) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(photoId)) {
+                next.delete(photoId);
+            } else {
+                next.add(photoId);
+            }
+            return next;
+        });
+    }, []);
+
+    const handleSelectAll = useCallback(() => {
+        setSelectedIds(new Set(photosRef.current.map(p => p.id)));
+    }, []);
+
+    const handleDeselectAll = useCallback(() => {
+        setSelectedIds(new Set());
+    }, []);
+
+    const handleBulkFavorite = useCallback(async () => {
+        try {
+            for (const photoId of selectedIds) {
+                await props.photosAdapter.favoritePhoto(photoId, true);
+            }
+            notifications.show({
+                title: 'Favorited',
+                message: `${selectedIds.size} photo${selectedIds.size !== 1 ? 's' : ''} added to favorites`,
+                color: 'pink',
+            });
+            setIsSelectionMode(false);
+            setSelectedIds(new Set());
+        } catch (e) {
+            notifications.show({
+                title: 'Failed to favorite',
+                message: e instanceof Error ? e.message : 'An error occurred',
+                color: 'red',
+            });
+        }
+    }, [props.photosAdapter, selectedIds]);
+
+    const handleBulkDelete = useCallback(() => {
+        modals.openConfirmModal({
+            title: 'Delete selected photos?',
+            children: `This will move ${selectedIds.size} photo${selectedIds.size !== 1 ? 's' : ''} to the trash.`,
+            labels: { confirm: 'Delete', cancel: 'Cancel' },
+            confirmProps: { color: 'red' },
+            onConfirm: async () => {
+                try {
+                    for (const photoId of selectedIds) {
+                        await props.photosAdapter.deletePhoto(photoId);
+                    }
+                    notifications.show({
+                        title: 'Deleted',
+                        message: `${selectedIds.size} photo${selectedIds.size !== 1 ? 's' : ''} moved to trash`,
+                        color: 'green',
+                    });
+                    setIsSelectionMode(false);
+                    setSelectedIds(new Set());
+                } catch (e) {
+                    notifications.show({
+                        title: 'Failed to delete',
+                        message: e instanceof Error ? e.message : 'An error occurred',
+                        color: 'red',
+                    });
+                }
+            },
+        });
+    }, [props.photosAdapter, selectedIds]);
+
+    const handleBulkDownload = useCallback(async () => {
+        try {
+            await props.photosAdapter.downloadPhotosAsZip(Array.from(selectedIds));
+            notifications.show({
+                title: 'Download started',
+                message: `Preparing zip of ${selectedIds.size} photo${selectedIds.size !== 1 ? 's' : ''}`,
+                color: 'blue',
+            });
+            setIsSelectionMode(false);
+            setSelectedIds(new Set());
+        } catch (e) {
+            notifications.show({
+                title: 'Download failed',
+                message: e instanceof Error ? e.message : 'An error occurred',
+                color: 'red',
+            });
+        }
+    }, [props.photosAdapter, selectedIds]);
+
     const closeModal = useCallback(() => {
         setImageModalOpen(false);
     }, []);
@@ -116,14 +240,25 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     useHotkeys([
         ['?', () => setShowShortcutsHelp(prev => !prev)],
         ['Enter', () => {
-            if (!isImageModalOpen && photosRef.current.length > 0) {
+            if (!isImageModalOpen && !isSelectionMode && photosRef.current.length > 0) {
                 setCurrentIndex(0);
                 setImageModalOpen(true);
             }
         }],
     ]);
 
-    const AlbumTitle = () => <Title size="h4">{albumName}</Title>;
+    const AlbumTitle = () => (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Title size="h4">{albumName}</Title>
+            {photos.length > 0 && (
+                <Tooltip label="Select photos">
+                    <ActionIcon variant="light" onClick={() => setIsSelectionMode(prev => !prev)} aria-label="Select photos">
+                        <IconSelect size="1.25rem" />
+                    </ActionIcon>
+                </Tooltip>
+            )}
+        </div>
+    );
 
     if (photos.length === 0) {
         return (
@@ -145,6 +280,18 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     return (
         <div>
             <AlbumTitle/>
+            {isSelectionMode && (
+                <BulkActionsToolbar
+                    selectedCount={selectedIds.size}
+                    totalCount={photos.length}
+                    onSelectAll={handleSelectAll}
+                    onDeselectAll={handleDeselectAll}
+                    onFavorite={handleBulkFavorite}
+                    onDelete={handleBulkDelete}
+                    onDownload={handleBulkDownload}
+                    onCancel={() => { setIsSelectionMode(false); setSelectedIds(new Set()); }}
+                />
+            )}
             <JustifiedInfiniteGrid
                 placeholder={<Skeleton height={7} mt={6} radius="md"/>}
                 className="container"
@@ -161,7 +308,10 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                         data-grid-groupkey={Math.floor(index / 30)}
                         key={photo.id}
                         photo={photo}
+                        isSelectionMode={isSelectionMode}
+                        isSelected={selectedIds.has(photo.id)}
                         onImageClick={onImageClick}
+                        onToggleSelect={onToggleSelect}
                     />
                 ))}
             </JustifiedInfiniteGrid>

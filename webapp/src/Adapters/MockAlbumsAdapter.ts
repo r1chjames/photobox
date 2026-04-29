@@ -35,4 +35,23 @@ export class MockAlbumsAdapter implements IAlbumsAdapter {
     }
     return album;
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public createAlbum = async (name: string, description?: string): Promise<Album> => {
+    return { id: 'new-album', name, description: description ?? '', tags: '', metadata: {} as Record<string, unknown>, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as unknown as Album;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public updateAlbum = async (albumId: string, updates: { name?: string; description?: string; coverPhotoId?: string }): Promise<Album> => {
+    const album = this._albums.find(a => a.id === albumId);
+    if (!album) {
+      return Promise.reject(`Album not found`);
+    }
+    return { ...album, ...updates };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public deleteAlbum = async (albumId: string, deletePhotos?: boolean): Promise<void> => {
+    return;
+  }
 }

@@ -50,6 +50,21 @@ export class MockPhotosAdapter implements IPhotosAdapter {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public deletePhoto = async (photoId: string) => {
+    return;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public favoritePhoto = async (photoId: string, favorite: boolean) => {
+    return;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public downloadPhotosAsZip = async (photoIds: string[]) => {
+    return;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public uploadPhoto = async (body: Record<string, unknown>) => {
     return null;
   }

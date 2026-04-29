@@ -62,6 +62,31 @@ export class PhotosAdapter implements IPhotosAdapter {
     }
   }
 
+  public deletePhoto = async (photoId: string) => {
+    const deletePhotoPath = `photos/${photoId}`;
+    return this.restApiAdapter.postApiCall(deletePhotoPath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
+
+  public favoritePhoto = async (photoId: string, favorite: boolean) => {
+    const favoritePath = `photos/${photoId}/favorite`;
+    return this.restApiAdapter.postApiCall(favoritePath, { favorite }, this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
+
+  public downloadPhotosAsZip = async (photoIds: string[]) => {
+    const downloadPath = 'photos/download';
+    const data = await this.restApiAdapter.postApiCall(downloadPath, { photoIds }, { ...this.buildHeaders(this.restApiAdapter.authHeader()), 'Content-Type': 'application/json' });
+    const url = typeof data === 'string' ? data : URL.createObjectURL(new Blob([data], { type: 'application/zip' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'photobox-download.zip';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    if (typeof data !== 'string') {
+      URL.revokeObjectURL(url);
+    }
+  }
+
   public uploadPhoto = async (body: Record<string, unknown>) => {
     const uploadPhotoPath = `photo`;
     return this.restApiAdapter.postApiCall(uploadPhotoPath, body, this.buildHeaders(this.restApiAdapter.authHeader()));

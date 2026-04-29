@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { AlbumCard } from './AlbumCard';
 import { Album } from '../../Models/Album';
 import { IPhotosAdapter } from '../../Adapters/IPhotosAdapter';
+import { IAlbumsAdapter } from '../../Adapters/IAlbumsAdapter';
 
 // Mock the useAlbumCard hook
 vi.mock('./useAlbumCard', () => ({
@@ -14,11 +15,16 @@ import useAlbumCard from './useAlbumCard';
 
 describe('AlbumCard', () => {
     let mockPhotosAdapter: IPhotosAdapter;
+    let mockAlbumsAdapter: IAlbumsAdapter;
     let mockAlbum: Album;
     let mockAlbumViewCallback: (albumId: string) => void;
 
     beforeEach(() => {
         mockPhotosAdapter = {} as IPhotosAdapter;
+        mockAlbumsAdapter = {
+            updateAlbum: vi.fn().mockResolvedValue(undefined),
+            deleteAlbum: vi.fn().mockResolvedValue(undefined),
+        } as unknown as IAlbumsAdapter;
         mockAlbum = {
             id: 'album-1',
             name: 'Test Album',
@@ -40,6 +46,7 @@ describe('AlbumCard', () => {
         render(
             <AlbumCard
                 photosAdapter={mockPhotosAdapter}
+                albumsAdapter={mockAlbumsAdapter}
                 source={mockAlbum}
                 albumViewCallback={mockAlbumViewCallback}
             />
@@ -55,6 +62,7 @@ describe('AlbumCard', () => {
         render(
             <AlbumCard
                 photosAdapter={mockPhotosAdapter}
+                albumsAdapter={mockAlbumsAdapter}
                 source={mockAlbum}
                 albumViewCallback={mockAlbumViewCallback}
             />
@@ -77,6 +85,7 @@ describe('AlbumCard', () => {
         const { container } = render(
             <AlbumCard
                 photosAdapter={mockPhotosAdapter}
+                albumsAdapter={mockAlbumsAdapter}
                 source={mockAlbum}
                 albumViewCallback={mockAlbumViewCallback}
             />
@@ -92,6 +101,7 @@ describe('AlbumCard', () => {
         render(
             <AlbumCard
                 photosAdapter={mockPhotosAdapter}
+                albumsAdapter={mockAlbumsAdapter}
                 source={mockAlbum}
                 albumViewCallback={mockAlbumViewCallback}
             />
@@ -101,10 +111,8 @@ describe('AlbumCard', () => {
             expect(screen.getByText('Test Album')).toBeInTheDocument();
         });
 
-        const card = screen.getByText('Test Album').closest('div[class*="Card"]');
-        if (card) {
-            await user.click(card);
-        }
+        const nameText = screen.getByText('Test Album');
+        await user.click(nameText);
 
         expect(mockAlbumViewCallback).toHaveBeenCalledWith('album-1');
     });
@@ -119,6 +127,7 @@ describe('AlbumCard', () => {
         render(
             <AlbumCard
                 photosAdapter={mockPhotosAdapter}
+                albumsAdapter={mockAlbumsAdapter}
                 source={mockAlbum}
                 albumViewCallback={mockAlbumViewCallback}
             />
@@ -140,6 +149,7 @@ describe('AlbumCard', () => {
         render(
             <AlbumCard
                 photosAdapter={mockPhotosAdapter}
+                albumsAdapter={mockAlbumsAdapter}
                 source={mockAlbum}
                 albumViewCallback={mockAlbumViewCallback}
             />
@@ -161,6 +171,7 @@ describe('AlbumCard', () => {
         render(
             <AlbumCard
                 photosAdapter={mockPhotosAdapter}
+                albumsAdapter={mockAlbumsAdapter}
                 source={mockAlbum}
                 albumViewCallback={mockAlbumViewCallback}
             />
@@ -176,6 +187,7 @@ describe('AlbumCard', () => {
         render(
             <AlbumCard
                 photosAdapter={mockPhotosAdapter}
+                albumsAdapter={mockAlbumsAdapter}
                 source={mockAlbum}
                 albumViewCallback={mockAlbumViewCallback}
             />
@@ -201,6 +213,7 @@ describe('AlbumCard', () => {
         render(
             <AlbumCard
                 photosAdapter={mockPhotosAdapter}
+                albumsAdapter={mockAlbumsAdapter}
                 source={differentAlbum}
                 albumViewCallback={mockAlbumViewCallback}
             />
@@ -215,6 +228,7 @@ describe('AlbumCard', () => {
         render(
             <AlbumCard
                 photosAdapter={mockPhotosAdapter}
+                albumsAdapter={mockAlbumsAdapter}
                 source={mockAlbum}
                 albumViewCallback={mockAlbumViewCallback}
             />

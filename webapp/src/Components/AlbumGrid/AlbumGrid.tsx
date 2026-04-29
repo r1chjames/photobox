@@ -9,6 +9,7 @@ import useAlbumGrid from "./useAlbumGrid";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import {IconAlbumOff} from '@tabler/icons-react';
+import { notifications } from '@mantine/notifications';
 
 interface IProps {
   albumsAdapter: IAlbumsAdapter;
@@ -24,14 +25,34 @@ export const AlbumGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const props = {...defaultProps, ...propsIn};
     const navigate = useNavigate()
     const [showNewAlbumModal, setShowNewAlbumModal] = useState(false);
+    const [albumKey, setAlbumKey] = useState(0);
     const [{albums, createAlbumModalAlbumNameErrorText, newAlbumName, handleNewAlbumNameValueChange}] = useAlbumGrid(props.albumsAdapter);
 
-  const newAlbumModalSaveClick = useCallback(() => {
-    navigate(`/album/new/${newAlbumName}`);
-  }, [navigate, newAlbumName]);
+  const newAlbumModalSaveClick = useCallback(async () => {
+    try {
+      await props.albumsAdapter.createAlbum(newAlbumName);
+      notifications.show({
+        title: 'Album created',
+        message: `Created album "${newAlbumName}"`,
+        color: 'green',
+      });
+      setShowNewAlbumModal(false);
+      setAlbumKey(prev => prev + 1); // force refresh
+    } catch (e) {
+      notifications.show({
+        title: 'Failed to create album',
+        message: e instanceof Error ? e.message : 'An error occurred',
+        color: 'red',
+      });
+    }
+  }, [props.albumsAdapter, newAlbumName]);
+
+  const handleAlbumUpdated = useCallback(() => {
+    setAlbumKey(prev => prev + 1);
+  }, []);
 
   return (
-    <div>
+    <div key={albumKey}>
         <InputModal
           isOpen={showNewAlbumModal}
           title="Create Album"
@@ -61,8 +82,10 @@ export const AlbumGrid: React.FunctionComponent<IProps> = (propsIn) => {
               <article key={album.id}>
                 <AlbumCard
                   photosAdapter={props.photosAdapter}
+                  albumsAdapter={props.albumsAdapter}
                   source={album}
                   albumViewCallback={() => navigate(`../album/${album.id}`)}
+                  onAlbumUpdated={handleAlbumUpdated}
                 />
               </article>
             );
