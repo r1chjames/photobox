@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Photo} from '../../Models/Photo';
 import {ActionIcon, Badge, Button, Card, Flex, Group, Image, Overlay, Stack} from '@mantine/core';
 import {useNavigate} from "react-router-dom";
@@ -24,15 +24,15 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const [fetchedImage, setFetchedImage] = useState<string | undefined>();
     const [albumName, setAlbumName] = useState<string | undefined>();
     const img: React.Ref<HTMLImageElement> = React.createRef();
-    const blobUrlRef = React.useRef<string | undefined>(undefined);
+    const blobUrlRef = useRef<string | undefined>(undefined);
 
-    const fetchImage = async () => {
+    const fetchImage = useCallback(async () => {
         const imageUrl = await fetchPhotoBinWithAuth(props.photosAdapter, props.source.id);
         blobUrlRef.current = imageUrl;
         setFetchedImage(imageUrl);
-    }
+    }, [props.photosAdapter, props.source.id]);
 
-    const fetchAlbumName = async () => {
+    const fetchAlbumName = useCallback(async () => {
         if (props.source.albumId) {
             try {
                 const album = await props.albumsAdapter.getAlbumInfoById(props.source.albumId);
@@ -41,7 +41,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                 console.error('Failed to fetch album name:', error);
             }
         }
-    }
+    }, [props.albumsAdapter, props.source.albumId]);
 
     useEffect(() => {
         setFetchedImage(undefined);
@@ -51,38 +51,49 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
             revokeBlobUrl(blobUrlRef.current);
             blobUrlRef.current = undefined;
         };
-    }, [props.source])
+    }, [props.source, fetchImage, fetchAlbumName]);
 
     useHotkeys([
         ['ArrowLeft', () => props.previousPhoto()],
         ['ArrowRight', () => props.nextPhoto()],
     ]);
 
-    const previousButton = () => {
+    const handleClose = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        props.closeModal();
+    }, [props.closeModal]);
+
+    const handlePrevious = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        props.previousPhoto();
+    }, [props.previousPhoto]);
+
+    const handleNext = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        props.nextPhoto();
+    }, [props.nextPhoto]);
+
+    const previousButton = useCallback(() => {
         if (!props.firstInAlbum) {
             return (
-                <ActionIcon color="dark" size="xl" onClick={(e: React.MouseEvent) => {
-                    e.stopPropagation();
-                    props.previousPhoto();
-                }}>
+                <ActionIcon color="dark" size="xl" onClick={handlePrevious}>
                     <IconArrowLeftDashed size="2.125rem"/>
                 </ActionIcon>
             );
         }
-    };
+        return null;
+    }, [props.firstInAlbum, handlePrevious]);
 
-    const nextButton = () => {
+    const nextButton = useCallback(() => {
         if (!props.lastInAlbum) {
             return (
-                <ActionIcon color="dark" size="xl" onClick={(e: React.MouseEvent) => {
-                    e.stopPropagation();
-                    props.nextPhoto();
-                }}>
+                <ActionIcon color="dark" size="xl" onClick={handleNext}>
                     <IconArrowRightDashed size="2.125rem"/>
                 </ActionIcon>
             );
         }
-    };
+        return null;
+    }, [props.lastInAlbum, handleNext]);
 
     return (
         <Card shadow="sm" radius="md" padding={0}
@@ -101,10 +112,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                     'Loading...'}
                 <Overlay color="#000" backgroundOpacity={0} opacity={0.5}>
                     <Flex direction="row" style={{width: "100%", justifyContent: "right"}}>
-                        <ActionIcon color="dark" size="l" opacity={1} onClick={(e: React.MouseEvent) => {
-                            e.stopPropagation();
-                            props.closeModal();
-                        }}>
+                        <ActionIcon color="dark" size="l" opacity={1} onClick={handleClose}>
                             <IconX size="1.75rem"/>
                         </ActionIcon>
                     </Flex>

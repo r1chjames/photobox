@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Album } from '../../Models/Album';
 import { AlbumCard } from '../AlbumCard/AlbumCard';
 import { InputModal } from '../InputModal/InputModal';
@@ -24,13 +24,9 @@ export const AlbumGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const [showNewAlbumModal, setShowNewAlbumModal] = useState(false);
     const [{albums, createAlbumModalAlbumNameErrorText, newAlbumName, handleNewAlbumNameValueChange}] = useAlbumGrid(props.albumsAdapter);
 
-  const newAlbumModalSaveClick = () => {
+  const newAlbumModalSaveClick = useCallback(() => {
     navigate(`/album/new/${newAlbumName}`);
-  };
-
-  // const handleCreateNewAlbum = () => {
-  //   setShowNewAlbumModal(true);
-  // };
+  }, [navigate, newAlbumName]);
 
   return (
     <div>

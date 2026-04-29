@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Setting } from '../../Models/Setting';
 import { SettingModal } from '../SettingModal/SettingModal';
 import {InfoSnackbar} from '../Snackbar/InfoSnackbar';
@@ -25,6 +25,55 @@ const handleSaveSettings = async (settings: Setting[], settingsAdapter: ISetting
   await settingsAdapter.updateSettings(settings);
 };
 
+interface SettingsTableRowProps {
+    setting: Setting;
+    editing: boolean;
+    onChange: (setting: Setting, field: keyof Setting, value: string) => void;
+}
+
+const SettingsTableRow = React.memo(({ setting, editing, onChange }: SettingsTableRowProps) => {
+    if (editing) {
+        return (
+            <Table.Tr key={setting.key}>
+                <Table.Td>{setting.key}</Table.Td>
+                <Table.Td>
+                    <TextInput
+                        value={setting.value}
+                        onChange={event => onChange(setting, 'value', event.target.value)}
+                    />
+                </Table.Td>
+                <Table.Td>
+                    <TextInput
+                        value={setting.friendlyName}
+                        onChange={event => onChange(setting, 'friendlyName', event.target.value)}
+                    />
+                </Table.Td>
+                <Table.Td>
+                    <TextInput
+                        value={setting.category}
+                        onChange={event => onChange(setting, 'category', event.target.value)}
+                    />
+                </Table.Td>
+                <Table.Td>
+                    <TextInput
+                        value={setting.description}
+                        onChange={event => onChange(setting, 'description', event.target.value)}
+                    />
+                </Table.Td>
+            </Table.Tr>
+        );
+    }
+    return (
+        <Table.Tr key={setting.key}>
+            <Table.Td>{setting.key}</Table.Td>
+            <Table.Td>{setting.value}</Table.Td>
+            <Table.Td>{setting.friendlyName}</Table.Td>
+            <Table.Td>{setting.category}</Table.Td>
+            <Table.Td>{setting.description}</Table.Td>
+        </Table.Tr>
+    );
+});
+
 export const SettingsView: React.FunctionComponent<IProps> = (props) => {
 
   const [settings, setSettings] = useState<Setting[]>([]);
@@ -39,104 +88,27 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
     })();
   },[props.settingsAdapter]);
 
-  const handleValueChange = (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>, setting: Setting, field: keyof Setting) => {
+  const handleValueChange = useCallback((setting: Setting, field: keyof Setting, value: string) => {
     setSettings(prev => prev.map(s =>
-        s.key === setting.key ? { ...s, [field]: event.target.value } : s
+        s.key === setting.key ? { ...s, [field]: value } : s
     ));
-  };
+  }, []);
 
-  const tableRow = (setting: Setting) => {
-    if (editing) {
-      return (
-        <Table.Tr key={setting.key}>
-          <Table.Td>
-            {setting.key}
-          </Table.Td>
-          <Table.Td>
-            <TextInput
-              value={setting.value}
-              onChange={event => handleValueChange(event, setting, 'value')}
-            />
-          </Table.Td>
-          <Table.Td>
-            <TextInput
-              value={setting.friendlyName}
-              onChange={event => handleValueChange(event, setting, 'friendlyName')}
-            />
-          </Table.Td>
-          <Table.Td>
-            <TextInput
-              value={setting.category}
-              onChange={event => handleValueChange(event, setting, 'category')}
-            />
-          </Table.Td>
-          <Table.Td>
-            <TextInput
-              value={setting.description}
-              onChange={event => handleValueChange(event, setting, 'description')}
-            />
-          </Table.Td>
-        </Table.Tr>
-      );
-    }
-    return (
-      <Table.Tr key={setting.key}>
-        <Table.Td>
-          {setting.key}
-        </Table.Td>
-        <Table.Td>
-          {setting.value}
-        </Table.Td>
-        <Table.Td>
-          {setting.friendlyName}
-        </Table.Td>
-        <Table.Td>
-          {setting.category}
-        </Table.Td>
-        <Table.Td>
-          {setting.description}
-        </Table.Td>
-      </Table.Tr>
-    );
-  };
-
-  const resetForm = async () => {
+  const resetForm = useCallback(async () => {
     setEditing(false);
     const refreshedSettings = await getAllSettings(props.settingsAdapter);
     setSettings(refreshedSettings);
-  };
+  }, [props.settingsAdapter]);
 
-  const addCancelButton = () => {
-    if (editing) {
-      return (
-        <IconPencilCancel onClick={() => resetForm()} />
-      );
-    }
-    return (
-      <IconPencil onClick={() => setEditing(true)} />
-    );
-  };
+  const handleSave = useCallback(() => {
+    handleSaveSettings(settings, props.settingsAdapter);
+    setEditing(false);
+    setShowSnackbar(true);
+  }, [settings, props.settingsAdapter]);
 
-  const editingButton = () => {
-    if (editing) {
-      return (
-          <IconDeviceFloppy size="2.125rem"
-              onClick={() => {
-                handleSaveSettings(settings, props.settingsAdapter);
-                setEditing(false);
-                setShowSnackbar(true);
-              }}
-          />
-      );
-    }
-    return (
-        <IconLayoutGridAdd size="2.125rem" onClick={() => setShowModal(true)}/>
-    );
-  };
-
-  const handleIndex = async () => {
+  const handleIndex = useCallback(async () => {
       return await props.photosAdapter.index();
-  }
+  }, [props.photosAdapter]);
 
   const snackbar = () => {
       if (showSnackbar) {
@@ -144,13 +116,13 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
       }
   };
 
-  const handleModalSave = (key: string, value: string, friendlyName: string, category: string, description: string) => {
+  const handleModalSave = useCallback((key: string, value: string, friendlyName: string, category: string, description: string) => {
     const updatedSettings = settings.concat({ key, value, friendlyName, category, description });
     setSettings(updatedSettings);
     setShowModal(false);
     setShowSnackbar(true);
     setEditing(true);
-  };
+  }, [settings]);
 
   return (
     <div>
@@ -171,19 +143,24 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
             </Table.Thead>
             <Table.Tbody>
               {settings.map((setting: Setting) => (
-                tableRow(setting)
+                <SettingsTableRow
+                    key={setting.key}
+                    setting={setting}
+                    editing={editing}
+                    onChange={handleValueChange}
+                />
               ))}
-            </ Table.Tbody>
+            </Table.Tbody>
           </Table>
         <Flex direction="row" style={{width: "100%", justifyContent: "right"}}>
             <ActionIcon color="dark" size="xl" m={"1rem"}>
-              {addCancelButton()}
+              {editing ? <IconPencilCancel onClick={resetForm} /> : <IconPencil onClick={() => setEditing(true)} />}
             </ActionIcon>
             <ActionIcon color="dark" size="xl" m={"1rem"}>
-              {editingButton()}
+              {editing ? <IconDeviceFloppy size="2.125rem" onClick={handleSave} /> : <IconLayoutGridAdd size="2.125rem" onClick={() => setShowModal(true)}/>}
             </ActionIcon>
         </Flex>
-        <Button onClick={() => handleIndex()}>
+        <Button onClick={handleIndex}>
             Index
         </Button>
         {snackbar()}

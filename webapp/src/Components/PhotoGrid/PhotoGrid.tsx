@@ -101,13 +101,13 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         setImageModalOpen(false);
     }, []);
 
-    const handlePreviousPhoto = () => {
+    const handlePreviousPhoto = useCallback(() => {
         setCurrentIndex(prevIndex => prevIndex > 0 ? prevIndex - 1 : 0);
-    }
+    }, []);
 
-    const handleNextPhoto = () => {
+    const handleNextPhoto = useCallback(() => {
         setCurrentIndex(prevIndex => prevIndex < photosRef.current.length - 1 ? prevIndex + 1 : prevIndex);
-    }
+    }, []);
 
     const AlbumTitle = () => <Title size="h4">{albumName}</Title>;
 
