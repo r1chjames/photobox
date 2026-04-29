@@ -36,7 +36,7 @@ describe('AppBar', () => {
     it('should render user avatar and name', () => {
         render(<AppBar activeLink={Labels.Dashboard}><div>Content</div></AppBar>);
 
-        expect(screen.getByText('Rich')).toBeInTheDocument();
+        expect(screen.getByText('User')).toBeInTheDocument();
     });
 
     it('should render children content', () => {
@@ -76,7 +76,7 @@ describe('AppBar', () => {
 
         // Menu items are only rendered when menu is opened due to withinPortal
         // Just verify the user name trigger is present
-        expect(screen.getByText('Rich')).toBeInTheDocument();
+        expect(screen.getByText('User')).toBeInTheDocument();
     });
 
     it('should render menu component', () => {

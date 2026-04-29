@@ -146,9 +146,9 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
                                             className={cx(classes.user, {[classes.userActive]: true})}
                                         >
                                             <Group gap={7}>
-                                                <Avatar src={"user.image"} alt={"user.name"} radius="xl" size={20}/>
+                                                <Avatar src={undefined} alt="User" radius="xl" size={20}/>
                                                 <Text fw={500} size="sm" lh={1} mr={3}>
-                                                    {"Rich"}
+                                                    User
                                                 </Text>
                                                 <IconChevronDown size={12} stroke={1.5}/>
                                             </Group>

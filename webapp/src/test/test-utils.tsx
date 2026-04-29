@@ -4,6 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '../Routing/AuthContext';
 import { MemoryRouter } from 'react-router-dom';
+import { AdapterProvider } from '../Routing/AdapterContext';
 
 const createTestQueryClient = () => new QueryClient({
     defaultOptions: {
@@ -27,9 +28,11 @@ const AllTheProviders = ({ children }: AllTheProvidersProps) => {
         <MemoryRouter>
             <AuthProvider>
                 <QueryClientProvider client={queryClient}>
-                    <MantineProvider>
-                        {children}
-                    </MantineProvider>
+                    <AdapterProvider baseApiUrl="http://localhost:8080/api">
+                        <MantineProvider>
+                            {children}
+                        </MantineProvider>
+                    </AdapterProvider>
                 </QueryClientProvider>
             </AuthProvider>
         </MemoryRouter>

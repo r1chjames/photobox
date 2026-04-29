@@ -1,7 +1,7 @@
 import React, {useEffect} from 'react';
 import {useDisclosure} from '@mantine/hooks';
 import {Button, Dialog, Group, Image, Loader, ScrollArea, Table} from '@mantine/core';
-import {valueType} from "../../utils/TypeUtils.js";
+import {valueType} from "../../utils/TypeUtils";
 import {IPhotosAdapter} from '../../Adapters/IPhotosAdapter';
 import {useParams} from "react-router-dom";
 import {fetchPhotoBinWithAuth, revokeBlobUrl} from "../../utils/ImageUtils";

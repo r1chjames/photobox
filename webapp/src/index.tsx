@@ -4,7 +4,6 @@ import './index.css';
 import App from './App';
 import '@mantine/core/styles.css';
 import {BrowserRouter} from "react-router-dom";
-import './appGlobals';
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {AuthProvider} from "./Routing/AuthContext";
 
@@ -17,12 +16,14 @@ const queryClient = new QueryClient({
     },
 });
 
+const baseApiUrl = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
 root.render(
     <React.StrictMode>
         <BrowserRouter>
             <AuthProvider>
                 <QueryClientProvider client={queryClient}>
-                    <App baseApiUrl={globalThis.app.baseApiUrl}/>
+                    <App baseApiUrl={baseApiUrl}/>
                 </QueryClientProvider>
             </AuthProvider>
         </BrowserRouter>

@@ -67,14 +67,6 @@ export const AlbumGrid: React.FunctionComponent<IProps> = (propsIn) => {
           })}
           </Flex>
         </section>
-        {/*<Button*/}
-        {/*  color="primary"*/}
-        {/*  aria-label="add"*/}
-        {/*  className="albumIndexView__addButton"*/}
-        {/*  onClick={() => handleCreateNewAlbum()}*/}
-        {/*>*/}
-        {/*  <MdAddCircle/>*/}
-        {/*</Button>*/}
     </div>
   );
 };
