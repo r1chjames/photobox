@@ -30,7 +30,7 @@ export const AlbumCard: React.FunctionComponent<IProps> = (props) => {
         onClick={() => props.albumViewCallback(props.source.id)}
       >
         <Card.Section>
-          <Image src={imgSrc} wah={"200px"} h={"150px"} />
+          <Image src={imgSrc} w={"200px"} h={"150px"} />
         </Card.Section>
         <Group justify="space-between" mt="md" mb="xs">
           <Text fw={500}>{props.source.name}</Text>

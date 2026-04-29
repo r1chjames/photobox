@@ -32,6 +32,7 @@ import {
 
 interface IProps {
     activeLink: Labels;
+    children: React.ReactNode;
 }
 
 export enum Labels {

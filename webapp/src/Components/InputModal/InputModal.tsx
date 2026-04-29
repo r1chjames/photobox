@@ -6,6 +6,7 @@ interface IProps {
   title: string;
   handleSave: () => void;
   handleClose: () => void;
+  children?: React.ReactNode;
 }
 
 export const InputModal: React.FunctionComponent<IProps> = (props) => {

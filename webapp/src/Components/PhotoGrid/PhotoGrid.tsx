@@ -66,7 +66,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const photosRef = useRef(photos);
     photosRef.current = photos;
 
-    const appendDebounceRef = useRef<NodeJS.Timeout | null>(null);
+    const appendDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         return () => {
