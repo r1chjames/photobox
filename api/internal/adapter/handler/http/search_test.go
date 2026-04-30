@@ -159,6 +159,35 @@ func (m *MockSearchPhotoService) DownloadPhotos(photoIds []string, writer io.Wri
 	return args.Error(0)
 }
 
+func (m *MockSearchPhotoService) GetAllTags() ([]string, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]string), args.Error(1)
+}
+
+func (m *MockSearchPhotoService) ListPhotosByTags(tags []string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	args := m.Called(tags, fromId, limit, includeThumbnail)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
+func (m *MockSearchPhotoService) UpdatePhotoTags(photoId string, tags []string) (*domain.Photo, error) {
+	args := m.Called(photoId, tags)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Photo), args.Error(1)
+}
+
+func (m *MockSearchPhotoService) BatchUpdatePhotoTags(photoIds []string, tags []string, operation string) error {
+	args := m.Called(photoIds, tags, operation)
+	return args.Error(0)
+}
+
 // MockSearchAlbumService is a mock implementation of port.AlbumService for search tests
 type MockSearchAlbumService struct {
 	mock.Mock

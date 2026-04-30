@@ -129,6 +129,27 @@ export class PhotosAdapter implements IPhotosAdapter {
     return this.restApiAdapter.getApiCall(timelinePath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 
+  public getAllTags = async (): Promise<string[]> => {
+    const tagsPath = 'photos/tags';
+    const response = await this.restApiAdapter.getApiCall(tagsPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
+    return response.data || [];
+  }
+
+  public updatePhotoTags = async (photoId: string, tags: string[]): Promise<Photo> => {
+    const tagsPath = `photos/${photoId}/tags`;
+    return this.restApiAdapter.postApiCall(tagsPath, { tags }, this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
+
+  public batchUpdatePhotoTags = async (photoIds: string[], tags: string[], operation: 'add' | 'remove' | 'set'): Promise<void> => {
+    const batchPath = 'photos/tags/batch';
+    return this.restApiAdapter.postApiCall(batchPath, { photoIds, tags, operation }, this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
+
+  public getPhotosByTag = async (tag: string, fromId: string, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
+    const path = `photos?fromId=${fromId}&limit=${limit}&thumbnail=${includeThumbnails}&tags=${encodeURIComponent(tag)}`;
+    return this.restApiAdapter.getPaginatedApiCall(path, this.buildHeaders(this.restApiAdapter.authHeader()), {});
+  }
+
   public uploadPhoto = async (body: Record<string, unknown>) => {
     const uploadPhotoPath = `photo`;
     return this.restApiAdapter.postApiCall(uploadPhotoPath, body, this.buildHeaders(this.restApiAdapter.authHeader()));

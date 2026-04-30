@@ -2,6 +2,7 @@ package repository
 
 import (
 	b64 "encoding/base64"
+	"strings"
 	"time"
 
 	db "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
@@ -255,4 +256,59 @@ func (pr *PhotoRepository) GetPhotoThumbnails(photoIds []string) (map[string][]b
 		thumbnails[p.ID] = p.Thumbnail
 	}
 	return thumbnails, nil
+}
+
+func (pr *PhotoRepository) GetAllTags() ([]string, error) {
+	var results []struct{ Tags string }
+	result := pr.dbEnv.Db.Model(&domain.Photo{}).
+		Where("deleted_at IS NULL AND tags <> ''").
+		Select("tags").
+		Find(&results)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	tagSet := make(map[string]struct{})
+	for _, r := range results {
+		for _, tag := range strings.Split(r.Tags, ",") {
+			tag = strings.TrimSpace(tag)
+			if tag != "" {
+				tagSet[tag] = struct{}{}
+			}
+		}
+	}
+
+	tags := make([]string, 0, len(tagSet))
+	for tag := range tagSet {
+		tags = append(tags, tag)
+	}
+	return tags, nil
+}
+
+func (pr *PhotoRepository) ListPhotosByTags(tags []string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	var photos []*domain.Photo
+	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("deleted_at IS NULL").Order("created_epoch ASC").Omit("thumbnail")
+	for _, tag := range tags {
+		result = result.Where("? = ANY(string_to_array(tags, ','))", tag)
+	}
+	if fromId != "" {
+		fromPhoto, err := pr.GetPhotoById(fromId, false)
+		if err != nil {
+			return nil, err
+		}
+		result = result.Where("created_epoch > ?", fromPhoto.CreatedEpoch)
+	}
+	result = result.Limit(limit)
+	result = result.Find(&photos)
+	if result.RowsAffected == 0 {
+		return nil, domain.ErrDataNotFound
+	}
+	return photos, nil
+}
+
+func (pr *PhotoRepository) UpdatePhotoTags(photoId string, tags string) error {
+	result := pr.dbEnv.Db.Model(&domain.Photo{}).
+		Where("id = ?", photoId).
+		Update("tags", tags)
+	return result.Error
 }

@@ -125,13 +125,16 @@ func defineResources(
 		photos.POST("/trash/restore/:id", photoHandler.RestorePhoto)
 		photos.POST("/download", photoHandler.DownloadPhotos)
 		photos.POST("/thumbnails", photoHandler.GetBatchThumbnails)
-		photos.GET("/timeline", photoHandler.GetTimeline)
-		photos.GET("/geodata", photoHandler.GetGeodata)
+	photos.GET("/timeline", photoHandler.GetTimeline)
+	photos.GET("/geodata", photoHandler.GetGeodata)
+	photos.GET("/tags", photoHandler.GetAllTags)
+	photos.POST("/tags/batch", photoHandler.BatchUpdatePhotoTags)
 	}
 
 	// Individual photo actions
 	router.DELETE(fmt.Sprintf("%s/photos/:id", urlBasePath), authMiddleware(token), photoHandler.DeletePhoto)
 	router.PATCH(fmt.Sprintf("%s/photos/:id/favorite", urlBasePath), authMiddleware(token), photoHandler.SetFavorite)
+	router.PATCH(fmt.Sprintf("%s/photos/:id/tags", urlBasePath), authMiddleware(token), photoHandler.UpdatePhotoTags)
 	router.POST(fmt.Sprintf("%s/photos/:id/rotate", urlBasePath), authMiddleware(token), photoHandler.RotatePhoto)
 
 	// Photo indexing is admin-only as it's a system operation

@@ -38,6 +38,7 @@ import {
     IconSearch,
     IconSettings,
     IconSun,
+    IconTag,
     IconTrash,
     IconUsers
 } from "@tabler/icons-react";
@@ -56,6 +57,7 @@ export enum Labels {
     Shares = "Shares",
     Users = "Users",
     Map = "Map",
+    Tags = "Tags",
     Settings = "Settings"
 }
 
@@ -109,6 +111,12 @@ const navLinkData = [
         description: 'Geotagged photos'
     },
     {
+        icon: IconTag,
+        label: Labels.Tags,
+        href: '/tags',
+        description: 'Browse by tag'
+    },
+    {
         icon: IconSettings,
         label: Labels.Settings,
         href: '/settings',
@@ -121,7 +129,7 @@ const bottomNavData = [
     { icon: IconPhoto, label: 'Photos', href: '/photos' },
     { icon: IconAlbum, label: 'Albums', href: '/albums' },
     { icon: IconMap, label: 'Map', href: '/map' },
-    { icon: IconSettings, label: 'Settings', href: '/settings' },
+    { icon: IconTag, label: 'Tags', href: '/tags' },
 ];
 
 const activeLinkIndex = (index: Labels) => navLinkData.map(item => item.label).indexOf(index);
@@ -153,6 +161,8 @@ const buildBreadcrumbs = (location: string, activeLink: Labels, id?: string) => 
         items.push({ label: 'Users', icon: <IconUsers size="0.9rem" /> });
     } else if (activeLink === Labels.Map) {
         items.push({ label: 'Map', icon: <IconMap size="0.9rem" /> });
+    } else if (activeLink === Labels.Tags) {
+        items.push({ label: 'Tags', icon: <IconTag size="0.9rem" /> });
     } else if (activeLink === Labels.Settings) {
         items.push({ label: 'Settings', icon: <IconSettings size="0.9rem" /> });
     }

@@ -11,7 +11,7 @@ import {EmptyState} from "../EmptyState/EmptyState";
 import {BulkActionsToolbar} from "../BulkActionsToolbar/BulkActionsToolbar";
 import {KeyboardShortcutsHelp} from "../KeyboardShortcutsHelp/KeyboardShortcutsHelp";
 import {TimelineScrubber} from "../TimelineScrubber/TimelineScrubber";
-import {ActionIcon, Checkbox, Loader, Modal, SegmentedControl, Skeleton, Title, Tooltip} from "@mantine/core";
+import {ActionIcon, Button, Checkbox, Loader, Modal, SegmentedControl, Skeleton, TextInput, Title, Tooltip} from "@mantine/core";
 import {useHotkeys, useMediaQuery} from "@mantine/hooks";
 import {IconPhotoOff, IconSelect} from "@tabler/icons-react";
 import { notifications } from '@mantine/notifications';
@@ -24,6 +24,7 @@ interface IProps {
     albumsAdapter: IAlbumsAdapter;
     sharesAdapter?: ISharesAdapter;
     maxDisplayed?: number;
+    tags?: string;
 }
 
 const defaultProps = {
@@ -134,6 +135,9 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         return 'comfortable';
     });
     const [dateFilter, setDateFilter] = useState<{ year: number; month: number } | null>(null);
+    const [tagModalOpen, setTagModalOpen] = useState(false);
+    const [tagModalMode, setTagModalMode] = useState<'add' | 'remove'>('add');
+    const [tagInput, setTagInput] = useState('');
     const isMobile = useMediaQuery('(max-width: 50em)');
 
     useEffect(() => {
@@ -146,7 +150,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const endDate = dateFilter ? `${dateFilter.year}-${String(dateFilter.month).padStart(2, '0')}-31` : undefined;
 
     // The hook now provides a simple, flat, de-duplicated array of photos.
-    const {photos, albumName, allRetrieved, fetchNextPage, isFetchingNextPage, refetch} = usePhotoGrid(props.photosAdapter, props.albumsAdapter, id, startDate, endDate);
+    const {photos, albumName, allRetrieved, fetchNextPage, isFetchingNextPage, refetch} = usePhotoGrid(props.photosAdapter, props.albumsAdapter, id, startDate, endDate, props.tags);
 
     const photosRef = useRef(photos);
     photosRef.current = photos;
@@ -324,6 +328,34 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         }
     }, [props.photosAdapter, selectedIds]);
 
+    const handleBulkTag = useCallback(async () => {
+        const tags = tagInput.split(',').map(t => t.trim()).filter(Boolean);
+        if (tags.length === 0) return;
+        try {
+            await props.photosAdapter.batchUpdatePhotoTags(
+                Array.from(selectedIds),
+                tags,
+                tagModalMode
+            );
+            notifications.show({
+                title: tagModalMode === 'add' ? 'Tags added' : 'Tags removed',
+                message: `${tagModalMode === 'add' ? 'Added' : 'Removed'} tags for ${selectedIds.size} photo${selectedIds.size !== 1 ? 's' : ''}`,
+                color: 'green',
+            });
+            setTagModalOpen(false);
+            setTagInput('');
+            setIsSelectionMode(false);
+            setSelectedIds(new Set());
+            refetch();
+        } catch (e) {
+            notifications.show({
+                title: 'Failed to update tags',
+                message: e instanceof Error ? e.message : 'An error occurred',
+                color: 'red',
+            });
+        }
+    }, [props.photosAdapter, selectedIds, tagInput, tagModalMode, refetch]);
+
     const closeModal = useCallback(() => {
         setImageModalOpen(false);
     }, []);
@@ -437,6 +469,8 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                         onFavorite={handleBulkFavorite}
                         onDelete={handleBulkDelete}
                         onDownload={handleBulkDownload}
+                        onAddTag={() => { setTagModalMode('add'); setTagModalOpen(true); }}
+                        onRemoveTag={() => { setTagModalMode('remove'); setTagModalOpen(true); }}
                         onCancel={() => { setIsSelectionMode(false); setSelectedIds(new Set()); }}
                     />
                 )}
@@ -508,6 +542,26 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                     onClose={() => setIsSlideshowOpen(false)}
                 />
             )}
+            <Modal
+                opened={tagModalOpen}
+                onClose={() => setTagModalOpen(false)}
+                title={tagModalMode === 'add' ? 'Add tags to selected photos' : 'Remove tags from selected photos'}
+                size="sm"
+            >
+                <TextInput
+                    placeholder="Enter tags separated by commas"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.currentTarget.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleBulkTag(); }}
+                    autoFocus
+                />
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+                    <Button variant="default" onClick={() => setTagModalOpen(false)}>Cancel</Button>
+                    <Button onClick={handleBulkTag} color={tagModalMode === 'add' ? 'green' : 'orange'}>
+                        {tagModalMode === 'add' ? 'Add tags' : 'Remove tags'}
+                    </Button>
+                </div>
+            </Modal>
         </div>
     );
 };

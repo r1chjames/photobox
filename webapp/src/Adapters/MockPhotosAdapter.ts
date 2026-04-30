@@ -113,4 +113,55 @@ export class MockPhotosAdapter implements IPhotosAdapter {
   public index = async () => {
     return null;
   }
+
+  public getAllTags = async (): Promise<string[]> => {
+    const tagSet = new Set<string>();
+    this._photos.forEach(p => {
+      if (p.tags) {
+        p.tags.split(',').forEach(t => {
+          const trimmed = t.trim();
+          if (trimmed) tagSet.add(trimmed);
+        });
+      }
+    });
+    return Array.from(tagSet);
+  }
+
+  public updatePhotoTags = async (photoId: string, tags: string[]): Promise<Photo> => {
+    const photo = this._photos.find(p => p.id === photoId);
+    if (!photo) {
+      return Promise.reject(`Photo with id ${photoId} not found in mock adapter`);
+    }
+    photo.tags = tags.join(',');
+    return photo;
+  }
+
+  public batchUpdatePhotoTags = async (photoIds: string[], tags: string[], operation: 'add' | 'remove' | 'set'): Promise<void> => {
+    photoIds.forEach(id => {
+      const photo = this._photos.find(p => p.id === id);
+      if (!photo) return;
+      const existing = new Set(photo.tags ? photo.tags.split(',').map(t => t.trim()).filter(Boolean) : []);
+      tags.forEach(tag => {
+        const trimmed = tag.trim();
+        if (!trimmed) return;
+        if (operation === 'add') existing.add(trimmed);
+        if (operation === 'remove') existing.delete(trimmed);
+      });
+      if (operation === 'set') {
+        photo.tags = tags.map(t => t.trim()).filter(Boolean).join(',');
+      } else {
+        photo.tags = Array.from(existing).join(',');
+      }
+    });
+  }
+
+  public getPhotosByTag = async (tag: string, fromId: string, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
+    const filtered = this._photos.filter(p => {
+      if (!p.tags) return false;
+      return p.tags.split(',').map(t => t.trim()).includes(tag);
+    });
+    const startIndex = fromId ? filtered.findIndex(p => p.id === fromId) + 1 : 0;
+    if (startIndex === -1) return [];
+    return filtered.slice(startIndex, startIndex + limit);
+  }
 }

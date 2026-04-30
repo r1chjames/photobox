@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
@@ -300,6 +301,80 @@ func (ps *PhotoService) DownloadPhotos(photoIds []string, writer io.Writer) erro
 		if err != nil {
 			slog.Warn("Error copying photo to zip", "path", photo.FilesystemPath, "error", err)
 		}
+	}
+	return nil
+}
+
+func (ps *PhotoService) GetAllTags() ([]string, error) {
+	return ps.photoRepo.GetAllTags()
+}
+
+func (ps *PhotoService) ListPhotosByTags(tags []string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	resp, err := ps.photoRepo.ListPhotosByTags(tags, fromId, limit, includeThumbnail)
+	if err != nil {
+		return nil, err
+	}
+	ps.setPhotosSourcePath(resp)
+	return resp, nil
+}
+
+func (ps *PhotoService) UpdatePhotoTags(photoId string, tags []string) (*domain.Photo, error) {
+	photo, err := ps.photoRepo.GetPhotoById(photoId, false)
+	if err != nil {
+		return nil, err
+	}
+	tagsStr := strings.Join(tags, ",")
+	err = ps.photoRepo.UpdatePhotoTags(photoId, tagsStr)
+	if err != nil {
+		return nil, err
+	}
+	photo.Tags = tagsStr
+	ps.setPhotoSourcePath(photo)
+	return photo, nil
+}
+
+func (ps *PhotoService) BatchUpdatePhotoTags(photoIds []string, tags []string, operation string) error {
+	for _, photoId := range photoIds {
+		photo, err := ps.photoRepo.GetPhotoById(photoId, false)
+		if err != nil {
+			continue
+		}
+		existingTags := make(map[string]struct{})
+		for _, t := range strings.Split(photo.Tags, ",") {
+			t = strings.TrimSpace(t)
+			if t != "" {
+				existingTags[t] = struct{}{}
+			}
+		}
+		for _, tag := range tags {
+			tag = strings.TrimSpace(tag)
+			if tag == "" {
+				continue
+			}
+			switch operation {
+			case "add":
+				existingTags[tag] = struct{}{}
+			case "remove":
+				delete(existingTags, tag)
+			case "set":
+				existingTags = map[string]struct{}{tag: {}}
+			}
+		}
+		if operation == "set" && len(tags) > 1 {
+			existingTags = make(map[string]struct{})
+			for _, tag := range tags {
+				tag = strings.TrimSpace(tag)
+				if tag != "" {
+					existingTags[tag] = struct{}{}
+				}
+			}
+		}
+		newTags := make([]string, 0, len(existingTags))
+		for t := range existingTags {
+			newTags = append(newTags, t)
+		}
+		tagsStr := strings.Join(newTags, ",")
+		_ = ps.photoRepo.UpdatePhotoTags(photoId, tagsStr)
 	}
 	return nil
 }

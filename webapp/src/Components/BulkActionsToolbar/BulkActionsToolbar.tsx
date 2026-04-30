@@ -5,6 +5,8 @@ import {
     IconHeart,
     IconSelectAll,
     IconSquare,
+    IconTag,
+    IconTagOff,
     IconTrash,
     IconX,
 } from '@tabler/icons-react';
@@ -17,6 +19,8 @@ interface BulkActionsToolbarProps {
     onFavorite: () => void;
     onDelete: () => void;
     onDownload: () => void;
+    onAddTag?: () => void;
+    onRemoveTag?: () => void;
     onCancel: () => void;
 }
 
@@ -28,6 +32,8 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
     onFavorite,
     onDelete,
     onDownload,
+    onAddTag,
+    onRemoveTag,
     onCancel,
 }) => {
     return (
@@ -52,6 +58,20 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
                         <IconHeart size="1.25rem" />
                     </ActionIcon>
                 </Tooltip>
+                {onAddTag && (
+                    <Tooltip label="Add tag">
+                        <ActionIcon variant="light" color="green" onClick={onAddTag} disabled={selectedCount === 0}>
+                            <IconTag size="1.25rem" />
+                        </ActionIcon>
+                    </Tooltip>
+                )}
+                {onRemoveTag && (
+                    <Tooltip label="Remove tag">
+                        <ActionIcon variant="light" color="orange" onClick={onRemoveTag} disabled={selectedCount === 0}>
+                            <IconTagOff size="1.25rem" />
+                        </ActionIcon>
+                    </Tooltip>
+                )}
                 <Tooltip label="Download">
                     <ActionIcon variant="light" color="blue" onClick={onDownload} disabled={selectedCount === 0}>
                         <IconDownload size="1.25rem" />

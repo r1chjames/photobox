@@ -57,7 +57,11 @@ func (ph *PhotoHandler) ListPhotos(ctx *gin.Context) {
 
 	var photoResp []*domain.Photo
 
-	if favorites {
+	tagsQuery := ctx.Query("tags")
+	if tagsQuery != "" {
+		tags := strings.Split(tagsQuery, ",")
+		photoResp, err = ph.photoSvc.ListPhotosByTags(tags, fromId, limit, includeThumbnail)
+	} else if favorites {
 		photoResp, err = ph.photoSvc.ListFavoritePhotos(fromId, limit, includeThumbnail, startDate, endDate)
 	} else if albumId != "" {
 		photoResp, err = ph.photoSvc.ListPhotosInAlbum(albumId, fromId, limit, includeThumbnail, startDate, endDate)
@@ -286,6 +290,16 @@ type downloadPhotosRequest struct {
 	PhotoIds []string `json:"photoIds" binding:"required,min=1"`
 }
 
+type updateTagsRequest struct {
+	Tags []string `json:"tags" binding:"required"`
+}
+
+type batchTagsRequest struct {
+	PhotoIds  []string `json:"photoIds" binding:"required,min=1"`
+	Tags      []string `json:"tags" binding:"required,min=1"`
+	Operation string   `json:"operation" binding:"required,oneof=add remove set"`
+}
+
 func (ph *PhotoHandler) DownloadPhotos(ctx *gin.Context) {
 	var req downloadPhotosRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -342,4 +356,51 @@ func (ph *PhotoHandler) GetGeodata(ctx *gin.Context) {
 		return
 	}
 	handleSuccess(ctx, entries)
+}
+
+func (ph *PhotoHandler) GetAllTags(ctx *gin.Context) {
+	tags, err := ph.photoSvc.GetAllTags()
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	handleSuccess(ctx, tags)
+}
+
+func (ph *PhotoHandler) UpdatePhotoTags(ctx *gin.Context) {
+	photoId := ctx.Param("id")
+	if photoId == "" {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "photo ID is required"})
+		return
+	}
+
+	var req updateTagsRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		validationError(ctx, err)
+		return
+	}
+
+	photo, err := ph.photoSvc.UpdatePhotoTags(photoId, req.Tags)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	handleSuccess(ctx, photo)
+}
+
+func (ph *PhotoHandler) BatchUpdatePhotoTags(ctx *gin.Context) {
+	var req batchTagsRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		validationError(ctx, err)
+		return
+	}
+
+	err := ph.photoSvc.BatchUpdatePhotoTags(req.PhotoIds, req.Tags, req.Operation)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	handleSuccess(ctx, gin.H{"message": "Tags updated"})
 }

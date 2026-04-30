@@ -18,6 +18,8 @@ const TrashView = React.lazy(() => import('../Components/TrashView/TrashView').t
 const ShareManagement = React.lazy(() => import('../Components/ShareManagement/ShareManagement').then(m => ({default: m.ShareManagement})));
 const UserManagement = React.lazy(() => import('../Components/UserManagement/UserManagement').then(m => ({default: m.UserManagement})));
 const MapView = React.lazy(() => import('../Components/MapView/MapView').then(m => ({default: m.MapView})));
+const TagsView = React.lazy(() => import('../Components/TagsView/TagsView').then(m => ({default: m.TagsView})));
+const TagPhotosView = React.lazy(() => import('../Components/TagsView/TagPhotosView').then(m => ({default: m.TagPhotosView})));
 
 const PageLoader = () => (
     <Center h="100vh">
@@ -207,6 +209,32 @@ const Router: React.FunctionComponent = () => {
                                 <SettingsView
                                     settingsAdapter={settingsAdapter}
                                     photosAdapter={photosAdapter}
+                                />
+                            </AppBar>
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/tags"
+                    element={
+                        <ProtectedRoute>
+                            <AppBar activeLink={Labels.Tags}>
+                                <TagsView
+                                    photosAdapter={photosAdapter}
+                                />
+                            </AppBar>
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/tags/:tag"
+                    element={
+                        <ProtectedRoute>
+                            <AppBar activeLink={Labels.Tags}>
+                                <TagPhotosView
+                                    photosAdapter={photosAdapter}
+                                    albumsAdapter={albumsAdapter}
+                                    sharesAdapter={sharesAdapter}
                                 />
                             </AppBar>
                         </ProtectedRoute>

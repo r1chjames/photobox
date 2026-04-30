@@ -1,8 +1,8 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import {useDisclosure} from '@mantine/hooks';
-import {Button, Dialog, Drawer, Group, Image, Loader, ScrollArea, Table} from '@mantine/core';
+import {Button, Chip, Dialog, Drawer, Group, Image, Loader, Modal, ScrollArea, Table, TextInput} from '@mantine/core';
 import {useMediaQuery} from '@mantine/hooks';
-import {IconDownload, IconHeart, IconHeartFilled, IconRotateClockwise, IconShare2} from '@tabler/icons-react';
+import {IconDownload, IconHeart, IconHeartFilled, IconRotateClockwise, IconShare2, IconTag} from '@tabler/icons-react';
 import {valueType} from "../../utils/TypeUtils";
 import {IPhotosAdapter} from '../../Adapters/IPhotosAdapter';
 import {ISharesAdapter} from '../../Adapters/ISharesAdapter';
@@ -22,6 +22,8 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
     const [opened, {toggle, close}] = useDisclosure(true);
     const [isFavorite, setIsFavorite] = useState(false);
     const [showShareModal, setShowShareModal] = useState(false);
+    const [showTagModal, setShowTagModal] = useState(false);
+    const [tagInput, setTagInput] = useState('');
     const isMobile = useMediaQuery('(max-width: 50em)');
 
     const fetchPhoto = async () => {
@@ -106,6 +108,32 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
         }
     }, [props.photosAdapter, photo]);
 
+    const handleSaveTags = useCallback(async () => {
+        if (!photo) return;
+        const tags = tagInput.split(',').map(t => t.trim()).filter(Boolean);
+        try {
+            await props.photosAdapter.updatePhotoTags(photo.id, tags);
+            notifications.show({
+                title: 'Tags updated',
+                message: `Updated tags for ${photo.name}`,
+                color: 'green',
+            });
+            setShowTagModal(false);
+        } catch (e) {
+            notifications.show({
+                title: 'Failed to update tags',
+                message: e instanceof Error ? e.message : 'An error occurred',
+                color: 'red',
+            });
+        }
+    }, [props.photosAdapter, photo, tagInput]);
+
+    useEffect(() => {
+        if (photo) {
+            setTagInput(photo.tags || '');
+        }
+    }, [photo]);
+
     const blobUrlRef = React.useRef<string | undefined>(undefined);
 
     useEffect(() => {
@@ -171,6 +199,16 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                 {isMobile ? (
                     <Drawer opened={opened} onClose={close} title="Metadata" position="bottom" size="md">
                         <ScrollArea>
+                            <Group gap="xs" mb="sm">
+                                <Button size="compact-sm" variant="light" leftSection={<IconTag size={14} />} onClick={() => setShowTagModal(true)}>Edit tags</Button>
+                            </Group>
+                            {photo.tags && (
+                                <Group gap="xs" mb="sm">
+                                    {photo.tags.split(',').map(t => t.trim()).filter(Boolean).map(tag => (
+                                        <Chip key={tag} size="xs" checked={false} onClick={() => {}}>{tag}</Chip>
+                                    ))}
+                                </Group>
+                            )}
                             <Table>
                                 <Table.Thead>
                                     <Table.Tr>
@@ -188,6 +226,16 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                     <Dialog opened={opened} withCloseButton onClose={close} size="lg" radius="md" mah="50%"
                             position={{top: "30%", right: 50, bottom: 50}}>
                         <ScrollArea h={400}>
+                            <Group gap="xs" mb="sm">
+                                <Button size="compact-sm" variant="light" leftSection={<IconTag size={14} />} onClick={() => setShowTagModal(true)}>Edit tags</Button>
+                            </Group>
+                            {photo.tags && (
+                                <Group gap="xs" mb="sm">
+                                    {photo.tags.split(',').map(t => t.trim()).filter(Boolean).map(tag => (
+                                        <Chip key={tag} size="xs" checked={false} onClick={() => {}}>{tag}</Chip>
+                                    ))}
+                                </Group>
+                            )}
                             <Table>
                                 <Table.Thead>
                                     <Table.Tr>
@@ -212,6 +260,24 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                         sharesAdapter={props.sharesAdapter}
                     />
                 )}
+                <Modal
+                    opened={showTagModal}
+                    onClose={() => setShowTagModal(false)}
+                    title="Edit tags"
+                    size="sm"
+                >
+                    <TextInput
+                        placeholder="Enter tags separated by commas"
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.currentTarget.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTags(); }}
+                        autoFocus
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+                        <Button variant="default" onClick={() => setShowTagModal(false)}>Cancel</Button>
+                        <Button onClick={handleSaveTags}>Save tags</Button>
+                    </div>
+                </Modal>
             </>
             : <Loader size={"md"}/>
     );

@@ -131,6 +131,27 @@ func (m *MockPhotoRepository) GetPhotoThumbnails(photoIds []string) (map[string]
 	return args.Get(0).(map[string][]byte), args.Error(1)
 }
 
+func (m *MockPhotoRepository) GetAllTags() ([]string, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]string), args.Error(1)
+}
+
+func (m *MockPhotoRepository) ListPhotosByTags(tags []string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	args := m.Called(tags, fromId, limit, includeThumbnail)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoRepository) UpdatePhotoTags(photoId string, tags string) error {
+	args := m.Called(photoId, tags)
+	return args.Error(0)
+}
+
 // MockAlbumService is a mock implementation of port.AlbumService
 type MockAlbumService struct {
 	mock.Mock

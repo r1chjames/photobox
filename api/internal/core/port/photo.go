@@ -42,6 +42,12 @@ type PhotoRepository interface {
 	GetPhotosWithGeodata(north, south, east, west float64) ([]domain.PhotoGeoData, error)
 	// GetPhotoThumbnails returns thumbnails for multiple photos
 	GetPhotoThumbnails(photoIds []string) (map[string][]byte, error)
+	// GetAllTags returns all distinct tags across photos
+	GetAllTags() ([]string, error)
+	// ListPhotosByTags returns photos matching all specified tags
+	ListPhotosByTags(tags []string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
+	// UpdatePhotoTags updates the tags for a single photo
+	UpdatePhotoTags(photoId string, tags string) error
 }
 
 // PhotoService is an interface for interacting with photo-related business logic
@@ -88,4 +94,12 @@ type PhotoService interface {
 	RotatePhoto(photoId string, direction string) (*domain.Photo, error)
 	// DownloadPhotos streams a zip of photos
 	DownloadPhotos(photoIds []string, writer io.Writer) error
+	// GetAllTags returns all distinct tags across photos
+	GetAllTags() ([]string, error)
+	// ListPhotosByTags returns photos matching all specified tags
+	ListPhotosByTags(tags []string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
+	// UpdatePhotoTags updates tags for a single photo
+	UpdatePhotoTags(photoId string, tags []string) (*domain.Photo, error)
+	// BatchUpdatePhotoTags adds/removes/sets tags for multiple photos
+	BatchUpdatePhotoTags(photoIds []string, tags []string, operation string) error
 }

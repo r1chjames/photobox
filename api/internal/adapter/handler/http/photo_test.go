@@ -159,6 +159,35 @@ func (m *MockPhotoService) DownloadPhotos(photoIds []string, writer io.Writer) e
 	return args.Error(0)
 }
 
+func (m *MockPhotoService) GetAllTags() ([]string, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]string), args.Error(1)
+}
+
+func (m *MockPhotoService) ListPhotosByTags(tags []string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	args := m.Called(tags, fromId, limit, includeThumbnail)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoService) UpdatePhotoTags(photoId string, tags []string) (*domain.Photo, error) {
+	args := m.Called(photoId, tags)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoService) BatchUpdatePhotoTags(photoIds []string, tags []string, operation string) error {
+	args := m.Called(photoIds, tags, operation)
+	return args.Error(0)
+}
+
 // MockJobService is a mock implementation of port.JobService
 type MockJobService struct {
 	mock.Mock
