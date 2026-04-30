@@ -1,5 +1,5 @@
 import {Photo} from "../Models/Photo";
-import {IPhotosAdapter} from "./IPhotosAdapter";
+import {IPhotosAdapter, PhotoGeoData} from "./IPhotosAdapter";
 
 export class MockPhotosAdapter implements IPhotosAdapter {
 
@@ -93,6 +93,11 @@ export class MockPhotosAdapter implements IPhotosAdapter {
       return Promise.reject(`Photo with id ${photoId} not found in mock adapter`);
     }
     return photo;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public getGeodata = async (north: number, south: number, east: number, west: number): Promise<PhotoGeoData[]> => {
+    return [];
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

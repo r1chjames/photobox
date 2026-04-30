@@ -30,6 +30,7 @@ import {
     IconLibraryPhoto,
     IconLink,
     IconLogout,
+    IconMap,
     IconMessage,
     IconMoon,
     IconPhoto,
@@ -53,6 +54,7 @@ export enum Labels {
     Trash = "Trash",
     Shares = "Shares",
     Users = "Users",
+    Map = "Map",
     Settings = "Settings"
 }
 
@@ -100,6 +102,12 @@ const navLinkData = [
         description: 'Manage users'
     },
     {
+        icon: IconMap,
+        label: Labels.Map,
+        href: '/map',
+        description: 'Geotagged photos'
+    },
+    {
         icon: IconSettings,
         label: Labels.Settings,
         href: '/settings',
@@ -111,6 +119,7 @@ const bottomNavData = [
     { icon: IconLibraryPhoto, label: 'Home', href: '/' },
     { icon: IconPhoto, label: 'Photos', href: '/photos' },
     { icon: IconAlbum, label: 'Albums', href: '/albums' },
+    { icon: IconMap, label: 'Map', href: '/map' },
     { icon: IconSettings, label: 'Settings', href: '/settings' },
 ];
 
@@ -141,6 +150,8 @@ const buildBreadcrumbs = (location: string, activeLink: Labels, id?: string) => 
         items.push({ label: 'Shares', icon: <IconLink size="0.9rem" /> });
     } else if (activeLink === Labels.Users) {
         items.push({ label: 'Users', icon: <IconUsers size="0.9rem" /> });
+    } else if (activeLink === Labels.Map) {
+        items.push({ label: 'Map', icon: <IconMap size="0.9rem" /> });
     } else if (activeLink === Labels.Settings) {
         items.push({ label: 'Settings', icon: <IconSettings size="0.9rem" /> });
     }

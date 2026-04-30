@@ -1,5 +1,5 @@
 import {IRestApiAdapter} from "./RestApiAdapter";
-import {IPhotosAdapter} from "./IPhotosAdapter";
+import {IPhotosAdapter, PhotoGeoData} from "./IPhotosAdapter";
 import {Photo} from "../Models/Photo";
 
 export class PhotosAdapter implements IPhotosAdapter {
@@ -105,6 +105,11 @@ export class PhotosAdapter implements IPhotosAdapter {
   public rotatePhoto = async (photoId: string, direction: 'cw' | 'ccw'): Promise<Photo> => {
     const rotatePath = `photos/${photoId}/rotate?direction=${direction}`;
     return this.restApiAdapter.postApiCall(rotatePath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
+
+  public getGeodata = async (north: number, south: number, east: number, west: number): Promise<PhotoGeoData[]> => {
+    const geodataPath = `photos/geodata?north=${north}&south=${south}&east=${east}&west=${west}`;
+    return this.restApiAdapter.getApiCall(geodataPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 
   public uploadPhoto = async (body: Record<string, unknown>) => {

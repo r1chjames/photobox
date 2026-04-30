@@ -17,6 +17,7 @@ const FavoritesView = React.lazy(() => import('../Components/FavoritesView/Favor
 const TrashView = React.lazy(() => import('../Components/TrashView/TrashView').then(m => ({default: m.TrashView})));
 const ShareManagement = React.lazy(() => import('../Components/ShareManagement/ShareManagement').then(m => ({default: m.ShareManagement})));
 const UserManagement = React.lazy(() => import('../Components/UserManagement/UserManagement').then(m => ({default: m.UserManagement})));
+const MapView = React.lazy(() => import('../Components/MapView/MapView').then(m => ({default: m.MapView})));
 
 const PageLoader = () => (
     <Center h="100vh">
@@ -181,6 +182,18 @@ const Router: React.FunctionComponent = () => {
                             <AppBar activeLink={Labels.Settings}>
                                 <UserManagement
                                     usersAdapter={usersAdapter}
+                                />
+                            </AppBar>
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/map"
+                    element={
+                        <ProtectedRoute>
+                            <AppBar activeLink={Labels.Map}>
+                                <MapView
+                                    photosAdapter={photosAdapter}
                                 />
                             </AppBar>
                         </ProtectedRoute>
