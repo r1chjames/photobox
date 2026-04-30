@@ -14,6 +14,7 @@ export interface IPhotosAdapter {
   searchPhotos(query: string, fromId: string, limit: number): Promise<Photo[]>;
   getTrashedPhotos(fromId: string, limit: number): Promise<Photo[]>;
   restorePhoto(photoId: string): Promise<void>;
+  rotatePhoto(photoId: string, direction: 'cw' | 'ccw'): Promise<Photo>;
   uploadPhoto(body: Record<string, unknown>): Promise<any>;
   index(): Promise<any>;
 }

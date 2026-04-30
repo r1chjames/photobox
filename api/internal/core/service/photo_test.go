@@ -1,7 +1,9 @@
 package service
 
 import (
+	"bytes"
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/rwcarlsen/goexif/exif"
@@ -854,5 +856,480 @@ func TestPerformPhotoIndex(t *testing.T) {
 		service.PerformPhotoIndex()
 
 		mockFsSvc.AssertExpectations(t)
+	})
+}
+
+// TestDeletePhoto tests deleting a photo
+func TestDeletePhoto(t *testing.T) {
+	tests := []struct {
+		name      string
+		photoId   string
+		mockSetup func(*MockPhotoRepository, *MockFilesystemService)
+		validate  func(*testing.T, error)
+	}{
+		{
+			name:    "successfully delete photo",
+			photoId: "photo-123",
+			mockSetup: func(mPhoto *MockPhotoRepository, mFs *MockFilesystemService) {
+				mPhoto.On("SoftDeletePhoto", "photo-123").Return(&domain.Photo{
+					ID:             "photo-123",
+					FilesystemPath: "/storage/photos/test.jpg",
+				}, nil)
+				mFs.On("MoveToTrash", mock.AnythingOfType("string")).Return("/trash/test.jpg", nil)
+			},
+			validate: func(t *testing.T, err error) {
+				assert.NoError(t, err)
+			},
+		},
+		{
+			name:    "photo not found",
+			photoId: "nonexistent",
+			mockSetup: func(mPhoto *MockPhotoRepository, mFs *MockFilesystemService) {
+				mPhoto.On("SoftDeletePhoto", "nonexistent").Return(nil, errors.New("not found"))
+			},
+			validate: func(t *testing.T, err error) {
+				assert.Error(t, err)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := new(MockPhotoRepository)
+			mockAlbumSvc := new(MockAlbumService)
+			mockFsSvc := new(MockFilesystemService)
+			config := appconfig.AppConfig{}
+
+			tt.mockSetup(mockRepo, mockFsSvc)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+
+			err := service.DeletePhoto(tt.photoId)
+
+			tt.validate(t, err)
+			mockRepo.AssertExpectations(t)
+			mockFsSvc.AssertExpectations(t)
+		})
+	}
+}
+
+// TestRestorePhoto tests restoring a photo from trash
+func TestRestorePhoto(t *testing.T) {
+	tests := []struct {
+		name      string
+		photoId   string
+		mockSetup func(*MockPhotoRepository)
+		validate  func(*testing.T, error)
+	}{
+		{
+			name:    "successfully restore photo",
+			photoId: "photo-123",
+			mockSetup: func(mPhoto *MockPhotoRepository) {
+				mPhoto.On("RestorePhoto", "photo-123").Return(&domain.Photo{
+					ID:             "photo-123",
+					FilesystemPath: "/storage/photos/test.jpg",
+				}, nil)
+			},
+			validate: func(t *testing.T, err error) {
+				assert.NoError(t, err)
+			},
+		},
+		{
+			name:    "photo not found",
+			photoId: "nonexistent",
+			mockSetup: func(mPhoto *MockPhotoRepository) {
+				mPhoto.On("RestorePhoto", "nonexistent").Return(nil, errors.New("not found"))
+			},
+			validate: func(t *testing.T, err error) {
+				assert.Error(t, err)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := new(MockPhotoRepository)
+			mockAlbumSvc := new(MockAlbumService)
+			mockFsSvc := new(MockFilesystemService)
+			config := appconfig.AppConfig{}
+
+			tt.mockSetup(mockRepo)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+
+			err := service.RestorePhoto(tt.photoId)
+
+			tt.validate(t, err)
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
+// TestListTrashPhotos tests listing trashed photos
+func TestListTrashPhotos(t *testing.T) {
+	tests := []struct {
+		name             string
+		fromId           string
+		limit            int
+		includeThumbnail bool
+		mockSetup        func(*MockPhotoRepository)
+		validate         func(*testing.T, []*domain.Photo, error)
+	}{
+		{
+			name:             "successfully list trash photos",
+			fromId:           "",
+			limit:            10,
+			includeThumbnail: false,
+			mockSetup: func(m *MockPhotoRepository) {
+				photos := []*domain.Photo{
+					{ID: "photo-1", Name: "photo1.jpg"},
+					{ID: "photo-2", Name: "photo2.jpg"},
+				}
+				m.On("ListTrashPhotos", "", 10, false).Return(photos, nil)
+			},
+			validate: func(t *testing.T, photos []*domain.Photo, err error) {
+				assert.NoError(t, err)
+				assert.Len(t, photos, 2)
+				assert.Equal(t, "photo/photo-1/bin", photos[0].SourcePath)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := new(MockPhotoRepository)
+			mockAlbumSvc := new(MockAlbumService)
+			mockFsSvc := new(MockFilesystemService)
+			config := appconfig.AppConfig{}
+
+			tt.mockSetup(mockRepo)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+
+			result, err := service.ListTrashPhotos(tt.fromId, tt.limit, tt.includeThumbnail)
+
+			tt.validate(t, result, err)
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
+// TestEmptyTrash tests emptying the trash
+func TestEmptyTrash(t *testing.T) {
+	t.Run("successfully empty trash", func(t *testing.T) {
+		mockRepo := new(MockPhotoRepository)
+		mockAlbumSvc := new(MockAlbumService)
+		mockFsSvc := new(MockFilesystemService)
+		config := appconfig.AppConfig{}
+
+		mockRepo.On("EmptyTrash").Return(nil)
+
+		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+		err := service.EmptyTrash()
+
+		assert.NoError(t, err)
+		mockRepo.AssertExpectations(t)
+	})
+}
+
+// TestSetFavorite tests setting a photo as favorite
+func TestSetFavorite(t *testing.T) {
+	tests := []struct {
+		name      string
+		photoId   string
+		favorite  bool
+		mockSetup func(*MockPhotoRepository)
+		validate  func(*testing.T, *domain.Photo, error)
+	}{
+		{
+			name:     "successfully set favorite",
+			photoId:  "photo-123",
+			favorite: true,
+			mockSetup: func(mPhoto *MockPhotoRepository) {
+				mPhoto.On("GetPhotoById", "photo-123", false).Return(&domain.Photo{
+					ID:       "photo-123",
+					Name:     "test.jpg",
+					Favorite: false,
+				}, nil)
+				mPhoto.On("UpdatePhoto", mock.AnythingOfType("domain.Photo")).Return(nil)
+			},
+			validate: func(t *testing.T, photo *domain.Photo, err error) {
+				assert.NoError(t, err)
+				assert.NotNil(t, photo)
+				assert.True(t, photo.Favorite)
+				assert.Equal(t, "photo/photo-123/bin", photo.SourcePath)
+			},
+		},
+		{
+			name:     "photo not found",
+			photoId:  "nonexistent",
+			favorite: true,
+			mockSetup: func(mPhoto *MockPhotoRepository) {
+				mPhoto.On("GetPhotoById", "nonexistent", false).Return(nil, errors.New("not found"))
+			},
+			validate: func(t *testing.T, photo *domain.Photo, err error) {
+				assert.Error(t, err)
+				assert.Nil(t, photo)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := new(MockPhotoRepository)
+			mockAlbumSvc := new(MockAlbumService)
+			mockFsSvc := new(MockFilesystemService)
+			config := appconfig.AppConfig{}
+
+			tt.mockSetup(mockRepo)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+
+			result, err := service.SetFavorite(tt.photoId, tt.favorite)
+
+			tt.validate(t, result, err)
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
+// TestListFavoritePhotos tests listing favorite photos
+func TestListFavoritePhotos(t *testing.T) {
+	tests := []struct {
+		name             string
+		fromId           string
+		limit            int
+		includeThumbnail bool
+		mockSetup        func(*MockPhotoRepository)
+		validate         func(*testing.T, []*domain.Photo, error)
+	}{
+		{
+			name:             "successfully list favorite photos",
+			fromId:           "",
+			limit:            10,
+			includeThumbnail: false,
+			mockSetup: func(m *MockPhotoRepository) {
+				photos := []*domain.Photo{
+					{ID: "photo-1", Name: "photo1.jpg", Favorite: true},
+					{ID: "photo-2", Name: "photo2.jpg", Favorite: true},
+				}
+				m.On("ListFavoritePhotos", "", 10, false).Return(photos, nil)
+			},
+			validate: func(t *testing.T, photos []*domain.Photo, err error) {
+				assert.NoError(t, err)
+				assert.Len(t, photos, 2)
+				assert.Equal(t, "photo/photo-1/bin", photos[0].SourcePath)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := new(MockPhotoRepository)
+			mockAlbumSvc := new(MockAlbumService)
+			mockFsSvc := new(MockFilesystemService)
+			config := appconfig.AppConfig{}
+
+			tt.mockSetup(mockRepo)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+
+			result, err := service.ListFavoritePhotos(tt.fromId, tt.limit, tt.includeThumbnail)
+
+			tt.validate(t, result, err)
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
+// TestSearch tests searching photos
+func TestSearch(t *testing.T) {
+	tests := []struct {
+		name      string
+		query     string
+		limit     int
+		mockSetup func(*MockPhotoRepository)
+		validate  func(*testing.T, []*domain.Photo, error)
+	}{
+		{
+			name:  "successfully search photos",
+			query: "vacation",
+			limit: 10,
+			mockSetup: func(m *MockPhotoRepository) {
+				photos := []*domain.Photo{
+					{ID: "photo-1", Name: "vacation1.jpg"},
+					{ID: "photo-2", Name: "vacation2.jpg"},
+				}
+				m.On("SearchPhotos", "vacation", 10).Return(photos, nil)
+			},
+			validate: func(t *testing.T, photos []*domain.Photo, err error) {
+				assert.NoError(t, err)
+				assert.Len(t, photos, 2)
+			},
+		},
+		{
+			name:  "search returns error",
+			query: "nonexistent",
+			limit: 10,
+			mockSetup: func(m *MockPhotoRepository) {
+				m.On("SearchPhotos", "nonexistent", 10).Return(nil, errors.New("not found"))
+			},
+			validate: func(t *testing.T, photos []*domain.Photo, err error) {
+				assert.Error(t, err)
+				assert.Nil(t, photos)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := new(MockPhotoRepository)
+			mockAlbumSvc := new(MockAlbumService)
+			mockFsSvc := new(MockFilesystemService)
+			config := appconfig.AppConfig{}
+
+			tt.mockSetup(mockRepo)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+
+			result, err := service.Search(tt.query, tt.limit)
+
+			tt.validate(t, result, err)
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
+// TestGetTimeline tests retrieving the photo timeline
+func TestGetTimeline(t *testing.T) {
+	t.Run("successfully get timeline", func(t *testing.T) {
+		mockRepo := new(MockPhotoRepository)
+		mockAlbumSvc := new(MockAlbumService)
+		mockFsSvc := new(MockFilesystemService)
+		config := appconfig.AppConfig{}
+
+		entries := []domain.TimelineEntry{
+			{Year: 2024, Month: 1, Count: 10},
+			{Year: 2024, Month: 2, Count: 5},
+		}
+		mockRepo.On("GetTimeline").Return(entries, nil)
+
+		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+		result, err := service.GetTimeline()
+
+		assert.NoError(t, err)
+		assert.Len(t, result, 2)
+		assert.Equal(t, 2024, result[0].Year)
+		mockRepo.AssertExpectations(t)
+	})
+}
+
+// TestGetGeodata tests retrieving photos with geodata
+func TestGetGeodata(t *testing.T) {
+	t.Run("successfully get geodata", func(t *testing.T) {
+		mockRepo := new(MockPhotoRepository)
+		mockAlbumSvc := new(MockAlbumService)
+		mockFsSvc := new(MockFilesystemService)
+		config := appconfig.AppConfig{}
+
+		geoData := []domain.PhotoGeoData{
+			{ID: "photo-1", Lat: 51.5, Lng: -0.1},
+			{ID: "photo-2", Lat: 40.7, Lng: -74.0},
+		}
+		mockRepo.On("GetPhotosWithGeodata", 52.0, 50.0, 1.0, -1.0).Return(geoData, nil)
+
+		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+		result, err := service.GetGeodata(52.0, 50.0, 1.0, -1.0)
+
+		assert.NoError(t, err)
+		assert.Len(t, result, 2)
+		assert.Equal(t, "photo-1", result[0].ID)
+		mockRepo.AssertExpectations(t)
+	})
+}
+
+// TestRotatePhoto tests rotating a photo
+func TestRotatePhoto(t *testing.T) {
+	tests := []struct {
+		name      string
+		photoId   string
+		direction string
+		mockSetup func(*MockPhotoRepository)
+		validate  func(*testing.T, *domain.Photo, error)
+	}{
+		{
+			name:      "successfully rotate photo",
+			photoId:   "photo-123",
+			direction: "right",
+			mockSetup: func(mPhoto *MockPhotoRepository) {
+				mPhoto.On("GetPhotoById", "photo-123", false).Return(&domain.Photo{
+					ID:   "photo-123",
+					Name: "test.jpg",
+				}, nil)
+			},
+			validate: func(t *testing.T, photo *domain.Photo, err error) {
+				assert.NoError(t, err)
+				assert.NotNil(t, photo)
+				assert.Equal(t, "photo-123", photo.ID)
+			},
+		},
+		{
+			name:      "photo not found",
+			photoId:   "nonexistent",
+			direction: "left",
+			mockSetup: func(mPhoto *MockPhotoRepository) {
+				mPhoto.On("GetPhotoById", "nonexistent", false).Return(nil, errors.New("not found"))
+			},
+			validate: func(t *testing.T, photo *domain.Photo, err error) {
+				assert.Error(t, err)
+				assert.Nil(t, photo)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := new(MockPhotoRepository)
+			mockAlbumSvc := new(MockAlbumService)
+			mockFsSvc := new(MockFilesystemService)
+			config := appconfig.AppConfig{}
+
+			tt.mockSetup(mockRepo)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+
+			result, err := service.RotatePhoto(tt.photoId, tt.direction)
+
+			tt.validate(t, result, err)
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
+// TestDownloadPhotos tests downloading photos as a zip archive
+func TestDownloadPhotos(t *testing.T) {
+	t.Run("successfully download photos", func(t *testing.T) {
+		mockRepo := new(MockPhotoRepository)
+		mockAlbumSvc := new(MockAlbumService)
+		mockFsSvc := new(MockFilesystemService)
+		config := appconfig.AppConfig{}
+
+		// Create a temporary file to act as the photo on disk
+		tmpFile, err := os.CreateTemp("", "photo-*.jpg")
+		assert.NoError(t, err)
+		defer os.Remove(tmpFile.Name())
+
+		_, err = tmpFile.WriteString("photo-binary-data")
+		assert.NoError(t, err)
+		err = tmpFile.Close()
+		assert.NoError(t, err)
+
+		mockRepo.On("GetPhotoById", "photo-123", false).Return(&domain.Photo{
+			ID:             "photo-123",
+			Name:           "test.jpg",
+			FilesystemPath: tmpFile.Name(),
+		}, nil)
+
+		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+
+		var buf bytes.Buffer
+		err = service.DownloadPhotos([]string{"photo-123"}, &buf)
+
+		assert.NoError(t, err)
+		assert.Greater(t, buf.Len(), 0)
+		mockRepo.AssertExpectations(t)
 	})
 }

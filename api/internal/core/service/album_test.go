@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -421,6 +422,173 @@ func TestCreateAlbum(t *testing.T) {
 
 			service := NewAlbumService(mockRepo, appconfig.AppConfig{})
 			result, err := service.CreateAlbum(tt.albumName)
+
+			tt.validate(t, result, err)
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
+// TestUpdateAlbum tests updating an album
+func TestUpdateAlbum(t *testing.T) {
+	tests := []struct {
+		name      string
+		albumID   string
+		updates   map[string]any
+		mockSetup func(*MockAlbumRepository)
+		validate  func(*testing.T, *domain.Album, error)
+	}{
+		{
+			name:    "successfully update album",
+			albumID: "album-123",
+			updates: map[string]any{
+				"name":        "Updated Name",
+				"description": "Updated Description",
+			},
+			mockSetup: func(m *MockAlbumRepository) {
+				m.On("GetAlbumById", "album-123").Return(&domain.Album{
+					ID:          "album-123",
+					Name:        "Original Name",
+					Description: "Original Description",
+				}, nil)
+				m.On("UpdateAlbum", mock.AnythingOfType("*domain.Album")).Return(nil)
+			},
+			validate: func(t *testing.T, album *domain.Album, err error) {
+				assert.NoError(t, err)
+				assert.NotNil(t, album)
+				assert.Equal(t, "Updated Name", album.Name)
+				assert.Equal(t, "Updated Description", album.Description)
+			},
+		},
+		{
+			name:    "album not found",
+			albumID: "nonexistent",
+			updates: map[string]any{
+				"name": "Updated Name",
+			},
+			mockSetup: func(m *MockAlbumRepository) {
+				m.On("GetAlbumById", "nonexistent").Return(nil, domain.ErrDataNotFound)
+			},
+			validate: func(t *testing.T, album *domain.Album, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, domain.ErrDataNotFound, err)
+				assert.Nil(t, album)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := new(MockAlbumRepository)
+			tt.mockSetup(mockRepo)
+
+			service := NewAlbumService(mockRepo, appconfig.AppConfig{PhotoDir: "/tmp/photos"})
+			result, err := service.UpdateAlbum(tt.albumID, tt.updates)
+
+			tt.validate(t, result, err)
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
+// TestDeleteAlbum tests deleting an album
+func TestDeleteAlbum(t *testing.T) {
+	tests := []struct {
+		name         string
+		albumID      string
+		deletePhotos bool
+		mockSetup    func(*MockAlbumRepository)
+		validate     func(*testing.T, error)
+	}{
+		{
+			name:         "successfully delete album without deleting photos",
+			albumID:      "album-123",
+			deletePhotos: false,
+			mockSetup: func(m *MockAlbumRepository) {
+				m.On("GetAlbumByName", "Uncategorized").Return(&domain.Album{
+					ID:   "album-uncategorized",
+					Name: "Uncategorized",
+				}, nil)
+				m.On("ReassignPhotosToAlbum", "album-123", "album-uncategorized").Return(nil)
+				m.On("DeleteAlbum", "album-123").Return(nil)
+			},
+			validate: func(t *testing.T, err error) {
+				assert.NoError(t, err)
+			},
+		},
+		{
+			name:         "successfully delete album and photos",
+			albumID:      "album-123",
+			deletePhotos: true,
+			mockSetup: func(m *MockAlbumRepository) {
+				m.On("DeleteAlbum", "album-123").Return(nil)
+			},
+			validate: func(t *testing.T, err error) {
+				assert.NoError(t, err)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := new(MockAlbumRepository)
+			tt.mockSetup(mockRepo)
+
+			service := NewAlbumService(mockRepo, appconfig.AppConfig{})
+			err := service.DeleteAlbum(tt.albumID, tt.deletePhotos)
+
+			tt.validate(t, err)
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
+// TestSearchAlbums tests searching albums
+func TestSearchAlbums(t *testing.T) {
+	tests := []struct {
+		name      string
+		query     string
+		limit     int
+		mockSetup func(*MockAlbumRepository)
+		validate  func(*testing.T, []*domain.Album, error)
+	}{
+		{
+			name:  "successfully search albums",
+			query: "vacation",
+			limit: 10,
+			mockSetup: func(m *MockAlbumRepository) {
+				albums := []*domain.Album{
+					{ID: "album-1", Name: "Vacation 2024"},
+					{ID: "album-2", Name: "Vacation 2023"},
+				}
+				m.On("SearchAlbums", "vacation", 10).Return(albums, nil)
+			},
+			validate: func(t *testing.T, albums []*domain.Album, err error) {
+				assert.NoError(t, err)
+				assert.Len(t, albums, 2)
+			},
+		},
+		{
+			name:  "search returns error",
+			query: "nonexistent",
+			limit: 10,
+			mockSetup: func(m *MockAlbumRepository) {
+				m.On("SearchAlbums", "nonexistent", 10).Return(nil, errors.New("not found"))
+			},
+			validate: func(t *testing.T, albums []*domain.Album, err error) {
+				assert.Error(t, err)
+				assert.Nil(t, albums)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := new(MockAlbumRepository)
+			tt.mockSetup(mockRepo)
+
+			service := NewAlbumService(mockRepo, appconfig.AppConfig{})
+			result, err := service.SearchAlbums(tt.query, tt.limit)
 
 			tt.validate(t, result, err)
 			mockRepo.AssertExpectations(t)

@@ -10,7 +10,7 @@ import {Slideshow} from "../Slideshow/Slideshow";
 import {EmptyState} from "../EmptyState/EmptyState";
 import {BulkActionsToolbar} from "../BulkActionsToolbar/BulkActionsToolbar";
 import {KeyboardShortcutsHelp} from "../KeyboardShortcutsHelp/KeyboardShortcutsHelp";
-import {ActionIcon, Checkbox, Loader, Modal, Skeleton, Title, Tooltip} from "@mantine/core";
+import {ActionIcon, Checkbox, Loader, Modal, SegmentedControl, Skeleton, Title, Tooltip} from "@mantine/core";
 import {useHotkeys, useMediaQuery} from "@mantine/hooks";
 import {IconPhotoOff, IconSelect} from "@tabler/icons-react";
 import { notifications } from '@mantine/notifications';
@@ -125,7 +125,20 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isSlideshowOpen, setIsSlideshowOpen] = useState(false);
+    const [density, setDensity] = useState<'compact' | 'comfortable' | 'large'>(() => {
+        try {
+            const saved = localStorage.getItem('photobox-grid-density');
+            if (saved === 'compact' || saved === 'comfortable' || saved === 'large') return saved;
+        } catch { /* ignore */ }
+        return 'comfortable';
+    });
     const isMobile = useMediaQuery('(max-width: 50em)');
+
+    useEffect(() => {
+        try {
+            localStorage.setItem('photobox-grid-density', density);
+        } catch { /* ignore */ }
+    }, [density]);
 
     // The hook now provides a simple, flat, de-duplicated array of photos.
     const {photos, albumName, allRetrieved, fetchNextPage, isFetchingNextPage, refetch} = usePhotoGrid(props.photosAdapter, props.albumsAdapter, id);
@@ -329,15 +342,29 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     ]);
 
     const AlbumTitle = () => (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
             <Title size="h4">{albumName}</Title>
-            {photos.length > 0 && (
-                <Tooltip label="Select photos">
-                    <ActionIcon variant="light" onClick={() => setIsSelectionMode(prev => !prev)} aria-label="Select photos">
-                        <IconSelect size="1.25rem" />
-                    </ActionIcon>
-                </Tooltip>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {photos.length > 0 && !isMobile && (
+                    <SegmentedControl
+                        size="xs"
+                        value={density}
+                        onChange={(value) => setDensity(value as 'compact' | 'comfortable' | 'large')}
+                        data={[
+                            { label: 'Compact', value: 'compact' },
+                            { label: 'Comfortable', value: 'comfortable' },
+                            { label: 'Large', value: 'large' },
+                        ]}
+                    />
+                )}
+                {photos.length > 0 && (
+                    <Tooltip label="Select photos">
+                        <ActionIcon variant="light" onClick={() => setIsSelectionMode(prev => !prev)} aria-label="Select photos">
+                            <IconSelect size="1.25rem" />
+                        </ActionIcon>
+                    </Tooltip>
+                )}
+            </div>
         </div>
     );
 
@@ -363,6 +390,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     return (
         <div
             ref={containerRef}
+            className={`density-${density}`}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}

@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Photo} from '../../Models/Photo';
 import {ActionIcon, Badge, Button, Card, Flex, Group, Image, Overlay, Stack, Tooltip} from '@mantine/core';
 import {useNavigate} from "react-router-dom";
-import {IconArrowLeftDashed, IconArrowRightDashed, IconCalendar, IconDownload, IconFolder, IconHeart, IconHeartFilled, IconPlayerPlay, IconShare2, IconX} from "@tabler/icons-react";
+import {IconArrowLeftDashed, IconArrowRightDashed, IconCalendar, IconDownload, IconFolder, IconHeart, IconHeartFilled, IconPlayerPlay, IconRotateClockwise, IconShare2, IconX} from "@tabler/icons-react";
 import {useHotkeys} from "@mantine/hooks";
 import {notifications} from '@mantine/notifications';
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
@@ -32,6 +32,8 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const [showShareModal, setShowShareModal] = useState(false);
     const img: React.Ref<HTMLImageElement> = React.createRef();
     const blobUrlRef = useRef<string | undefined>(undefined);
+    const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+    const isSwipingRef = useRef(false);
 
     const fetchImage = useCallback(async () => {
         const imageUrl = await fetchPhotoBinWithAuth(props.photosAdapter, props.source.id);
@@ -96,12 +98,33 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
         }
     }, [props.photosAdapter, props.source.id, isFavorite]);
 
+    const handleRotate = useCallback(async (direction: 'cw' | 'ccw') => {
+        try {
+            await props.photosAdapter.rotatePhoto(props.source.id, direction);
+            notifications.show({
+                title: 'Photo rotated',
+                message: `Rotated ${direction === 'cw' ? 'clockwise' : 'counter-clockwise'}`,
+                color: 'green',
+            });
+            // Refresh image by re-fetching
+            setFetchedImage(undefined);
+            void fetchImage();
+        } catch (e) {
+            notifications.show({
+                title: 'Rotation failed',
+                message: e instanceof Error ? e.message : 'An error occurred',
+                color: 'red',
+            });
+        }
+    }, [props.photosAdapter, props.source.id, fetchImage]);
+
     useHotkeys([
         ['ArrowLeft', () => props.previousPhoto()],
         ['ArrowRight', () => props.nextPhoto()],
         ['Escape', () => props.closeModal()],
         ['d', () => handleDownload()],
         ['f', () => handleFavorite()],
+        ['r', () => handleRotate('cw')],
     ]);
 
     const handleClose = useCallback((e: React.MouseEvent) => {
@@ -141,10 +164,52 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
         return null;
     }, [props.lastInAlbum, handleNext]);
 
+    const handleTouchStart = useCallback((e: React.TouchEvent) => {
+        touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        isSwipingRef.current = false;
+    }, []);
+
+    const handleTouchMove = useCallback((e: React.TouchEvent) => {
+        if (!touchStartRef.current) return;
+        const dx = Math.abs(e.touches[0].clientX - touchStartRef.current.x);
+        if (dx > 10) {
+            isSwipingRef.current = true;
+        }
+    }, []);
+
+    const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+        if (!touchStartRef.current) return;
+        const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
+        const dy = e.changedTouches[0].clientY - touchStartRef.current.y;
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+        if (absDx > absDy && absDx > 50) {
+            if (dx > 0 && !props.firstInAlbum) {
+                props.previousPhoto();
+            } else if (dx < 0 && !props.lastInAlbum) {
+                props.nextPhoto();
+            }
+        } else if (absDy > absDx && dy > 80) {
+            props.closeModal();
+        }
+        touchStartRef.current = null;
+    }, [props.firstInAlbum, props.lastInAlbum, props.previousPhoto, props.nextPhoto, props.closeModal]);
+
+    const handleCardClick = useCallback(() => {
+        if (isSwipingRef.current) {
+            isSwipingRef.current = false;
+            return;
+        }
+        navigate(`/photo/${props.source.id}`);
+    }, [navigate, props.source.id]);
+
     return (
         <>
             <Card shadow="sm" radius="md" padding={0}
-                  onClick={() => navigate(`/photo/${props.source.id}`)}>
+                  onClick={handleCardClick}
+                  onTouchStart={handleTouchStart}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}>
                 <Card.Section inheritPadding={false} withBorder={false}>
                     {fetchedImage ?
                         <Image
@@ -173,6 +238,11 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                                     </ActionIcon>
                                 </Tooltip>
                             )}
+                            <Tooltip label="Rotate clockwise (R)">
+                                <ActionIcon color="dark" size="l" opacity={1} onClick={(e) => { e.stopPropagation(); handleRotate('cw'); }} aria-label="Rotate clockwise">
+                                    <IconRotateClockwise size="1.75rem"/>
+                                </ActionIcon>
+                            </Tooltip>
                             <Tooltip label={isFavorite ? 'Remove from favorites (F)' : 'Add to favorites (F)'}>
                                 <ActionIcon color="dark" size="l" opacity={1} onClick={(e) => { e.stopPropagation(); handleFavorite(); }} aria-label="Toggle favorite">
                                     {isFavorite ? <IconHeartFilled size="1.75rem" color="var(--mantine-color-pink-filled)" /> : <IconHeart size="1.75rem" />}

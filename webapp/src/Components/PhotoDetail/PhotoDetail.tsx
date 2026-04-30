@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {useDisclosure} from '@mantine/hooks';
 import {Button, Dialog, Drawer, Group, Image, Loader, ScrollArea, Table} from '@mantine/core';
 import {useMediaQuery} from '@mantine/hooks';
-import {IconDownload, IconHeart, IconHeartFilled, IconShare2} from '@tabler/icons-react';
+import {IconDownload, IconHeart, IconHeartFilled, IconRotateClockwise, IconShare2} from '@tabler/icons-react';
 import {valueType} from "../../utils/TypeUtils";
 import {IPhotosAdapter} from '../../Adapters/IPhotosAdapter';
 import {ISharesAdapter} from '../../Adapters/ISharesAdapter';
@@ -88,6 +88,24 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
         }
     }, [props.photosAdapter, photo, isFavorite]);
 
+    const handleRotate = useCallback(async (direction: 'cw' | 'ccw') => {
+        if (!photo) return;
+        try {
+            await props.photosAdapter.rotatePhoto(photo.id, direction);
+            notifications.show({
+                title: 'Photo rotated',
+                message: `Rotated ${direction === 'cw' ? 'clockwise' : 'counter-clockwise'}`,
+                color: 'green',
+            });
+        } catch (e) {
+            notifications.show({
+                title: 'Rotation failed',
+                message: e instanceof Error ? e.message : 'An error occurred',
+                color: 'red',
+            });
+        }
+    }, [props.photosAdapter, photo]);
+
     const blobUrlRef = React.useRef<string | undefined>(undefined);
 
     useEffect(() => {
@@ -144,6 +162,9 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                             Share
                         </Button>
                     )}
+                    <Button onClick={() => handleRotate('cw')} leftSection={<IconRotateClockwise size={16} />} variant="light">
+                        Rotate
+                    </Button>
                     <Button onClick={handleDownload} leftSection={<IconDownload size={16} />}>Download</Button>
                     <Button onClick={toggle}>Metadata</Button>
                 </Group>

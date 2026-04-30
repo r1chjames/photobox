@@ -102,6 +102,11 @@ export class PhotosAdapter implements IPhotosAdapter {
     return this.restApiAdapter.postApiCall(restorePath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 
+  public rotatePhoto = async (photoId: string, direction: 'cw' | 'ccw'): Promise<Photo> => {
+    const rotatePath = `photos/${photoId}/rotate?direction=${direction}`;
+    return this.restApiAdapter.postApiCall(rotatePath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
+
   public uploadPhoto = async (body: Record<string, unknown>) => {
     const uploadPhotoPath = `photo`;
     return this.restApiAdapter.postApiCall(uploadPhotoPath, body, this.buildHeaders(this.restApiAdapter.authHeader()));
