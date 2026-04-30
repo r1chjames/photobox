@@ -221,7 +221,17 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                             src={fetchedImage}
                             alt={props.source.name}
                         /> :
-                        'Loading...'}
+                        <Image
+                            h="500px"
+                            fit="cover"
+                            w="auto"
+                            radius={0}
+                            src={props.source.thumbnail && (props.source.thumbnail.startsWith('http') || props.source.thumbnail.startsWith('data:image'))
+                                ? props.source.thumbnail
+                                : `data:image/png;base64,${props.source.thumbnail}`}
+                            alt={props.source.name}
+                            style={{ filter: 'blur(10px) brightness(0.8)', transition: 'filter 0.3s ease' }}
+                        />}
                     <Overlay color="#000" backgroundOpacity={0} opacity={0.5}>
                         <Flex direction="row" style={{width: "100%", justifyContent: "right"}} gap="xs">
                             {props.onSlideshow && (

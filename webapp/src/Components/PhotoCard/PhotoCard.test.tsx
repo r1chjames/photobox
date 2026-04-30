@@ -65,9 +65,11 @@ describe('PhotoCard', () => {
         });
     });
 
-    it('should display loading state initially', () => {
+    it('should display blurred thumbnail while loading', () => {
         render(<PhotoCard {...mockProps} />);
-        expect(screen.getByText('Loading...')).toBeInTheDocument();
+        const img = screen.getByAltText('test-photo.jpg');
+        expect(img).toBeInTheDocument();
+        expect(img).toHaveStyle('filter: blur(10px) brightness(0.8)');
     });
 
     it('should display creation date badge', async () => {
@@ -180,7 +182,8 @@ describe('PhotoCard', () => {
         };
 
         render(<PhotoCard {...propsWithMinimalPhoto} />);
-        expect(screen.getByText('Loading...')).toBeInTheDocument();
+        const img = screen.getByAltText('minimal.jpg');
+        expect(img).toBeInTheDocument();
     });
 
     it('should handle album fetch error gracefully', async () => {

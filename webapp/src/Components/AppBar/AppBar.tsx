@@ -21,6 +21,7 @@ import {useLocation, useNavigate, useParams} from "react-router-dom";
 import {useAuth} from "../../Routing/AuthContext";
 import {KeyboardShortcutsHelp} from "../KeyboardShortcutsHelp/KeyboardShortcutsHelp";
 import cx from 'clsx';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
     IconAlbum,
     IconChevronDown,
@@ -321,7 +322,18 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
             </AppShell.Navbar>
 
             <AppShell.Main>
-                {props.children}
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={location.pathname}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.2 }}
+                        style={{ height: '100%' }}
+                    >
+                        {props.children}
+                    </motion.div>
+                </AnimatePresence>
             </AppShell.Main>
 
             {/* Mobile bottom navigation */}
