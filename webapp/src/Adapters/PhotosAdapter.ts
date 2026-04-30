@@ -1,5 +1,5 @@
 import {IRestApiAdapter} from "./RestApiAdapter";
-import {IPhotosAdapter, PhotoGeoData} from "./IPhotosAdapter";
+import {IPhotosAdapter, PhotoGeoData, TimelineEntry} from "./IPhotosAdapter";
 import {Photo} from "../Models/Photo";
 
 export class PhotosAdapter implements IPhotosAdapter {
@@ -17,8 +17,14 @@ export class PhotosAdapter implements IPhotosAdapter {
     return { ...standardHeaders, ...additionalHeaders };
   }
 
-  public getAllPhotosInfo = async (fromId: string, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
-    const getAllPhotosPath = `photos?fromId=${fromId}&limit=${limit}&thumbnail=${includeThumbnails}`;
+  public getAllPhotosInfo = async (fromId: string, limit: number, includeThumbnails: boolean, startDate?: string, endDate?: string): Promise<Photo[]> => {
+    let getAllPhotosPath = `photos?fromId=${fromId}&limit=${limit}&thumbnail=${includeThumbnails}`;
+    if (startDate) {
+      getAllPhotosPath += `&startDate=${encodeURIComponent(startDate)}`;
+    }
+    if (endDate) {
+      getAllPhotosPath += `&endDate=${encodeURIComponent(endDate)}`;
+    }
     return this.restApiAdapter.getPaginatedApiCall(getAllPhotosPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 
@@ -27,8 +33,14 @@ export class PhotosAdapter implements IPhotosAdapter {
     return this.restApiAdapter.getApiCall(getAllPhotosPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 
-  public getPhotosInfoInAlbum = async (albumId: string, fromId: string, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
-    const getPhotosInAlbumPath = `photos?fromId=${fromId}&limit=${limit}&thumbnail=${includeThumbnails}`;
+  public getPhotosInfoInAlbum = async (albumId: string, fromId: string, limit: number, includeThumbnails: boolean, startDate?: string, endDate?: string): Promise<Photo[]> => {
+    let getPhotosInAlbumPath = `photos?fromId=${fromId}&limit=${limit}&thumbnail=${includeThumbnails}`;
+    if (startDate) {
+      getPhotosInAlbumPath += `&startDate=${encodeURIComponent(startDate)}`;
+    }
+    if (endDate) {
+      getPhotosInAlbumPath += `&endDate=${encodeURIComponent(endDate)}`;
+    }
     const params = {
       albumId,
     };
@@ -110,6 +122,11 @@ export class PhotosAdapter implements IPhotosAdapter {
   public getGeodata = async (north: number, south: number, east: number, west: number): Promise<PhotoGeoData[]> => {
     const geodataPath = `photos/geodata?north=${north}&south=${south}&east=${east}&west=${west}`;
     return this.restApiAdapter.getApiCall(geodataPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
+  }
+
+  public getTimeline = async (): Promise<TimelineEntry[]> => {
+    const timelinePath = 'photos/timeline';
+    return this.restApiAdapter.getApiCall(timelinePath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 
   public uploadPhoto = async (body: Record<string, unknown>) => {

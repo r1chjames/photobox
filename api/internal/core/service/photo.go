@@ -33,8 +33,8 @@ func NewPhotoService(photoRepo port.PhotoRepository, albumRepo port.AlbumService
 	}
 }
 
-func (ps *PhotoService) ListPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
-	resp, err := ps.photoRepo.ListAllPhotosInAlbum(albumId, fromId, limit, includeThumbnail)
+func (ps *PhotoService) ListPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
+	resp, err := ps.photoRepo.ListAllPhotosInAlbum(albumId, fromId, limit, includeThumbnail, startDate, endDate)
 	if err != nil {
 		return nil, domain.ErrDataNotFound
 	}
@@ -42,8 +42,8 @@ func (ps *PhotoService) ListPhotosInAlbum(albumId string, fromId string, limit i
 	return resp, nil
 }
 
-func (ps *PhotoService) ListPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
-	resp, err := ps.photoRepo.ListAllPhotos(fromId, limit, includeThumbnail)
+func (ps *PhotoService) ListPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
+	resp, err := ps.photoRepo.ListAllPhotos(fromId, limit, includeThumbnail, startDate, endDate)
 	if err != nil {
 		return nil, domain.ErrDataNotFound
 	}
@@ -84,8 +84,13 @@ func (ps *PhotoService) PhotoThumbnail(photoId string) ([]byte, error) {
 	return photoInfo.Thumbnail, nil
 }
 
+func (ps *PhotoService) PhotoThumbnails(photoIds []string) (map[string][]byte, error) {
+	return ps.photoRepo.GetPhotoThumbnails(photoIds)
+}
+
 func (ps *PhotoService) setPhotoSourcePath(photo *domain.Photo) {
 	photo.SourcePath = fmt.Sprintf("photo/%s/bin", photo.ID)
+	photo.ThumbnailUrl = fmt.Sprintf("photo/%s/thumbnail", photo.ID)
 }
 
 func (ps *PhotoService) setPhotosSourcePath(photos []*domain.Photo) {
@@ -239,8 +244,8 @@ func (ps *PhotoService) SetFavorite(photoId string, favorite bool) (*domain.Phot
 	return photo, nil
 }
 
-func (ps *PhotoService) ListFavoritePhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
-	resp, err := ps.photoRepo.ListFavoritePhotos(fromId, limit, includeThumbnail)
+func (ps *PhotoService) ListFavoritePhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
+	resp, err := ps.photoRepo.ListFavoritePhotos(fromId, limit, includeThumbnail, startDate, endDate)
 	if err != nil {
 		return nil, err
 	}

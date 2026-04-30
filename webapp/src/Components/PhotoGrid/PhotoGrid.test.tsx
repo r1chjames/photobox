@@ -122,7 +122,9 @@ describe('PhotoGrid', () => {
                 'test-album-id',
                 expect.any(String), // fromId
                 30, // limit
-                true // includeThumbnails
+                true, // includeThumbnails
+                undefined, // startDate
+                undefined  // endDate
             );
         });
     });

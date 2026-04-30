@@ -124,6 +124,7 @@ func defineResources(
 		photos.DELETE("/trash/empty", photoHandler.EmptyTrash)
 		photos.POST("/trash/restore/:id", photoHandler.RestorePhoto)
 		photos.POST("/download", photoHandler.DownloadPhotos)
+		photos.POST("/thumbnails", photoHandler.GetBatchThumbnails)
 		photos.GET("/timeline", photoHandler.GetTimeline)
 		photos.GET("/geodata", photoHandler.GetGeodata)
 	}

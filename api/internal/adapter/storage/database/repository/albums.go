@@ -63,12 +63,12 @@ func (ar *AlbumRepository) CreateAlbumIfNotExists(name string) (*domain.Album, e
 
 func (ar *AlbumRepository) ListAllAlbums(fromId string, limit int) ([]*domain.Album, error) {
 	var albums []*domain.Album
-	result := ar.dbEnv.Db.Model(&[]domain.Album{}).Limit(limit)
+	result := ar.dbEnv.Db.Model(&[]domain.Album{}).Order("created_epoch ASC")
 	if fromId != "" {
 		fromEpoch, _ := b64.StdEncoding.DecodeString(fromId)
-		result.Where("created_epoch > ?", fromEpoch)
+		result = result.Where("created_epoch > ?", fromEpoch)
 	}
-	result.Find(&albums)
+	result = result.Limit(limit).Find(&albums)
 	err := db.HandleError(result)
 	if err != nil {
 		return nil, err

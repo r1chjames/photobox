@@ -2,7 +2,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 
-const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapter, albumIdentifier: string | undefined) => {
+const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapter, albumIdentifier: string | undefined, startDate?: string, endDate?: string) => {
     const limit = 30;
 
     // When an albumIdentifier is present, it's used to fetch album details.
@@ -24,9 +24,9 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapt
         isFetchingNextPage,
         refetch,
     } = useInfiniteQuery({
-        // The query key for photos is now dependent on the actual albumId.
-        // This ensures that if the albumId changes, the photos are re-fetched.
-        queryKey: ['albumPhotos', albumId],
+        // The query key for photos is now dependent on the actual albumId and date filters.
+        // This ensures that if the albumId or date range changes, the photos are re-fetched.
+        queryKey: ['albumPhotos', albumId, startDate, endDate],
         async queryFn({ pageParam = "" }) {
             const fromId = pageParam;
 
@@ -37,8 +37,8 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapt
             }
 
             const retrievedPhotos = albumId
-                ? await photosAdapter.getPhotosInfoInAlbum(albumId, fromId, limit, true)
-                : await photosAdapter.getAllPhotosInfo(fromId, limit, true);
+                ? await photosAdapter.getPhotosInfoInAlbum(albumId, fromId, limit, true, startDate, endDate)
+                : await photosAdapter.getAllPhotosInfo(fromId, limit, true, startDate, endDate);
 
             const photosData = retrievedPhotos ?? [];
 

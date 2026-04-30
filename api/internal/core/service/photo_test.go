@@ -26,7 +26,7 @@ func (m *MockPhotoRepository) GetPhotoById(photoId string, includeThumbnail bool
 	return args.Get(0).(*domain.Photo), args.Error(1)
 }
 
-func (m *MockPhotoRepository) ListAllPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+func (m *MockPhotoRepository) ListAllPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
 	args := m.Called(fromId, limit, includeThumbnail)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -34,7 +34,7 @@ func (m *MockPhotoRepository) ListAllPhotos(fromId string, limit int, includeThu
 	return args.Get(0).([]*domain.Photo), args.Error(1)
 }
 
-func (m *MockPhotoRepository) ListAllPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+func (m *MockPhotoRepository) ListAllPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
 	args := m.Called(albumId, fromId, limit, includeThumbnail)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -91,7 +91,7 @@ func (m *MockPhotoRepository) UpdatePhoto(photo domain.Photo) error {
 	return args.Error(0)
 }
 
-func (m *MockPhotoRepository) ListFavoritePhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+func (m *MockPhotoRepository) ListFavoritePhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
 	args := m.Called(fromId, limit, includeThumbnail)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -121,6 +121,14 @@ func (m *MockPhotoRepository) GetPhotosWithGeodata(north, south, east, west floa
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]domain.PhotoGeoData), args.Error(1)
+}
+
+func (m *MockPhotoRepository) GetPhotoThumbnails(photoIds []string) (map[string][]byte, error) {
+	args := m.Called(photoIds)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(map[string][]byte), args.Error(1)
 }
 
 // MockAlbumService is a mock implementation of port.AlbumService
@@ -401,7 +409,7 @@ func TestListPhotos(t *testing.T) {
 			tt.mockSetup(mockRepo)
 			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
 
-			result, err := service.ListPhotos(tt.fromId, tt.limit, tt.includeThumbnail)
+			result, err := service.ListPhotos(tt.fromId, tt.limit, tt.includeThumbnail, "", "")
 
 			tt.validate(t, result, err)
 			mockRepo.AssertExpectations(t)
@@ -481,7 +489,7 @@ func TestListPhotosInAlbum(t *testing.T) {
 			tt.mockSetup(mockRepo)
 			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
 
-			result, err := service.ListPhotosInAlbum(tt.albumId, tt.fromId, tt.limit, tt.includeThumbnail)
+			result, err := service.ListPhotosInAlbum(tt.albumId, tt.fromId, tt.limit, tt.includeThumbnail, "", "")
 
 			tt.validate(t, result, err)
 			mockRepo.AssertExpectations(t)
@@ -1129,7 +1137,7 @@ func TestListFavoritePhotos(t *testing.T) {
 			tt.mockSetup(mockRepo)
 			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
 
-			result, err := service.ListFavoritePhotos(tt.fromId, tt.limit, tt.includeThumbnail)
+			result, err := service.ListFavoritePhotos(tt.fromId, tt.limit, tt.includeThumbnail, "", "")
 
 			tt.validate(t, result, err)
 			mockRepo.AssertExpectations(t)

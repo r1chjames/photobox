@@ -34,9 +34,9 @@ func (pr *PhotoRepository) GetPhotoById(photoId string, includeThumbnail bool) (
 	return &photo, nil
 }
 
-func (pr *PhotoRepository) ListAllPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+func (pr *PhotoRepository) ListAllPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
-	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Limit(limit).Where("deleted_at IS NULL")
+	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("deleted_at IS NULL").Order("created_epoch ASC").Omit("thumbnail")
 	if fromId != "" {
 		fromPhoto, err := pr.GetPhotoById(fromId, false)
 		if err != nil {
@@ -44,9 +44,13 @@ func (pr *PhotoRepository) ListAllPhotos(fromId string, limit int, includeThumbn
 		}
 		result = result.Where("created_epoch > ?", fromPhoto.CreatedEpoch)
 	}
-	if !includeThumbnail {
-		result = result.Omit("thumbnail")
+	if startDate != "" {
+		result = result.Where("created_at >= ?", startDate)
 	}
+	if endDate != "" {
+		result = result.Where("created_at <= ?", endDate)
+	}
+	result = result.Limit(limit)
 	result = result.Find(&photos)
 	if result.RowsAffected == 0 {
 		return nil, domain.ErrDataNotFound
@@ -54,17 +58,21 @@ func (pr *PhotoRepository) ListAllPhotos(fromId string, limit int, includeThumbn
 	return photos, nil
 }
 
-func (pr *PhotoRepository) ListAllPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+func (pr *PhotoRepository) ListAllPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
-	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Limit(limit).Where("deleted_at IS NULL")
+	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("deleted_at IS NULL AND album_id = ?", albumId).Order("created_epoch ASC").Omit("thumbnail")
 	if fromId != "" {
 		fromEpoch, _ := b64.StdEncoding.DecodeString(fromId)
 		result = result.Where("created_epoch > ?", fromEpoch)
 	}
-	if !includeThumbnail {
-		result = result.Omit("thumbnail")
+	if startDate != "" {
+		result = result.Where("created_at >= ?", startDate)
 	}
-	result = result.Find(&photos, "album_id = ?", albumId)
+	if endDate != "" {
+		result = result.Where("created_at <= ?", endDate)
+	}
+	result = result.Limit(limit)
+	result = result.Find(&photos)
 	if result.RowsAffected == 0 {
 		return nil, domain.ErrDataNotFound
 	}
@@ -128,7 +136,7 @@ func (pr *PhotoRepository) RestorePhoto(photoId string) (*domain.Photo, error) {
 
 func (pr *PhotoRepository) ListTrashPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
-	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Limit(limit).Where("deleted_at IS NOT NULL")
+	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("deleted_at IS NOT NULL").Order("created_epoch ASC").Omit("thumbnail")
 	if fromId != "" {
 		fromPhoto, err := pr.GetPhotoById(fromId, false)
 		if err != nil {
@@ -136,9 +144,7 @@ func (pr *PhotoRepository) ListTrashPhotos(fromId string, limit int, includeThum
 		}
 		result = result.Where("created_epoch > ?", fromPhoto.CreatedEpoch)
 	}
-	if !includeThumbnail {
-		result = result.Omit("thumbnail")
-	}
+	result = result.Limit(limit)
 	result = result.Find(&photos)
 	if result.RowsAffected == 0 {
 		return nil, domain.ErrDataNotFound
@@ -156,9 +162,9 @@ func (pr *PhotoRepository) UpdatePhoto(photo domain.Photo) error {
 	return result.Error
 }
 
-func (pr *PhotoRepository) ListFavoritePhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+func (pr *PhotoRepository) ListFavoritePhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
-	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Limit(limit).Where("favorite = ? AND deleted_at IS NULL", true)
+	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("favorite = ? AND deleted_at IS NULL", true).Order("created_epoch ASC").Omit("thumbnail")
 	if fromId != "" {
 		fromPhoto, err := pr.GetPhotoById(fromId, false)
 		if err != nil {
@@ -166,9 +172,13 @@ func (pr *PhotoRepository) ListFavoritePhotos(fromId string, limit int, includeT
 		}
 		result = result.Where("created_epoch > ?", fromPhoto.CreatedEpoch)
 	}
-	if !includeThumbnail {
-		result = result.Omit("thumbnail")
+	if startDate != "" {
+		result = result.Where("created_at >= ?", startDate)
 	}
+	if endDate != "" {
+		result = result.Where("created_at <= ?", endDate)
+	}
+	result = result.Limit(limit)
 	result = result.Find(&photos)
 	if result.RowsAffected == 0 {
 		return nil, domain.ErrDataNotFound
@@ -221,9 +231,6 @@ func (pr *PhotoRepository) GetPhotosWithGeodata(north, south, east, west float64
 
 	var results []domain.PhotoGeoData
 	for _, p := range photos {
-		// Extract GPS from metadata JSON
-		// The metadata stores PhotoFile JSON; Exif GPSLatitude/GPSLongitude are strings
-		// This is a simplified extraction; full parsing would need rational conversion
 		results = append(results, domain.PhotoGeoData{
 			ID:        p.ID,
 			Thumbnail: p.SourcePath,
@@ -231,4 +238,21 @@ func (pr *PhotoRepository) GetPhotosWithGeodata(north, south, east, west float64
 		})
 	}
 	return results, nil
+}
+
+func (pr *PhotoRepository) GetPhotoThumbnails(photoIds []string) (map[string][]byte, error) {
+	var photos []domain.Photo
+	result := pr.dbEnv.Db.Model(&domain.Photo{}).
+		Select("id", "thumbnail").
+		Where("id IN ?", photoIds).
+		Find(&photos)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	thumbnails := make(map[string][]byte, len(photos))
+	for _, p := range photos {
+		thumbnails[p.ID] = p.Thumbnail
+	}
+	return thumbnails, nil
 }

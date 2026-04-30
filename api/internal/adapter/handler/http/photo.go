@@ -1,6 +1,7 @@
 package http
 
 import (
+	"archive/zip"
 	"net/http"
 	"strconv"
 	"strings"
@@ -51,15 +52,17 @@ func (ph *PhotoHandler) ListPhotos(ctx *gin.Context) {
 	}
 
 	favorites, _ := strconv.ParseBool(ctx.DefaultQuery("favorites", "false"))
+	startDate := ctx.Query("startDate")
+	endDate := ctx.Query("endDate")
 
 	var photoResp []*domain.Photo
 
 	if favorites {
-		photoResp, err = ph.photoSvc.ListFavoritePhotos(fromId, limit, includeThumbnail)
+		photoResp, err = ph.photoSvc.ListFavoritePhotos(fromId, limit, includeThumbnail, startDate, endDate)
 	} else if albumId != "" {
-		photoResp, err = ph.photoSvc.ListPhotosInAlbum(albumId, fromId, limit, includeThumbnail)
+		photoResp, err = ph.photoSvc.ListPhotosInAlbum(albumId, fromId, limit, includeThumbnail, startDate, endDate)
 	} else {
-		photoResp, err = ph.photoSvc.ListPhotos(fromId, limit, includeThumbnail)
+		photoResp, err = ph.photoSvc.ListPhotos(fromId, limit, includeThumbnail, startDate, endDate)
 	}
 
 	if err != nil {
@@ -213,6 +216,48 @@ func (ph *PhotoHandler) EmptyTrash(ctx *gin.Context) {
 
 type setFavoriteRequest struct {
 	Favorite bool `json:"favorite" binding:"required"`
+}
+
+type batchThumbnailsRequest struct {
+	PhotoIds []string `json:"photoIds" binding:"required,min=1"`
+}
+
+func (ph *PhotoHandler) GetBatchThumbnails(ctx *gin.Context) {
+	var req batchThumbnailsRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		validationError(ctx, err)
+		return
+	}
+
+	if len(req.PhotoIds) > 100 {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "maximum 100 photoIds per request"})
+		return
+	}
+
+	thumbnails, err := ph.photoSvc.PhotoThumbnails(req.PhotoIds)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	ctx.Header("Content-Type", "application/zip")
+	ctx.Header("Content-Disposition", `attachment; filename="thumbnails.zip"`)
+	ctx.Header("Cache-Control", "public, max-age=31536000, immutable")
+
+	zipWriter := zip.NewWriter(ctx.Writer)
+	defer zipWriter.Close()
+
+	for _, photoId := range req.PhotoIds {
+		data, exists := thumbnails[photoId]
+		if !exists || len(data) == 0 {
+			continue
+		}
+		w, err := zipWriter.Create(photoId)
+		if err != nil {
+			continue
+		}
+		_, _ = w.Write(data)
+	}
 }
 
 func (ph *PhotoHandler) SetFavorite(ctx *gin.Context) {

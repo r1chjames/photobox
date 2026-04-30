@@ -1,5 +1,5 @@
 import {Photo} from "../Models/Photo";
-import {IPhotosAdapter, PhotoGeoData} from "./IPhotosAdapter";
+import {IPhotosAdapter, PhotoGeoData, TimelineEntry} from "./IPhotosAdapter";
 
 export class MockPhotosAdapter implements IPhotosAdapter {
 
@@ -11,7 +11,7 @@ export class MockPhotosAdapter implements IPhotosAdapter {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public getAllPhotosInfo = async (fromId: string, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
+  public getAllPhotosInfo = async (fromId: string, limit: number, includeThumbnails: boolean, startDate?: string, endDate?: string): Promise<Photo[]> => {
     const startIndex = fromId ? this._photos.findIndex(p => p.id === fromId) + 1 : 0;
     if (startIndex === -1) return []; // fromId not found
     const endIndex = startIndex + limit;
@@ -27,7 +27,7 @@ export class MockPhotosAdapter implements IPhotosAdapter {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public getPhotosInfoInAlbum = async (albumId: string, fromId: string, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
+  public getPhotosInfoInAlbum = async (albumId: string, fromId: string, limit: number, includeThumbnails: boolean, startDate?: string, endDate?: string): Promise<Photo[]> => {
     const albumPhotos = this._photos.filter(p => p.albumId === albumId);
     const startIndex = fromId ? albumPhotos.findIndex(p => p.id === fromId) + 1 : 0;
     if (startIndex === -1) return []; // fromId not found
@@ -97,6 +97,11 @@ export class MockPhotosAdapter implements IPhotosAdapter {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public getGeodata = async (north: number, south: number, east: number, west: number): Promise<PhotoGeoData[]> => {
+    return [];
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public getTimeline = async (): Promise<TimelineEntry[]> => {
     return [];
   }
 

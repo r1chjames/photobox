@@ -13,9 +13,9 @@ type PhotoRepository interface {
 	// GetPhotoById inserts a new user into the database
 	GetPhotoById(photoId string, includeThumbnail bool) (*domain.Photo, error)
 	// ListAllPhotos selects a list of users with pagination
-	ListAllPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
+	ListAllPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error)
 	// ListAllPhotosInAlbum selects a user by id
-	ListAllPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
+	ListAllPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error)
 	// GetPhotosInAlbumCount selects a user by id
 	GetPhotosInAlbumCount(albumId string) (int64, error)
 	// CreatePhotoInfo selects a user by email
@@ -33,13 +33,15 @@ type PhotoRepository interface {
 	// UpdatePhoto updates a photo record
 	UpdatePhoto(photo domain.Photo) error
 	// ListFavoritePhotos returns only favorited photos
-	ListFavoritePhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
+	ListFavoritePhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error)
 	// SearchPhotos searches photos by query
 	SearchPhotos(query string, limit int) ([]*domain.Photo, error)
 	// GetTimeline returns photo counts grouped by year/month
 	GetTimeline() ([]domain.TimelineEntry, error)
 	// GetPhotosWithGeodata returns photos that have GPS coordinates
 	GetPhotosWithGeodata(north, south, east, west float64) ([]domain.PhotoGeoData, error)
+	// GetPhotoThumbnails returns thumbnails for multiple photos
+	GetPhotoThumbnails(photoIds []string) (map[string][]byte, error)
 }
 
 // PhotoService is an interface for interacting with photo-related business logic
@@ -47,15 +49,17 @@ type PhotoService interface {
 	//GetPhoto returns a photo
 	GetPhoto(photoId string, includeThumbnail bool) (*domain.Photo, error)
 	// ListPhotos registers a new user
-	ListPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
+	ListPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error)
 	// ListPhotosInAlbum registers a new user
-	ListPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
+	ListPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error)
 	//PhotoCount returns a count of photos in an album
 	PhotoCount(albumId string) (int64, error)
 	//PhotoBinary returns the binary photo from disk
 	PhotoBinary(photoId string) (string, error)
 	//PhotoThumbnail returns the binary photo from disk
 	PhotoThumbnail(photoId string) ([]byte, error)
+	//PhotoThumbnails returns thumbnails for multiple photos
+	PhotoThumbnails(photoIds []string) (map[string][]byte, error)
 	//SavePhoto saves photo to database
 	SavePhoto(photo domain.PhotoFile) error
 	//SavePhotos saves photos to database
@@ -73,7 +77,7 @@ type PhotoService interface {
 	// SetFavorite toggles favorite status
 	SetFavorite(photoId string, favorite bool) (*domain.Photo, error)
 	// ListFavoritePhotos returns favorited photos
-	ListFavoritePhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
+	ListFavoritePhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error)
 	// Search searches photos by query
 	Search(query string, limit int) ([]*domain.Photo, error)
 	// GetTimeline returns photo timeline data

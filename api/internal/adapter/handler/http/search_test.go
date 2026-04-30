@@ -27,7 +27,7 @@ func (m *MockSearchPhotoService) GetPhoto(photoId string, includeThumbnail bool)
 	return args.Get(0).(*domain.Photo), args.Error(1)
 }
 
-func (m *MockSearchPhotoService) ListPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+func (m *MockSearchPhotoService) ListPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
 	args := m.Called(fromId, limit, includeThumbnail)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -35,7 +35,7 @@ func (m *MockSearchPhotoService) ListPhotos(fromId string, limit int, includeThu
 	return args.Get(0).([]*domain.Photo), args.Error(1)
 }
 
-func (m *MockSearchPhotoService) ListPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+func (m *MockSearchPhotoService) ListPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
 	args := m.Called(albumId, fromId, limit, includeThumbnail)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -59,6 +59,14 @@ func (m *MockSearchPhotoService) PhotoThumbnail(photoId string) ([]byte, error) 
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]byte), args.Error(1)
+}
+
+func (m *MockSearchPhotoService) PhotoThumbnails(photoIds []string) (map[string][]byte, error) {
+	args := m.Called(photoIds)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(map[string][]byte), args.Error(1)
 }
 
 func (m *MockSearchPhotoService) SavePhoto(photo domain.PhotoFile) error {
@@ -106,7 +114,7 @@ func (m *MockSearchPhotoService) SetFavorite(photoId string, favorite bool) (*do
 	return args.Get(0).(*domain.Photo), args.Error(1)
 }
 
-func (m *MockSearchPhotoService) ListFavoritePhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+func (m *MockSearchPhotoService) ListFavoritePhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
 	args := m.Called(fromId, limit, includeThumbnail)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)

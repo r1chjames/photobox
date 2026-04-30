@@ -27,7 +27,7 @@ func (m *MockPhotoService) GetPhoto(photoId string, includeThumbnail bool) (*dom
 	return args.Get(0).(*domain.Photo), args.Error(1)
 }
 
-func (m *MockPhotoService) ListPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+func (m *MockPhotoService) ListPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
 	args := m.Called(fromId, limit, includeThumbnail)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -35,7 +35,7 @@ func (m *MockPhotoService) ListPhotos(fromId string, limit int, includeThumbnail
 	return args.Get(0).([]*domain.Photo), args.Error(1)
 }
 
-func (m *MockPhotoService) ListPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+func (m *MockPhotoService) ListPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
 	args := m.Called(albumId, fromId, limit, includeThumbnail)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -59,6 +59,14 @@ func (m *MockPhotoService) PhotoThumbnail(photoId string) ([]byte, error) {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]byte), args.Error(1)
+}
+
+func (m *MockPhotoService) PhotoThumbnails(photoIds []string) (map[string][]byte, error) {
+	args := m.Called(photoIds)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(map[string][]byte), args.Error(1)
 }
 
 func (m *MockPhotoService) SavePhoto(photo domain.PhotoFile) error {
@@ -106,7 +114,7 @@ func (m *MockPhotoService) SetFavorite(photoId string, favorite bool) (*domain.P
 	return args.Get(0).(*domain.Photo), args.Error(1)
 }
 
-func (m *MockPhotoService) ListFavoritePhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+func (m *MockPhotoService) ListFavoritePhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
 	args := m.Called(fromId, limit, includeThumbnail)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)

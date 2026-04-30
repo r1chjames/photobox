@@ -10,6 +10,7 @@ import {Slideshow} from "../Slideshow/Slideshow";
 import {EmptyState} from "../EmptyState/EmptyState";
 import {BulkActionsToolbar} from "../BulkActionsToolbar/BulkActionsToolbar";
 import {KeyboardShortcutsHelp} from "../KeyboardShortcutsHelp/KeyboardShortcutsHelp";
+import {TimelineScrubber} from "../TimelineScrubber/TimelineScrubber";
 import {ActionIcon, Checkbox, Loader, Modal, SegmentedControl, Skeleton, Title, Tooltip} from "@mantine/core";
 import {useHotkeys, useMediaQuery} from "@mantine/hooks";
 import {IconPhotoOff, IconSelect} from "@tabler/icons-react";
@@ -132,6 +133,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         } catch { /* ignore */ }
         return 'comfortable';
     });
+    const [dateFilter, setDateFilter] = useState<{ year: number; month: number } | null>(null);
     const isMobile = useMediaQuery('(max-width: 50em)');
 
     useEffect(() => {
@@ -140,8 +142,11 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         } catch { /* ignore */ }
     }, [density]);
 
+    const startDate = dateFilter ? `${dateFilter.year}-${String(dateFilter.month).padStart(2, '0')}-01` : undefined;
+    const endDate = dateFilter ? `${dateFilter.year}-${String(dateFilter.month).padStart(2, '0')}-31` : undefined;
+
     // The hook now provides a simple, flat, de-duplicated array of photos.
-    const {photos, albumName, allRetrieved, fetchNextPage, isFetchingNextPage, refetch} = usePhotoGrid(props.photosAdapter, props.albumsAdapter, id);
+    const {photos, albumName, allRetrieved, fetchNextPage, isFetchingNextPage, refetch} = usePhotoGrid(props.photosAdapter, props.albumsAdapter, id, startDate, endDate);
 
     const photosRef = useRef(photos);
     photosRef.current = photos;
@@ -484,6 +489,15 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                         onSlideshow={() => { setImageModalOpen(false); setIsSlideshowOpen(true); }}
                     />
                 </Modal>
+            )}
+            {!isMobile && !id && (
+                <TimelineScrubber
+                    photosAdapter={props.photosAdapter}
+                    onSelectMonth={(year, month) => setDateFilter({ year, month })}
+                    onClear={() => setDateFilter(null)}
+                    activeYear={dateFilter?.year}
+                    activeMonth={dateFilter?.month}
+                />
             )}
             <KeyboardShortcutsHelp opened={showShortcutsHelp} onClose={() => setShowShortcutsHelp(false)} />
             {isSlideshowOpen && (

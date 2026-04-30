@@ -11,7 +11,7 @@ func TestShouldGetAlbumByID(t *testing.T) {
 	env, mock, dbConn := database.MockDB(t)
 	defer dbConn.Close()
 
-	database.ShouldReturnRowsForQuery(mock, `SELECT \* FROM "albums" WHERE "albums"\."id" = \$1 ORDER BY "albums"\."id" LIMIT \$2`, sqlmock.NewRows([]string{"id", "name", "description"}).AddRow("albumId1", "albumName1", "albumDesc1"))
+	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "albums" WHERE "albums"\."id" = \$1 ORDER BY "albums"\."id" LIMIT \$2`, sqlmock.NewRows([]string{"id", "name", "description"}).AddRow("albumId1", "albumName1", "albumDesc1"))
 
 	repo := NewAlbumRepository(env)
 	if _, err := repo.GetAlbumById("albumId1"); err != nil {
@@ -27,7 +27,7 @@ func TestShouldGetAlbumByName(t *testing.T) {
 	env, mock, dbConn := database.MockDB(t)
 	defer dbConn.Close()
 
-	database.ShouldReturnRowsForQuery(mock, `SELECT \* FROM "albums" WHERE name = \$1 ORDER BY "albums"\."id" LIMIT \$2`, sqlmock.NewRows([]string{"id", "name", "description"}).AddRow("albumId1", "albumName1", "albumDesc1"))
+	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "albums" WHERE name = \$1 ORDER BY "albums"\."id" LIMIT \$2`, sqlmock.NewRows([]string{"id", "name", "description"}).AddRow("albumId1", "albumName1", "albumDesc1"))
 
 	repo := NewAlbumRepository(env)
 	if _, err := repo.GetAlbumByName("albumName1"); err != nil {
@@ -43,7 +43,7 @@ func TestShouldListAllAlbumsWithNoOffset(t *testing.T) {
 	env, mock, dbConn := database.MockDB(t)
 	defer dbConn.Close()
 
-	database.ShouldReturnRowsForQuery(mock, `SELECT \* FROM "albums" LIMIT \$1`, sqlmock.NewRows([]string{"id", "name", "description"}).AddRow(
+	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "albums" ORDER BY created_epoch ASC LIMIT \$1`, sqlmock.NewRows([]string{"id", "name", "description"}).AddRow(
 		"albumId1", "albumName1", "albumDesc1").AddRow(
 		"albumId2", "albumName2", "albumDesc2").AddRow(
 		"albumId3", "albumName3", "albumDesc3").AddRow(
@@ -72,7 +72,7 @@ func TestShouldListAllAlbumsWithFromId(t *testing.T) {
 
 	fromId := "dGVzdA==" // base64 encoded
 
-	database.ShouldReturnRowsForQuery(mock, `SELECT \* FROM "albums" WHERE created_epoch > \$1 LIMIT \$2`, sqlmock.NewRows([]string{"id", "name", "description"}).AddRow(
+	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "albums" WHERE created_epoch > \$1 ORDER BY created_epoch ASC LIMIT \$2`, sqlmock.NewRows([]string{"id", "name", "description"}).AddRow(
 		"albumId1", "albumName1", "albumDesc1").AddRow(
 		"albumId2", "albumName2", "albumDesc2"))
 
@@ -176,7 +176,7 @@ func TestSearchAlbums_Success(t *testing.T) {
 		AddRow("album1", "Vacation 2024", "Summer trip").
 		AddRow("album2", "Vacation 2023", "Winter trip")
 
-	database.ShouldReturnRowsForQuery(mock, `SELECT \* FROM "albums" WHERE to_tsvector\('english', coalesce\(name, ''\)\) @@ plainto_tsquery\('english', \$1\) ORDER BY created_epoch DESC LIMIT \$2`, expectedAlbums)
+	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "albums" WHERE to_tsvector\('english', coalesce\(name, ''\)\) @@ plainto_tsquery\('english', \$1\) ORDER BY created_epoch DESC LIMIT \$2`, expectedAlbums)
 
 	repo := NewAlbumRepository(env)
 	albums, err := repo.SearchAlbums(query, 10)
@@ -203,7 +203,7 @@ func TestSearchAlbums_Empty(t *testing.T) {
 	query := "nonexistent"
 	expectedAlbums := sqlmock.NewRows([]string{"id", "name", "description"})
 
-	database.ShouldReturnRowsForQuery(mock, `SELECT \* FROM "albums" WHERE to_tsvector\('english', coalesce\(name, ''\)\) @@ plainto_tsquery\('english', \$1\) ORDER BY created_epoch DESC LIMIT \$2`, expectedAlbums)
+	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "albums" WHERE to_tsvector\('english', coalesce\(name, ''\)\) @@ plainto_tsquery\('english', \$1\) ORDER BY created_epoch DESC LIMIT \$2`, expectedAlbums)
 
 	repo := NewAlbumRepository(env)
 	albums, err := repo.SearchAlbums(query, 10)
