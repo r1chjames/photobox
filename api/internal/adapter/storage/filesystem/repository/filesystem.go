@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/disintegration/imaging"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
@@ -92,4 +93,38 @@ func (fs *FilesystemRepository) GenerateThumbnail(path string) []byte {
 	format, _ := imaging.FormatFromExtension(extension)
 	_ = imaging.Encode(writer, thumb, format)
 	return buffer.Bytes()
+}
+
+func (fs *FilesystemRepository) MoveToTrash(path string) (string, error) {
+	trashDir := filepath.Join(fs.config.PhotoDir, ".trash")
+	if err := os.MkdirAll(trashDir, os.ModePerm); err != nil {
+		return "", fmt.Errorf("failed to create trash directory: %w", err)
+	}
+	filename := filepath.Base(path)
+	trashPath := filepath.Join(trashDir, filename)
+	// Avoid overwriting existing trashed files
+	if _, err := os.Stat(trashPath); err == nil {
+		trashPath = filepath.Join(trashDir, fmt.Sprintf("%d_%s", time.Now().UnixMilli(), filename))
+	}
+	if err := os.Rename(path, trashPath); err != nil {
+		return "", fmt.Errorf("failed to move to trash: %w", err)
+	}
+	return trashPath, nil
+}
+
+func (fs *FilesystemRepository) RestoreFromTrash(trashPath, originalPath string) error {
+	if err := os.MkdirAll(filepath.Dir(originalPath), os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create original directory: %w", err)
+	}
+	if err := os.Rename(trashPath, originalPath); err != nil {
+		return fmt.Errorf("failed to restore from trash: %w", err)
+	}
+	return nil
+}
+
+func (fs *FilesystemRepository) RenameDirectory(oldPath, newPath string) error {
+	if err := os.Rename(oldPath, newPath); err != nil {
+		return fmt.Errorf("failed to rename directory: %w", err)
+	}
+	return nil
 }

@@ -63,6 +63,27 @@ func (m *MockAlbumService) CreateAlbumIfNotExists(name string) (*domain.Album, e
 	return args.Get(0).(*domain.Album), args.Error(1)
 }
 
+func (m *MockAlbumService) UpdateAlbum(id string, updates map[string]any) (*domain.Album, error) {
+	args := m.Called(id, updates)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Album), args.Error(1)
+}
+
+func (m *MockAlbumService) DeleteAlbum(id string, deletePhotos bool) error {
+	args := m.Called(id, deletePhotos)
+	return args.Error(0)
+}
+
+func (m *MockAlbumService) SearchAlbums(query string, limit int) ([]*domain.Album, error) {
+	args := m.Called(query, limit)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Album), args.Error(1)
+}
+
 // TestAlbumHandler_GetAlbum_Success tests successful album retrieval
 func TestAlbumHandler_GetAlbum_Success(t *testing.T) {
 	gin.SetMode(gin.TestMode)

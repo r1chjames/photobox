@@ -23,14 +23,16 @@ func NewRouter(
 	photoHandler PhotoHandler,
 	albumHandler AlbumHandler,
 	utilityHandler UtilityHandler,
-	userHandler UserHandler) (*Router, error) {
+	userHandler UserHandler,
+	searchHandler SearchHandler,
+	shareHandler ShareHandler) (*Router, error) {
 
 	router := gin.Default()
 
 	// Configure CORS with environment-based allowed origins
 	config := cors.DefaultConfig()
 	config.AllowOrigins = appConfig.CorsAllowedOrigins
-	config.AllowMethods = []string{"POST", "GET", "PUT", "OPTIONS"}
+	config.AllowMethods = []string{"POST", "GET", "PUT", "PATCH", "DELETE", "OPTIONS"}
 	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization", "Accept", "User-Agent", "Cache-Control", "Pragma"}
 	config.ExposeHeaders = []string{"Content-Length"}
 	config.AllowCredentials = true
@@ -51,7 +53,7 @@ func NewRouter(
 	// Strict rate limiter for auth endpoints: 5 requests per second with burst of 10
 	authLimiter := NewIPRateLimiter(5, 10)
 
-	defineResources(appConfig, router, token, authHandler, photoHandler, albumHandler, utilityHandler, userHandler, authLimiter)
+	defineResources(appConfig, router, token, authHandler, photoHandler, albumHandler, utilityHandler, userHandler, searchHandler, shareHandler, authLimiter)
 
 	return &Router{
 		router,
@@ -67,6 +69,8 @@ func defineResources(
 	albumHandler AlbumHandler,
 	utilityHandler UtilityHandler,
 	userHandler UserHandler,
+	searchHandler SearchHandler,
+	shareHandler ShareHandler,
 	authLimiter *IPRateLimiter) {
 
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
@@ -84,11 +88,25 @@ func defineResources(
 		}
 	}
 
+	// Admin user management
+	users := router.Group(fmt.Sprintf("%s/users", urlBasePath)).Use(authMiddleware(token), requireRole(domain.ADMINISTRATOR))
+	{
+		users.GET("", userHandler.ListUsers)
+		users.GET("/:id", userHandler.GetUser)
+		users.PATCH("/:id", userHandler.UpdateUser)
+		users.DELETE("/:id", userHandler.DeleteUser)
+	}
+
+	// Public album get (no auth)
 	router.GET(fmt.Sprintf("%s/album/:id", urlBasePath), albumHandler.GetAlbum)
+
 	albums := router.Group(fmt.Sprintf("%s/albums", urlBasePath)).Use(authMiddleware(token))
 	{
 		albums.GET("", albumHandler.ListAlbums)
 		albums.GET("/count", albumHandler.AlbumCount)
+		albums.POST("", albumHandler.CreateAlbum)
+		albums.PATCH("/:id", albumHandler.UpdateAlbum)
+		albums.DELETE("/:id", albumHandler.DeleteAlbum)
 	}
 
 	photo := router.Group(fmt.Sprintf("%s/photo", urlBasePath)).Use(authMiddleware(token))
@@ -102,10 +120,43 @@ func defineResources(
 	{
 		photos.GET("", photoHandler.ListPhotos)
 		photos.GET("/count", photoHandler.GetPhotoCount)
+		photos.GET("/trash", photoHandler.ListTrashPhotos)
+		photos.DELETE("/trash/empty", photoHandler.EmptyTrash)
+		photos.POST("/trash/restore/:id", photoHandler.RestorePhoto)
+		photos.POST("/download", photoHandler.DownloadPhotos)
+		photos.GET("/timeline", photoHandler.GetTimeline)
+		photos.GET("/geodata", photoHandler.GetGeodata)
 	}
+
+	// Individual photo actions
+	router.DELETE(fmt.Sprintf("%s/photos/:id", urlBasePath), authMiddleware(token), photoHandler.DeletePhoto)
+	router.PATCH(fmt.Sprintf("%s/photos/:id/favorite", urlBasePath), authMiddleware(token), photoHandler.SetFavorite)
+	router.POST(fmt.Sprintf("%s/photos/:id/rotate", urlBasePath), authMiddleware(token), photoHandler.RotatePhoto)
 
 	// Photo indexing is admin-only as it's a system operation
 	router.POST(fmt.Sprintf("%s/photos/index", urlBasePath), authMiddleware(token), requireRole(domain.ADMINISTRATOR), photoHandler.IndexPhotos)
+
+	// Search
+	search := router.Group(fmt.Sprintf("%s/search", urlBasePath)).Use(authMiddleware(token))
+	{
+		search.GET("", searchHandler.Search)
+	}
+
+	// Sharing
+	share := router.Group(fmt.Sprintf("%s/share", urlBasePath)).Use(authMiddleware(token))
+	{
+		share.POST("", shareHandler.CreateShare)
+	}
+
+	// Public shared view (no auth)
+	router.GET(fmt.Sprintf("%s/shared/:token", urlBasePath), shareHandler.GetShared)
+
+	// Admin share management
+	shares := router.Group(fmt.Sprintf("%s/shares", urlBasePath)).Use(authMiddleware(token), requireRole(domain.ADMINISTRATOR))
+	{
+		shares.GET("", shareHandler.ListShares)
+		shares.DELETE("/:token", shareHandler.RevokeShare)
+	}
 
 	settings := router.Group(urlBasePath).Use(authMiddleware(token))
 	{

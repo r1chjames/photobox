@@ -15,6 +15,8 @@ const PhotoDetail = React.lazy(() => import('../Components/PhotoDetail/PhotoDeta
 const SearchView = React.lazy(() => import('../Components/SearchView/SearchView').then(m => ({default: m.SearchView})));
 const FavoritesView = React.lazy(() => import('../Components/FavoritesView/FavoritesView').then(m => ({default: m.FavoritesView})));
 const TrashView = React.lazy(() => import('../Components/TrashView/TrashView').then(m => ({default: m.TrashView})));
+const ShareManagement = React.lazy(() => import('../Components/ShareManagement/ShareManagement').then(m => ({default: m.ShareManagement})));
+const UserManagement = React.lazy(() => import('../Components/UserManagement/UserManagement').then(m => ({default: m.UserManagement})));
 
 const PageLoader = () => (
     <Center h="100vh">
@@ -32,7 +34,8 @@ const ProtectedRoute = (props: { children: React.ReactNode }) => {
 };
 
 const Router: React.FunctionComponent = () => {
-    const {photosAdapter, albumsAdapter, settingsAdapter, usersAdapter} = useAdapters();
+    const {photosAdapter, albumsAdapter, settingsAdapter, usersAdapter, sharesAdapter} = useAdapters();
+
 
     return (
         <Suspense fallback={<PageLoader/>}>
@@ -66,6 +69,7 @@ const Router: React.FunctionComponent = () => {
                                 <PhotoGrid
                                     photosAdapter={photosAdapter}
                                     albumsAdapter={albumsAdapter}
+                                    sharesAdapter={sharesAdapter}
                                 />
                             </AppBar>
                         </ProtectedRoute>
@@ -76,7 +80,7 @@ const Router: React.FunctionComponent = () => {
                     element={
                         <ProtectedRoute>
                             <AppBar activeLink={Labels.Photos}>
-                                <PhotoDetail photosAdapter={photosAdapter}/>
+                                <PhotoDetail photosAdapter={photosAdapter} sharesAdapter={sharesAdapter}/>
                             </AppBar>
                         </ProtectedRoute>
                     }
@@ -102,6 +106,7 @@ const Router: React.FunctionComponent = () => {
                                 <PhotoGrid
                                     photosAdapter={photosAdapter}
                                     albumsAdapter={albumsAdapter}
+                                    sharesAdapter={sharesAdapter}
                                 />
                             </AppBar>
                         </ProtectedRoute>
@@ -125,6 +130,7 @@ const Router: React.FunctionComponent = () => {
                                 <SearchView
                                     photosAdapter={photosAdapter}
                                     albumsAdapter={albumsAdapter}
+                                    sharesAdapter={sharesAdapter}
                                 />
                             </AppBar>
                         </ProtectedRoute>
@@ -138,6 +144,7 @@ const Router: React.FunctionComponent = () => {
                                 <FavoritesView
                                     photosAdapter={photosAdapter}
                                     albumsAdapter={albumsAdapter}
+                                    sharesAdapter={sharesAdapter}
                                 />
                             </AppBar>
                         </ProtectedRoute>
@@ -150,6 +157,30 @@ const Router: React.FunctionComponent = () => {
                             <AppBar activeLink={Labels.Trash}>
                                 <TrashView
                                     photosAdapter={photosAdapter}
+                                />
+                            </AppBar>
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/shares"
+                    element={
+                        <ProtectedRoute>
+                            <AppBar activeLink={Labels.Settings}>
+                                <ShareManagement
+                                    sharesAdapter={sharesAdapter}
+                                />
+                            </AppBar>
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/users"
+                    element={
+                        <ProtectedRoute>
+                            <AppBar activeLink={Labels.Settings}>
+                                <UserManagement
+                                    usersAdapter={usersAdapter}
                                 />
                             </AppBar>
                         </ProtectedRoute>

@@ -63,6 +63,7 @@ type AppServices struct {
 	jobService        *service.JobService
 	utilityService    *service.UtilityService
 	filesystemService *service.FilesystemService
+	shareService      *service.ShareService
 }
 
 func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServices {
@@ -98,6 +99,10 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 	photoRepo := repository.NewPhotoRepository(dbEnv)
 	photoService := service.NewPhotoService(photoRepo, albumService, filesystemService, *config)
 
+	// Share
+	shareRepo := repository.NewShareRepository(dbEnv)
+	shareService := service.NewShareService(shareRepo)
+
 	// Cron
 	return &AppServices{
 		components.NewScheduler(utilityService, jobService, photoService, *config),
@@ -109,6 +114,7 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 		jobService,
 		utilityService,
 		filesystemService,
+		shareService,
 	}
 }
 
@@ -121,6 +127,8 @@ func setupHttpHandlers(
 	photoHandler := http.NewPhotoHandler(appServices.photoService, appServices.jobService)
 	albumHandler := http.NewAlbumHandler(appServices.albumService)
 	utilityHandler := http.NewUtilityHandler(appServices.utilityService)
+	searchHandler := http.NewSearchHandler(appServices.photoService, appServices.albumService)
+	shareHandler := http.NewShareHandler(appServices.shareService)
 
 	return http.NewRouter(
 		*config,
@@ -130,5 +138,7 @@ func setupHttpHandlers(
 		*albumHandler,
 		*utilityHandler,
 		*userHandler,
+		*searchHandler,
+		*shareHandler,
 	)
 }

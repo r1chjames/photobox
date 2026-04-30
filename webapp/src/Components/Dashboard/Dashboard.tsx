@@ -1,6 +1,7 @@
 import React from 'react';
 import {AlbumGrid} from '../AlbumGrid/AlbumGrid';
 import {PhotoGrid} from '../PhotoGrid/PhotoGrid';
+import {Memories} from '../Memories/Memories';
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import {Space, Title} from "@mantine/core";
@@ -14,6 +15,7 @@ export const Dashboard: React.FunctionComponent<IProps> = (props) => {
 
     return (
         <>
+            <Memories photosAdapter={props.photosAdapter} />
             <div>
                 <Title size="h4">Albums</Title>
                 <Space h="md" />

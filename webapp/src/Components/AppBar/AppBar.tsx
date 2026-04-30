@@ -28,6 +28,7 @@ import {
     IconHelp,
     IconHome,
     IconLibraryPhoto,
+    IconLink,
     IconLogout,
     IconMessage,
     IconMoon,
@@ -35,7 +36,8 @@ import {
     IconSearch,
     IconSettings,
     IconSun,
-    IconTrash
+    IconTrash,
+    IconUsers
 } from "@tabler/icons-react";
 
 interface IProps {
@@ -49,6 +51,8 @@ export enum Labels {
     Albums = "Albums",
     Favorites = "Favorites",
     Trash = "Trash",
+    Shares = "Shares",
+    Users = "Users",
     Settings = "Settings"
 }
 
@@ -82,6 +86,18 @@ const navLinkData = [
         label: Labels.Trash,
         href: '/trash',
         description: 'Deleted photos'
+    },
+    {
+        icon: IconLink,
+        label: Labels.Shares,
+        href: '/shares',
+        description: 'Manage share links'
+    },
+    {
+        icon: IconUsers,
+        label: Labels.Users,
+        href: '/users',
+        description: 'Manage users'
     },
     {
         icon: IconSettings,
@@ -121,6 +137,10 @@ const buildBreadcrumbs = (location: string, activeLink: Labels, id?: string) => 
         items.push({ label: 'Favorites', icon: <IconHeart size="0.9rem" /> });
     } else if (activeLink === Labels.Trash) {
         items.push({ label: 'Trash', icon: <IconTrash size="0.9rem" /> });
+    } else if (activeLink === Labels.Shares) {
+        items.push({ label: 'Shares', icon: <IconLink size="0.9rem" /> });
+    } else if (activeLink === Labels.Users) {
+        items.push({ label: 'Users', icon: <IconUsers size="0.9rem" /> });
     } else if (activeLink === Labels.Settings) {
         items.push({ label: 'Settings', icon: <IconSettings size="0.9rem" /> });
     }

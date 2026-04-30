@@ -55,6 +55,72 @@ func (m *MockPhotoRepository) CreatePhotosInfo(photos []domain.Photo) error {
 	return args.Error(0)
 }
 
+func (m *MockPhotoRepository) SoftDeletePhoto(photoId string) (*domain.Photo, error) {
+	args := m.Called(photoId)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoRepository) RestorePhoto(photoId string) (*domain.Photo, error) {
+	args := m.Called(photoId)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoRepository) ListTrashPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	args := m.Called(fromId, limit, includeThumbnail)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoRepository) EmptyTrash() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func (m *MockPhotoRepository) UpdatePhoto(photo domain.Photo) error {
+	args := m.Called(photo)
+	return args.Error(0)
+}
+
+func (m *MockPhotoRepository) ListFavoritePhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	args := m.Called(fromId, limit, includeThumbnail)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoRepository) SearchPhotos(query string, limit int) ([]*domain.Photo, error) {
+	args := m.Called(query, limit)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoRepository) GetTimeline() ([]domain.TimelineEntry, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.TimelineEntry), args.Error(1)
+}
+
+func (m *MockPhotoRepository) GetPhotosWithGeodata(north, south, east, west float64) ([]domain.PhotoGeoData, error) {
+	args := m.Called(north, south, east, west)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.PhotoGeoData), args.Error(1)
+}
+
 // MockAlbumService is a mock implementation of port.AlbumService
 type MockAlbumService struct {
 	mock.Mock
@@ -84,25 +150,12 @@ func (m *MockAlbumService) GetAlbum(albumId string) (*domain.Album, error) {
 	return args.Get(0).(*domain.Album), args.Error(1)
 }
 
-func (m *MockAlbumService) DeleteAlbum(albumId string) error {
-	args := m.Called(albumId)
-	return args.Error(0)
-}
-
 func (m *MockAlbumService) ListAlbums(fromId string, limit int) ([]*domain.Album, error) {
 	args := m.Called(fromId, limit)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]*domain.Album), args.Error(1)
-}
-
-func (m *MockAlbumService) UpdateAlbum(album *domain.Album) (*domain.Album, error) {
-	args := m.Called(album)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*domain.Album), args.Error(1)
 }
 
 func (m *MockAlbumService) AlbumCount() (int64, error) {
@@ -116,6 +169,27 @@ func (m *MockAlbumService) GetAlbumById(id string) (*domain.Album, error) {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*domain.Album), args.Error(1)
+}
+
+func (m *MockAlbumService) UpdateAlbum(id string, updates map[string]any) (*domain.Album, error) {
+	args := m.Called(id, updates)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Album), args.Error(1)
+}
+
+func (m *MockAlbumService) DeleteAlbum(id string, deletePhotos bool) error {
+	args := m.Called(id, deletePhotos)
+	return args.Error(0)
+}
+
+func (m *MockAlbumService) SearchAlbums(query string, limit int) ([]*domain.Album, error) {
+	args := m.Called(query, limit)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Album), args.Error(1)
 }
 
 // MockFilesystemService is a mock implementation of port.FilesystemService
@@ -138,6 +212,21 @@ func (m *MockFilesystemService) GenerateThumbnail(path string, exifData exif.Exi
 func (m *MockFilesystemService) WriteFileToFilesystem(photo domain.PhotoUpload) domain.PhotoFile {
 	args := m.Called(photo)
 	return args.Get(0).(domain.PhotoFile)
+}
+
+func (m *MockFilesystemService) MoveToTrash(path string) (string, error) {
+	args := m.Called(path)
+	return args.String(0), args.Error(1)
+}
+
+func (m *MockFilesystemService) RestoreFromTrash(trashPath, originalPath string) error {
+	args := m.Called(trashPath, originalPath)
+	return args.Error(0)
+}
+
+func (m *MockFilesystemService) RenameDirectory(oldPath, newPath string) error {
+	args := m.Called(oldPath, newPath)
+	return args.Error(0)
 }
 
 // TestGetPhoto tests retrieving a photo by ID

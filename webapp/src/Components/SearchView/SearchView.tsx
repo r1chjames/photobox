@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { IPhotosAdapter } from '../../Adapters/IPhotosAdapter';
 import { IAlbumsAdapter } from '../../Adapters/IAlbumsAdapter';
+import { ISharesAdapter } from '../../Adapters/ISharesAdapter';
 import { PhotoGrid } from '../PhotoGrid/PhotoGrid';
 import { EmptyState } from '../EmptyState/EmptyState';
 import { Title, Loader, Center } from '@mantine/core';
@@ -11,9 +12,10 @@ import { Photo } from '../../Models/Photo';
 interface SearchViewProps {
     photosAdapter: IPhotosAdapter;
     albumsAdapter: IAlbumsAdapter;
+    sharesAdapter?: ISharesAdapter;
 }
 
-export const SearchView: React.FC<SearchViewProps> = ({ photosAdapter, albumsAdapter }) => {
+export const SearchView: React.FC<SearchViewProps> = ({ photosAdapter, albumsAdapter, sharesAdapter }) => {
     const [searchParams] = useSearchParams();
     const query = searchParams.get('q')?.trim() ?? '';
     const [results, setResults] = useState<Photo[]>([]);
@@ -65,7 +67,7 @@ export const SearchView: React.FC<SearchViewProps> = ({ photosAdapter, albumsAda
     return (
         <div>
             <Title size="h4" mb="md">Search: &quot;{query}&quot; ({results.length} results)</Title>
-            <PhotoGrid photosAdapter={photosAdapter} albumsAdapter={albumsAdapter} />
+            <PhotoGrid photosAdapter={photosAdapter} albumsAdapter={albumsAdapter} sharesAdapter={sharesAdapter} />
         </div>
     );
 };

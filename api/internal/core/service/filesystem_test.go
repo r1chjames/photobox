@@ -30,6 +30,21 @@ func (m *MockFilesystemRepository) GenerateThumbnail(path string) []byte {
 	return args.Get(0).([]byte)
 }
 
+func (m *MockFilesystemRepository) MoveToTrash(path string) (string, error) {
+	args := m.Called(path)
+	return args.String(0), args.Error(1)
+}
+
+func (m *MockFilesystemRepository) RestoreFromTrash(trashPath, originalPath string) error {
+	args := m.Called(trashPath, originalPath)
+	return args.Error(0)
+}
+
+func (m *MockFilesystemRepository) RenameDirectory(oldPath, newPath string) error {
+	args := m.Called(oldPath, newPath)
+	return args.Error(0)
+}
+
 // MockJobService is a mock implementation of port.JobService for filesystem tests
 type MockJobServiceFS struct {
 	mock.Mock

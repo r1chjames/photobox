@@ -52,10 +52,25 @@ func InitDbConnection(appConfig *appconfig.AppConfig) *Env {
 
 func (dbEnv *Env) PerformDbSetup() {
 	// Migrate the schema
-	err := dbEnv.Db.AutoMigrate(&domain.Album{}, &domain.Photo{}, &domain.Setting{}, &domain.Job{}, &domain.User{})
+	err := dbEnv.Db.AutoMigrate(&domain.Album{}, &domain.Photo{}, &domain.Setting{}, &domain.Job{}, &domain.User{}, &domain.SharedLink{})
 	if err != nil {
 		slog.Error("Failed to perform database migration", "error", err)
 		os.Exit(1)
+	}
+
+	// Create GIN indexes for full-text search
+	dbEnv.createSearchIndexes()
+}
+
+func (dbEnv *Env) createSearchIndexes() {
+	indexes := []string{
+		`CREATE INDEX IF NOT EXISTS idx_photo_search ON photobox.photos USING GIN (to_tsvector('english', coalesce(name, '')))`,
+		`CREATE INDEX IF NOT EXISTS idx_album_search ON photobox.albums USING GIN (to_tsvector('english', coalesce(name, '')))`,
+	}
+	for _, idx := range indexes {
+		if err := dbEnv.Db.Exec(idx).Error; err != nil {
+			slog.Warn("Failed to create search index", "error", err, "index", idx)
+		}
 	}
 }
 

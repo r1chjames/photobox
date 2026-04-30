@@ -15,4 +15,5 @@ type Album struct {
 	CreatedEpoch int64          `json:"createdEpoch" gorm:"index"`
 	UpdatedAt    time.Time      `json:"updatedAt"`
 	Thumbnail    string         `json:"thumbnail"`
+	CoverPhotoId string         `json:"coverPhotoId"`
 }

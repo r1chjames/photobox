@@ -71,3 +71,93 @@ func (ah *AlbumHandler) AlbumCount(ctx *gin.Context) {
 	}
 	handleSuccess(ctx, resp)
 }
+
+type createAlbumRequest struct {
+	Name        string `json:"name" binding:"required"`
+	Description string `json:"description"`
+}
+
+func (ah *AlbumHandler) CreateAlbum(ctx *gin.Context) {
+	var req createAlbumRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		validationError(ctx, err)
+		return
+	}
+
+	album, err := ah.svc.CreateAlbum(req.Name)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	if req.Description != "" {
+		album, err = ah.svc.UpdateAlbum(album.ID, map[string]any{"description": req.Description})
+		if err != nil {
+			handleError(ctx, err)
+			return
+		}
+	}
+
+	handleSuccess(ctx, album)
+}
+
+type updateAlbumRequest struct {
+	Name         string `json:"name"`
+	Description  string `json:"description"`
+	CoverPhotoId string `json:"coverPhotoId"`
+	Tags         string `json:"tags"`
+}
+
+func (ah *AlbumHandler) UpdateAlbum(ctx *gin.Context) {
+	albumId := ctx.Param("id")
+	if albumId == "" {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "album ID is required"})
+		return
+	}
+
+	var req updateAlbumRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		validationError(ctx, err)
+		return
+	}
+
+	updates := make(map[string]any)
+	if req.Name != "" {
+		updates["name"] = req.Name
+	}
+	if req.Description != "" {
+		updates["description"] = req.Description
+	}
+	if req.CoverPhotoId != "" {
+		updates["coverPhotoId"] = req.CoverPhotoId
+	}
+	if req.Tags != "" {
+		updates["tags"] = req.Tags
+	}
+
+	album, err := ah.svc.UpdateAlbum(albumId, updates)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	handleSuccess(ctx, album)
+}
+
+func (ah *AlbumHandler) DeleteAlbum(ctx *gin.Context) {
+	albumId := ctx.Param("id")
+	if albumId == "" {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "album ID is required"})
+		return
+	}
+
+	deletePhotos, _ := strconv.ParseBool(ctx.DefaultQuery("deletePhotos", "false"))
+
+	err := ah.svc.DeleteAlbum(albumId, deletePhotos)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	handleSuccess(ctx, gin.H{"message": "Album deleted"})
+}

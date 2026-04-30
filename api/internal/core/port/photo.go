@@ -1,6 +1,8 @@
 package port
 
 import (
+	"io"
+
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 )
 
@@ -20,6 +22,24 @@ type PhotoRepository interface {
 	CreatePhotoInfo(photo domain.Photo) error
 	// CreatePhotosInfo creates multiple photo records in a single batch operation
 	CreatePhotosInfo(photos []domain.Photo) error
+	// SoftDeletePhoto marks a photo as deleted and returns its filesystem path
+	SoftDeletePhoto(photoId string) (*domain.Photo, error)
+	// RestorePhoto restores a photo from trash
+	RestorePhoto(photoId string) (*domain.Photo, error)
+	// ListTrashPhotos returns all photos in trash
+	ListTrashPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
+	// EmptyTrash permanently deletes all trashed photos
+	EmptyTrash() error
+	// UpdatePhoto updates a photo record
+	UpdatePhoto(photo domain.Photo) error
+	// ListFavoritePhotos returns only favorited photos
+	ListFavoritePhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
+	// SearchPhotos searches photos by query
+	SearchPhotos(query string, limit int) ([]*domain.Photo, error)
+	// GetTimeline returns photo counts grouped by year/month
+	GetTimeline() ([]domain.TimelineEntry, error)
+	// GetPhotosWithGeodata returns photos that have GPS coordinates
+	GetPhotosWithGeodata(north, south, east, west float64) ([]domain.PhotoGeoData, error)
 }
 
 // PhotoService is an interface for interacting with photo-related business logic
@@ -42,4 +62,26 @@ type PhotoService interface {
 	SavePhotos(photos []domain.PhotoFile) error
 	// PerformPhotoIndex initiates an index of image files on filesystem
 	PerformPhotoIndex()
+	// DeletePhoto soft-deletes a photo (moves to trash)
+	DeletePhoto(photoId string) error
+	// RestorePhoto restores a photo from trash
+	RestorePhoto(photoId string) error
+	// ListTrashPhotos returns paginated trash photos
+	ListTrashPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
+	// EmptyTrash permanently deletes all trashed photos
+	EmptyTrash() error
+	// SetFavorite toggles favorite status
+	SetFavorite(photoId string, favorite bool) (*domain.Photo, error)
+	// ListFavoritePhotos returns favorited photos
+	ListFavoritePhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
+	// Search searches photos by query
+	Search(query string, limit int) ([]*domain.Photo, error)
+	// GetTimeline returns photo timeline data
+	GetTimeline() ([]domain.TimelineEntry, error)
+	// GetGeodata returns photos with GPS coordinates
+	GetGeodata(north, south, east, west float64) ([]domain.PhotoGeoData, error)
+	// RotatePhoto rotates a photo
+	RotatePhoto(photoId string, direction string) (*domain.Photo, error)
+	// DownloadPhotos streams a zip of photos
+	DownloadPhotos(photoIds []string, writer io.Writer) error
 }

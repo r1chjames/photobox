@@ -1,6 +1,7 @@
 package components
 
 import (
+	"io"
 	"testing"
 	"time"
 
@@ -158,6 +159,82 @@ func (m *MockPhotoService) PhotoThumbnail(photoId string) ([]byte, error) {
 func (m *MockPhotoService) PhotoCount(albumId string) (int64, error) {
 	args := m.Called(albumId)
 	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *MockPhotoService) DeletePhoto(photoId string) error {
+	args := m.Called(photoId)
+	return args.Error(0)
+}
+
+func (m *MockPhotoService) RestorePhoto(photoId string) error {
+	args := m.Called(photoId)
+	return args.Error(0)
+}
+
+func (m *MockPhotoService) ListTrashPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	args := m.Called(fromId, limit, includeThumbnail)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoService) EmptyTrash() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func (m *MockPhotoService) SetFavorite(photoId string, favorite bool) (*domain.Photo, error) {
+	args := m.Called(photoId, favorite)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoService) ListFavoritePhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	args := m.Called(fromId, limit, includeThumbnail)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoService) Search(query string, limit int) ([]*domain.Photo, error) {
+	args := m.Called(query, limit)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoService) GetTimeline() ([]domain.TimelineEntry, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.TimelineEntry), args.Error(1)
+}
+
+func (m *MockPhotoService) GetGeodata(north, south, east, west float64) ([]domain.PhotoGeoData, error) {
+	args := m.Called(north, south, east, west)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.PhotoGeoData), args.Error(1)
+}
+
+func (m *MockPhotoService) RotatePhoto(photoId string, direction string) (*domain.Photo, error) {
+	args := m.Called(photoId, direction)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoService) DownloadPhotos(photoIds []string, writer io.Writer) error {
+	args := m.Called(photoIds, writer)
+	return args.Error(0)
 }
 
 // TestNewScheduler tests scheduler creation

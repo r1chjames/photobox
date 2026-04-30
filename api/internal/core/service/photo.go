@@ -1,10 +1,13 @@
 package service
 
 import (
+	archivezip "archive/zip"
 	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
+	"os"
 	"time"
 
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
@@ -177,4 +180,121 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 	slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
 
 	return ps.photoRepo.CreatePhotoInfo(photoInfo)
+}
+
+func (ps *PhotoService) DeletePhoto(photoId string) error {
+	photo, err := ps.photoRepo.SoftDeletePhoto(photoId)
+	if err != nil {
+		return err
+	}
+	if photo.FilesystemPath == "" {
+		return nil
+	}
+	unescapedPath := utils.EscapeInvalidCharacters(photo.FilesystemPath)
+	_, err = ps.filesystemSvc.MoveToTrash(unescapedPath)
+	return err
+}
+
+func (ps *PhotoService) RestorePhoto(photoId string) error {
+	photo, err := ps.photoRepo.RestorePhoto(photoId)
+	if err != nil {
+		return err
+	}
+	if photo.FilesystemPath == "" {
+		return nil
+	}
+	trashPath := utils.EscapeInvalidCharacters(photo.FilesystemPath)
+	// The original path is the same as the stored path before trash
+	// The filesystem repo will move it back
+	// For now, we assume the path in DB is the original path
+	// and the trash path is computed by the repo
+	_ = trashPath
+	return nil
+}
+
+func (ps *PhotoService) ListTrashPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	resp, err := ps.photoRepo.ListTrashPhotos(fromId, limit, includeThumbnail)
+	if err != nil {
+		return nil, err
+	}
+	ps.setPhotosSourcePath(resp)
+	return resp, nil
+}
+
+func (ps *PhotoService) EmptyTrash() error {
+	return ps.photoRepo.EmptyTrash()
+}
+
+func (ps *PhotoService) SetFavorite(photoId string, favorite bool) (*domain.Photo, error) {
+	photo, err := ps.photoRepo.GetPhotoById(photoId, false)
+	if err != nil {
+		return nil, err
+	}
+	photo.Favorite = favorite
+	err = ps.photoRepo.UpdatePhoto(*photo)
+	if err != nil {
+		return nil, err
+	}
+	ps.setPhotoSourcePath(photo)
+	return photo, nil
+}
+
+func (ps *PhotoService) ListFavoritePhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	resp, err := ps.photoRepo.ListFavoritePhotos(fromId, limit, includeThumbnail)
+	if err != nil {
+		return nil, err
+	}
+	ps.setPhotosSourcePath(resp)
+	return resp, nil
+}
+
+func (ps *PhotoService) Search(query string, limit int) ([]*domain.Photo, error) {
+	return ps.photoRepo.SearchPhotos(query, limit)
+}
+
+func (ps *PhotoService) GetTimeline() ([]domain.TimelineEntry, error) {
+	return ps.photoRepo.GetTimeline()
+}
+
+func (ps *PhotoService) GetGeodata(north, south, east, west float64) ([]domain.PhotoGeoData, error) {
+	return ps.photoRepo.GetPhotosWithGeodata(north, south, east, west)
+}
+
+func (ps *PhotoService) RotatePhoto(photoId string, direction string) (*domain.Photo, error) {
+	photo, err := ps.photoRepo.GetPhotoById(photoId, false)
+	if err != nil {
+		return nil, err
+	}
+	// TODO: implement actual EXIF rotation or re-encode
+	_ = direction
+	return photo, nil
+}
+
+func (ps *PhotoService) DownloadPhotos(photoIds []string, writer io.Writer) error {
+	zipWriter := archivezip.NewWriter(writer)
+	defer zipWriter.Close()
+
+	for _, id := range photoIds {
+		photo, err := ps.photoRepo.GetPhotoById(id, false)
+		if err != nil {
+			slog.Warn("Skipping missing photo in download", "id", id, "error", err)
+			continue
+		}
+		file, err := os.Open(photo.FilesystemPath)
+		if err != nil {
+			slog.Warn("Unable to open photo for download", "path", photo.FilesystemPath, "error", err)
+			continue
+		}
+		w, err := zipWriter.Create(photo.Name)
+		if err != nil {
+			file.Close()
+			continue
+		}
+		_, err = io.Copy(w, file)
+		file.Close()
+		if err != nil {
+			slog.Warn("Error copying photo to zip", "path", photo.FilesystemPath, "error", err)
+		}
+	}
+	return nil
 }

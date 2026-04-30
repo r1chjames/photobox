@@ -85,3 +85,33 @@ func (ar *AlbumRepository) AlbumCount() (int64, error) {
 	}
 	return count, nil
 }
+
+func (ar *AlbumRepository) UpdateAlbum(album *domain.Album) error {
+	result := ar.dbEnv.Db.Save(album)
+	return db.HandleError(result)
+}
+
+func (ar *AlbumRepository) DeleteAlbum(id string) error {
+	result := ar.dbEnv.Db.Delete(&domain.Album{}, "id = ?", id)
+	return db.HandleError(result)
+}
+
+func (ar *AlbumRepository) ReassignPhotosToAlbum(fromAlbumId, toAlbumId string) error {
+	result := ar.dbEnv.Db.Model(&domain.Photo{}).
+		Where("album_id = ? AND deleted_at IS NULL", fromAlbumId).
+		Update("album_id", toAlbumId)
+	return result.Error
+}
+
+func (ar *AlbumRepository) SearchAlbums(query string, limit int) ([]*domain.Album, error) {
+	var albums []*domain.Album
+	result := ar.dbEnv.Db.Model(&[]domain.Album{}).
+		Limit(limit).
+		Where("to_tsvector('english', coalesce(name, '')) @@ plainto_tsquery('english', ?)", query).
+		Order("created_epoch DESC").
+		Find(&albums)
+	if result.RowsAffected == 0 {
+		return nil, domain.ErrDataNotFound
+	}
+	return albums, result.Error
+}

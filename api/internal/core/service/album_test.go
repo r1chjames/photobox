@@ -59,6 +59,29 @@ func (m *MockAlbumRepository) CreateAlbumIfNotExists(name string) (*domain.Album
 	return args.Get(0).(*domain.Album), args.Error(1)
 }
 
+func (m *MockAlbumRepository) UpdateAlbum(album *domain.Album) error {
+	args := m.Called(album)
+	return args.Error(0)
+}
+
+func (m *MockAlbumRepository) DeleteAlbum(id string) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
+
+func (m *MockAlbumRepository) ReassignPhotosToAlbum(fromAlbumId, toAlbumId string) error {
+	args := m.Called(fromAlbumId, toAlbumId)
+	return args.Error(0)
+}
+
+func (m *MockAlbumRepository) SearchAlbums(query string, limit int) ([]*domain.Album, error) {
+	args := m.Called(query, limit)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Album), args.Error(1)
+}
+
 // TestGetAlbumById tests retrieving an album by ID
 func TestGetAlbumById(t *testing.T) {
 	tests := []struct {

@@ -17,6 +17,24 @@ type Photo struct {
 	CreatedEpoch   int64          `json:"createdEpoch" gorm:"index;index:idx_album_epoch,priority:2"`
 	UpdatedAt      time.Time      `json:"updatedAt"`
 	Thumbnail      []byte         `json:"thumbnail"`
+	Favorite       bool           `json:"favorite" gorm:"default:false;index"`
+	DeletedAt      *time.Time     `json:"deletedAt" gorm:"index"`
+	Blurhash       string         `json:"blurhash"`
+	DominantColor  string         `json:"dominantColor"`
+}
+
+type TimelineEntry struct {
+	Year  int   `json:"year"`
+	Month int   `json:"month"`
+	Count int64 `json:"count"`
+}
+
+type PhotoGeoData struct {
+	ID          string `json:"id"`
+	Lat         float64 `json:"lat"`
+	Lng         float64 `json:"lng"`
+	Thumbnail   string `json:"thumbnail"`
+	DateTaken   string `json:"dateTaken"`
 }
 
 type PhotoUpload struct {

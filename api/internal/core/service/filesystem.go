@@ -159,3 +159,15 @@ func (fss *FilesystemService) GenerateThumbnail(path string, exifData exif.Exif)
 	}
 	return parsedThumbnail
 }
+
+func (fss *FilesystemService) MoveToTrash(path string) (string, error) {
+	return fss.fsRepo.MoveToTrash(path)
+}
+
+func (fss *FilesystemService) RestoreFromTrash(trashPath, originalPath string) error {
+	return fss.fsRepo.RestoreFromTrash(trashPath, originalPath)
+}
+
+func (fss *FilesystemService) RenameDirectory(oldPath, newPath string) error {
+	return fss.fsRepo.RenameDirectory(oldPath, newPath)
+}

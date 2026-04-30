@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import {JustifiedInfiniteGrid} from '@egjs/react-infinitegrid';
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
+import {ISharesAdapter} from "../../Adapters/ISharesAdapter";
 import usePhotoGrid from "./usePhotoGrid";
 import {PhotoCard} from "../PhotoCard/PhotoCard";
 import {Slideshow} from "../Slideshow/Slideshow";
@@ -20,6 +21,7 @@ import {Photo} from "../../Models/Photo";
 interface IProps {
     photosAdapter: IPhotosAdapter;
     albumsAdapter: IAlbumsAdapter;
+    sharesAdapter?: ISharesAdapter;
     maxDisplayed?: number;
 }
 
@@ -444,6 +446,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                     <PhotoCard
                         photosAdapter={props.photosAdapter}
                         albumsAdapter={props.albumsAdapter}
+                        sharesAdapter={props.sharesAdapter}
                         source={photos[currentIndex]}
                         previousPhoto={handlePreviousPhoto}
                         nextPhoto={handleNextPhoto}

@@ -13,6 +13,9 @@ type FilesystemRepository interface {
 	ScanFilesystem(photoChan chan string)
 	GenerateThumbnail(path string) []byte
 	CreateDirectoryIfNotExists(basePhotoPath string, directoryName string)
+	MoveToTrash(path string) (string, error)
+	RestoreFromTrash(trashPath, originalPath string) error
+	RenameDirectory(oldPath, newPath string) error
 }
 
 // FilesystemService is an interface for interacting with filesystem-related business logic
@@ -22,4 +25,7 @@ type FilesystemService interface {
 	// WriteFileToFilesystem writes a photo to the filesystem
 	WriteFileToFilesystem(photo domain.PhotoUpload) domain.PhotoFile
 	GenerateThumbnail(path string, exifData exif.Exif) []byte
+	MoveToTrash(path string) (string, error)
+	RestoreFromTrash(trashPath, originalPath string) error
+	RenameDirectory(oldPath, newPath string) error
 }

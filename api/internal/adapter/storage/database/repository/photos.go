@@ -2,6 +2,7 @@ package repository
 
 import (
 	b64 "encoding/base64"
+	"time"
 
 	db "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
@@ -35,7 +36,7 @@ func (pr *PhotoRepository) GetPhotoById(photoId string, includeThumbnail bool) (
 
 func (pr *PhotoRepository) ListAllPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
-	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Limit(limit)
+	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Limit(limit).Where("deleted_at IS NULL")
 	if fromId != "" {
 		fromPhoto, err := pr.GetPhotoById(fromId, false)
 		if err != nil {
@@ -55,7 +56,7 @@ func (pr *PhotoRepository) ListAllPhotos(fromId string, limit int, includeThumbn
 
 func (pr *PhotoRepository) ListAllPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
-	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Limit(limit)
+	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Limit(limit).Where("deleted_at IS NULL")
 	if fromId != "" {
 		fromEpoch, _ := b64.StdEncoding.DecodeString(fromId)
 		result = result.Where("created_epoch > ?", fromEpoch)
@@ -72,7 +73,7 @@ func (pr *PhotoRepository) ListAllPhotosInAlbum(albumId string, fromId string, l
 
 func (pr *PhotoRepository) GetPhotosInAlbumCount(albumId string) (int64, error) {
 	var count int64
-	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("album_id = ?", albumId).Count(&count)
+	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("album_id = ? AND deleted_at IS NULL", albumId).Count(&count)
 	err := db.HandleError(result)
 	if err != nil {
 		return 0, err
@@ -96,4 +97,138 @@ func (pr *PhotoRepository) CreatePhotosInfo(photos []domain.Photo) error {
 		UpdateAll: true,
 	}).Create(&photos)
 	return result.Error
+}
+
+func (pr *PhotoRepository) SoftDeletePhoto(photoId string) (*domain.Photo, error) {
+	photo, err := pr.GetPhotoById(photoId, false)
+	if err != nil {
+		return nil, err
+	}
+	now := time.Now()
+	photo.DeletedAt = &now
+	result := pr.dbEnv.Db.Save(photo)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return photo, nil
+}
+
+func (pr *PhotoRepository) RestorePhoto(photoId string) (*domain.Photo, error) {
+	photo, err := pr.GetPhotoById(photoId, false)
+	if err != nil {
+		return nil, err
+	}
+	photo.DeletedAt = nil
+	result := pr.dbEnv.Db.Save(photo)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return photo, nil
+}
+
+func (pr *PhotoRepository) ListTrashPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	var photos []*domain.Photo
+	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Limit(limit).Where("deleted_at IS NOT NULL")
+	if fromId != "" {
+		fromPhoto, err := pr.GetPhotoById(fromId, false)
+		if err != nil {
+			return nil, err
+		}
+		result = result.Where("created_epoch > ?", fromPhoto.CreatedEpoch)
+	}
+	if !includeThumbnail {
+		result = result.Omit("thumbnail")
+	}
+	result = result.Find(&photos)
+	if result.RowsAffected == 0 {
+		return nil, domain.ErrDataNotFound
+	}
+	return photos, nil
+}
+
+func (pr *PhotoRepository) EmptyTrash() error {
+	result := pr.dbEnv.Db.Where("deleted_at IS NOT NULL").Delete(&domain.Photo{})
+	return result.Error
+}
+
+func (pr *PhotoRepository) UpdatePhoto(photo domain.Photo) error {
+	result := pr.dbEnv.Db.Save(&photo)
+	return result.Error
+}
+
+func (pr *PhotoRepository) ListFavoritePhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	var photos []*domain.Photo
+	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Limit(limit).Where("favorite = ? AND deleted_at IS NULL", true)
+	if fromId != "" {
+		fromPhoto, err := pr.GetPhotoById(fromId, false)
+		if err != nil {
+			return nil, err
+		}
+		result = result.Where("created_epoch > ?", fromPhoto.CreatedEpoch)
+	}
+	if !includeThumbnail {
+		result = result.Omit("thumbnail")
+	}
+	result = result.Find(&photos)
+	if result.RowsAffected == 0 {
+		return nil, domain.ErrDataNotFound
+	}
+	return photos, nil
+}
+
+func (pr *PhotoRepository) SearchPhotos(query string, limit int) ([]*domain.Photo, error) {
+	var photos []*domain.Photo
+	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).
+		Limit(limit).
+		Where("deleted_at IS NULL").
+		Where("to_tsvector('english', coalesce(name, '')) @@ plainto_tsquery('english', ?)", query).
+		Order("created_epoch DESC").
+		Find(&photos)
+	if result.RowsAffected == 0 {
+		return nil, domain.ErrDataNotFound
+	}
+	return photos, result.Error
+}
+
+func (pr *PhotoRepository) GetTimeline() ([]domain.TimelineEntry, error) {
+	var entries []domain.TimelineEntry
+	result := pr.dbEnv.Db.Raw(`
+		SELECT 
+			EXTRACT(YEAR FROM to_timestamp(created_epoch / 1000))::int AS year,
+			EXTRACT(MONTH FROM to_timestamp(created_epoch / 1000))::int AS month,
+			COUNT(*) AS count
+		FROM photobox.photos
+		WHERE deleted_at IS NULL
+		GROUP BY year, month
+		ORDER BY year DESC, month DESC
+	`).Scan(&entries)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return entries, nil
+}
+
+func (pr *PhotoRepository) GetPhotosWithGeodata(north, south, east, west float64) ([]domain.PhotoGeoData, error) {
+	var photos []domain.Photo
+	result := pr.dbEnv.Db.Model(&domain.Photo{}).
+		Where("deleted_at IS NULL").
+		Where("metadata::jsonb -> 'Exif' ->> 'GPSLatitude' IS NOT NULL").
+		Omit("thumbnail").
+		Find(&photos)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	var results []domain.PhotoGeoData
+	for _, p := range photos {
+		// Extract GPS from metadata JSON
+		// The metadata stores PhotoFile JSON; Exif GPSLatitude/GPSLongitude are strings
+		// This is a simplified extraction; full parsing would need rational conversion
+		results = append(results, domain.PhotoGeoData{
+			ID:        p.ID,
+			Thumbnail: p.SourcePath,
+			DateTaken: p.CreatedAt.Format(time.RFC3339),
+		})
+	}
+	return results, nil
 }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { IPhotosAdapter } from '../../Adapters/IPhotosAdapter';
 import { IAlbumsAdapter } from '../../Adapters/IAlbumsAdapter';
+import { ISharesAdapter } from '../../Adapters/ISharesAdapter';
 import { PhotoGrid } from '../PhotoGrid/PhotoGrid';
 import { EmptyState } from '../EmptyState/EmptyState';
 import { Title, Loader, Center } from '@mantine/core';
@@ -10,9 +11,10 @@ import { Photo } from '../../Models/Photo';
 interface FavoritesViewProps {
     photosAdapter: IPhotosAdapter;
     albumsAdapter: IAlbumsAdapter;
+    sharesAdapter?: ISharesAdapter;
 }
 
-export const FavoritesView: React.FC<FavoritesViewProps> = ({ photosAdapter, albumsAdapter }) => {
+export const FavoritesView: React.FC<FavoritesViewProps> = ({ photosAdapter, albumsAdapter, sharesAdapter }) => {
     const [photos, setPhotos] = useState<Photo[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -56,7 +58,7 @@ export const FavoritesView: React.FC<FavoritesViewProps> = ({ photosAdapter, alb
     return (
         <div>
             <Title size="h4" mb="md">Favorites ({photos.length})</Title>
-            <PhotoGrid photosAdapter={photosAdapter} albumsAdapter={albumsAdapter} />
+            <PhotoGrid photosAdapter={photosAdapter} albumsAdapter={albumsAdapter} sharesAdapter={sharesAdapter} />
         </div>
     );
 };

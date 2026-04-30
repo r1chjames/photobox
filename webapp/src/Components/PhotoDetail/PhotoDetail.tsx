@@ -2,9 +2,11 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {useDisclosure} from '@mantine/hooks';
 import {Button, Dialog, Drawer, Group, Image, Loader, ScrollArea, Table} from '@mantine/core';
 import {useMediaQuery} from '@mantine/hooks';
-import {IconDownload, IconHeart, IconHeartFilled} from '@tabler/icons-react';
+import {IconDownload, IconHeart, IconHeartFilled, IconShare2} from '@tabler/icons-react';
 import {valueType} from "../../utils/TypeUtils";
 import {IPhotosAdapter} from '../../Adapters/IPhotosAdapter';
+import {ISharesAdapter} from '../../Adapters/ISharesAdapter';
+import {ShareModal} from '../ShareModal/ShareModal';
 import {useParams} from "react-router-dom";
 import {fetchPhotoBinWithAuth, revokeBlobUrl} from "../../utils/ImageUtils";
 import {useQuery} from "@tanstack/react-query";
@@ -12,12 +14,14 @@ import {notifications} from '@mantine/notifications';
 
 interface IProps {
     photosAdapter: IPhotosAdapter;
+    sharesAdapter?: ISharesAdapter;
 }
 
 export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
     const {id} = useParams();
     const [opened, {toggle, close}] = useDisclosure(true);
     const [isFavorite, setIsFavorite] = useState(false);
+    const [showShareModal, setShowShareModal] = useState(false);
     const isMobile = useMediaQuery('(max-width: 50em)');
 
     const fetchPhoto = async () => {
@@ -135,6 +139,11 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                     <Button onClick={handleFavorite} leftSection={isFavorite ? <IconHeartFilled size={16} /> : <IconHeart size={16} />} color={isFavorite ? 'pink' : undefined}>
                         {isFavorite ? 'Favorited' : 'Favorite'}
                     </Button>
+                    {props.sharesAdapter && (
+                        <Button onClick={() => setShowShareModal(true)} leftSection={<IconShare2 size={16} />} variant="light">
+                            Share
+                        </Button>
+                    )}
                     <Button onClick={handleDownload} leftSection={<IconDownload size={16} />}>Download</Button>
                     <Button onClick={toggle}>Metadata</Button>
                 </Group>
@@ -172,7 +181,17 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                         </ScrollArea>
                     </Dialog>
                 )}
+                {props.sharesAdapter && photo && (
+                    <ShareModal
+                        opened={showShareModal}
+                        onClose={() => setShowShareModal(false)}
+                        resourceType="photo"
+                        resourceId={photo.id}
+                        resourceName={photo.name}
+                        sharesAdapter={props.sharesAdapter}
+                    />
+                )}
             </>
             : <Loader size={"md"}/>
     );
-}
+};

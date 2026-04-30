@@ -35,20 +35,6 @@ func photosPaginationParams(resp []*domain.Photo) (string, string, string) {
 	return "", "", ""
 }
 
-// ListPhotos godoc
-//
-//	@Summary		Get photos
-//	@Description	Get photos
-//	@Tags			Photos
-//	@Accept			json
-//	@Produce		json
-//	@Param			id	path		uint64			true	"User ID"
-//	@Success		200	{object}	userResponse	"User displayed"
-//	@Failure		400	{object}	errorResponse	"Validation error"
-//	@Failure		404	{object}	errorResponse	"Data not found error"
-//	@Failure		500	{object}	errorResponse	"Internal server error"
-//	@Router			/users/{id} [get]
-//	@Security		BearerAuth
 func (ph *PhotoHandler) ListPhotos(ctx *gin.Context) {
 	albumId := ctx.Query("albumId")
 	fromId := ctx.Query("fromId")
@@ -64,9 +50,13 @@ func (ph *PhotoHandler) ListPhotos(ctx *gin.Context) {
 		return
 	}
 
+	favorites, _ := strconv.ParseBool(ctx.DefaultQuery("favorites", "false"))
+
 	var photoResp []*domain.Photo
 
-	if albumId != "" {
+	if favorites {
+		photoResp, err = ph.photoSvc.ListFavoritePhotos(fromId, limit, includeThumbnail)
+	} else if albumId != "" {
 		photoResp, err = ph.photoSvc.ListPhotosInAlbum(albumId, fromId, limit, includeThumbnail)
 	} else {
 		photoResp, err = ph.photoSvc.ListPhotos(fromId, limit, includeThumbnail)
@@ -127,7 +117,7 @@ func (ph *PhotoHandler) GetPhotoBin(ctx *gin.Context) {
 	}
 
 	// Unescape single quotes in filesystem path
-	unescapedPath := strings.ReplaceAll(photoBinary, `\'`, `'`)
+	unescapedPath := strings.ReplaceAll(photoBinary, `\'`, `'`) 
 	ctx.File(unescapedPath)
 }
 
@@ -158,4 +148,153 @@ func (ph *PhotoHandler) IndexPhotos(c *gin.Context) {
 	go func() {
 		ph.photoSvc.PerformPhotoIndex()
 	}()
+}
+
+func (ph *PhotoHandler) DeletePhoto(ctx *gin.Context) {
+	photoId := ctx.Param("id")
+	if photoId == "" {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "photo ID is required"})
+		return
+	}
+
+	err := ph.photoSvc.DeletePhoto(photoId)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	handleSuccess(ctx, gin.H{"message": "Photo moved to trash"})
+}
+
+func (ph *PhotoHandler) RestorePhoto(ctx *gin.Context) {
+	photoId := ctx.Param("id")
+	if photoId == "" {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "photo ID is required"})
+		return
+	}
+
+	err := ph.photoSvc.RestorePhoto(photoId)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	handleSuccess(ctx, gin.H{"message": "Photo restored"})
+}
+
+func (ph *PhotoHandler) ListTrashPhotos(ctx *gin.Context) {
+	fromId := ctx.Query("fromId")
+	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
+	if limit <= 0 {
+		limit = 10
+	} else if limit > maxPageLimit {
+		limit = maxPageLimit
+	}
+	includeThumbnail, _ := strconv.ParseBool(ctx.DefaultQuery("thumbnail", "false"))
+
+	photoResp, err := ph.photoSvc.ListTrashPhotos(fromId, limit, includeThumbnail)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	fromId, toId, nextPage := photosPaginationParams(photoResp)
+	handlePaginatedSuccess(ctx, photoResp, fromId, toId, len(photoResp), nextPage)
+}
+
+func (ph *PhotoHandler) EmptyTrash(ctx *gin.Context) {
+	err := ph.photoSvc.EmptyTrash()
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	handleSuccess(ctx, gin.H{"message": "Trash emptied"})
+}
+
+type setFavoriteRequest struct {
+	Favorite bool `json:"favorite" binding:"required"`
+}
+
+func (ph *PhotoHandler) SetFavorite(ctx *gin.Context) {
+	photoId := ctx.Param("id")
+	if photoId == "" {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "photo ID is required"})
+		return
+	}
+
+	var req setFavoriteRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		validationError(ctx, err)
+		return
+	}
+
+	photo, err := ph.photoSvc.SetFavorite(photoId, req.Favorite)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	handleSuccess(ctx, photo)
+}
+
+type downloadPhotosRequest struct {
+	PhotoIds []string `json:"photoIds" binding:"required,min=1"`
+}
+
+func (ph *PhotoHandler) DownloadPhotos(ctx *gin.Context) {
+	var req downloadPhotosRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		validationError(ctx, err)
+		return
+	}
+
+	ctx.Header("Content-Type", "application/zip")
+	ctx.Header("Content-Disposition", `attachment; filename="photobox-download.zip"`)
+
+	_ = ph.photoSvc.DownloadPhotos(req.PhotoIds, ctx.Writer)
+}
+
+func (ph *PhotoHandler) RotatePhoto(ctx *gin.Context) {
+	photoId := ctx.Param("id")
+	if photoId == "" {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "photo ID is required"})
+		return
+	}
+
+	direction := ctx.DefaultQuery("direction", "cw")
+	if direction != "cw" && direction != "ccw" {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "direction must be cw or ccw"})
+		return
+	}
+
+	photo, err := ph.photoSvc.RotatePhoto(photoId, direction)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	handleSuccess(ctx, photo)
+}
+
+func (ph *PhotoHandler) GetTimeline(ctx *gin.Context) {
+	entries, err := ph.photoSvc.GetTimeline()
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	handleSuccess(ctx, entries)
+}
+
+func (ph *PhotoHandler) GetGeodata(ctx *gin.Context) {
+	north, _ := strconv.ParseFloat(ctx.DefaultQuery("north", "90"), 64)
+	south, _ := strconv.ParseFloat(ctx.DefaultQuery("south", "-90"), 64)
+	east, _ := strconv.ParseFloat(ctx.DefaultQuery("east", "180"), 64)
+	west, _ := strconv.ParseFloat(ctx.DefaultQuery("west", "-180"), 64)
+
+	entries, err := ph.photoSvc.GetGeodata(north, south, east, west)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	handleSuccess(ctx, entries)
 }

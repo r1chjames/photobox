@@ -2,16 +2,19 @@ import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Photo} from '../../Models/Photo';
 import {ActionIcon, Badge, Button, Card, Flex, Group, Image, Overlay, Stack, Tooltip} from '@mantine/core';
 import {useNavigate} from "react-router-dom";
-import {IconArrowLeftDashed, IconArrowRightDashed, IconCalendar, IconDownload, IconFolder, IconHeart, IconHeartFilled, IconPlayerPlay, IconX} from "@tabler/icons-react";
+import {IconArrowLeftDashed, IconArrowRightDashed, IconCalendar, IconDownload, IconFolder, IconHeart, IconHeartFilled, IconPlayerPlay, IconShare2, IconX} from "@tabler/icons-react";
 import {useHotkeys} from "@mantine/hooks";
 import {notifications} from '@mantine/notifications';
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
+import {ISharesAdapter} from "../../Adapters/ISharesAdapter";
+import {ShareModal} from "../ShareModal/ShareModal";
 import {fetchPhotoBinWithAuth, revokeBlobUrl} from "../../utils/ImageUtils";
 
 interface IProps {
     photosAdapter: IPhotosAdapter;
     albumsAdapter: IAlbumsAdapter;
+    sharesAdapter?: ISharesAdapter;
     source: Photo;
     previousPhoto: () => void;
     nextPhoto: () => void;
@@ -26,6 +29,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const [fetchedImage, setFetchedImage] = useState<string | undefined>();
     const [albumName, setAlbumName] = useState<string | undefined>();
     const [isFavorite, setIsFavorite] = useState(props.source.favorite ?? false);
+    const [showShareModal, setShowShareModal] = useState(false);
     const img: React.Ref<HTMLImageElement> = React.createRef();
     const blobUrlRef = useRef<string | undefined>(undefined);
 
@@ -138,76 +142,95 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     }, [props.lastInAlbum, handleNext]);
 
     return (
-        <Card shadow="sm" radius="md" padding={0}
-              onClick={() => navigate(`/photo/${props.source.id}`)}>
-            <Card.Section inheritPadding={false} withBorder={false}>
-                {fetchedImage ?
-                    <Image
-                        h={"500px"}
-                        fit={"cover"}
-                        w={"auto"}
-                        radius={0}
-                        ref={img}
-                        src={fetchedImage}
-                        alt={props.source.name}
-                    /> :
-                    'Loading...'}
-                <Overlay color="#000" backgroundOpacity={0} opacity={0.5}>
-                    <Flex direction="row" style={{width: "100%", justifyContent: "right"}} gap="xs">
-                        {props.onSlideshow && (
-                            <Tooltip label="Slideshow">
-                                <ActionIcon color="dark" size="l" opacity={1} onClick={(e) => { e.stopPropagation(); props.onSlideshow!(); }} aria-label="Slideshow">
-                                    <IconPlayerPlay size="1.75rem"/>
+        <>
+            <Card shadow="sm" radius="md" padding={0}
+                  onClick={() => navigate(`/photo/${props.source.id}`)}>
+                <Card.Section inheritPadding={false} withBorder={false}>
+                    {fetchedImage ?
+                        <Image
+                            h={"500px"}
+                            fit={"cover"}
+                            w={"auto"}
+                            radius={0}
+                            ref={img}
+                            src={fetchedImage}
+                            alt={props.source.name}
+                        /> :
+                        'Loading...'}
+                    <Overlay color="#000" backgroundOpacity={0} opacity={0.5}>
+                        <Flex direction="row" style={{width: "100%", justifyContent: "right"}} gap="xs">
+                            {props.onSlideshow && (
+                                <Tooltip label="Slideshow">
+                                    <ActionIcon color="dark" size="l" opacity={1} onClick={(e) => { e.stopPropagation(); props.onSlideshow!(); }} aria-label="Slideshow">
+                                        <IconPlayerPlay size="1.75rem"/>
+                                    </ActionIcon>
+                                </Tooltip>
+                            )}
+                            {props.sharesAdapter && (
+                                <Tooltip label="Share">
+                                    <ActionIcon color="dark" size="l" opacity={1} onClick={(e) => { e.stopPropagation(); setShowShareModal(true); }} aria-label="Share">
+                                        <IconShare2 size="1.75rem"/>
+                                    </ActionIcon>
+                                </Tooltip>
+                            )}
+                            <Tooltip label={isFavorite ? 'Remove from favorites (F)' : 'Add to favorites (F)'}>
+                                <ActionIcon color="dark" size="l" opacity={1} onClick={(e) => { e.stopPropagation(); handleFavorite(); }} aria-label="Toggle favorite">
+                                    {isFavorite ? <IconHeartFilled size="1.75rem" color="var(--mantine-color-pink-filled)" /> : <IconHeart size="1.75rem" />}
                                 </ActionIcon>
                             </Tooltip>
+                            <Tooltip label="Download (D)">
+                                <ActionIcon color="dark" size="l" opacity={1} onClick={handleDownload} aria-label="Download">
+                                    <IconDownload size="1.75rem"/>
+                                </ActionIcon>
+                            </Tooltip>
+                            <Tooltip label="Close (Esc)">
+                                <ActionIcon color="dark" size="l" opacity={1} onClick={handleClose} aria-label="Close">
+                                    <IconX size="1.75rem"/>
+                                </ActionIcon>
+                            </Tooltip>
+                        </Flex>
+                        <Flex direction="row" style={{
+                            width: "100%",
+                            height: "100%",
+                            justifyContent: "space-between",
+                            alignItems: "center"
+                        }}>
+                            {previousButton()}
+                            {nextButton()}
+                        </Flex>
+                    </Overlay>
+                </Card.Section>
+                <Stack gap="xs" mt="md" mb="xs" px="xs" style={{width: '100%', minWidth: 0}}>
+                    <Group gap="xs" style={{flexWrap: 'wrap'}}>
+                        {props.source.createdAt && (
+                            <Badge leftSection={<IconCalendar size={14} />} variant="light" color="blue">
+                                {new Date(props.source.createdAt).toLocaleString()}
+                            </Badge>
                         )}
-                        <Tooltip label={isFavorite ? 'Remove from favorites (F)' : 'Add to favorites (F)'}>
-                            <ActionIcon color="dark" size="l" opacity={1} onClick={(e) => { e.stopPropagation(); handleFavorite(); }} aria-label="Toggle favorite">
-                                {isFavorite ? <IconHeartFilled size="1.75rem" color="var(--mantine-color-pink-filled)" /> : <IconHeart size="1.75rem" />}
-                            </ActionIcon>
-                        </Tooltip>
-                        <Tooltip label="Download (D)">
-                            <ActionIcon color="dark" size="l" opacity={1} onClick={handleDownload} aria-label="Download">
-                                <IconDownload size="1.75rem"/>
-                            </ActionIcon>
-                        </Tooltip>
-                        <Tooltip label="Close (Esc)">
-                            <ActionIcon color="dark" size="l" opacity={1} onClick={handleClose} aria-label="Close">
-                                <IconX size="1.75rem"/>
-                            </ActionIcon>
-                        </Tooltip>
-                    </Flex>
-                    <Flex direction="row" style={{
-                        width: "100%",
-                        height: "100%",
-                        justifyContent: "space-between",
-                        alignItems: "center"
-                    }}>
-                        {previousButton()}
-                        {nextButton()}
-                    </Flex>
-                </Overlay>
-            </Card.Section>
-            <Stack gap="xs" mt="md" mb="xs" px="xs" style={{width: '100%', minWidth: 0}}>
-                <Group gap="xs" style={{flexWrap: 'wrap'}}>
-                    {props.source.createdAt && (
-                        <Badge leftSection={<IconCalendar size={14} />} variant="light" color="blue">
-                            {new Date(props.source.createdAt).toLocaleString()}
-                        </Badge>
-                    )}
-                    {albumName && (
-                        <Badge leftSection={<IconFolder size={14} />} variant="light" color="teal">
-                            {albumName}
-                        </Badge>
-                    )}
-                </Group>
-                <Button onClick={(e: React.MouseEvent) => {
-                    e.stopPropagation();
-                    navigate(`/photo/${props.source.id}`);
-                }} fullWidth>
-                    View Details
-                </Button>
-            </Stack>
-        </Card>
+                        {albumName && (
+                            <Badge leftSection={<IconFolder size={14} />} variant="light" color="teal">
+                                {albumName}
+                            </Badge>
+                        )}
+                    </Group>
+                    <Button onClick={(e: React.MouseEvent) => {
+                        e.stopPropagation();
+                        navigate(`/photo/${props.source.id}`);
+                    }} fullWidth>
+                        View Details
+                    </Button>
+                </Stack>
+            </Card>
+            {props.sharesAdapter && (
+                <ShareModal
+                    opened={showShareModal}
+                    onClose={() => setShowShareModal(false)}
+                    resourceType="photo"
+                    resourceId={props.source.id}
+                    resourceName={props.source.name}
+                    sharesAdapter={props.sharesAdapter}
+                />
+            )}
+        </>
     );
 };

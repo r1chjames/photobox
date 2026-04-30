@@ -35,4 +35,8 @@ var (
 	ErrForbidden = errors.New("user is forbidden to access the resource")
 	// ErrJobAlreadyRunning is an error for when a job is already running
 	ErrJobAlreadyRunning = errors.New("job is already running")
+	// ErrSharedLinkExpired is an error for when a shared link has expired
+	ErrSharedLinkExpired = errors.New("shared link has expired")
+	// ErrSharedLinkPasswordRequired is an error for when a shared link requires a password
+	ErrSharedLinkPasswordRequired = errors.New("shared link requires a password")
 )

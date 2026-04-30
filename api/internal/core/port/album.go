@@ -20,6 +20,14 @@ type AlbumRepository interface {
 	ListAllAlbums(fromId string, pageSize int) ([]*domain.Album, error)
 	// AlbumCount returns a count of all albums
 	AlbumCount() (int64, error)
+	// UpdateAlbum updates an album
+	UpdateAlbum(album *domain.Album) error
+	// DeleteAlbum deletes an album by id
+	DeleteAlbum(id string) error
+	// ReassignPhotosToAlbum moves all photos from one album to another
+	ReassignPhotosToAlbum(fromAlbumId, toAlbumId string) error
+	// SearchAlbums searches albums by query
+	SearchAlbums(query string, limit int) ([]*domain.Album, error)
 }
 
 // AlbumService is an interface for interacting with Album-related business logic
@@ -34,4 +42,10 @@ type AlbumService interface {
 	AlbumCount() (int64, error)
 	// CreateAlbum creates an album
 	CreateAlbum(name string) (*domain.Album, error)
+	// UpdateAlbum updates an album
+	UpdateAlbum(id string, updates map[string]any) (*domain.Album, error)
+	// DeleteAlbum deletes an album
+	DeleteAlbum(id string, deletePhotos bool) error
+		// SearchAlbums searches albums by query
+	SearchAlbums(query string, limit int) ([]*domain.Album, error)
 }
