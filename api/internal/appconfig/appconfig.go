@@ -41,7 +41,7 @@ func New() *AppConfig {
 	adminPassword := utils.GetEnv("DEFAULT_ADMIN_PASSWORD", "password")
 
 	// Parse CORS allowed origins - comma-separated list
-	corsOriginsStr := utils.GetEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000")
+	corsOriginsStr := utils.GetEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")
 	var corsOrigins []string
 	if corsOriginsStr != "" {
 		corsOrigins = strings.Split(corsOriginsStr, ",")

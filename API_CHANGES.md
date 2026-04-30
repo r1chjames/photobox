@@ -21,7 +21,7 @@ This document collects all backend API changes required to support the frontend 
 ### `DELETE /api/photos/trash/empty`
 **Enables:** Empty trash
 - **Auth:** Yes (admin)
-- **Behavior:** Permanently delete all photos in `.trash/` and remove DB records.
+- **Behavior:** Move all photos in `.trash/` to the OS bin/trash and remove DB records.
 - **Response:** `{ success: true, message: "Trash emptied" }`
 
 ### `GET /api/photos/trash`

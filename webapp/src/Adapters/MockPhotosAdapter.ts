@@ -65,6 +65,28 @@ export class MockPhotosAdapter implements IPhotosAdapter {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public searchPhotos = async (query: string, fromId: string, limit: number): Promise<Photo[]> => {
+    const lowerQuery = query.toLowerCase();
+    const filtered = this._photos.filter(p =>
+      p.name.toLowerCase().includes(lowerQuery) ||
+      (p.albumId && p.albumId.toLowerCase().includes(lowerQuery))
+    );
+    const startIndex = fromId ? filtered.findIndex(p => p.id === fromId) + 1 : 0;
+    if (startIndex === -1) return [];
+    return filtered.slice(startIndex, startIndex + limit);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public getTrashedPhotos = async (fromId: string, limit: number): Promise<Photo[]> => {
+    return [];
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public restorePhoto = async (photoId: string) => {
+    return;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public uploadPhoto = async (body: Record<string, unknown>) => {
     return null;
   }

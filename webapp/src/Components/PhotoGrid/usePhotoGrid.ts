@@ -22,6 +22,7 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapt
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage,
+        refetch,
     } = useInfiniteQuery({
         // The query key for photos is now dependent on the actual albumId.
         // This ensures that if the albumId changes, the photos are re-fetched.
@@ -65,7 +66,7 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapt
 
     const photos = data?.photos ?? [];
 
-    return { photos, albumName, allRetrieved: !hasNextPage, fetchNextPage, isFetchingNextPage };
+    return { photos, albumName, allRetrieved: !hasNextPage, fetchNextPage, isFetchingNextPage, refetch };
 };
 
 export default usePhotoGrid;

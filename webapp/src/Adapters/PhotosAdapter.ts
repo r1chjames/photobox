@@ -87,6 +87,21 @@ export class PhotosAdapter implements IPhotosAdapter {
     }
   }
 
+  public searchPhotos = async (query: string, fromId: string, limit: number): Promise<Photo[]> => {
+    const searchPath = `search?q=${encodeURIComponent(query)}&fromId=${fromId}&limit=${limit}`;
+    return this.restApiAdapter.getPaginatedApiCall(searchPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
+  }
+
+  public getTrashedPhotos = async (fromId: string, limit: number): Promise<Photo[]> => {
+    const trashPath = `photos/trash?fromId=${fromId}&limit=${limit}`;
+    return this.restApiAdapter.getPaginatedApiCall(trashPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
+  }
+
+  public restorePhoto = async (photoId: string) => {
+    const restorePath = `photos/trash/restore/${photoId}`;
+    return this.restApiAdapter.postApiCall(restorePath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
+
   public uploadPhoto = async (body: Record<string, unknown>) => {
     const uploadPhotoPath = `photo`;
     return this.restApiAdapter.postApiCall(uploadPhotoPath, body, this.buildHeaders(this.restApiAdapter.authHeader()));

@@ -1,7 +1,8 @@
-import React, {useCallback, useEffect} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {useDisclosure} from '@mantine/hooks';
-import {Button, Dialog, Group, Image, Loader, ScrollArea, Table} from '@mantine/core';
-import {IconDownload} from '@tabler/icons-react';
+import {Button, Dialog, Drawer, Group, Image, Loader, ScrollArea, Table} from '@mantine/core';
+import {useMediaQuery} from '@mantine/hooks';
+import {IconDownload, IconHeart, IconHeartFilled} from '@tabler/icons-react';
 import {valueType} from "../../utils/TypeUtils";
 import {IPhotosAdapter} from '../../Adapters/IPhotosAdapter';
 import {useParams} from "react-router-dom";
@@ -16,6 +17,8 @@ interface IProps {
 export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
     const {id} = useParams();
     const [opened, {toggle, close}] = useDisclosure(true);
+    const [isFavorite, setIsFavorite] = useState(false);
+    const isMobile = useMediaQuery('(max-width: 50em)');
 
     const fetchPhoto = async () => {
         return props.photosAdapter.getPhotoInfoById(id!);
@@ -37,6 +40,12 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
         enabled: !!id,
     });
 
+    useEffect(() => {
+        if (photo) {
+            setIsFavorite(photo.favorite ?? false);
+        }
+    }, [photo]);
+
     const handleDownload = useCallback(async () => {
         if (!photo) return;
         try {
@@ -54,6 +63,26 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
             });
         }
     }, [props.photosAdapter, photo]);
+
+    const handleFavorite = useCallback(async () => {
+        if (!photo) return;
+        const newFavorite = !isFavorite;
+        try {
+            await props.photosAdapter.favoritePhoto(photo.id, newFavorite);
+            setIsFavorite(newFavorite);
+            notifications.show({
+                title: newFavorite ? 'Added to favorites' : 'Removed from favorites',
+                message: newFavorite ? 'Photo added to your favorites' : 'Photo removed from your favorites',
+                color: 'pink',
+            });
+        } catch (e) {
+            notifications.show({
+                title: 'Failed to update favorite',
+                message: e instanceof Error ? e.message : 'An error occurred',
+                color: 'red',
+            });
+        }
+    }, [props.photosAdapter, photo, isFavorite]);
 
     const blobUrlRef = React.useRef<string | undefined>(undefined);
 
@@ -103,25 +132,46 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                     src={photoUrl}
                 />
                 <Group justify="center" mt="md" gap="md">
+                    <Button onClick={handleFavorite} leftSection={isFavorite ? <IconHeartFilled size={16} /> : <IconHeart size={16} />} color={isFavorite ? 'pink' : undefined}>
+                        {isFavorite ? 'Favorited' : 'Favorite'}
+                    </Button>
                     <Button onClick={handleDownload} leftSection={<IconDownload size={16} />}>Download</Button>
                     <Button onClick={toggle}>Metadata</Button>
                 </Group>
-                <Dialog opened={opened} withCloseButton onClose={close} size="lg" radius="md" mah="50%"
-                        position={{top: "30%", right: 50, bottom: 50}}>
-                    <ScrollArea h={400}>
-                        <Table>
-                            <Table.Thead>
-                                <Table.Tr>
-                                    <Table.Th>Parameter</Table.Th>
-                                    <Table.Th>Value</Table.Th>
-                                </Table.Tr>
-                            </Table.Thead>
-                            <Table.Tbody>
-                                {photo.metadata && buildRows(photo.metadata)}
-                            </Table.Tbody>
-                        </Table>
-                    </ScrollArea>
-                </Dialog>
+                {isMobile ? (
+                    <Drawer opened={opened} onClose={close} title="Metadata" position="bottom" size="md">
+                        <ScrollArea>
+                            <Table>
+                                <Table.Thead>
+                                    <Table.Tr>
+                                        <Table.Th>Parameter</Table.Th>
+                                        <Table.Th>Value</Table.Th>
+                                    </Table.Tr>
+                                </Table.Thead>
+                                <Table.Tbody>
+                                    {photo.metadata && buildRows(photo.metadata)}
+                                </Table.Tbody>
+                            </Table>
+                        </ScrollArea>
+                    </Drawer>
+                ) : (
+                    <Dialog opened={opened} withCloseButton onClose={close} size="lg" radius="md" mah="50%"
+                            position={{top: "30%", right: 50, bottom: 50}}>
+                        <ScrollArea h={400}>
+                            <Table>
+                                <Table.Thead>
+                                    <Table.Tr>
+                                        <Table.Th>Parameter</Table.Th>
+                                        <Table.Th>Value</Table.Th>
+                                    </Table.Tr>
+                                </Table.Thead>
+                                <Table.Tbody>
+                                    {photo.metadata && buildRows(photo.metadata)}
+                                </Table.Tbody>
+                            </Table>
+                        </ScrollArea>
+                    </Dialog>
+                )}
             </>
             : <Loader size={"md"}/>
     );

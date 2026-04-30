@@ -12,6 +12,9 @@ const SettingsView = React.lazy(() => import('../Components/SettingsView/Setting
 const CreateAlbumView = React.lazy(() => import('../Components/CreateAlbumView/CreateAlbumView').then(m => ({default: m.CreateAlbumView})));
 const LoginCard = React.lazy(() => import('../Components/LoginCard/LoginCard').then(m => ({default: m.LoginCard})));
 const PhotoDetail = React.lazy(() => import('../Components/PhotoDetail/PhotoDetail').then(m => ({default: m.PhotoDetail})));
+const SearchView = React.lazy(() => import('../Components/SearchView/SearchView').then(m => ({default: m.SearchView})));
+const FavoritesView = React.lazy(() => import('../Components/FavoritesView/FavoritesView').then(m => ({default: m.FavoritesView})));
+const TrashView = React.lazy(() => import('../Components/TrashView/TrashView').then(m => ({default: m.TrashView})));
 
 const PageLoader = () => (
     <Center h="100vh">
@@ -111,6 +114,44 @@ const Router: React.FunctionComponent = () => {
                             <CreateAlbumView
                                 photosAdapter={photosAdapter}
                             />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/search"
+                    element={
+                        <ProtectedRoute>
+                            <AppBar activeLink={Labels.Photos}>
+                                <SearchView
+                                    photosAdapter={photosAdapter}
+                                    albumsAdapter={albumsAdapter}
+                                />
+                            </AppBar>
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/favorites"
+                    element={
+                        <ProtectedRoute>
+                            <AppBar activeLink={Labels.Favorites}>
+                                <FavoritesView
+                                    photosAdapter={photosAdapter}
+                                    albumsAdapter={albumsAdapter}
+                                />
+                            </AppBar>
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/trash"
+                    element={
+                        <ProtectedRoute>
+                            <AppBar activeLink={Labels.Trash}>
+                                <TrashView
+                                    photosAdapter={photosAdapter}
+                                />
+                            </AppBar>
                         </ProtectedRoute>
                     }
                 />

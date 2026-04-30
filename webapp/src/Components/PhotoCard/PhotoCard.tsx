@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Photo} from '../../Models/Photo';
 import {ActionIcon, Badge, Button, Card, Flex, Group, Image, Overlay, Stack, Tooltip} from '@mantine/core';
 import {useNavigate} from "react-router-dom";
-import {IconArrowLeftDashed, IconArrowRightDashed, IconCalendar, IconDownload, IconFolder, IconPlayerPlay, IconX} from "@tabler/icons-react";
+import {IconArrowLeftDashed, IconArrowRightDashed, IconCalendar, IconDownload, IconFolder, IconHeart, IconHeartFilled, IconPlayerPlay, IconX} from "@tabler/icons-react";
 import {useHotkeys} from "@mantine/hooks";
 import {notifications} from '@mantine/notifications';
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
@@ -25,6 +25,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const navigate = useNavigate()
     const [fetchedImage, setFetchedImage] = useState<string | undefined>();
     const [albumName, setAlbumName] = useState<string | undefined>();
+    const [isFavorite, setIsFavorite] = useState(props.source.favorite ?? false);
     const img: React.Ref<HTMLImageElement> = React.createRef();
     const blobUrlRef = useRef<string | undefined>(undefined);
 
@@ -72,11 +73,31 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
         }
     }, [props.photosAdapter, props.source.id, props.source.name]);
 
+    const handleFavorite = useCallback(async () => {
+        const newFavorite = !isFavorite;
+        try {
+            await props.photosAdapter.favoritePhoto(props.source.id, newFavorite);
+            setIsFavorite(newFavorite);
+            notifications.show({
+                title: newFavorite ? 'Added to favorites' : 'Removed from favorites',
+                message: newFavorite ? 'Photo added to your favorites' : 'Photo removed from your favorites',
+                color: 'pink',
+            });
+        } catch (e) {
+            notifications.show({
+                title: 'Failed to update favorite',
+                message: e instanceof Error ? e.message : 'An error occurred',
+                color: 'red',
+            });
+        }
+    }, [props.photosAdapter, props.source.id, isFavorite]);
+
     useHotkeys([
         ['ArrowLeft', () => props.previousPhoto()],
         ['ArrowRight', () => props.nextPhoto()],
         ['Escape', () => props.closeModal()],
         ['d', () => handleDownload()],
+        ['f', () => handleFavorite()],
     ]);
 
     const handleClose = useCallback((e: React.MouseEvent) => {
@@ -140,6 +161,11 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                                 </ActionIcon>
                             </Tooltip>
                         )}
+                        <Tooltip label={isFavorite ? 'Remove from favorites (F)' : 'Add to favorites (F)'}>
+                            <ActionIcon color="dark" size="l" opacity={1} onClick={(e) => { e.stopPropagation(); handleFavorite(); }} aria-label="Toggle favorite">
+                                {isFavorite ? <IconHeartFilled size="1.75rem" color="var(--mantine-color-pink-filled)" /> : <IconHeart size="1.75rem" />}
+                            </ActionIcon>
+                        </Tooltip>
                         <Tooltip label="Download (D)">
                             <ActionIcon color="dark" size="l" opacity={1} onClick={handleDownload} aria-label="Download">
                                 <IconDownload size="1.75rem"/>

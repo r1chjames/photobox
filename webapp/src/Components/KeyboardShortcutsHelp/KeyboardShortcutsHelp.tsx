@@ -11,6 +11,7 @@ export const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = ({ op
         { keys: ['←', '→'], action: 'Navigate between photos in lightbox' },
         { keys: ['Esc'], action: 'Close lightbox / go back' },
         { keys: ['D'], action: 'Download current photo' },
+        { keys: ['F'], action: 'Toggle favorite on current photo' },
         { keys: ['E'], action: 'Toggle EXIF / info panel on photo detail' },
         { keys: ['Enter'], action: 'Open focused photo' },
         { keys: ['?'], action: 'Show this help dialog' },

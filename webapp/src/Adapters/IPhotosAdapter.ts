@@ -11,6 +11,9 @@ export interface IPhotosAdapter {
   deletePhoto(photoId: string): Promise<void>;
   favoritePhoto(photoId: string, favorite: boolean): Promise<void>;
   downloadPhotosAsZip(photoIds: string[]): Promise<void>;
+  searchPhotos(query: string, fromId: string, limit: number): Promise<Photo[]>;
+  getTrashedPhotos(fromId: string, limit: number): Promise<Photo[]>;
+  restorePhoto(photoId: string): Promise<void>;
   uploadPhoto(body: Record<string, unknown>): Promise<any>;
   index(): Promise<any>;
 }

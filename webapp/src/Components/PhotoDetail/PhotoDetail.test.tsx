@@ -18,6 +18,7 @@ vi.mock('../../utils/ImageUtils', () => ({
 // Mock @mantine/hooks
 vi.mock('@mantine/hooks', () => ({
     useDisclosure: () => [true, { toggle: vi.fn(), close: vi.fn() }],
+    useMediaQuery: () => false,
 }));
 
 describe('PhotoDetail', () => {

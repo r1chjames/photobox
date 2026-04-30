@@ -10,6 +10,7 @@ import {
     Menu,
     NavLink,
     Text,
+    TextInput,
     UnstyledButton,
     useComputedColorScheme,
     useMantineColorScheme
@@ -23,6 +24,7 @@ import cx from 'clsx';
 import {
     IconAlbum,
     IconChevronDown,
+    IconHeart,
     IconHelp,
     IconHome,
     IconLibraryPhoto,
@@ -30,8 +32,10 @@ import {
     IconMessage,
     IconMoon,
     IconPhoto,
+    IconSearch,
     IconSettings,
-    IconSun
+    IconSun,
+    IconTrash
 } from "@tabler/icons-react";
 
 interface IProps {
@@ -43,6 +47,8 @@ export enum Labels {
     Dashboard = "Dashboard",
     Photos = "Photos",
     Albums = "Albums",
+    Favorites = "Favorites",
+    Trash = "Trash",
     Settings = "Settings"
 }
 
@@ -64,6 +70,18 @@ const navLinkData = [
         label: Labels.Albums,
         href: '/albums',
         description: 'All albums'
+    },
+    {
+        icon: IconHeart,
+        label: Labels.Favorites,
+        href: '/favorites',
+        description: 'Your favorite photos'
+    },
+    {
+        icon: IconTrash,
+        label: Labels.Trash,
+        href: '/trash',
+        description: 'Deleted photos'
     },
     {
         icon: IconSettings,
@@ -91,12 +109,18 @@ const buildBreadcrumbs = (location: string, activeLink: Labels, id?: string) => 
         items.push({ label: 'Photos', href: '/photos', icon: <IconPhoto size="0.9rem" /> });
         if (location.startsWith('/photo/') && id) {
             items.push({ label: 'Detail' });
+        } else if (location.startsWith('/search')) {
+            items.push({ label: 'Search' });
         }
     } else if (activeLink === Labels.Albums) {
         items.push({ label: 'Albums', href: '/albums', icon: <IconAlbum size="0.9rem" /> });
         if (location.startsWith('/album/') && id) {
             items.push({ label: 'Album' });
         }
+    } else if (activeLink === Labels.Favorites) {
+        items.push({ label: 'Favorites', icon: <IconHeart size="0.9rem" /> });
+    } else if (activeLink === Labels.Trash) {
+        items.push({ label: 'Trash', icon: <IconTrash size="0.9rem" /> });
     } else if (activeLink === Labels.Settings) {
         items.push({ label: 'Settings', icon: <IconSettings size="0.9rem" /> });
     }
@@ -108,6 +132,7 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
     const [opened, {toggle}] = useDisclosure(false);
     const [active, setActive] = useState(activeLinkIndex(props.activeLink));
     const [showHelp, setShowHelp] = useState(false);
+    const [searchValue, setSearchValue] = useState('');
     const {colorScheme, setColorScheme} = useMantineColorScheme();
     const computedColorScheme = useComputedColorScheme('light', {getInitialValueInEffect: true});
     const navigate = useNavigate();
@@ -115,6 +140,12 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
     const { id } = useParams<{ id: string }>();
     const {logout} = useAuth();
     const breadcrumbItems = buildBreadcrumbs(location.pathname, props.activeLink, id);
+
+    const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && searchValue.trim()) {
+            navigate(`/search?q=${encodeURIComponent(searchValue.trim())}`);
+        }
+    };
 
     const navBarItems = navLinkData.map((item, index) => (
         <NavLink
@@ -187,6 +218,16 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
                             </Group>
 
                             <Group justify="space-between" gap="xl">
+                                <TextInput
+                                    placeholder="Search photos..."
+                                    leftSection={<IconSearch size="1rem" />}
+                                    value={searchValue}
+                                    onChange={(e) => setSearchValue(e.target.value)}
+                                    onKeyDown={handleSearch}
+                                    size="sm"
+                                    style={{ width: 220 }}
+                                    visibleFrom="sm"
+                                />
                                 <Menu
                                     width={260}
                                     position="bottom-end"

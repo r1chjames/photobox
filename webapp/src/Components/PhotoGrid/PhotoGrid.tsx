@@ -9,7 +9,7 @@ import {Slideshow} from "../Slideshow/Slideshow";
 import {EmptyState} from "../EmptyState/EmptyState";
 import {BulkActionsToolbar} from "../BulkActionsToolbar/BulkActionsToolbar";
 import {KeyboardShortcutsHelp} from "../KeyboardShortcutsHelp/KeyboardShortcutsHelp";
-import {ActionIcon, Checkbox, Modal, Skeleton, Title, Tooltip} from "@mantine/core";
+import {ActionIcon, Checkbox, Loader, Modal, Skeleton, Title, Tooltip} from "@mantine/core";
 import {useHotkeys, useMediaQuery} from "@mantine/hooks";
 import {IconPhotoOff, IconSelect} from "@tabler/icons-react";
 import { notifications } from '@mantine/notifications';
@@ -126,12 +126,19 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const isMobile = useMediaQuery('(max-width: 50em)');
 
     // The hook now provides a simple, flat, de-duplicated array of photos.
-    const {photos, albumName, allRetrieved, fetchNextPage, isFetchingNextPage} = usePhotoGrid(props.photosAdapter, props.albumsAdapter, id);
+    const {photos, albumName, allRetrieved, fetchNextPage, isFetchingNextPage, refetch} = usePhotoGrid(props.photosAdapter, props.albumsAdapter, id);
 
     const photosRef = useRef(photos);
     photosRef.current = photos;
 
     const appendDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Pull-to-refresh state
+    const [pullStartY, setPullStartY] = useState(0);
+    const [pullDistance, setPullDistance] = useState(0);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const PULL_THRESHOLD = 80;
 
     useEffect(() => {
         return () => {
@@ -167,6 +174,46 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
             setImageModalOpen(true);
         }
     }, []);
+
+    const handleTouchStart = useCallback((e: React.TouchEvent) => {
+        if (containerRef.current && containerRef.current.scrollTop === 0) {
+            setPullStartY(e.touches[0].clientY);
+        }
+    }, []);
+
+    const handleTouchMove = useCallback((e: React.TouchEvent) => {
+        if (pullStartY > 0 && containerRef.current && containerRef.current.scrollTop === 0) {
+            const delta = e.touches[0].clientY - pullStartY;
+            if (delta > 0) {
+                setPullDistance(Math.min(delta * 0.5, 120));
+            }
+        }
+    }, [pullStartY]);
+
+    const handleTouchEnd = useCallback(() => {
+        if (pullDistance > PULL_THRESHOLD && !isRefreshing) {
+            setIsRefreshing(true);
+            setPullDistance(0);
+            refetch().then(() => {
+                notifications.show({
+                    title: 'Refreshed',
+                    message: 'Photos refreshed successfully',
+                    color: 'green',
+                });
+            }).catch(() => {
+                notifications.show({
+                    title: 'Refresh failed',
+                    message: 'Failed to refresh photos',
+                    color: 'red',
+                });
+            }).finally(() => {
+                setIsRefreshing(false);
+            });
+        } else {
+            setPullDistance(0);
+        }
+        setPullStartY(0);
+    }, [pullDistance, isRefreshing, refetch]);
 
     const onToggleSelect = useCallback((photoId: string) => {
         setSelectedIds(prev => {
@@ -309,44 +356,79 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         );
     }
 
+    const showPullIndicator = pullDistance > 10;
+
     return (
-        <div>
-            <AlbumTitle/>
-            {isSelectionMode && (
-                <BulkActionsToolbar
-                    selectedCount={selectedIds.size}
-                    totalCount={photos.length}
-                    onSelectAll={handleSelectAll}
-                    onDeselectAll={handleDeselectAll}
-                    onFavorite={handleBulkFavorite}
-                    onDelete={handleBulkDelete}
-                    onDownload={handleBulkDownload}
-                    onCancel={() => { setIsSelectionMode(false); setSelectedIds(new Set()); }}
-                />
+        <div
+            ref={containerRef}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            style={{ overflowY: 'auto', height: '100%', position: 'relative' }}
+        >
+            {showPullIndicator && (
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: pullDistance,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10,
+                    transition: isRefreshing ? 'height 0.3s ease' : undefined,
+                }}>
+                    {isRefreshing ? (
+                        <Loader size="sm" />
+                    ) : (
+                        <div style={{
+                            transform: `rotate(${Math.min(pullDistance / PULL_THRESHOLD, 1) * 360}deg)`,
+                            transition: 'transform 0.1s',
+                        }}>
+                            ↓
+                        </div>
+                    )}
+                </div>
             )}
-            <JustifiedInfiniteGrid
-                placeholder={<Skeleton height={7} mt={6} radius="md"/>}
-                className="container"
-                gap={10}
-                stretch={true}
-                passUnstretchRow={true}
-                onRequestAppend={onRequestAppend}
-                threshold={800}
-                useRecycle={false}
-                preserveUIOnDestroy={true}
-            >
-                {photos.map((photo: Photo, index: number) => (
-                    <GridImageItem
-                        data-grid-groupkey={Math.floor(index / 30)}
-                        key={photo.id}
-                        photo={photo}
-                        isSelectionMode={isSelectionMode}
-                        isSelected={selectedIds.has(photo.id)}
-                        onImageClick={onImageClick}
-                        onToggleSelect={onToggleSelect}
+            <div style={{ transform: `translateY(${showPullIndicator ? pullDistance : 0}px)`, transition: isRefreshing ? 'transform 0.3s ease' : undefined }}>
+                <AlbumTitle/>
+                {isSelectionMode && (
+                    <BulkActionsToolbar
+                        selectedCount={selectedIds.size}
+                        totalCount={photos.length}
+                        onSelectAll={handleSelectAll}
+                        onDeselectAll={handleDeselectAll}
+                        onFavorite={handleBulkFavorite}
+                        onDelete={handleBulkDelete}
+                        onDownload={handleBulkDownload}
+                        onCancel={() => { setIsSelectionMode(false); setSelectedIds(new Set()); }}
                     />
-                ))}
-            </JustifiedInfiniteGrid>
+                )}
+                <JustifiedInfiniteGrid
+                    placeholder={<Skeleton height={7} mt={6} radius="md"/>}
+                    className="container"
+                    gap={10}
+                    stretch={true}
+                    passUnstretchRow={true}
+                    onRequestAppend={onRequestAppend}
+                    threshold={800}
+                    useRecycle={false}
+                    preserveUIOnDestroy={true}
+                >
+                    {photos.map((photo: Photo, index: number) => (
+                        <GridImageItem
+                            data-grid-groupkey={Math.floor(index / 30)}
+                            key={photo.id}
+                            photo={photo}
+                            isSelectionMode={isSelectionMode}
+                            isSelected={selectedIds.has(photo.id)}
+                            onImageClick={onImageClick}
+                            onToggleSelect={onToggleSelect}
+                        />
+                    ))}
+                </JustifiedInfiniteGrid>
+            </div>
             {isImageModalOpen && (
                 <Modal
                     opened={isImageModalOpen}

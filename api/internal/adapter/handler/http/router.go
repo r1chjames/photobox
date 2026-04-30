@@ -31,7 +31,7 @@ func NewRouter(
 	config := cors.DefaultConfig()
 	config.AllowOrigins = appConfig.CorsAllowedOrigins
 	config.AllowMethods = []string{"POST", "GET", "PUT", "OPTIONS"}
-	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization", "Accept", "UserResponse-Agent", "Cache-Control", "Pragma"}
+	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization", "Accept", "User-Agent", "Cache-Control", "Pragma"}
 	config.ExposeHeaders = []string{"Content-Length"}
 	config.AllowCredentials = true
 	config.MaxAge = 12 * time.Hour
