@@ -17,7 +17,7 @@ import {
 } from "@mantine/core";
 import classes from './AppBar.module.css';
 import {useDisclosure} from "@mantine/hooks";
-import {useLocation, useNavigate, useParams} from "react-router-dom";
+import {Link, useLocation, useNavigate, useParams} from "react-router-dom";
 import {useAuth} from "../../Routing/AuthContext";
 import {useAdapters} from "../../Routing/AdapterContext";
 import {KeyboardShortcutsHelp} from "../KeyboardShortcutsHelp/KeyboardShortcutsHelp";
@@ -224,7 +224,8 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
 
     const navBarItems = navLinkData.map((item, index) => (
         <NavLink
-            href={item.href}
+            component={Link}
+            to={item.href}
             key={item.label}
             active={index === active}
             label={item.label.toString()}

@@ -27,16 +27,16 @@ func (m *MockPhotoService) GetPhoto(photoId string, includeThumbnail bool) (*dom
 	return args.Get(0).(*domain.Photo), args.Error(1)
 }
 
-func (m *MockPhotoService) ListPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
-	args := m.Called(fromId, limit, includeThumbnail)
+func (m *MockPhotoService) ListPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error) {
+	args := m.Called(fromId, limit, includeThumbnail, startDate, endDate, mediaType)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]*domain.Photo), args.Error(1)
 }
 
-func (m *MockPhotoService) ListPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
-	args := m.Called(albumId, fromId, limit, includeThumbnail)
+func (m *MockPhotoService) ListPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error) {
+	args := m.Called(albumId, fromId, limit, includeThumbnail, startDate, endDate, mediaType)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}

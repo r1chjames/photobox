@@ -133,9 +133,10 @@ func handleError(ctx *gin.Context, err error) {
 		return
 	}
 
-	if errors.Is(err, domain.ErrDataNotFound) {
-		return
-	}
+    if errors.Is(err, domain.ErrDataNotFound) {
+        ctx.JSON(http.StatusNotFound, newErrorResponse([]string{err.Error()}))
+        return
+    }
 	statusCode, ok := errorStatusMap[err]
 	if !ok {
 		statusCode = http.StatusInternalServerError

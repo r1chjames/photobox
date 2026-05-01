@@ -66,9 +66,9 @@ func (ph *PhotoHandler) ListPhotos(ctx *gin.Context) {
 	} else if favorites {
 		photoResp, err = ph.photoSvc.ListFavoritePhotos(fromId, limit, includeThumbnail, startDate, endDate)
 	} else if albumId != "" {
-		photoResp, err = ph.photoSvc.ListPhotosInAlbum(albumId, fromId, limit, includeThumbnail, startDate, endDate)
+		photoResp, err = ph.photoSvc.ListPhotosInAlbum(albumId, fromId, limit, includeThumbnail, startDate, endDate, mediaType)
 	} else {
-		photoResp, err = ph.photoSvc.ListPhotos(fromId, limit, includeThumbnail, startDate, endDate)
+		photoResp, err = ph.photoSvc.ListPhotos(fromId, limit, includeThumbnail, startDate, endDate, mediaType)
 	}
 
 	if err != nil {
@@ -76,7 +76,9 @@ func (ph *PhotoHandler) ListPhotos(ctx *gin.Context) {
 		return
 	}
 
-	if mediaType != "" {
+	// Post-DB mediaType filter is only needed for tags and favorites routes
+	// since ListPhotos and ListPhotosInAlbum now filter at the DB level
+	if mediaType != "" && (tagsQuery != "" || favorites) {
 		filtered := make([]*domain.Photo, 0, len(photoResp))
 		for _, p := range photoResp {
 			if p.MediaType == mediaType {

@@ -26,16 +26,16 @@ func (m *MockPhotoRepository) GetPhotoById(photoId string, includeThumbnail bool
 	return args.Get(0).(*domain.Photo), args.Error(1)
 }
 
-func (m *MockPhotoRepository) ListAllPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
-	args := m.Called(fromId, limit, includeThumbnail)
+func (m *MockPhotoRepository) ListAllPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error) {
+	args := m.Called(fromId, limit, includeThumbnail, startDate, endDate, mediaType)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]*domain.Photo), args.Error(1)
 }
 
-func (m *MockPhotoRepository) ListAllPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
-	args := m.Called(albumId, fromId, limit, includeThumbnail)
+func (m *MockPhotoRepository) ListAllPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error) {
+	args := m.Called(albumId, fromId, limit, includeThumbnail, startDate, endDate, mediaType)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -370,7 +370,7 @@ func TestListPhotos(t *testing.T) {
 					{ID: "photo-2", Name: "photo2.jpg"},
 					{ID: "photo-3", Name: "photo3.jpg"},
 				}
-				m.On("ListAllPhotos", "", 10, false).Return(photos, nil)
+				m.On("ListAllPhotos", "", 10, false, "", "", "").Return(photos, nil)
 			},
 			validate: func(t *testing.T, photos []*domain.Photo, err error) {
 				assert.NoError(t, err)
@@ -391,7 +391,7 @@ func TestListPhotos(t *testing.T) {
 					{ID: "photo-11", Name: "photo11.jpg", Thumbnail: []byte("thumb1")},
 					{ID: "photo-12", Name: "photo12.jpg", Thumbnail: []byte("thumb2")},
 				}
-				m.On("ListAllPhotos", "photo-10", 5, true).Return(photos, nil)
+				m.On("ListAllPhotos", "photo-10", 5, true, "", "", "").Return(photos, nil)
 			},
 			validate: func(t *testing.T, photos []*domain.Photo, err error) {
 				assert.NoError(t, err)
@@ -405,7 +405,7 @@ func TestListPhotos(t *testing.T) {
 			limit:            10,
 			includeThumbnail: false,
 			mockSetup: func(m *MockPhotoRepository) {
-				m.On("ListAllPhotos", "", 10, false).Return([]*domain.Photo{}, nil)
+				m.On("ListAllPhotos", "", 10, false, "", "", "").Return([]*domain.Photo{}, nil)
 			},
 			validate: func(t *testing.T, photos []*domain.Photo, err error) {
 				assert.NoError(t, err)
@@ -418,7 +418,7 @@ func TestListPhotos(t *testing.T) {
 			limit:            10,
 			includeThumbnail: false,
 			mockSetup: func(m *MockPhotoRepository) {
-				m.On("ListAllPhotos", "", 10, false).Return(nil, errors.New("database error"))
+				m.On("ListAllPhotos", "", 10, false, "", "", "").Return(nil, errors.New("database error"))
 			},
 			validate: func(t *testing.T, photos []*domain.Photo, err error) {
 				assert.Error(t, err)
@@ -438,7 +438,7 @@ func TestListPhotos(t *testing.T) {
 			tt.mockSetup(mockRepo)
 			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
 
-			result, err := service.ListPhotos(tt.fromId, tt.limit, tt.includeThumbnail, "", "")
+			result, err := service.ListPhotos(tt.fromId, tt.limit, tt.includeThumbnail, "", "", "")
 
 			tt.validate(t, result, err)
 			mockRepo.AssertExpectations(t)
@@ -468,7 +468,7 @@ func TestListPhotosInAlbum(t *testing.T) {
 					{ID: "photo-1", Name: "photo1.jpg", AlbumId: "album-123"},
 					{ID: "photo-2", Name: "photo2.jpg", AlbumId: "album-123"},
 				}
-				m.On("ListAllPhotosInAlbum", "album-123", "", 10, false).Return(photos, nil)
+				m.On("ListAllPhotosInAlbum", "album-123", "", 10, false, "", "", "").Return(photos, nil)
 			},
 			validate: func(t *testing.T, photos []*domain.Photo, err error) {
 				assert.NoError(t, err)
@@ -484,7 +484,7 @@ func TestListPhotosInAlbum(t *testing.T) {
 			limit:            10,
 			includeThumbnail: false,
 			mockSetup: func(m *MockPhotoRepository) {
-				m.On("ListAllPhotosInAlbum", "album-456", "", 10, false).Return([]*domain.Photo{}, nil)
+				m.On("ListAllPhotosInAlbum", "album-456", "", 10, false, "", "", "").Return([]*domain.Photo{}, nil)
 			},
 			validate: func(t *testing.T, photos []*domain.Photo, err error) {
 				assert.NoError(t, err)
@@ -498,7 +498,7 @@ func TestListPhotosInAlbum(t *testing.T) {
 			limit:            10,
 			includeThumbnail: false,
 			mockSetup: func(m *MockPhotoRepository) {
-				m.On("ListAllPhotosInAlbum", "album-789", "", 10, false).Return(nil, errors.New("database error"))
+				m.On("ListAllPhotosInAlbum", "album-789", "", 10, false, "", "", "").Return(nil, errors.New("database error"))
 			},
 			validate: func(t *testing.T, photos []*domain.Photo, err error) {
 				assert.Error(t, err)
@@ -518,7 +518,7 @@ func TestListPhotosInAlbum(t *testing.T) {
 			tt.mockSetup(mockRepo)
 			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
 
-			result, err := service.ListPhotosInAlbum(tt.albumId, tt.fromId, tt.limit, tt.includeThumbnail, "", "")
+			result, err := service.ListPhotosInAlbum(tt.albumId, tt.fromId, tt.limit, tt.includeThumbnail, "", "", "")
 
 			tt.validate(t, result, err)
 			mockRepo.AssertExpectations(t)

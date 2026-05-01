@@ -604,15 +604,16 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     );
 
     if (photos.length === 0) {
+        const isVideos = props.mediaType === 'video';
         return (
             <>
                 <AlbumTitle/>
                 <EmptyState
-                    title={id ? "This album is empty" : "No photos yet"}
-                    description={id ? "Upload photos to see them here." : "Your photo library is empty. Upload photos or configure your photo directory."}
+                    title={id ? "This album is empty" : isVideos ? "No videos yet" : "No photos yet"}
+                    description={id ? "Upload photos to see them here." : isVideos ? "Your video library is empty. Upload videos or configure your photo directory." : "Your photo library is empty. Upload photos or configure your photo directory."}
                     icon={<IconPhotoOff size="2rem" />}
                     action={{
-                        label: "Upload photos",
+                        label: isVideos ? "Upload videos" : "Upload photos",
                         onClick: () => navigate('/album/new/General'),
                     }}
                 />
@@ -674,9 +675,10 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                 )}
                 {viewMode === 'grid' ? (
                     <JustifiedInfiniteGrid
+                        key={`grid-${density}`}
                         placeholder={<Skeleton height={7} mt={6} radius="md"/>}
                         className="container"
-                        gap={10}
+                        gap={density === 'compact' ? 4 : density === 'large' ? 20 : 10}
                         stretch={true}
                         passUnstretchRow={true}
                         onRequestAppend={onRequestAppend}
@@ -764,7 +766,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                     opened={isImageModalOpen}
                     withCloseButton={false}
                     aria-labelledby="customized-dialog-title"
-                    size="xl"
+                    size="auto"
                     padding={"0"}
                     m={"0"}
                     overlayProps={{backgroundOpacity: 0.55}}

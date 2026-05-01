@@ -25,6 +25,8 @@ type Photo struct {
 	FileHash       string         `json:"fileHash" gorm:"index"`
 	MediaType      string         `json:"mediaType" gorm:"default:'image'"`
 	Duration       int            `json:"duration"`
+	Width          int            `json:"width"`
+	Height         int            `json:"height"`
 }
 
 type TimelineEntry struct {

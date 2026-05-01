@@ -192,8 +192,7 @@ func TestShareHandler_GetShared_NotFound(t *testing.T) {
 
 	handler.GetShared(ctx)
 
-	// Based on handleError implementation, ErrDataNotFound returns early without setting response
-	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, http.StatusNotFound, w.Code)
 
 	mockService.AssertExpectations(t)
 }

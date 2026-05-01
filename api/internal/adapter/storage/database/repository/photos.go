@@ -35,7 +35,7 @@ func (pr *PhotoRepository) GetPhotoById(photoId string, includeThumbnail bool) (
 	return &photo, nil
 }
 
-func (pr *PhotoRepository) ListAllPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
+func (pr *PhotoRepository) ListAllPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
 	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("deleted_at IS NULL").Order("created_epoch ASC").Omit("thumbnail")
 	if fromId != "" {
@@ -51,15 +51,15 @@ func (pr *PhotoRepository) ListAllPhotos(fromId string, limit int, includeThumbn
 	if endDate != "" {
 		result = result.Where("created_at <= ?", endDate)
 	}
+	if mediaType != "" {
+		result = result.Where("media_type = ?", mediaType)
+	}
 	result = result.Limit(limit)
 	result = result.Find(&photos)
-	if result.RowsAffected == 0 {
-		return nil, domain.ErrDataNotFound
-	}
-	return photos, nil
+	return photos, result.Error
 }
 
-func (pr *PhotoRepository) ListAllPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
+func (pr *PhotoRepository) ListAllPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
 	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("deleted_at IS NULL AND album_id = ?", albumId).Order("created_epoch ASC").Omit("thumbnail")
 	if fromId != "" {
@@ -72,12 +72,12 @@ func (pr *PhotoRepository) ListAllPhotosInAlbum(albumId string, fromId string, l
 	if endDate != "" {
 		result = result.Where("created_at <= ?", endDate)
 	}
+	if mediaType != "" {
+		result = result.Where("media_type = ?", mediaType)
+	}
 	result = result.Limit(limit)
 	result = result.Find(&photos)
-	if result.RowsAffected == 0 {
-		return nil, domain.ErrDataNotFound
-	}
-	return photos, nil
+	return photos, result.Error
 }
 
 func (pr *PhotoRepository) GetPhotosInAlbumCount(albumId string) (int64, error) {
@@ -147,10 +147,7 @@ func (pr *PhotoRepository) ListTrashPhotos(fromId string, limit int, includeThum
 	}
 	result = result.Limit(limit)
 	result = result.Find(&photos)
-	if result.RowsAffected == 0 {
-		return nil, domain.ErrDataNotFound
-	}
-	return photos, nil
+	return photos, result.Error
 }
 
 func (pr *PhotoRepository) EmptyTrash() error {
@@ -181,10 +178,7 @@ func (pr *PhotoRepository) ListFavoritePhotos(fromId string, limit int, includeT
 	}
 	result = result.Limit(limit)
 	result = result.Find(&photos)
-	if result.RowsAffected == 0 {
-		return nil, domain.ErrDataNotFound
-	}
-	return photos, nil
+	return photos, result.Error
 }
 
 func (pr *PhotoRepository) SearchPhotos(query string, limit int) ([]*domain.Photo, error) {
@@ -195,9 +189,6 @@ func (pr *PhotoRepository) SearchPhotos(query string, limit int) ([]*domain.Phot
 		Where("to_tsvector('english', coalesce(name, '')) @@ plainto_tsquery('english', ?)", query).
 		Order("created_epoch DESC").
 		Find(&photos)
-	if result.RowsAffected == 0 {
-		return nil, domain.ErrDataNotFound
-	}
 	return photos, result.Error
 }
 
@@ -300,10 +291,7 @@ func (pr *PhotoRepository) ListPhotosByTags(tags []string, fromId string, limit 
 	}
 	result = result.Limit(limit)
 	result = result.Find(&photos)
-	if result.RowsAffected == 0 {
-		return nil, domain.ErrDataNotFound
-	}
-	return photos, nil
+	return photos, result.Error
 }
 
 func (pr *PhotoRepository) UpdatePhotoTags(photoId string, tags string) error {
@@ -326,11 +314,5 @@ func (pr *PhotoRepository) GetDuplicatePhotos() ([]*domain.Photo, error) {
 		WHERE p.deleted_at IS NULL
 		ORDER BY p.file_hash, p.created_epoch ASC
 	`).Scan(&photos)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	if len(photos) == 0 {
-		return nil, domain.ErrDataNotFound
-	}
-	return photos, nil
+	return photos, result.Error
 }

@@ -28,6 +28,6 @@ export class SharesAdapter implements ISharesAdapter {
 
   public revokeShare = async (token: string): Promise<void> => {
     const revokeSharePath = `shares/${token}`;
-    return this.restApiAdapter.postApiCall(revokeSharePath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
+    return this.restApiAdapter.deleteApiCall(revokeSharePath, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 }

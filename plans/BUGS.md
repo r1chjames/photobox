@@ -1,7 +1,13 @@
-- Adding a photo to favourites returns 404
-- Users gives a "usersAdapter.getAllUsers is not a function" error
-- Clicking on a thumbnail to open the photo card opens it at a prefined size before it jumps to the correct size. It could obtain the photo dimensions from the server when it gets the list of photos to pre-advise the size of the modal and skeleton
-- Compact/comfortable/large on photogrid have no impact on the look, nothing changes
-- Error when clicking Trash on the appbar - "trashed is not iterable"
-- Videos on the appbar just shows photos
-- Share doesn't work, clicking share on the photo card "Share failed. Failed to execute 'share' on 'Navigator': An earlier share has not yet completed."
+- Adding a photo to favourites returns 404 - fixed
+- Users gives a "usersAdapter.getAllUsers is not a function" error - fixed
+- Clicking on a thumbnail to open the photo card opens it at a prefined size before it jumps to the correct size. It could obtain the photo dimensions from the server when it gets the list of photos to pre-advise the size of the modal and skeleton - fixed
+- Compact/comfortable/large on photogrid have no impact on the look, nothing changes - fixed
+- Error when clicking Trash on the appbar - "trashed is not iterable" - fixed
+- Videos on the appbar just shows photos - fixed
+- Share doesn't work, clicking share on the photo card "Share failed. Failed to execute 'share' on 'Navigator': An earlier share has not yet completed." - fixed
+- Videos on the appbar says "No photos yet Your photo library is empty. Upload photos or configure your photo directory." when empty - videos
+- When a photo is added to favourites, the thumbnail stops rendering in the photogrid and in the favourites grid
+- Can't remove a favourite - error "Failed to revoke. Request failed with status code 404", or "Failed to update favorite. Request failed with status code 400"
+- Opening a photocard has lots of whitespace around the image on certain images - fixed
+- Clicking Users on appbar immediately logs me out
+- Clicking anywhere on the timeline scrubber clears the photogrid immediately

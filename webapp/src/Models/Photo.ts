@@ -13,4 +13,6 @@ export interface Photo {
   fileHash?: string;
   mediaType?: 'image' | 'video';
   duration?: number;
+  width?: number;
+  height?: number;
 }

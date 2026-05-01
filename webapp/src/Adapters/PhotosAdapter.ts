@@ -81,7 +81,7 @@ export class PhotosAdapter implements IPhotosAdapter {
 
   public favoritePhoto = async (photoId: string, favorite: boolean) => {
     const favoritePath = `photos/${photoId}/favorite`;
-    return this.restApiAdapter.postApiCall(favoritePath, { favorite }, this.buildHeaders(this.restApiAdapter.authHeader()));
+    return this.restApiAdapter.patchApiCall(favoritePath, { favorite }, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 
   public downloadPhotosAsZip = async (photoIds: string[]) => {

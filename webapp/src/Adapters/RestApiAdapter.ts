@@ -4,6 +4,8 @@ export interface IRestApiAdapter {
 
     postApiCall(path: string, body: Record<string, unknown>, headers: Record<string, string>): Promise<any>
 
+    patchApiCall(path: string, body: Record<string, unknown>, headers: Record<string, string>): Promise<any>
+
     putApiCall(path: string, body: Record<string, unknown>, headers: Record<string, string>): Promise<any>
 
     deleteApiCall(path: string, headers: Record<string, string>): Promise<any>
@@ -43,6 +45,10 @@ export class RestApiAdapter implements IRestApiAdapter {
 
     async postApiCall<T>(path: string, body: Record<string, unknown>, headers: Record<string, string>) {
         return this.apiCall<T>('post', headers, body, path, {});
+    }
+
+    async patchApiCall<T>(path: string, body: Record<string, unknown>, headers: Record<string, string>) {
+        return this.apiCall<T>('patch', headers, body, path, {});
     }
 
     async putApiCall<T>(path: string, body: Record<string, unknown>, headers: Record<string, string>) {

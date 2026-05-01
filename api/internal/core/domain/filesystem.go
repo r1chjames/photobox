@@ -19,4 +19,6 @@ type PhotoFile struct {
 	Thumbnail []byte    `json:"-" gorm:"-"`
 	MediaType string    `json:"mediaType"`
 	Duration  int       `json:"duration"`
+	Width     int       `json:"width"`
+	Height    int       `json:"height"`
 }

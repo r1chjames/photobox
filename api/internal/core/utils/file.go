@@ -4,6 +4,9 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"image"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"net/http"
 	"os"
@@ -132,4 +135,18 @@ func GetSum(file *os.File) (string, error) {
 		return "", fmt.Errorf("failed to calculate MD5 sum: %w", err)
 	}
 	return fmt.Sprintf("%x", h.Sum(nil)), nil // TODO Optimize this, if possible
+}
+
+func GetImageDimensions(path string) (int, int, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer file.Close()
+
+	cfg, _, err := image.DecodeConfig(file)
+	if err != nil {
+		return 0, 0, err
+	}
+	return cfg.Width, cfg.Height, nil
 }

@@ -241,8 +241,7 @@ func TestUserHandler_GetUser_NotFound(t *testing.T) {
 
 	handler.GetUser(ctx)
 
-	// Based on handleError implementation, ErrDataNotFound returns early without setting response
-	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, http.StatusNotFound, w.Code)
 
 	mockService.AssertExpectations(t)
 }
@@ -306,8 +305,7 @@ func TestUserHandler_DeleteUser_NotFound(t *testing.T) {
 
 	handler.DeleteUser(ctx)
 
-	// Based on handleError implementation, ErrDataNotFound returns early
-	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, http.StatusNotFound, w.Code)
 
 	mockService.AssertExpectations(t)
 }

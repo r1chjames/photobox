@@ -109,7 +109,7 @@ func TestListAllPhotos_Success(t *testing.T) {
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL ORDER BY created_epoch ASC LIMIT \$1`, expectedPhotos)
 
 	repo := NewPhotoRepository(env)
-	photos, err := repo.ListAllPhotos("", 10, true, "", "")
+	photos, err := repo.ListAllPhotos("", 10, true, "", "", "")
 
 	if err != nil {
 		t.Errorf("error was not expected while listing photos: %s", err)
@@ -146,7 +146,7 @@ func TestListAllPhotos_WithFromId(t *testing.T) {
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND created_epoch > \$1 ORDER BY created_epoch ASC LIMIT \$2`, expectedPhotos)
 
 	repo := NewPhotoRepository(env)
-	photos, err := repo.ListAllPhotos(fromID, 5, false, "", "")
+	photos, err := repo.ListAllPhotos(fromID, 5, false, "", "", "")
 
 	if err != nil {
 		t.Errorf("error was not expected while listing photos: %s", err)
@@ -172,14 +172,14 @@ func TestListAllPhotos_Empty(t *testing.T) {
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL ORDER BY created_epoch ASC LIMIT \$1`, expectedPhotos)
 
 	repo := NewPhotoRepository(env)
-	photos, err := repo.ListAllPhotos("", 10, true, "", "")
+	photos, err := repo.ListAllPhotos("", 10, true, "", "", "")
 
-	if err == nil {
-		t.Error("expected ErrDataNotFound when no photos exist, got nil error")
+	if err != nil {
+		t.Errorf("error was not expected when no photos exist: %s", err)
 	}
 
-	if photos != nil {
-		t.Error("expected nil photos when list is empty, got non-nil")
+	if len(photos) != 0 {
+		t.Errorf("expected 0 photos when list is empty, got %d", len(photos))
 	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -200,7 +200,7 @@ func TestListAllPhotosInAlbum_Success(t *testing.T) {
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND album_id = \$1 ORDER BY created_epoch ASC LIMIT \$2`, expectedPhotos)
 
 	repo := NewPhotoRepository(env)
-	photos, err := repo.ListAllPhotosInAlbum(albumID, "", 10, true, "", "")
+	photos, err := repo.ListAllPhotosInAlbum(albumID, "", 10, true, "", "", "")
 
 	if err != nil {
 		t.Errorf("error was not expected while listing photos in album: %s", err)
@@ -237,7 +237,7 @@ func TestListAllPhotosInAlbum_WithFromId(t *testing.T) {
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE \(deleted_at IS NULL AND album_id = \$1\) AND created_epoch > \$2 ORDER BY created_epoch ASC LIMIT \$3`, expectedPhotos)
 
 	repo := NewPhotoRepository(env)
-	photos, err := repo.ListAllPhotosInAlbum(albumID, fromID, 5, true, "", "")
+	photos, err := repo.ListAllPhotosInAlbum(albumID, fromID, 5, true, "", "", "")
 
 	if err != nil {
 		t.Errorf("error was not expected while listing photos in album: %s", err)
@@ -263,14 +263,14 @@ func TestListAllPhotosInAlbum_Empty(t *testing.T) {
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND album_id = \$1 ORDER BY created_epoch ASC LIMIT \$2`, expectedPhotos)
 
 	repo := NewPhotoRepository(env)
-	photos, err := repo.ListAllPhotosInAlbum(albumID, "", 10, true, "", "")
+	photos, err := repo.ListAllPhotosInAlbum(albumID, "", 10, true, "", "", "")
 
-	if err == nil {
-		t.Error("expected ErrDataNotFound when album is empty, got nil error")
+	if err != nil {
+		t.Errorf("error was not expected when album is empty: %s", err)
 	}
 
-	if photos != nil {
-		t.Error("expected nil photos when album is empty, got non-nil")
+	if len(photos) != 0 {
+		t.Errorf("expected 0 photos when album is empty, got %d", len(photos))
 	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -605,12 +605,12 @@ func TestListTrashPhotos_Empty(t *testing.T) {
 	repo := NewPhotoRepository(env)
 	photos, err := repo.ListTrashPhotos("", 10, true)
 
-	if err == nil {
-		t.Error("expected ErrDataNotFound when trash is empty, got nil error")
+	if err != nil {
+		t.Errorf("error was not expected when trash is empty: %s", err)
 	}
 
-	if photos != nil {
-		t.Error("expected nil photos when trash is empty, got non-nil")
+	if len(photos) != 0 {
+		t.Errorf("expected 0 photos when trash is empty, got %d", len(photos))
 	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -707,12 +707,12 @@ func TestListFavoritePhotos_Empty(t *testing.T) {
 	repo := NewPhotoRepository(env)
 	photos, err := repo.ListFavoritePhotos("", 10, true, "", "")
 
-	if err == nil {
-		t.Error("expected ErrDataNotFound when no favorite photos exist, got nil error")
+	if err != nil {
+		t.Errorf("error was not expected when no favorite photos exist: %s", err)
 	}
 
-	if photos != nil {
-		t.Error("expected nil photos when list is empty, got non-nil")
+	if len(photos) != 0 {
+		t.Errorf("expected 0 photos when no favorite photos exist, got %d", len(photos))
 	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -762,12 +762,12 @@ func TestSearchPhotos_Empty(t *testing.T) {
 	repo := NewPhotoRepository(env)
 	photos, err := repo.SearchPhotos(query, 10)
 
-	if err == nil {
-		t.Error("expected ErrDataNotFound when search returns no results, got nil error")
+	if err != nil {
+		t.Errorf("error was not expected when search returns no results: %s", err)
 	}
 
-	if photos != nil {
-		t.Error("expected nil photos when search is empty, got non-nil")
+	if len(photos) != 0 {
+		t.Errorf("expected 0 photos when search is empty, got %d", len(photos))
 	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {

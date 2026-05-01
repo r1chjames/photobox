@@ -10,7 +10,7 @@ import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 import {ISharesAdapter} from "../../Adapters/ISharesAdapter";
 import {ShareModal} from "../ShareModal/ShareModal";
 import {fetchPhotoBinWithAuth, revokeBlobUrl} from "../../utils/ImageUtils";
-import {fetchThumbnailWithAuth, revokeThumbnail} from "../../utils/ThumbnailUtils";
+import {fetchThumbnailWithAuth} from "../../utils/ThumbnailUtils";
 
 interface IProps {
     photosAdapter: IPhotosAdapter;
@@ -38,6 +38,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const blobUrlRef = useRef<string | undefined>(undefined);
     const touchStartRef = useRef<{ x: number; y: number } | null>(null);
     const isSwipingRef = useRef(false);
+    const isSharingRef = useRef(false);
 
     const fetchImage = useCallback(async () => {
         const imageUrl = await fetchPhotoBinWithAuth(props.photosAdapter, props.source.id);
@@ -70,7 +71,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
         return () => {
             revokeBlobUrl(blobUrlRef.current);
             blobUrlRef.current = undefined;
-            revokeThumbnail(props.source.id);
+            // Do NOT revoke thumbnail here — the grid owns thumbnail lifecycle
         };
     }, [props.source, fetchImage, fetchThumbnail, fetchAlbumName]);
 
@@ -145,6 +146,10 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     }, []);
 
     const handleNativeShare = useCallback(async () => {
+        if (isSharingRef.current) {
+            notifications.show({ title: 'Share in progress', message: 'Please wait for the current share to complete', color: 'yellow' });
+            return;
+        }
         const shareUrl = `${window.location.origin}/photo/${props.source.id}`;
         const shareData = {
             title: props.source.name,
@@ -152,6 +157,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
             url: shareUrl,
         };
         if (navigator.share) {
+            isSharingRef.current = true;
             try {
                 await navigator.share(shareData);
                 notifications.show({ title: 'Shared', message: 'Photo shared successfully', color: 'green' });
@@ -159,6 +165,8 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                 if ((e as Error).name !== 'AbortError') {
                     notifications.show({ title: 'Share failed', message: (e as Error).message, color: 'red' });
                 }
+            } finally {
+                isSharingRef.current = false;
             }
         } else {
             try {
@@ -278,7 +286,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                                 ref={img as React.Ref<HTMLVideoElement>}
                                 src={fetchedImage}
                                 controls
-                                style={{ maxHeight: '75vh', maxWidth: '100%', objectFit: 'contain', borderRadius: 'var(--mantine-radius-md)' }}
+                                style={{ maxHeight: '75vh', maxWidth: '100%', width: 'auto', height: 'auto', objectFit: 'contain', borderRadius: 'var(--mantine-radius-md)' }}
                             />
                         ) : (
                             <Image
@@ -299,7 +307,8 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                             src={thumbnailUrl}
                             alt={props.source.name}
                             style={{ filter: 'blur(10px) brightness(0.8)', transition: 'filter 0.3s ease' }}
-                        />}
+                        />
+                    }
                     <Overlay color="#000" backgroundOpacity={0} opacity={0.5}>
                         <Flex direction="row" style={{width: "100%", justifyContent: "right"}} gap="xs">
                             {props.onSlideshow && (

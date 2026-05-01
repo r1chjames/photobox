@@ -35,8 +35,8 @@ func NewPhotoService(photoRepo port.PhotoRepository, albumRepo port.AlbumService
 	}
 }
 
-func (ps *PhotoService) ListPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
-	resp, err := ps.photoRepo.ListAllPhotosInAlbum(albumId, fromId, limit, includeThumbnail, startDate, endDate)
+func (ps *PhotoService) ListPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error) {
+	resp, err := ps.photoRepo.ListAllPhotosInAlbum(albumId, fromId, limit, includeThumbnail, startDate, endDate, mediaType)
 	if err != nil {
 		return nil, domain.ErrDataNotFound
 	}
@@ -44,8 +44,8 @@ func (ps *PhotoService) ListPhotosInAlbum(albumId string, fromId string, limit i
 	return resp, nil
 }
 
-func (ps *PhotoService) ListPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
-	resp, err := ps.photoRepo.ListAllPhotos(fromId, limit, includeThumbnail, startDate, endDate)
+func (ps *PhotoService) ListPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error) {
+	resp, err := ps.photoRepo.ListAllPhotos(fromId, limit, includeThumbnail, startDate, endDate, mediaType)
 	if err != nil {
 		return nil, domain.ErrDataNotFound
 	}
@@ -162,6 +162,8 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 			FileHash:       computeFileHash(photo.Path),
 			MediaType:      photo.MediaType,
 			Duration:       photo.Duration,
+			Width:          photo.Width,
+			Height:         photo.Height,
 		}
 
 		slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
@@ -201,6 +203,8 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 		FileHash:       computeFileHash(photo.Path),
 		MediaType:      photo.MediaType,
 		Duration:       photo.Duration,
+		Width:          photo.Width,
+		Height:         photo.Height,
 	}
 
 	slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)

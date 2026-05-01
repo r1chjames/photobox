@@ -17,6 +17,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({ usersAdapter }) 
 
     const loadUsers = useCallback(async () => {
         try {
+            if (typeof usersAdapter.getAllUsers !== 'function') {
+                throw new Error('usersAdapter.getAllUsers is not a function');
+            }
             const data = await usersAdapter.getAllUsers();
             setUsers(data || []);
         } catch (e) {

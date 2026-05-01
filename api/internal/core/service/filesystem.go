@@ -111,11 +111,21 @@ func (fss *FilesystemService) getMetaData(path string, name string, size int64) 
 
 	mediaType := "image"
 	duration := 0
+	width := 0
+	height := 0
 	if utils.IsVideoFile(name) {
 		mediaType = "video"
-		dur, _, _, _, err := utils.GetVideoMetadata(path)
+		dur, w, h, _, err := utils.GetVideoMetadata(path)
 		if err == nil {
 			duration = dur
+			width = w
+			height = h
+		}
+	} else {
+		w, h, err := utils.GetImageDimensions(path)
+		if err == nil {
+			width = w
+			height = h
 		}
 	}
 
@@ -131,6 +141,8 @@ func (fss *FilesystemService) getMetaData(path string, name string, size int64) 
 			Name:      name,
 			MediaType: mediaType,
 			Duration:  duration,
+			Width:     width,
+			Height:    height,
 		}
 	}
 	defer func(f *os.File) {
@@ -163,6 +175,8 @@ func (fss *FilesystemService) getMetaData(path string, name string, size int64) 
 		Thumbnail: thumbnail,
 		MediaType: mediaType,
 		Duration:  duration,
+		Width:     width,
+		Height:    height,
 	}
 }
 

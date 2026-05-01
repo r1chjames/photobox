@@ -116,12 +116,12 @@ func TestPhotoRepository_CreateAndList_Integration(t *testing.T) {
 	}
 
 	// List all photos
-	allPhotos, err := photoRepo.ListAllPhotos("", 10, false)
+	allPhotos, err := photoRepo.ListAllPhotos("", 10, false, "", "", "")
 	assert.NoError(t, err)
 	assert.Len(t, allPhotos, 3, "Should return all 3 photos")
 
 	// List photos in specific album
-	albumPhotos, err := photoRepo.ListAllPhotosInAlbum("album1", "", 10, false)
+	albumPhotos, err := photoRepo.ListAllPhotosInAlbum("album1", "", 10, false, "", "", "")
 	assert.NoError(t, err)
 	assert.Len(t, albumPhotos, 2, "Should return 2 photos from album1")
 

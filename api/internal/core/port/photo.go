@@ -13,9 +13,9 @@ type PhotoRepository interface {
 	// GetPhotoById inserts a new user into the database
 	GetPhotoById(photoId string, includeThumbnail bool) (*domain.Photo, error)
 	// ListAllPhotos selects a list of users with pagination
-	ListAllPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error)
+	ListAllPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error)
 	// ListAllPhotosInAlbum selects a user by id
-	ListAllPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error)
+	ListAllPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error)
 	// GetPhotosInAlbumCount selects a user by id
 	GetPhotosInAlbumCount(albumId string) (int64, error)
 	// CreatePhotoInfo selects a user by email
@@ -57,9 +57,9 @@ type PhotoService interface {
 	//GetPhoto returns a photo
 	GetPhoto(photoId string, includeThumbnail bool) (*domain.Photo, error)
 	// ListPhotos registers a new user
-	ListPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error)
+	ListPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error)
 	// ListPhotosInAlbum registers a new user
-	ListPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error)
+	ListPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error)
 	//PhotoCount returns a count of photos in an album
 	PhotoCount(albumId string) (int64, error)
 	//PhotoBinary returns the binary photo from disk
