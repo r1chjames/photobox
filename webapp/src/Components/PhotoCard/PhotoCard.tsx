@@ -273,15 +273,24 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                   onTouchEnd={handleTouchEnd}>
                 <Card.Section inheritPadding={false} withBorder={false}>
                     {fetchedImage ?
-                        <Image
-                            h={"500px"}
-                            fit={"cover"}
-                            w={"auto"}
-                            radius={0}
-                            ref={img}
-                            src={fetchedImage}
-                            alt={props.source.name}
-                        /> :
+                        (props.source.mediaType === 'video' ? (
+                            <video
+                                ref={img as React.Ref<HTMLVideoElement>}
+                                src={fetchedImage}
+                                controls
+                                style={{ height: '500px', width: 'auto', objectFit: 'cover' }}
+                            />
+                        ) : (
+                            <Image
+                                h={"500px"}
+                                fit={"cover"}
+                                w={"auto"}
+                                radius={0}
+                                ref={img}
+                                src={fetchedImage}
+                                alt={props.source.name}
+                            />
+                        )) :
                         <Image
                             h="500px"
                             fit="cover"

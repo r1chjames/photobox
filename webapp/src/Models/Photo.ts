@@ -10,4 +10,6 @@ export interface Photo {
   thumbnailUrl: string;
   favorite?: boolean;
   fileHash?: string;
+  mediaType?: 'image' | 'video';
+  duration?: number;
 }

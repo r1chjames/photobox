@@ -38,4 +38,5 @@ export interface IPhotosAdapter {
   getPhotoThumbnailBlob(photoId: string): Promise<Blob | string>;
   uploadPhoto(body: Record<string, unknown>): Promise<any>;
   index(): Promise<any>;
+  getVideos(fromId: string, limit: number): Promise<Photo[]>;
 }

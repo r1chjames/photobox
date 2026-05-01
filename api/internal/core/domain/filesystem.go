@@ -17,4 +17,6 @@ type PhotoFile struct {
 	Exif      exif.Exif `json:"exif"`
 	Mime      string    `json:"mime"`
 	Thumbnail []byte    `json:"-" gorm:"-"`
+	MediaType string    `json:"mediaType"`
+	Duration  int       `json:"duration"`
 }

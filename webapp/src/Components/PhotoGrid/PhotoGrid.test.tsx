@@ -43,6 +43,7 @@ describe('PhotoGrid', () => {
                 },
             ]),
             getThumbnailUrl: vi.fn((photoId: string) => `/api/photo/thumbnail/${photoId}`),
+            getPhotoThumbnailBlob: vi.fn().mockResolvedValue('data:image/png;base64,mockthumb'),
         } as unknown as IPhotosAdapter;
 
         mockAlbumsAdapter = {
@@ -96,6 +97,7 @@ describe('PhotoGrid', () => {
     it('should show empty state when no photos', async () => {
         const emptyPhotosAdapter = {
             getPhotosInfoInAlbum: vi.fn().mockResolvedValue([]),
+            getPhotoThumbnailBlob: vi.fn().mockResolvedValue('data:image/png;base64,mockthumb'),
         } as unknown as IPhotosAdapter;
 
         render(
@@ -146,6 +148,7 @@ describe('PhotoGrid', () => {
     it('should handle photo adapter errors gracefully', async () => {
         const errorPhotosAdapter = {
             getPhotosInfoInAlbum: vi.fn().mockRejectedValue(new Error('API Error')),
+            getPhotoThumbnailBlob: vi.fn().mockResolvedValue('data:image/png;base64,mockthumb'),
         } as unknown as IPhotosAdapter;
 
         // Component should render without crashing even when adapter fails
@@ -202,6 +205,7 @@ describe('PhotoGrid', () => {
         const manyPhotosAdapter = {
             getPhotosInfoInAlbum: vi.fn().mockResolvedValue(manyPhotos),
             getThumbnailUrl: vi.fn((photoId: string) => `/api/photo/thumbnail/${photoId}`),
+            getPhotoThumbnailBlob: vi.fn().mockResolvedValue('data:image/png;base64,mockthumb'),
         } as unknown as IPhotosAdapter;
 
         render(

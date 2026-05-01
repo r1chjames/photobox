@@ -41,7 +41,8 @@ import {
     IconSun,
     IconTag,
     IconTrash,
-    IconUsers
+    IconUsers,
+    IconVideo
 } from "@tabler/icons-react";
 
 interface IProps {
@@ -60,6 +61,7 @@ export enum Labels {
     Map = "Map",
     Tags = "Tags",
     Duplicates = "Duplicates",
+    Videos = "Videos",
     Settings = "Settings"
 }
 
@@ -125,6 +127,12 @@ const navLinkData = [
         description: 'Find duplicate photos'
     },
     {
+        icon: IconVideo,
+        label: Labels.Videos,
+        href: '/videos',
+        description: 'All videos'
+    },
+    {
         icon: IconSettings,
         label: Labels.Settings,
         href: '/settings',
@@ -173,6 +181,8 @@ const buildBreadcrumbs = (location: string, activeLink: Labels, id?: string) => 
         items.push({ label: 'Tags', icon: <IconTag size="0.9rem" /> });
     } else if (activeLink === Labels.Duplicates) {
         items.push({ label: 'Duplicates', icon: <IconCopy size="0.9rem" /> });
+    } else if (activeLink === Labels.Videos) {
+        items.push({ label: 'Videos', icon: <IconVideo size="0.9rem" /> });
     } else if (activeLink === Labels.Settings) {
         items.push({ label: 'Settings', icon: <IconSettings size="0.9rem" /> });
     }

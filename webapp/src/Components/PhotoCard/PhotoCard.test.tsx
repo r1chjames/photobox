@@ -33,6 +33,7 @@ describe('PhotoCard', () => {
     beforeEach(() => {
         mockPhotosAdapter = {
             getThumbnailUrl: vi.fn((photoId: string) => `/api/photo/thumbnail/${photoId}`),
+            getPhotoThumbnailBlob: vi.fn().mockResolvedValue('data:image/png;base64,mockthumb'),
         } as unknown as IPhotosAdapter;
         mockAlbumsAdapter = {
             getAlbumInfoById: vi.fn().mockResolvedValue({ id: 'album-1', name: 'Test Album' }),

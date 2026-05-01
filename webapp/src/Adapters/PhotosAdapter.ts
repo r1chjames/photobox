@@ -201,6 +201,11 @@ export class PhotosAdapter implements IPhotosAdapter {
       {}
     );
   }
+
+  public getVideos = async (fromId: string, limit: number): Promise<Photo[]> => {
+    const path = `photos?fromId=${fromId}&limit=${limit}&thumbnail=false&mediaType=video`;
+    return this.restApiAdapter.getPaginatedApiCall(path, this.buildHeaders(this.restApiAdapter.authHeader()), {});
+  }
 }
 
 

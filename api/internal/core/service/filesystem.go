@@ -83,7 +83,7 @@ func (fss *FilesystemService) PerformPhotoIndex(save func(domain.PhotoFile) erro
 
 func (fss *FilesystemService) WriteFileToFilesystem(photo domain.PhotoUpload) domain.PhotoFile {
 
-	if !utils.IsImageFile(photo.Name) {
+	if !utils.IsMediaFile(photo.Name) {
 	}
 
 	basePath, _ := fss.utilitySvc.GetSetting("default_new_albums_dir")
@@ -109,6 +109,16 @@ func (fss *FilesystemService) getMetaData(path string, name string, size int64) 
 	slashIndices := utils.AllIndicesOfChar(path, "/")
 	photoDirectory := path[slashIndices[len(slashIndices)-2]+1 : slashIndices[len(slashIndices)-1]]
 
+	mediaType := "image"
+	duration := 0
+	if utils.IsVideoFile(name) {
+		mediaType = "video"
+		dur, _, _, _, err := utils.GetVideoMetadata(path)
+		if err == nil {
+			duration = dur
+		}
+	}
+
 	file, err := utils.OpenFile(path)
 	if err != nil {
 		slog.Error("Unable to open file", "error", err)
@@ -119,6 +129,8 @@ func (fss *FilesystemService) getMetaData(path string, name string, size int64) 
 			Size:      size,
 			Extension: utils.GetExtension(path),
 			Name:      name,
+			MediaType: mediaType,
+			Duration:  duration,
 		}
 	}
 	defer func(f *os.File) {
@@ -149,10 +161,15 @@ func (fss *FilesystemService) getMetaData(path string, name string, size int64) 
 		Exif:      exifData,
 		Mime:      mimeType,
 		Thumbnail: thumbnail,
+		MediaType: mediaType,
+		Duration:  duration,
 	}
 }
 
 func (fss *FilesystemService) GenerateThumbnail(path string, exifData exif.Exif) []byte {
+	if utils.IsVideoFile(path) {
+		return fss.fsRepo.GenerateThumbnail(path)
+	}
 	parsedThumbnail, _ := exifData.JpegThumbnail()
 	if len(parsedThumbnail) == 0 {
 		parsedThumbnail = fss.fsRepo.GenerateThumbnail(path)

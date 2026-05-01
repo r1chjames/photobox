@@ -260,6 +260,21 @@ const Router: React.FunctionComponent = () => {
                         </ProtectedRoute>
                     }
                 />
+                <Route
+                    path="/videos"
+                    element={
+                        <ProtectedRoute>
+                            <AppBar activeLink={Labels.Videos}>
+                                <PhotoGrid
+                                    photosAdapter={photosAdapter}
+                                    albumsAdapter={albumsAdapter}
+                                    sharesAdapter={sharesAdapter}
+                                    mediaType="video"
+                                />
+                            </AppBar>
+                        </ProtectedRoute>
+                    }
+                />
             </Routes>
         </Suspense>
     );

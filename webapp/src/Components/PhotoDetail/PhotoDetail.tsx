@@ -175,12 +175,20 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
     return (
         photo && photoUrl ?
             <>
-                <Image
-                    radius={"md"}
-                    mah="600px"
-                    fit="scale-down"
-                    src={photoUrl}
-                />
+                {photo.mediaType === 'video' ? (
+                    <video
+                        src={photoUrl}
+                        controls
+                        style={{ maxHeight: '600px', width: '100%', borderRadius: '8px' }}
+                    />
+                ) : (
+                    <Image
+                        radius={"md"}
+                        mah="600px"
+                        fit="scale-down"
+                        src={photoUrl}
+                    />
+                )}
                 <Group justify="center" mt="md" gap="md">
                     <Button onClick={handleFavorite} leftSection={isFavorite ? <IconHeartFilled size={16} /> : <IconHeart size={16} />} color={isFavorite ? 'pink' : undefined}>
                         {isFavorite ? 'Favorited' : 'Favorite'}

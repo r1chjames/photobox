@@ -13,7 +13,7 @@ import {KeyboardShortcutsHelp} from "../KeyboardShortcutsHelp/KeyboardShortcutsH
 import {TimelineScrubber} from "../TimelineScrubber/TimelineScrubber";
 import {ActionIcon, Button, Checkbox, Group, Loader, Modal, SegmentedControl, Skeleton, Table, TextInput, Title, Tooltip} from "@mantine/core";
 import {useHotkeys, useMediaQuery} from "@mantine/hooks";
-import {IconLayoutGrid, IconList, IconPhotoOff, IconSelect} from "@tabler/icons-react";
+import {IconLayoutGrid, IconList, IconPhotoOff, IconPlayerPlay, IconSelect} from "@tabler/icons-react";
 import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
 import './PhotoGrid.css';
@@ -26,6 +26,7 @@ interface IProps {
     sharesAdapter?: ISharesAdapter;
     maxDisplayed?: number;
     tags?: string;
+    mediaType?: string;
 }
 
 const defaultProps = {
@@ -78,6 +79,41 @@ const GridImageItem = React.memo(
                             onLoad={() => setIsLoaded(true)}
                             style={{opacity: isLoaded ? 1 : 0, transition: 'opacity 0.2s'}}
                         />
+                    )}
+                    {photo.mediaType === 'video' && isLoaded && (
+                        <>
+                            <div style={{
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                background: 'rgba(0,0,0,0.5)',
+                                borderRadius: '50%',
+                                width: 40,
+                                height: 40,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                pointerEvents: 'none',
+                            }}>
+                                <IconPlayerPlay size={20} color="white" />
+                            </div>
+                            {photo.duration !== undefined && photo.duration > 0 && (
+                                <div style={{
+                                    position: 'absolute',
+                                    bottom: 6,
+                                    right: 6,
+                                    background: 'rgba(0,0,0,0.7)',
+                                    color: 'white',
+                                    fontSize: 11,
+                                    padding: '2px 6px',
+                                    borderRadius: 4,
+                                    pointerEvents: 'none',
+                                }}>
+                                    {Math.floor(photo.duration / 60)}:{String(photo.duration % 60).padStart(2, '0')}
+                                </div>
+                            )}
+                        </>
                     )}
                     {!isSelectionMode && isLoaded && (
                         <div className="photo-hover-overlay" style={{
@@ -166,7 +202,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const endDate = dateFilter ? `${dateFilter.year}-${String(dateFilter.month).padStart(2, '0')}-31` : undefined;
 
     // The hook now provides a simple, flat, de-duplicated array of photos.
-    const {photos, albumName, allRetrieved, fetchNextPage, isFetchingNextPage, refetch} = usePhotoGrid(props.photosAdapter, props.albumsAdapter, id, startDate, endDate, props.tags);
+    const {photos, albumName, allRetrieved, fetchNextPage, isFetchingNextPage, refetch} = usePhotoGrid(props.photosAdapter, props.albumsAdapter, id, startDate, endDate, props.tags, props.mediaType);
 
     // Batch load thumbnails for new photos
     useEffect(() => {

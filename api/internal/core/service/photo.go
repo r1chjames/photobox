@@ -160,6 +160,8 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 			Thumbnail:      photo.Thumbnail,
 			CreatedEpoch:   time.Now().UnixMilli(),
 			FileHash:       computeFileHash(photo.Path),
+			MediaType:      photo.MediaType,
+			Duration:       photo.Duration,
 		}
 
 		slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
@@ -197,6 +199,8 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 		Thumbnail:      photo.Thumbnail,
 		CreatedEpoch:   time.Now().UnixMilli(),
 		FileHash:       computeFileHash(photo.Path),
+		MediaType:      photo.MediaType,
+		Duration:       photo.Duration,
 	}
 
 	slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)

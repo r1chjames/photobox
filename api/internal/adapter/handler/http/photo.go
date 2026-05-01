@@ -57,6 +57,8 @@ func (ph *PhotoHandler) ListPhotos(ctx *gin.Context) {
 
 	var photoResp []*domain.Photo
 
+	mediaType := ctx.Query("mediaType")
+
 	tagsQuery := ctx.Query("tags")
 	if tagsQuery != "" {
 		tags := strings.Split(tagsQuery, ",")
@@ -72,6 +74,16 @@ func (ph *PhotoHandler) ListPhotos(ctx *gin.Context) {
 	if err != nil {
 		handleError(ctx, err)
 		return
+	}
+
+	if mediaType != "" {
+		filtered := make([]*domain.Photo, 0, len(photoResp))
+		for _, p := range photoResp {
+			if p.MediaType == mediaType {
+				filtered = append(filtered, p)
+			}
+		}
+		photoResp = filtered
 	}
 
 	fromId, toId, nextPage := photosPaginationParams(photoResp)

@@ -201,4 +201,11 @@ export class MockPhotosAdapter implements IPhotosAdapter {
     const photo = this._photos.find(p => p.id === photoId);
     return photo?.thumbnailUrl || 'no_image.png';
   }
+
+  public getVideos = async (fromId: string, limit: number): Promise<Photo[]> => {
+    const videos = this._photos.filter(p => p.mediaType === 'video');
+    const startIndex = fromId ? videos.findIndex(p => p.id === fromId) + 1 : 0;
+    if (startIndex === -1) return [];
+    return videos.slice(startIndex, startIndex + limit);
+  }
 }

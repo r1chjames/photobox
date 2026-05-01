@@ -23,6 +23,8 @@ type Photo struct {
 	Blurhash       string         `json:"blurhash"`
 	DominantColor  string         `json:"dominantColor"`
 	FileHash       string         `json:"fileHash" gorm:"index"`
+	MediaType      string         `json:"mediaType" gorm:"default:'image'"`
+	Duration       int            `json:"duration"`
 }
 
 type TimelineEntry struct {
