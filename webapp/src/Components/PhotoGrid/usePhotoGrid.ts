@@ -22,6 +22,7 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapt
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage,
+        isFetching,
         refetch,
     } = useInfiniteQuery({
         // The query key for photos is now dependent on the actual albumId and date filters.
@@ -62,6 +63,7 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapt
         // 3. For search queries, enabled whenever searchQuery is provided.
         enabled: (!albumIdentifier || (!!albumIdentifier && !!albumId)) && (!tags || !!tags) && (!!searchQuery || !searchQuery) && (!mediaType || !!mediaType) && (!favoritesOnly || !!favoritesOnly),
         initialPageParam: "",
+        placeholderData: (previousData) => previousData,
         getNextPageParam: (lastPage) => lastPage.nextCursor,
         select: (data) => {
             let allPhotos = data.pages.flatMap(page => page.data).filter(Boolean);
@@ -84,7 +86,7 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapt
 
     const photos = data?.photos ?? [];
 
-    return { photos, albumName, allRetrieved: !hasNextPage, fetchNextPage, isFetchingNextPage, refetch };
+    return { photos, albumName, allRetrieved: !hasNextPage, fetchNextPage, isFetchingNextPage, isFetching, refetch };
 };
 
 export default usePhotoGrid;

@@ -32,6 +32,8 @@ type PhotoRepository interface {
 	EmptyTrash() error
 	// UpdatePhoto updates a photo record
 	UpdatePhoto(photo domain.Photo) error
+	// SetFavorite updates only the favorite field of a photo
+	SetFavorite(photoId string, favorite bool) error
 	// ListFavoritePhotos returns only favorited photos
 	ListFavoritePhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error)
 	// SearchPhotos searches photos by query

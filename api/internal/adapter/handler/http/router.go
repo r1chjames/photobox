@@ -92,9 +92,10 @@ func defineResources(
 	users := router.Group(fmt.Sprintf("%s/users", urlBasePath)).Use(authMiddleware(token), requireRole(domain.ADMINISTRATOR))
 	{
 		users.GET("", userHandler.ListUsers)
-		users.GET("/:id", userHandler.GetUser)
-		users.PATCH("/:id", userHandler.UpdateUser)
-		users.DELETE("/:id", userHandler.DeleteUser)
+	users.GET("/:id", userHandler.GetUser)
+	users.PATCH("/:id", userHandler.UpdateUser)
+	users.PUT("/:id", userHandler.UpdateUser)
+	users.DELETE("/:id", userHandler.DeleteUser)
 	}
 
 	// Public album get (no auth)

@@ -2,6 +2,8 @@ package service
 
 import (
 	"errors"
+
+	"github.com/google/uuid"
 	"gitlab.com/r1chjames/photobox/api/internal/adapter/handler/auth"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
@@ -25,6 +27,7 @@ func (us *UserService) Register(user *domain.User) (*domain.User, error) {
 		return nil, domain.ErrInternal
 	}
 
+	user.ID = uuid.New().String()
 	user.Password = hashedPassword
 	user.Role = domain.VIEWER
 
@@ -46,6 +49,7 @@ func (us *UserService) CreateUser(user *domain.User) (*domain.User, error) {
 		return nil, domain.ErrInternal
 	}
 
+	user.ID = uuid.New().String()
 	user.Password = hashedPassword
 
 	user, err = us.repo.CreateUser(user)

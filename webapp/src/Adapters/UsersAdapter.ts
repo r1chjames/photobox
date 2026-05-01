@@ -37,15 +37,17 @@ export class UsersAdapter implements IUsersAdapter {
   }
 
   public getAllUsers = async (): Promise<User[]> => {
-    return this.restApiAdapter.getApiCall("users", this.buildHeaders(), {});
+    const response = await this.restApiAdapter.getApiCall("users", this.buildHeaders(this.restApiAdapter.authHeader()), {});
+    const users = response?.users;
+    return Array.isArray(users) ? users : [];
   }
 
   public updateUser = async (userId: string, updates: Partial<User>): Promise<User> => {
-    return this.restApiAdapter.putApiCall(`users/${userId}`, updates as Record<string, unknown>, this.buildHeaders());
+    return this.restApiAdapter.patchApiCall(`users/${userId}`, updates as Record<string, unknown>, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 
   public deleteUser = async (userId: string): Promise<void> => {
-    return this.restApiAdapter.deleteApiCall(`users/${userId}`, this.buildHeaders());
+    return this.restApiAdapter.deleteApiCall(`users/${userId}`, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 }
 

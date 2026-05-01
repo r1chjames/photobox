@@ -66,8 +66,8 @@ func (uh *UserHandler) Register(ctx *gin.Context) {
 
 // listUsersRequest represents the request body for listing users
 type listUsersRequest struct {
-	Skip  int `form:"skip" binding:"required,min=0" example:"0"`
-	Limit int `form:"limit" binding:"required,min=5" example:"5"`
+	Skip  int `form:"skip" binding:"omitempty,min=0" example:"0"`
+	Limit int `form:"limit" binding:"omitempty,min=5,max=500" example:"100"`
 }
 
 // ListUsers godoc
@@ -91,6 +91,10 @@ func (uh *UserHandler) ListUsers(ctx *gin.Context) {
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		validationError(ctx, err)
 		return
+	}
+
+	if req.Limit == 0 {
+		req.Limit = 100
 	}
 
 	users, err := uh.svc.ListUsers(req.Skip, req.Limit)

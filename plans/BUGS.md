@@ -5,9 +5,11 @@
 - Error when clicking Trash on the appbar - "trashed is not iterable" - fixed
 - Videos on the appbar just shows photos - fixed
 - Share doesn't work, clicking share on the photo card "Share failed. Failed to execute 'share' on 'Navigator': An earlier share has not yet completed." - fixed
-- Videos on the appbar says "No photos yet Your photo library is empty. Upload photos or configure your photo directory." when empty - videos
-- When a photo is added to favourites, the thumbnail stops rendering in the photogrid and in the favourites grid
-- Can't remove a favourite - error "Failed to revoke. Request failed with status code 404", or "Failed to update favorite. Request failed with status code 400"
+- Videos on the appbar says "No photos yet Your photo library is empty. Upload photos or configure your photo directory." when empty - fixed
+- When a photo is added to favourites, the thumbnail stops rendering in the photogrid and in the favourites grid - fixed
+- Can't remove a favourite - error "Failed to revoke. Request failed with status code 404", or "Failed to update favorite. Request failed with status code 400" - fixed
 - Opening a photocard has lots of whitespace around the image on certain images - fixed
-- Clicking Users on appbar immediately logs me out
-- Clicking anywhere on the timeline scrubber clears the photogrid immediately
+- Clicking Users on appbar immediately logs me out - fixed
+- Clicking anywhere on the timeline scrubber clears the photogrid immediately - fixed
+- Removing a photo from favourites does remove it from favourites but it doesn't reflect immediately because the page isn't updated - fixed
+- Clicking Users on appbar shows "Failed to load users. Request failed with status code 400" - fixed

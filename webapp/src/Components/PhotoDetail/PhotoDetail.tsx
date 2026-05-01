@@ -9,7 +9,7 @@ import {ISharesAdapter} from '../../Adapters/ISharesAdapter';
 import {ShareModal} from '../ShareModal/ShareModal';
 import {useParams} from "react-router-dom";
 import {fetchPhotoBinWithAuth, revokeBlobUrl} from "../../utils/ImageUtils";
-import {useQuery} from "@tanstack/react-query";
+import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {notifications} from '@mantine/notifications';
 
 interface IProps {
@@ -25,6 +25,7 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
     const [showTagModal, setShowTagModal] = useState(false);
     const [tagInput, setTagInput] = useState('');
     const isMobile = useMediaQuery('(max-width: 50em)');
+    const queryClient = useQueryClient();
 
     const fetchPhoto = async () => {
         return props.photosAdapter.getPhotoInfoById(id!);
@@ -76,6 +77,23 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
         try {
             await props.photosAdapter.favoritePhoto(photo.id, newFavorite);
             setIsFavorite(newFavorite);
+            queryClient.setQueriesData(
+                { queryKey: ['albumPhotos'] },
+                (oldData: any) => {
+                    if (!oldData) return oldData;
+                    return {
+                        ...oldData,
+                        pages: oldData.pages.map((page: any) => ({
+                            ...page,
+                            data: page.data.map((p: any) =>
+                                p.id === photo.id
+                                    ? { ...p, favorite: newFavorite }
+                                    : p
+                            ),
+                        })),
+                    };
+                }
+            );
             notifications.show({
                 title: newFavorite ? 'Added to favorites' : 'Removed from favorites',
                 message: newFavorite ? 'Photo added to your favorites' : 'Photo removed from your favorites',
@@ -88,7 +106,7 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                 color: 'red',
             });
         }
-    }, [props.photosAdapter, photo, isFavorite]);
+    }, [props.photosAdapter, photo, isFavorite, queryClient]);
 
     const handleRotate = useCallback(async (direction: 'cw' | 'ccw') => {
         if (!photo) return;

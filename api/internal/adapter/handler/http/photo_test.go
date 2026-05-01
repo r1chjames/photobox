@@ -429,32 +429,38 @@ func TestPhotoHandler_SetFavorite_Success(t *testing.T) {
 	mockPhotoSvc.AssertExpectations(t)
 }
 
-// TestPhotoHandler_SetFavorite_InvalidBody tests setting favorite with invalid request body
-func TestPhotoHandler_SetFavorite_InvalidBody(t *testing.T) {
+// TestPhotoHandler_SetFavorite_DefaultsToFalse tests setting favorite with empty body defaults to false
+func TestPhotoHandler_SetFavorite_DefaultsToFalse(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	mockPhotoSvc := new(MockPhotoService)
 	mockJobSvc := new(MockJobService)
 	handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
 
+	mockPhotoSvc.On("SetFavorite", "photo123", false).Return(&domain.Photo{ID: "photo123", Favorite: false}, nil)
+
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 
 	ctx.Params = gin.Params{{Key: "id", Value: "photo123"}}
 	body, _ := json.Marshal(map[string]interface{}{})
-	ctx.Request = httptest.NewRequest(http.MethodPost, "/photos/photo123/favorite", bytes.NewBuffer(body))
+	ctx.Request = httptest.NewRequest(http.MethodPatch, "/photos/photo123/favorite", bytes.NewBuffer(body))
 	ctx.Request.Header.Set("Content-Type", "application/json")
 
 	handler.SetFavorite(ctx)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 
-	var response errorResponse
+	var response struct {
+		Success bool `json:"success"`
+		Message string `json:"message"`
+		Data    any  `json:"data"`
+	}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
-	assert.False(t, response.Success)
+	assert.True(t, response.Success)
 
-	mockPhotoSvc.AssertNotCalled(t, "SetFavorite", mock.Anything, mock.Anything)
+	mockPhotoSvc.AssertExpectations(t)
 }
 
 // TestPhotoHandler_DownloadPhotos_Success tests downloading photos

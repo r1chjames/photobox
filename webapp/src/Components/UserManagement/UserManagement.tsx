@@ -4,7 +4,7 @@ import { User } from '../../Models/User';
 import { EmptyState } from '../EmptyState/EmptyState';
 import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
-import { Table, Title, Select, ActionIcon, Loader, Center } from '@mantine/core';
+import { Table, Title, Select, ActionIcon, Loader, Center, Text, Tooltip } from '@mantine/core';
 import { IconTrash, IconUsers } from '@tabler/icons-react';
 
 interface UserManagementProps {
@@ -21,7 +21,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ usersAdapter }) 
                 throw new Error('usersAdapter.getAllUsers is not a function');
             }
             const data = await usersAdapter.getAllUsers();
-            setUsers(data || []);
+            setUsers(Array.isArray(data) ? data : []);
         } catch (e) {
             notifications.show({
                 title: 'Failed to load users',
@@ -39,6 +39,14 @@ export const UserManagement: React.FC<UserManagementProps> = ({ usersAdapter }) 
     }, [loadUsers]);
 
     const handleRoleChange = async (userId: string, newRole: string) => {
+        if (!userId) {
+            notifications.show({
+                title: 'Cannot update user',
+                message: 'User ID is missing',
+                color: 'red',
+            });
+            return;
+        }
         try {
             await usersAdapter.updateUser(userId, { role: newRole });
             notifications.show({
@@ -90,7 +98,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ usersAdapter }) 
         );
     }
 
-    if (users.length === 0) {
+    if (!Array.isArray(users) || users.length === 0) {
         return (
             <>
                 <Title size="h4" mb="md">User Management</Title>
@@ -117,30 +125,45 @@ export const UserManagement: React.FC<UserManagementProps> = ({ usersAdapter }) 
                     </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                    {users.map(user => (
-                        <Table.Tr key={user.id}>
-                            <Table.Td>{user.name}</Table.Td>
-                            <Table.Td>{user.email}</Table.Td>
-                            <Table.Td>
-                                <Select
-                                    size="xs"
-                                    value={user.role || 'viewer'}
-                                    onChange={(value) => handleRoleChange(user.id!, value!)}
-                                    data={[
-                                        { value: 'administrator', label: 'Admin' },
-                                        { value: 'contributor', label: 'Contributor' },
-                                        { value: 'viewer', label: 'Viewer' },
-                                    ]}
-                                />
-                            </Table.Td>
-                            <Table.Td>{user.created_at ? new Date(user.created_at).toLocaleDateString() : '-'}</Table.Td>
-                            <Table.Td>
-                                <ActionIcon color="red" variant="light" onClick={() => handleDelete(user)} size="sm">
-                                    <IconTrash size="0.8rem" />
-                                </ActionIcon>
-                            </Table.Td>
-                        </Table.Tr>
-                    ))}
+                    {users.map((user, index) => {
+                        const hasId = !!user.id;
+                        return (
+                            <Table.Tr key={user.id || index}>
+                                <Table.Td>{user.name}</Table.Td>
+                                <Table.Td>{user.email}</Table.Td>
+                                <Table.Td>
+                                    {hasId ? (
+                                        <Select
+                                            size="xs"
+                                            value={user.role || 'viewer'}
+                                            onChange={(value) => handleRoleChange(user.id!, value!)}
+                                            data={[
+                                                { value: 'administrator', label: 'Admin' },
+                                                { value: 'contributor', label: 'Contributor' },
+                                                { value: 'viewer', label: 'Viewer' },
+                                            ]}
+                                        />
+                                    ) : (
+                                        <Text size="sm" c="dimmed">{user.role || 'viewer'} (no ID)</Text>
+                                    )}
+                                </Table.Td>
+                                <Table.Td>{user.created_at ? new Date(user.created_at).toLocaleDateString() : '-'}</Table.Td>
+                                <Table.Td>
+                                    {hasId ? (
+                                        <ActionIcon color="red" variant="light" onClick={() => handleDelete(user)} size="sm">
+                                            <IconTrash size="0.8rem" />
+                                        </ActionIcon>
+                                    ) : (
+                                        <Tooltip label="Cannot delete user without ID">
+                                            <ActionIcon color="red" variant="light" disabled size="sm">
+                                                <IconTrash size="0.8rem" />
+                                            </ActionIcon>
+                                        </Tooltip>
+                                    )}
+                                </Table.Td>
+                            </Table.Tr>
+                        );
+                    })}
                 </Table.Tbody>
             </Table>
         </div>

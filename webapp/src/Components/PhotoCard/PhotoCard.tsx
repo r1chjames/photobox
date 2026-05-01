@@ -1,4 +1,5 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {Photo} from '../../Models/Photo';
 import {ActionIcon, Badge, Button, Card, Flex, Group, Image, Overlay, Stack, Tooltip} from '@mantine/core';
 import {useNavigate} from "react-router-dom";
@@ -27,6 +28,7 @@ interface IProps {
 
 export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const navigate = useNavigate()
+    const queryClient = useQueryClient();
     const [fetchedImage, setFetchedImage] = useState<string | undefined>();
     const [thumbnailUrl, setThumbnailUrl] = useState<string | undefined>();
     const [albumName, setAlbumName] = useState<string | undefined>();
@@ -97,6 +99,23 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
         try {
             await props.photosAdapter.favoritePhoto(props.source.id, newFavorite);
             setIsFavorite(newFavorite);
+            queryClient.setQueriesData(
+                { queryKey: ['albumPhotos'] },
+                (oldData: any) => {
+                    if (!oldData) return oldData;
+                    return {
+                        ...oldData,
+                        pages: oldData.pages.map((page: any) => ({
+                            ...page,
+                            data: page.data.map((photo: any) =>
+                                photo.id === props.source.id
+                                    ? { ...photo, favorite: newFavorite }
+                                    : photo
+                            ),
+                        })),
+                    };
+                }
+            );
             notifications.show({
                 title: newFavorite ? 'Added to favorites' : 'Removed from favorites',
                 message: newFavorite ? 'Photo added to your favorites' : 'Photo removed from your favorites',
@@ -109,7 +128,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                 color: 'red',
             });
         }
-    }, [props.photosAdapter, props.source.id, isFavorite]);
+    }, [props.photosAdapter, props.source.id, isFavorite, queryClient]);
 
     const handleRotate = useCallback(async (direction: 'cw' | 'ccw') => {
         try {

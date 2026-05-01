@@ -1,5 +1,6 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import { useParams, useNavigate } from "react-router-dom";
+import { useQueryClient } from '@tanstack/react-query';
 import {JustifiedInfiniteGrid} from '@egjs/react-infinitegrid';
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
@@ -218,6 +219,7 @@ GridImageItem.displayName = 'GridImageItem';
 export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const props = {...defaultProps, ...propsIn};
     const [isImageModalOpen, setImageModalOpen] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -258,11 +260,14 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         } catch { /* ignore */ }
     }, [viewMode]);
 
-    const startDate = dateFilter ? `${dateFilter.year}-${String(dateFilter.month).padStart(2, '0')}-01` : undefined;
-    const endDate = dateFilter ? `${dateFilter.year}-${String(dateFilter.month).padStart(2, '0')}-31` : undefined;
+    const startDate = dateFilter ? `${dateFilter.year}-${String(dateFilter.month).padStart(2, '0')}-01T00:00:00` : undefined;
+    const endDate = dateFilter ? (() => {
+        const lastDay = new Date(dateFilter.year, dateFilter.month, 0).getDate();
+        return `${dateFilter.year}-${String(dateFilter.month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}T23:59:59`;
+    })() : undefined;
 
     // The hook now provides a simple, flat, de-duplicated array of photos.
-    const {photos, albumName, allRetrieved, fetchNextPage, isFetchingNextPage, refetch} = usePhotoGrid(props.photosAdapter, props.albumsAdapter, id, startDate, endDate, props.tags, props.mediaType, props.searchQuery, props.favoritesOnly);
+    const {photos, albumName, allRetrieved, fetchNextPage, isFetchingNextPage, isFetching, refetch} = usePhotoGrid(props.photosAdapter, props.albumsAdapter, id, startDate, endDate, props.tags, props.mediaType, props.searchQuery, props.favoritesOnly);
 
     const photoIdsKey = React.useMemo(() => photos.map(p => p.id).join(','), [photos]);
 
@@ -442,6 +447,24 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
             for (const photoId of selectedIds) {
                 await props.photosAdapter.favoritePhoto(photoId, true);
             }
+            const selectedIdsSet = new Set(selectedIds);
+            queryClient.setQueriesData(
+                { queryKey: ['albumPhotos'] },
+                (oldData: any) => {
+                    if (!oldData) return oldData;
+                    return {
+                        ...oldData,
+                        pages: oldData.pages.map((page: any) => ({
+                            ...page,
+                            data: page.data.map((p: any) =>
+                                selectedIdsSet.has(p.id)
+                                    ? { ...p, favorite: true }
+                                    : p
+                            ),
+                        })),
+                    };
+                }
+            );
             notifications.show({
                 title: 'Favorited',
                 message: `${selectedIds.size} photo${selectedIds.size !== 1 ? 's' : ''} added to favorites`,
@@ -456,7 +479,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                 color: 'red',
             });
         }
-    }, [props.photosAdapter, selectedIds]);
+    }, [props.photosAdapter, selectedIds, queryClient]);
 
     const handleBulkDelete = useCallback(() => {
         modals.openConfirmModal({
@@ -603,7 +626,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         </div>
     );
 
-    if (photos.length === 0) {
+    if (photos.length === 0 && !isFetching) {
         const isVideos = props.mediaType === 'video';
         return (
             <>

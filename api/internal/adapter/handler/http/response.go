@@ -89,6 +89,7 @@ type userResponse struct {
 	ID        string    `json:"id" example:"b8d44111-bb92-4013-899f-a4fb9f9436bb"`
 	Username  string    `json:"name" example:"John Doe"`
 	Email     string    `json:"email" example:"test@example.com"`
+	Role      string    `json:"role" example:"viewer"`
 	CreatedAt time.Time `json:"created_at" example:"1970-01-01T00:00:00Z"`
 	UpdatedAt time.Time `json:"updated_at" example:"1970-01-01T00:00:00Z"`
 }
@@ -99,6 +100,7 @@ func newUserResponse(user *domain.User) userResponse {
 		ID:        user.ID,
 		Username:  user.Username,
 		Email:     user.Email,
+		Role:      string(user.Role),
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 	}

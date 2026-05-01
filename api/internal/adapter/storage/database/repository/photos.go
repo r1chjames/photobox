@@ -160,6 +160,11 @@ func (pr *PhotoRepository) UpdatePhoto(photo domain.Photo) error {
 	return result.Error
 }
 
+func (pr *PhotoRepository) SetFavorite(photoId string, favorite bool) error {
+	result := pr.dbEnv.Db.Model(&domain.Photo{}).Where("id = ?", photoId).Update("favorite", favorite)
+	return result.Error
+}
+
 func (pr *PhotoRepository) ListFavoritePhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
 	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("favorite = ? AND deleted_at IS NULL", true).Order("created_epoch ASC").Omit("thumbnail")

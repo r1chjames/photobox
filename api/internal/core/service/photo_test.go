@@ -91,6 +91,11 @@ func (m *MockPhotoRepository) UpdatePhoto(photo domain.Photo) error {
 	return args.Error(0)
 }
 
+func (m *MockPhotoRepository) SetFavorite(photoId string, favorite bool) error {
+	args := m.Called(photoId, favorite)
+	return args.Error(0)
+}
+
 func (m *MockPhotoRepository) ListFavoritePhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
 	args := m.Called(fromId, limit, includeThumbnail)
 	if args.Get(0) == nil {
@@ -1085,7 +1090,7 @@ func TestSetFavorite(t *testing.T) {
 					Name:     "test.jpg",
 					Favorite: false,
 				}, nil)
-				mPhoto.On("UpdatePhoto", mock.AnythingOfType("domain.Photo")).Return(nil)
+				mPhoto.On("SetFavorite", "photo-123", true).Return(nil)
 			},
 			validate: func(t *testing.T, photo *domain.Photo, err error) {
 				assert.NoError(t, err)

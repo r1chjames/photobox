@@ -261,7 +261,7 @@ func (ps *PhotoService) SetFavorite(photoId string, favorite bool) (*domain.Phot
 		return nil, err
 	}
 	photo.Favorite = favorite
-	err = ps.photoRepo.UpdatePhoto(*photo)
+	err = ps.photoRepo.SetFavorite(photoId, favorite)
 	if err != nil {
 		return nil, err
 	}

@@ -233,7 +233,7 @@ func (ph *PhotoHandler) EmptyTrash(ctx *gin.Context) {
 }
 
 type setFavoriteRequest struct {
-	Favorite bool `json:"favorite" binding:"required"`
+	Favorite bool `json:"favorite"`
 }
 
 type batchThumbnailsRequest struct {
