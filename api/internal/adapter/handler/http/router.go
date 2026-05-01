@@ -154,6 +154,7 @@ func defineResources(
 
 	// Public shared view (no auth)
 	router.GET(fmt.Sprintf("%s/shared/:token", urlBasePath), shareHandler.GetShared)
+	router.GET(fmt.Sprintf("%s/shared/:token/resource", urlBasePath), shareHandler.GetSharedResourceData)
 
 	// Admin share management
 	shares := router.Group(fmt.Sprintf("%s/shares", urlBasePath)).Use(authMiddleware(token), requireRole(domain.ADMINISTRATOR))

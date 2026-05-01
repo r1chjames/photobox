@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
+	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 )
 
 // MockShareService is a mock implementation of port.ShareService
@@ -41,6 +42,14 @@ func (m *MockShareService) ListShares() ([]*domain.SharedLink, error) {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]*domain.SharedLink), args.Error(1)
+}
+
+func (m *MockShareService) GetSharedResourceData(token string, password *string) (*port.SharedResourceData, error) {
+	args := m.Called(token, password)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*port.SharedResourceData), args.Error(1)
 }
 
 func (m *MockShareService) RevokeShare(token string) error {

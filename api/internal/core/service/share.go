@@ -10,11 +10,13 @@ import (
 )
 
 type ShareService struct {
-	repo port.ShareRepository
+	repo      port.ShareRepository
+	photoSvc  port.PhotoService
+	albumSvc  port.AlbumService
 }
 
-func NewShareService(repo port.ShareRepository) *ShareService {
-	return &ShareService{repo}
+func NewShareService(repo port.ShareRepository, photoSvc port.PhotoService, albumSvc port.AlbumService) *ShareService {
+	return &ShareService{repo, photoSvc, albumSvc}
 }
 
 func (ss *ShareService) generateToken() (string, error) {
@@ -82,6 +84,34 @@ func (ss *ShareService) GetSharedResource(token string, password *string) (*doma
 
 	_ = ss.repo.IncrementViewCount(token)
 	return share, nil
+}
+
+func (ss *ShareService) GetSharedResourceData(token string, password *string) (*port.SharedResourceData, error) {
+	share, err := ss.GetSharedResource(token, password)
+	if err != nil {
+		return nil, err
+	}
+
+	var resource interface{}
+	switch share.ResourceType {
+	case "photo":
+		photo, err := ss.photoSvc.GetPhoto(share.ResourceId, false)
+		if err != nil {
+			return nil, err
+		}
+		resource = photo
+	case "album":
+		album, err := ss.albumSvc.GetAlbumById(share.ResourceId)
+		if err != nil {
+			return nil, err
+		}
+		resource = album
+	}
+
+	return &port.SharedResourceData{
+		Share:    share,
+		Resource: resource,
+	}, nil
 }
 
 func (ss *ShareService) ListShares() ([]*domain.SharedLink, error) {

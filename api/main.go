@@ -101,7 +101,7 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 
 	// Share
 	shareRepo := repository.NewShareRepository(dbEnv)
-	shareService := service.NewShareService(shareRepo)
+	shareService := service.NewShareService(shareRepo, photoService, albumService)
 
 	// Cron
 	return &AppServices{

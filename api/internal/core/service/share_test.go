@@ -52,7 +52,7 @@ func TestCreateShare(t *testing.T) {
 		mockRepo := new(MockShareRepository)
 		mockRepo.On("CreateShare", mock.AnythingOfType("*domain.SharedLink")).Return(nil)
 
-		service := NewShareService(mockRepo)
+		service := NewShareService(mockRepo, nil, nil)
 		share, err := service.CreateShare("album", "album-123", "user-1", nil, nil)
 
 		assert.NoError(t, err)
@@ -145,7 +145,7 @@ func TestGetSharedResource(t *testing.T) {
 			mockRepo := new(MockShareRepository)
 			tt.mockSetup(mockRepo)
 
-			service := NewShareService(mockRepo)
+			service := NewShareService(mockRepo, nil, nil)
 			result, err := service.GetSharedResource(tt.token, tt.password)
 
 			tt.validate(t, result, err)
@@ -164,7 +164,7 @@ func TestListShares(t *testing.T) {
 		}
 		mockRepo.On("ListShares").Return(shares, nil)
 
-		service := NewShareService(mockRepo)
+		service := NewShareService(mockRepo, nil, nil)
 		result, err := service.ListShares()
 
 		assert.NoError(t, err)
@@ -179,7 +179,7 @@ func TestRevokeShare(t *testing.T) {
 		mockRepo := new(MockShareRepository)
 		mockRepo.On("DeleteShare", "token-1").Return(nil)
 
-		service := NewShareService(mockRepo)
+		service := NewShareService(mockRepo, nil, nil)
 		err := service.RevokeShare("token-1")
 
 		assert.NoError(t, err)

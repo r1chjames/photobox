@@ -85,6 +85,35 @@ func (sh *ShareHandler) GetShared(ctx *gin.Context) {
 	handleSuccess(ctx, share)
 }
 
+func (sh *ShareHandler) GetSharedResourceData(ctx *gin.Context) {
+	token := ctx.Param("token")
+	if token == "" {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "token is required"})
+		return
+	}
+
+	var password *string
+	if p := ctx.Query("password"); p != "" {
+		password = &p
+	}
+
+	data, err := sh.shareSvc.GetSharedResourceData(token, password)
+	if err != nil {
+		if err == domain.ErrSharedLinkExpired {
+			ctx.AbortWithStatusJSON(http.StatusGone, gin.H{"error": "shared link expired"})
+			return
+		}
+		if err == domain.ErrSharedLinkPasswordRequired {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "password required"})
+			return
+		}
+		handleError(ctx, err)
+		return
+	}
+
+	handleSuccess(ctx, data)
+}
+
 func (sh *ShareHandler) ListShares(ctx *gin.Context) {
 	shares, err := sh.shareSvc.ListShares()
 	if err != nil {

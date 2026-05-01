@@ -13,10 +13,17 @@ type ShareRepository interface {
 	IncrementViewCount(token string) error
 }
 
+// SharedResourceData wraps a shared link with its actual resource
+type SharedResourceData struct {
+	Share    *domain.SharedLink `json:"share"`
+	Resource interface{}        `json:"resource"`
+}
+
 // ShareService is an interface for interacting with share-related business logic
 type ShareService interface {
 	CreateShare(resourceType, resourceId, createdBy string, expiry *string, password *string) (*domain.SharedLink, error)
 	GetSharedResource(token string, password *string) (*domain.SharedLink, error)
+	GetSharedResourceData(token string, password *string) (*SharedResourceData, error)
 	ListShares() ([]*domain.SharedLink, error)
 	RevokeShare(token string) error
 }

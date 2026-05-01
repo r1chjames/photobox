@@ -20,6 +20,7 @@ const UserManagement = React.lazy(() => import('../Components/UserManagement/Use
 const MapView = React.lazy(() => import('../Components/MapView/MapView').then(m => ({default: m.MapView})));
 const TagsView = React.lazy(() => import('../Components/TagsView/TagsView').then(m => ({default: m.TagsView})));
 const TagPhotosView = React.lazy(() => import('../Components/TagsView/TagPhotosView').then(m => ({default: m.TagPhotosView})));
+const SharedView = React.lazy(() => import('../Components/SharedView/SharedView').then(m => ({default: m.SharedView})));
 
 const PageLoader = () => (
     <Center h="100vh">
@@ -238,6 +239,12 @@ const Router: React.FunctionComponent = () => {
                                 />
                             </AppBar>
                         </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/shared/:token"
+                    element={
+                        <SharedView />
                     }
                 />
             </Routes>
