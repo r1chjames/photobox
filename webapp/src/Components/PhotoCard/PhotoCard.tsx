@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Photo} from '../../Models/Photo';
 import {ActionIcon, Badge, Button, Card, Flex, Group, Image, Overlay, Stack, Tooltip} from '@mantine/core';
 import {useNavigate} from "react-router-dom";
-import {IconArrowLeftDashed, IconArrowRightDashed, IconCalendar, IconDownload, IconFolder, IconHeart, IconHeartFilled, IconPlayerPlay, IconRotateClockwise, IconShare2, IconX} from "@tabler/icons-react";
+import {IconArrowLeftDashed, IconArrowRightDashed, IconCalendar, IconDownload, IconFolder, IconHeart, IconHeartFilled, IconMaximize, IconMinimize, IconPlayerPlay, IconRotateClockwise, IconShare2, IconX} from "@tabler/icons-react";
 import {useHotkeys} from "@mantine/hooks";
 import {notifications} from '@mantine/notifications';
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
@@ -32,7 +32,9 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const [albumName, setAlbumName] = useState<string | undefined>();
     const [isFavorite, setIsFavorite] = useState(props.source.favorite ?? false);
     const [showShareModal, setShowShareModal] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(false);
     const img: React.Ref<HTMLImageElement> = React.createRef();
+    const cardRef = useRef<HTMLDivElement>(null);
     const blobUrlRef = useRef<string | undefined>(undefined);
     const touchStartRef = useRef<{ x: number; y: number } | null>(null);
     const isSwipingRef = useRef(false);
@@ -128,6 +130,52 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
         }
     }, [props.photosAdapter, props.source.id, fetchImage]);
 
+    const toggleFullscreen = useCallback(async () => {
+        try {
+            if (!document.fullscreenElement) {
+                await cardRef.current?.requestFullscreen();
+                setIsFullscreen(true);
+            } else {
+                await document.exitFullscreen();
+                setIsFullscreen(false);
+            }
+        } catch (e) {
+            console.error('Fullscreen error:', e);
+        }
+    }, []);
+
+    const handleNativeShare = useCallback(async () => {
+        const shareUrl = `${window.location.origin}/photo/${props.source.id}`;
+        const shareData = {
+            title: props.source.name,
+            text: `Check out this photo: ${props.source.name}`,
+            url: shareUrl,
+        };
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData);
+                notifications.show({ title: 'Shared', message: 'Photo shared successfully', color: 'green' });
+            } catch (e) {
+                if ((e as Error).name !== 'AbortError') {
+                    notifications.show({ title: 'Share failed', message: (e as Error).message, color: 'red' });
+                }
+            }
+        } else {
+            try {
+                await navigator.clipboard.writeText(shareUrl);
+                notifications.show({ title: 'Link copied', message: 'Photo link copied to clipboard', color: 'blue' });
+            } catch (e) {
+                notifications.show({ title: 'Copy failed', message: 'Could not copy link to clipboard', color: 'red' });
+            }
+        }
+    }, [props.source.id, props.source.name]);
+
+    useEffect(() => {
+        const handler = () => setIsFullscreen(!!document.fullscreenElement);
+        document.addEventListener('fullscreenchange', handler);
+        return () => document.removeEventListener('fullscreenchange', handler);
+    }, []);
+
     useHotkeys([
         ['ArrowLeft', () => props.previousPhoto()],
         ['ArrowRight', () => props.nextPhoto()],
@@ -135,6 +183,8 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
         ['d', () => handleDownload()],
         ['f', () => handleFavorite()],
         ['r', () => handleRotate('cw')],
+        ['s', () => handleNativeShare()],
+        ['F11', (e) => { e.preventDefault(); toggleFullscreen(); }],
     ]);
 
     const handleClose = useCallback((e: React.MouseEvent) => {
@@ -216,6 +266,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     return (
         <>
             <Card shadow="sm" radius="md" padding={0}
+                  ref={cardRef}
                   onClick={handleCardClick}
                   onTouchStart={handleTouchStart}
                   onTouchMove={handleTouchMove}
@@ -249,13 +300,23 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                                     </ActionIcon>
                                 </Tooltip>
                             )}
+                            <Tooltip label="Native share (S)">
+                                <ActionIcon color="dark" size="l" opacity={1} onClick={(e) => { e.stopPropagation(); handleNativeShare(); }} aria-label="Native share">
+                                    <IconShare2 size="1.75rem"/>
+                                </ActionIcon>
+                            </Tooltip>
                             {props.sharesAdapter && (
-                                <Tooltip label="Share">
-                                    <ActionIcon color="dark" size="l" opacity={1} onClick={(e) => { e.stopPropagation(); setShowShareModal(true); }} aria-label="Share">
+                                <Tooltip label="Create share link">
+                                    <ActionIcon color="dark" size="l" opacity={1} onClick={(e) => { e.stopPropagation(); setShowShareModal(true); }} aria-label="Create share link">
                                         <IconShare2 size="1.75rem"/>
                                     </ActionIcon>
                                 </Tooltip>
                             )}
+                            <Tooltip label={isFullscreen ? 'Exit fullscreen (F11)' : 'Enter fullscreen (F11)'}>
+                                <ActionIcon color="dark" size="l" opacity={1} onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }} aria-label="Toggle fullscreen">
+                                    {isFullscreen ? <IconMinimize size="1.75rem" /> : <IconMaximize size="1.75rem" />}
+                                </ActionIcon>
+                            </Tooltip>
                             <Tooltip label="Rotate clockwise (R)">
                                 <ActionIcon color="dark" size="l" opacity={1} onClick={(e) => { e.stopPropagation(); handleRotate('cw'); }} aria-label="Rotate clockwise">
                                     <IconRotateClockwise size="1.75rem"/>
