@@ -11,9 +11,9 @@ import {EmptyState} from "../EmptyState/EmptyState";
 import {BulkActionsToolbar} from "../BulkActionsToolbar/BulkActionsToolbar";
 import {KeyboardShortcutsHelp} from "../KeyboardShortcutsHelp/KeyboardShortcutsHelp";
 import {TimelineScrubber} from "../TimelineScrubber/TimelineScrubber";
-import {ActionIcon, Button, Checkbox, Loader, Modal, SegmentedControl, Skeleton, TextInput, Title, Tooltip} from "@mantine/core";
+import {ActionIcon, Button, Checkbox, Group, Loader, Modal, SegmentedControl, Skeleton, Table, TextInput, Title, Tooltip} from "@mantine/core";
 import {useHotkeys, useMediaQuery} from "@mantine/hooks";
-import {IconPhotoOff, IconSelect} from "@tabler/icons-react";
+import {IconLayoutGrid, IconList, IconPhotoOff, IconSelect} from "@tabler/icons-react";
 import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
 import './PhotoGrid.css';
@@ -44,6 +44,7 @@ interface GridImageItemProps {
 const GridImageItem = React.memo(
     ({photo, isSelectionMode, isSelected, onImageClick, onToggleSelect, thumbnailUrl}: GridImageItemProps & { thumbnailUrl: string | undefined }) => {
         const [isLoaded, setIsLoaded] = useState(false);
+        const effectiveThumbnailUrl = thumbnailUrl || photo.thumbnailUrl;
 
         const handleClick = () => {
             if (isSelectionMode) {
@@ -63,16 +64,16 @@ const GridImageItem = React.memo(
                     </div>
                 )}
                 <div className="thumbnail">
-                    {!thumbnailUrl && (
+                    {!effectiveThumbnailUrl && (
                         <Skeleton
                             height="100%"
                             width="100%"
                             style={{position: 'absolute', top: 0, left: 0}}
                         />
                     )}
-                    {thumbnailUrl && (
+                    {effectiveThumbnailUrl && (
                         <img
-                            src={thumbnailUrl}
+                            src={effectiveThumbnailUrl}
                             alt={photo.name}
                             onLoad={() => setIsLoaded(true)}
                             style={{opacity: isLoaded ? 1 : 0, transition: 'opacity 0.2s'}}
@@ -135,6 +136,13 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         } catch { /* ignore */ }
         return 'comfortable';
     });
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+        try {
+            const saved = localStorage.getItem('photobox-view-mode');
+            if (saved === 'grid' || saved === 'list') return saved;
+        } catch { /* ignore */ }
+        return 'grid';
+    });
     const [dateFilter, setDateFilter] = useState<{ year: number; month: number } | null>(null);
     const [tagModalOpen, setTagModalOpen] = useState(false);
     const [tagModalMode, setTagModalMode] = useState<'add' | 'remove'>('add');
@@ -147,6 +155,12 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
             localStorage.setItem('photobox-grid-density', density);
         } catch { /* ignore */ }
     }, [density]);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem('photobox-view-mode', viewMode);
+        } catch { /* ignore */ }
+    }, [viewMode]);
 
     const startDate = dateFilter ? `${dateFilter.year}-${String(dateFilter.month).padStart(2, '0')}-01` : undefined;
     const endDate = dateFilter ? `${dateFilter.year}-${String(dateFilter.month).padStart(2, '0')}-31` : undefined;
@@ -421,7 +435,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
             <Title size="h4">{albumName}</Title>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {photos.length > 0 && !isMobile && (
+                {photos.length > 0 && !isMobile && viewMode === 'grid' && (
                     <SegmentedControl
                         size="xs"
                         value={density}
@@ -432,6 +446,26 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                             { label: 'Large', value: 'large' },
                         ]}
                     />
+                )}
+                {photos.length > 0 && !isMobile && (
+                    <ActionIcon
+                        variant={viewMode === 'grid' ? 'filled' : 'light'}
+                        size="sm"
+                        onClick={() => setViewMode('grid')}
+                        aria-label="Grid view"
+                    >
+                        <IconLayoutGrid size="1rem" />
+                    </ActionIcon>
+                )}
+                {photos.length > 0 && !isMobile && (
+                    <ActionIcon
+                        variant={viewMode === 'list' ? 'filled' : 'light'}
+                        size="sm"
+                        onClick={() => setViewMode('list')}
+                        aria-label="List view"
+                    >
+                        <IconList size="1rem" />
+                    </ActionIcon>
                 )}
                 {photos.length > 0 && (
                     <Tooltip label="Select photos">
@@ -513,30 +547,92 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                         onCancel={() => { setIsSelectionMode(false); setSelectedIds(new Set()); }}
                     />
                 )}
-                <JustifiedInfiniteGrid
-                    placeholder={<Skeleton height={7} mt={6} radius="md"/>}
-                    className="container"
-                    gap={10}
-                    stretch={true}
-                    passUnstretchRow={true}
-                    onRequestAppend={onRequestAppend}
-                    threshold={800}
-                    useRecycle={false}
-                    preserveUIOnDestroy={true}
-                >
-                    {photos.map((photo: Photo, index: number) => (
-                        <GridImageItem
-                            data-grid-groupkey={Math.floor(index / 30)}
-                            key={photo.id}
-                            photo={photo}
-                            thumbnailUrl={thumbnailUrls.get(photo.id)}
-                            isSelectionMode={isSelectionMode}
-                            isSelected={selectedIds.has(photo.id)}
-                            onImageClick={onImageClick}
-                            onToggleSelect={onToggleSelect}
-                        />
-                    ))}
-                </JustifiedInfiniteGrid>
+                {viewMode === 'grid' ? (
+                    <JustifiedInfiniteGrid
+                        placeholder={<Skeleton height={7} mt={6} radius="md"/>}
+                        className="container"
+                        gap={10}
+                        stretch={true}
+                        passUnstretchRow={true}
+                        onRequestAppend={onRequestAppend}
+                        threshold={800}
+                        useRecycle={false}
+                        preserveUIOnDestroy={true}
+                    >
+                        {photos.map((photo: Photo, index: number) => (
+                            <GridImageItem
+                                data-grid-groupkey={Math.floor(index / 30)}
+                                key={photo.id}
+                                photo={photo}
+                                thumbnailUrl={thumbnailUrls.get(photo.id)}
+                                isSelectionMode={isSelectionMode}
+                                isSelected={selectedIds.has(photo.id)}
+                                onImageClick={onImageClick}
+                                onToggleSelect={onToggleSelect}
+                            />
+                        ))}
+                    </JustifiedInfiniteGrid>
+                ) : (
+                    <div style={{ padding: '0 8px' }}>
+                        <Table striped highlightOnHover>
+                            <Table.Thead>
+                                <Table.Tr>
+                                    {isSelectionMode && <Table.Th style={{ width: 40 }}></Table.Th>}
+                                    <Table.Th style={{ width: 60 }}>Preview</Table.Th>
+                                    <Table.Th>Name</Table.Th>
+                                    <Table.Th>Date</Table.Th>
+                                    <Table.Th>Tags</Table.Th>
+                                    <Table.Th style={{ width: 80 }}>Favorite</Table.Th>
+                                </Table.Tr>
+                            </Table.Thead>
+                            <Table.Tbody>
+                                {photos.map((photo: Photo) => (
+                                    <Table.Tr
+                                        key={photo.id}
+                                        onClick={() => {
+                                            if (isSelectionMode) {
+                                                onToggleSelect(photo.id);
+                                            } else {
+                                                onImageClick(photo.id);
+                                            }
+                                        }}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        {isSelectionMode && (
+                                            <Table.Td onClick={(e) => { e.stopPropagation(); onToggleSelect(photo.id); }}>
+                                                <Checkbox checked={selectedIds.has(photo.id)} onChange={() => {}} size="sm" />
+                                            </Table.Td>
+                                        )}
+                                        <Table.Td>
+                                            <img
+                                                src={thumbnailUrls.get(photo.id) || photo.thumbnailUrl || ''}
+                                                alt={photo.name}
+                                                style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4 }}
+                                            />
+                                        </Table.Td>
+                                        <Table.Td>{photo.name}</Table.Td>
+                                        <Table.Td>{new Date(photo.createdAt).toLocaleDateString()}</Table.Td>
+                                        <Table.Td>
+                                            <Group gap={4}>
+                                                {photo.tags && photo.tags.split(',').map(t => t.trim()).filter(Boolean).map(tag => (
+                                                    <span key={tag} style={{ fontSize: 11, padding: '2px 6px', background: 'var(--mantine-color-blue-light)', borderRadius: 4, color: 'var(--mantine-color-blue-light-color)' }}>{tag}</span>
+                                                ))}
+                                            </Group>
+                                        </Table.Td>
+                                        <Table.Td>{photo.favorite ? '★' : ''}</Table.Td>
+                                    </Table.Tr>
+                                ))}
+                            </Table.Tbody>
+                        </Table>
+                        {!allRetrieved && (
+                            <div style={{ textAlign: 'center', padding: 16 }}>
+                                <Button variant="light" onClick={onRequestAppend} loading={isFetchingNextPage}>
+                                    Load more
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
             {isImageModalOpen && (
                 <Modal

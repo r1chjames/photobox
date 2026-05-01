@@ -15,6 +15,8 @@ export interface IRestApiAdapter {
     postBinaryApiCall(path: string, body: Record<string, unknown>, headers: Record<string, string>): Promise<any>
 
     authHeader(): Record<string, string>
+
+    getBaseApiPath(): string
 }
 
 function handleUnauthorized(error: AxiosError<{ error?: string }>) {

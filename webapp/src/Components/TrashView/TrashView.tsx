@@ -4,7 +4,7 @@ import { Photo } from '../../Models/Photo';
 import { EmptyState } from '../EmptyState/EmptyState';
 import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
-import { Button, Group, Title, Text, Card, Image, Loader, Center } from '@mantine/core';
+import { Button, Group, Title, Text, Card, Image, Loader, Center, Skeleton } from '@mantine/core';
 import { IconTrash, IconRestore, IconPhotoOff } from '@tabler/icons-react';
 import { fetchThumbnailWithAuth, getCachedThumbnail, revokeThumbnail } from '../../utils/ThumbnailUtils';
 

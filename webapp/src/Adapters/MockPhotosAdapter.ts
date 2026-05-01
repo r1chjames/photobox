@@ -41,7 +41,7 @@ export class MockPhotosAdapter implements IPhotosAdapter {
 
   public getPhotoImage = async (photoId: string) => {
     const photo = this._photos.find(p => p.id === photoId);
-    return photo?.thumbnail;
+    return photo?.thumbnailUrl;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
