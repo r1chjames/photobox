@@ -18,7 +18,7 @@ import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
 import './PhotoGrid.css';
 import {Photo} from "../../Models/Photo";
-import {fetchThumbnailsBatch, getCachedThumbnail, revokeThumbnail} from "../../utils/ThumbnailUtils";
+import {fetchThumbnailsBatch, getCachedThumbnail} from "../../utils/ThumbnailUtils";
 
 interface IProps {
     photosAdapter: IPhotosAdapter;
@@ -45,7 +45,13 @@ interface GridImageItemProps {
 const GridImageItem = React.memo(
     ({photo, isSelectionMode, isSelected, onImageClick, onToggleSelect, thumbnailUrl}: GridImageItemProps & { thumbnailUrl: string | undefined }) => {
         const [isLoaded, setIsLoaded] = useState(false);
+        const [hasError, setHasError] = useState(false);
         const effectiveThumbnailUrl = thumbnailUrl || photo.thumbnailUrl;
+
+        useEffect(() => {
+            setIsLoaded(false);
+            setHasError(false);
+        }, [effectiveThumbnailUrl]);
 
         const handleClick = () => {
             if (isSelectionMode) {
@@ -64,23 +70,36 @@ const GridImageItem = React.memo(
                         <Checkbox checked={isSelected} onChange={() => {}} size="md" />
                     </div>
                 )}
-                <div className="thumbnail">
-                    {!effectiveThumbnailUrl && (
+                <div className="thumbnail" style={{ aspectRatio: '4 / 3' }}>
+                    {(!effectiveThumbnailUrl || !isLoaded) && !hasError && (
                         <Skeleton
                             height="100%"
                             width="100%"
                             style={{position: 'absolute', top: 0, left: 0}}
                         />
                     )}
-                    {effectiveThumbnailUrl && (
+                    {effectiveThumbnailUrl && !hasError && (
                         <img
                             src={effectiveThumbnailUrl}
                             alt={photo.name}
                             onLoad={() => setIsLoaded(true)}
-                            style={{opacity: isLoaded ? 1 : 0, transition: 'opacity 0.2s'}}
+                            onError={() => setHasError(true)}
                         />
                     )}
-                    {photo.mediaType === 'video' && isLoaded && (
+                    {hasError && (
+                        <div style={{
+                            position: 'absolute',
+                            top: 0, left: 0, right: 0, bottom: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: 'var(--mantine-color-gray-2)',
+                            borderRadius: 8,
+                        }}>
+                            <IconPhotoOff size={32} color="var(--mantine-color-gray-5)" />
+                        </div>
+                    )}
+                    {photo.mediaType === 'video' && effectiveThumbnailUrl && !hasError && (
                         <>
                             <div style={{
                                 position: 'absolute',
@@ -115,7 +134,7 @@ const GridImageItem = React.memo(
                             )}
                         </>
                     )}
-                    {!isSelectionMode && isLoaded && (
+                    {!isSelectionMode && effectiveThumbnailUrl && !hasError && (
                         <div className="photo-hover-overlay" style={{
                             position: 'absolute',
                             bottom: 0,
@@ -204,12 +223,51 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     // The hook now provides a simple, flat, de-duplicated array of photos.
     const {photos, albumName, allRetrieved, fetchNextPage, isFetchingNextPage, refetch} = usePhotoGrid(props.photosAdapter, props.albumsAdapter, id, startDate, endDate, props.tags, props.mediaType);
 
+    const photoIdsKey = React.useMemo(() => photos.map(p => p.id).join(','), [photos]);
+
+    // Merge React state with global cache so grid items always see cached thumbnails
+    // even if the async batch fetch hasn't updated state yet (e.g. browser-cache hit).
+    const mergedThumbnailUrls = React.useMemo(() => {
+        const merged = new Map(thumbnailUrls);
+        photos.forEach(photo => {
+            if (!merged.has(photo.id)) {
+                const cached = getCachedThumbnail(photo.id);
+                if (cached) {
+                    merged.set(photo.id, cached);
+                }
+            }
+        });
+        return merged;
+    }, [thumbnailUrls, photoIdsKey]);
+
     // Batch load thumbnails for new photos
     useEffect(() => {
         if (photos.length === 0) return;
-        let cancelled = false;
 
         const loadThumbnails = async () => {
+            // 1. Sync any thumbnails that are already in the global cache but missing from React state
+            const cachedOnly = new Map<string, string>();
+            for (const photo of photos) {
+                const cached = getCachedThumbnail(photo.id);
+                if (cached) {
+                    cachedOnly.set(photo.id, cached);
+                }
+            }
+            if (cachedOnly.size > 0) {
+                setThumbnailUrls(prev => {
+                    const next = new Map(prev);
+                    let changed = false;
+                    cachedOnly.forEach((url, id) => {
+                        if (!next.has(id)) {
+                            next.set(id, url);
+                            changed = true;
+                        }
+                    });
+                    return changed ? next : prev;
+                });
+            }
+
+            // 2. Fetch thumbnails that aren't cached yet
             const uncachedIds = photos
                 .map(p => p.id)
                 .filter(id => !getCachedThumbnail(id));
@@ -220,26 +278,16 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
 
             const newThumbnails = await fetchThumbnailsBatch(props.photosAdapter, uncachedIds);
             console.log('[PhotoGrid] Received', newThumbnails.size, 'thumbnails');
-            if (!cancelled) {
-                setThumbnailUrls(prev => {
-                    const next = new Map(prev);
-                    newThumbnails.forEach((url, id) => next.set(id, url));
-                    console.log('[PhotoGrid] Setting thumbnailUrls state, total:', next.size);
-                    return next;
-                });
-            }
+            setThumbnailUrls(prev => {
+                const next = new Map(prev);
+                newThumbnails.forEach((url, id) => next.set(id, url));
+                console.log('[PhotoGrid] Setting thumbnailUrls state, total:', next.size);
+                return next;
+            });
         };
 
         loadThumbnails();
-        return () => { cancelled = true; };
-    }, [photos.length, props.photosAdapter]);
-
-    // Cleanup thumbnails on unmount or album change
-    useEffect(() => {
-        return () => {
-            thumbnailUrls.forEach((_, id) => revokeThumbnail(id));
-        };
-    }, [id]);
+    }, [photoIdsKey, props.photosAdapter]);
 
     const photosRef = useRef(photos);
     photosRef.current = photos;
@@ -600,7 +648,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                                 data-grid-groupkey={Math.floor(index / 30)}
                                 key={photo.id}
                                 photo={photo}
-                                thumbnailUrl={thumbnailUrls.get(photo.id)}
+                                thumbnailUrl={mergedThumbnailUrls.get(photo.id)}
                                 isSelectionMode={isSelectionMode}
                                 isSelected={selectedIds.has(photo.id)}
                                 onImageClick={onImageClick}
@@ -641,7 +689,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                                         )}
                                         <Table.Td>
                                             <img
-                                                src={thumbnailUrls.get(photo.id) || photo.thumbnailUrl || ''}
+                                                src={mergedThumbnailUrls.get(photo.id) || photo.thumbnailUrl || ''}
                                                 alt={photo.name}
                                                 style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4 }}
                                             />
@@ -675,7 +723,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                     opened={isImageModalOpen}
                     withCloseButton={false}
                     aria-labelledby="customized-dialog-title"
-                    size="auto"
+                    size="xl"
                     padding={"0"}
                     m={"0"}
                     overlayProps={{backgroundOpacity: 0.55}}

@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
     ActionIcon,
     AppShell,
@@ -19,6 +19,7 @@ import classes from './AppBar.module.css';
 import {useDisclosure} from "@mantine/hooks";
 import {useLocation, useNavigate, useParams} from "react-router-dom";
 import {useAuth} from "../../Routing/AuthContext";
+import {useAdapters} from "../../Routing/AdapterContext";
 import {KeyboardShortcutsHelp} from "../KeyboardShortcutsHelp/KeyboardShortcutsHelp";
 import cx from 'clsx';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -150,7 +151,7 @@ const bottomNavData = [
 
 const activeLinkIndex = (index: Labels) => navLinkData.map(item => item.label).indexOf(index);
 
-const buildBreadcrumbs = (location: string, activeLink: Labels, id?: string) => {
+const buildBreadcrumbs = (location: string, activeLink: Labels, id?: string, albumName?: string) => {
     const items: { label: string; href?: string; icon?: React.ReactNode }[] = [];
 
     if (activeLink === Labels.Dashboard) {
@@ -165,7 +166,7 @@ const buildBreadcrumbs = (location: string, activeLink: Labels, id?: string) => 
     } else if (activeLink === Labels.Albums) {
         items.push({ label: 'Albums', href: '/albums', icon: <IconAlbum size="0.9rem" /> });
         if (location.startsWith('/album/') && id) {
-            items.push({ label: 'Album' });
+            items.push({ label: albumName || 'Album' });
         }
     } else if (activeLink === Labels.Favorites) {
         items.push({ label: 'Favorites', icon: <IconHeart size="0.9rem" /> });
@@ -195,13 +196,25 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
     const [active, setActive] = useState(activeLinkIndex(props.activeLink));
     const [showHelp, setShowHelp] = useState(false);
     const [searchValue, setSearchValue] = useState('');
+    const [albumName, setAlbumName] = useState<string | undefined>();
     const {colorScheme, setColorScheme} = useMantineColorScheme();
     const computedColorScheme = useComputedColorScheme('light', {getInitialValueInEffect: true});
     const navigate = useNavigate();
     const location = useLocation();
     const { id } = useParams<{ id: string }>();
     const {logout} = useAuth();
-    const breadcrumbItems = buildBreadcrumbs(location.pathname, props.activeLink, id);
+    const {albumsAdapter} = useAdapters();
+    const breadcrumbItems = buildBreadcrumbs(location.pathname, props.activeLink, id, albumName);
+
+    useEffect(() => {
+        if (props.activeLink === Labels.Albums && id) {
+            albumsAdapter.getAlbumInfoById(id)
+                .then(album => setAlbumName(album?.name))
+                .catch(() => setAlbumName(undefined));
+        } else {
+            setAlbumName(undefined);
+        }
+    }, [props.activeLink, id, albumsAdapter]);
 
     const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && searchValue.trim()) {

@@ -19,9 +19,12 @@ export interface IRestApiAdapter {
     getBaseApiPath(): string
 }
 
+let globalOnUnauthorized: (() => void) | undefined;
+
 function handleUnauthorized(error: AxiosError<{ error?: string }>) {
     if (error.response?.status === 401) {
         localStorage.removeItem("token");
+        globalOnUnauthorized?.();
     }
 }
 
@@ -29,8 +32,11 @@ export class RestApiAdapter implements IRestApiAdapter {
 
     private readonly baseApiPath: string;
 
-    constructor(baseApiPath: string) {
+    constructor(baseApiPath: string, onUnauthorized?: () => void) {
         this.baseApiPath = baseApiPath;
+        if (onUnauthorized) {
+            globalOnUnauthorized = onUnauthorized;
+        }
     }
 
     async postApiCall<T>(path: string, body: Record<string, unknown>, headers: Record<string, string>) {

@@ -265,7 +265,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
 
     return (
         <>
-            <Card shadow="sm" radius="md" padding={0}
+            <Card shadow="sm" radius="md" padding="md"
                   ref={cardRef}
                   onClick={handleCardClick}
                   onTouchStart={handleTouchStart}
@@ -278,24 +278,24 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                                 ref={img as React.Ref<HTMLVideoElement>}
                                 src={fetchedImage}
                                 controls
-                                style={{ height: '500px', width: 'auto', objectFit: 'cover' }}
+                                style={{ maxHeight: '75vh', maxWidth: '100%', objectFit: 'contain', borderRadius: 'var(--mantine-radius-md)' }}
                             />
                         ) : (
                             <Image
-                                h={"500px"}
-                                fit={"cover"}
-                                w={"auto"}
-                                radius={0}
+                                mah="75vh"
+                                fit="contain"
+                                maw="100%"
+                                radius="md"
                                 ref={img}
                                 src={fetchedImage}
                                 alt={props.source.name}
                             />
                         )) :
                         <Image
-                            h="500px"
-                            fit="cover"
-                            w="auto"
-                            radius={0}
+                            mah="75vh"
+                            fit="contain"
+                            maw="100%"
+                            radius="md"
                             src={thumbnailUrl}
                             alt={props.source.name}
                             style={{ filter: 'blur(10px) brightness(0.8)', transition: 'filter 0.3s ease' }}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Album } from '../../Models/Album';
 import {ActionIcon, Badge, Text, Card, Group, Image, Loader, Menu, TextInput} from '@mantine/core';
-import {IconDotsVertical, IconPencil, IconTrash} from '@tabler/icons-react';
+import {IconDotsVertical, IconPencil, IconTrash, IconPhotoOff} from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import useAlbumCard from "./useAlbumCard";
@@ -78,7 +78,20 @@ export const AlbumCard: React.FunctionComponent<IProps> = (props) => {
         </Menu>
       </div>
       <Card.Section onClick={() => props.albumViewCallback(props.source.id)} style={{ cursor: 'pointer' }}>
-        <Image src={thumbnailUrl} w="200px" h="150px" />
+        {thumbnailUrl ? (
+          <Image src={thumbnailUrl} w="200px" h="150px" />
+        ) : (
+          <div style={{
+            width: '200px',
+            height: '150px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'var(--mantine-color-gray-2)',
+          }}>
+            <IconPhotoOff size={32} color="var(--mantine-color-gray-5)" />
+          </div>
+        )}
       </Card.Section>
       <Group justify="space-between" mt="md" mb="xs" onClick={() => !isRenaming && props.albumViewCallback(props.source.id)} style={{ cursor: 'pointer' }}>
         {isRenaming ? (

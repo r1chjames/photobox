@@ -4,7 +4,8 @@ const thumbnailCache = new Map<string, string>();
 
 export async function fetchThumbnailWithAuth(
   photosAdapter: IPhotosAdapter,
-  photoId: string
+  photoId: string,
+  retries = 2
 ): Promise<string> {
   const cached = thumbnailCache.get(photoId);
   if (cached) {
@@ -13,17 +14,25 @@ export async function fetchThumbnailWithAuth(
   }
 
   console.log('[ThumbnailUtils] Fetching thumbnail for', photoId);
-  const blob = await photosAdapter.getPhotoThumbnailBlob(photoId);
-  console.log('[ThumbnailUtils] Got response for', photoId, typeof blob, blob instanceof Blob ? blob.size : 'N/A');
-  
-  if (typeof blob === 'string') {
-    thumbnailCache.set(photoId, blob);
-    return blob;
-  }
+  try {
+    const blob = await photosAdapter.getPhotoThumbnailBlob(photoId);
+    console.log('[ThumbnailUtils] Got response for', photoId, typeof blob, blob instanceof Blob ? blob.size : 'N/A');
 
-  const url = URL.createObjectURL(blob);
-  thumbnailCache.set(photoId, url);
-  return url;
+    if (typeof blob === 'string') {
+      thumbnailCache.set(photoId, blob);
+      return blob;
+    }
+
+    const url = URL.createObjectURL(blob);
+    thumbnailCache.set(photoId, url);
+    return url;
+  } catch (error) {
+    if (retries > 0) {
+      console.warn('[ThumbnailUtils] Retry fetching thumbnail for', photoId, 'retries left:', retries);
+      return fetchThumbnailWithAuth(photosAdapter, photoId, retries - 1);
+    }
+    throw error;
+  }
 }
 
 export async function fetchThumbnailsBatch(
@@ -32,20 +41,28 @@ export async function fetchThumbnailsBatch(
 ): Promise<Map<string, string>> {
   const thumbnailMap = new Map<string, string>();
 
-  const results = await Promise.allSettled(
-    photoIds.map(async (id) => {
-      const cached = thumbnailCache.get(id);
-      if (cached) {
-        return { id, url: cached };
-      }
-      const url = await fetchThumbnailWithAuth(photosAdapter, id);
-      return { id, url };
-    })
-  );
+  if (photoIds.length === 0) return thumbnailMap;
 
-  for (const result of results) {
-    if (result.status === 'fulfilled') {
-      thumbnailMap.set(result.value.id, result.value.url);
+  // Process in chunks of 6 to stay within browser concurrent connection limits
+  const CHUNK_SIZE = 6;
+
+  for (let i = 0; i < photoIds.length; i += CHUNK_SIZE) {
+    const chunk = photoIds.slice(i, i + CHUNK_SIZE);
+    const results = await Promise.allSettled(
+      chunk.map(async (id) => {
+        const cached = thumbnailCache.get(id);
+        if (cached) {
+          return { id, url: cached };
+        }
+        const url = await fetchThumbnailWithAuth(photosAdapter, id);
+        return { id, url };
+      })
+    );
+
+    for (const result of results) {
+      if (result.status === 'fulfilled') {
+        thumbnailMap.set(result.value.id, result.value.url);
+      }
     }
   }
 

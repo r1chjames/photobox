@@ -32,7 +32,7 @@ const useAlbumCard = (photosAdapter: IPhotosAdapter, source: Album) => {
     });
 
     const isLoading = isThumbnailLoading || isCountLoading;
-    const thumbnailUrl = thumbnailBlobUrl ?? 'no_image.png';
+    const thumbnailUrl = thumbnailBlobUrl ?? undefined;
 
     return { thumbnailUrl, photoCount: photoCount ?? 0, isLoading };
 };
