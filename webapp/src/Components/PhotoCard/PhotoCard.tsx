@@ -10,6 +10,7 @@ import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 import {ISharesAdapter} from "../../Adapters/ISharesAdapter";
 import {ShareModal} from "../ShareModal/ShareModal";
 import {fetchPhotoBinWithAuth, revokeBlobUrl} from "../../utils/ImageUtils";
+import {fetchThumbnailWithAuth, revokeThumbnail} from "../../utils/ThumbnailUtils";
 
 interface IProps {
     photosAdapter: IPhotosAdapter;
@@ -27,6 +28,7 @@ interface IProps {
 export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const navigate = useNavigate()
     const [fetchedImage, setFetchedImage] = useState<string | undefined>();
+    const [thumbnailUrl, setThumbnailUrl] = useState<string | undefined>();
     const [albumName, setAlbumName] = useState<string | undefined>();
     const [isFavorite, setIsFavorite] = useState(props.source.favorite ?? false);
     const [showShareModal, setShowShareModal] = useState(false);
@@ -39,6 +41,11 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
         const imageUrl = await fetchPhotoBinWithAuth(props.photosAdapter, props.source.id);
         blobUrlRef.current = imageUrl;
         setFetchedImage(imageUrl);
+    }, [props.photosAdapter, props.source.id]);
+
+    const fetchThumbnail = useCallback(async () => {
+        const url = await fetchThumbnailWithAuth(props.photosAdapter, props.source.id);
+        setThumbnailUrl(url);
     }, [props.photosAdapter, props.source.id]);
 
     const fetchAlbumName = useCallback(async () => {
@@ -54,13 +61,16 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
 
     useEffect(() => {
         setFetchedImage(undefined);
+        setThumbnailUrl(undefined);
         void fetchImage();
+        void fetchThumbnail();
         void fetchAlbumName();
         return () => {
             revokeBlobUrl(blobUrlRef.current);
             blobUrlRef.current = undefined;
+            revokeThumbnail(props.source.id);
         };
-    }, [props.source, fetchImage, fetchAlbumName]);
+    }, [props.source, fetchImage, fetchThumbnail, fetchAlbumName]);
 
     const handleDownload = useCallback(async () => {
         try {
@@ -226,9 +236,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                             fit="cover"
                             w="auto"
                             radius={0}
-                            src={props.source.thumbnail && (props.source.thumbnail.startsWith('http') || props.source.thumbnail.startsWith('data:image'))
-                                ? props.source.thumbnail
-                                : `data:image/png;base64,${props.source.thumbnail}`}
+                            src={thumbnailUrl}
                             alt={props.source.name}
                             style={{ filter: 'blur(10px) brightness(0.8)', transition: 'filter 0.3s ease' }}
                         />}

@@ -78,7 +78,7 @@ func (ps *PhotoService) PhotoBinary(photoId string) (string, error) {
 }
 
 func (ps *PhotoService) PhotoThumbnail(photoId string) ([]byte, error) {
-	photoInfo, err := ps.photoRepo.GetPhotoById(photoId, false)
+	photoInfo, err := ps.photoRepo.GetPhotoById(photoId, true)
 	if err != nil {
 		return nil, err
 	}

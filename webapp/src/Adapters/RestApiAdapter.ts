@@ -12,6 +12,8 @@ export interface IRestApiAdapter {
 
     getBinaryApiCall(path: string, headers: Record<string, string>, params: Record<string, unknown>): Promise<any>
 
+    postBinaryApiCall(path: string, body: Record<string, unknown>, headers: Record<string, string>): Promise<any>
+
     authHeader(): Record<string, string>
 }
 
@@ -47,6 +49,10 @@ export class RestApiAdapter implements IRestApiAdapter {
 
     async getBinaryApiCall(path: string, headers: Record<string, string>, params: Record<string, any>) {
         return this.binaryApiCall('get', headers, {}, path, params);
+    }
+
+    async postBinaryApiCall(path: string, body: Record<string, unknown>, headers: Record<string, string>) {
+        return this.binaryApiCall('post', headers, body, path, {});
     }
 
     private async binaryApiCall(method: string, headers: Record<string, string>, body: Record<string, any>, url: string, params: Record<string, any>) {
@@ -108,6 +114,10 @@ export class RestApiAdapter implements IRestApiAdapter {
         return {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
+    }
+
+    getBaseApiPath() {
+        return this.baseApiPath;
     }
 }
 

@@ -4,6 +4,7 @@ import { Photo } from '../../Models/Photo';
 import { Card, Image, Text, Group, Title, Skeleton } from '@mantine/core';
 import { IconClock } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
+import { fetchThumbnailWithAuth, getCachedThumbnail, revokeThumbnail } from '../../utils/ThumbnailUtils';
 
 interface MemoriesProps {
     photosAdapter: IPhotosAdapter;
@@ -11,6 +12,7 @@ interface MemoriesProps {
 
 export const Memories: React.FC<MemoriesProps> = ({ photosAdapter }) => {
     const [memories, setMemories] = useState<Photo[]>([]);
+    const [thumbnailUrls, setThumbnailUrls] = useState<Map<string, string>>(new Map());
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
@@ -20,7 +22,7 @@ export const Memories: React.FC<MemoriesProps> = ({ photosAdapter }) => {
             const month = today.getMonth() + 1;
             const day = today.getDate();
 
-            const allPhotos = await photosAdapter.getAllPhotosInfo('', 500, true);
+            const allPhotos = await photosAdapter.getAllPhotosInfo('', 500, false);
             const filtered = allPhotos.filter(photo => {
                 if (!photo.createdAt) return false;
                 const date = new Date(photo.createdAt);
@@ -29,7 +31,21 @@ export const Memories: React.FC<MemoriesProps> = ({ photosAdapter }) => {
 
             // Sort by year descending
             filtered.sort((a, b) => new Date(b.createdAt).getFullYear() - new Date(a.createdAt).getFullYear());
-            setMemories(filtered.slice(0, 6));
+            const sliced = filtered.slice(0, 6);
+            setMemories(sliced);
+
+            // Load thumbnails
+            const urls = new Map<string, string>();
+            for (const photo of sliced) {
+                const cached = getCachedThumbnail(photo.id);
+                if (cached) {
+                    urls.set(photo.id, cached);
+                } else {
+                    const url = await fetchThumbnailWithAuth(photosAdapter, photo.id);
+                    urls.set(photo.id, url);
+                }
+            }
+            setThumbnailUrls(urls);
         } catch (e) {
             setMemories([]);
         } finally {
@@ -39,6 +55,9 @@ export const Memories: React.FC<MemoriesProps> = ({ photosAdapter }) => {
 
     useEffect(() => {
         loadMemories();
+        return () => {
+            thumbnailUrls.forEach((_, id) => revokeThumbnail(id));
+        };
     }, [loadMemories]);
 
     if (loading) {
@@ -69,13 +88,15 @@ export const Memories: React.FC<MemoriesProps> = ({ photosAdapter }) => {
             </Group>
             <Group gap="sm">
                 {memories.map(photo => {
-                    const imgSrc = photo.thumbnail && (photo.thumbnail.startsWith('http') || photo.thumbnail.startsWith('data:image'))
-                        ? photo.thumbnail
-                        : `data:image/png;base64,${photo.thumbnail}`;
                     const year = new Date(photo.createdAt).getFullYear();
+                    const url = thumbnailUrls.get(photo.id);
                     return (
                         <Card key={photo.id} p={0} radius="sm" withBorder style={{ cursor: 'pointer' }} onClick={() => navigate(`/photo/${photo.id}`)}>
-                            <Image src={imgSrc} height={120} width={160} fit="cover" radius="sm" />
+                            {url ? (
+                                <Image src={url} height={120} width={160} fit="cover" radius="sm" />
+                            ) : (
+                                <Skeleton height={120} width={160} radius="sm" />
+                            )}
                             <Text size="xs" ta="center" mt={4} c="dimmed">{year}</Text>
                         </Card>
                     );

@@ -58,10 +58,6 @@ export const AlbumCard: React.FunctionComponent<IProps> = (props) => {
     return <Loader size="md" />;
   }
 
-  const imgSrc = thumbnailUrl && (thumbnailUrl.startsWith('http') || thumbnailUrl.startsWith('data:image'))
-      ? thumbnailUrl
-      : `data:image/png;base64,${thumbnailUrl}`;
-
   return (
     <Card shadow="sm" radius="md" withBorder mb="10px" mr="10px" w="200px" style={{ position: 'relative' }}>
       <div style={{ position: 'absolute', top: 4, right: 4, zIndex: 2 }}>
@@ -82,7 +78,7 @@ export const AlbumCard: React.FunctionComponent<IProps> = (props) => {
         </Menu>
       </div>
       <Card.Section onClick={() => props.albumViewCallback(props.source.id)} style={{ cursor: 'pointer' }}>
-        <Image src={imgSrc} w="200px" h="150px" />
+        <Image src={thumbnailUrl} w="200px" h="150px" />
       </Card.Section>
       <Group justify="space-between" mt="md" mb="xs" onClick={() => !isRenaming && props.albumViewCallback(props.source.id)} style={{ cursor: 'pointer' }}>
         {isRenaming ? (

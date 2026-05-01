@@ -644,7 +644,7 @@ func TestPhotoThumbnail(t *testing.T) {
 			name:    "successfully get photo thumbnail",
 			photoId: "photo-123",
 			mockSetup: func(m *MockPhotoRepository) {
-				m.On("GetPhotoById", "photo-123", false).Return(&domain.Photo{
+				m.On("GetPhotoById", "photo-123", true).Return(&domain.Photo{
 					ID:        "photo-123",
 					Thumbnail: []byte("thumbnail-data"),
 				}, nil)
@@ -658,7 +658,7 @@ func TestPhotoThumbnail(t *testing.T) {
 			name:    "photo not found",
 			photoId: "nonexistent",
 			mockSetup: func(m *MockPhotoRepository) {
-				m.On("GetPhotoById", "nonexistent", false).Return(nil, errors.New("not found"))
+				m.On("GetPhotoById", "nonexistent", true).Return(nil, errors.New("not found"))
 			},
 			validate: func(t *testing.T, thumbnail []byte, err error) {
 				assert.Error(t, err)

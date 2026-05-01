@@ -64,7 +64,7 @@ export const newPhoto = (photoId: string, albumId: string): Photo => {
         tags: "",
         metadata,
         createdAt: "2024-01-01T10:00.000",
-        thumbnail: randomPhotoImage
+        thumbnailUrl: randomPhotoImage
     };
 }
 

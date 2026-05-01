@@ -4,7 +4,6 @@ export interface PhotoGeoData {
   id: string;
   lat: number;
   lng: number;
-  thumbnail: string;
   dateTaken: string;
 }
 
@@ -37,4 +36,7 @@ export interface IPhotosAdapter {
   getPhotosByTag(tag: string, fromId: string, limit: number, includeThumbnails: boolean): Promise<Photo[]>;
   uploadPhoto(body: Record<string, unknown>): Promise<any>;
   index(): Promise<any>;
+  getPhotoThumbnails(photoIds: string[]): Promise<Map<string, string>>;
+  getThumbnailUrl(photoId: string): string;
+  getPhotoThumbnailBlob(photoId: string): Promise<Blob | string>;
 }

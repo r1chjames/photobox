@@ -164,4 +164,25 @@ export class MockPhotosAdapter implements IPhotosAdapter {
     if (startIndex === -1) return [];
     return filtered.slice(startIndex, startIndex + limit);
   }
+
+  public getPhotoThumbnails = async (photoIds: string[]): Promise<Map<string, string>> => {
+    const thumbnailMap = new Map<string, string>();
+    for (const photoId of photoIds) {
+      const photo = this._photos.find(p => p.id === photoId);
+      if (photo?.thumbnailUrl) {
+        thumbnailMap.set(photoId, photo.thumbnailUrl);
+      }
+    }
+    return thumbnailMap;
+  }
+
+  public getThumbnailUrl = (photoId: string): string => {
+    const photo = this._photos.find(p => p.id === photoId);
+    return photo?.thumbnailUrl || 'no_image.png';
+  }
+
+  public getPhotoThumbnailBlob = async (photoId: string): Promise<Blob | string> => {
+    const photo = this._photos.find(p => p.id === photoId);
+    return photo?.thumbnailUrl || 'no_image.png';
+  }
 }

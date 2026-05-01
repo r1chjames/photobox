@@ -38,11 +38,11 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapt
 
             let retrievedPhotos;
             if (tags) {
-                retrievedPhotos = await photosAdapter.getPhotosByTag(tags, fromId, limit, true);
+                retrievedPhotos = await photosAdapter.getPhotosByTag(tags, fromId, limit, false);
             } else if (albumId) {
-                retrievedPhotos = await photosAdapter.getPhotosInfoInAlbum(albumId, fromId, limit, true, startDate, endDate);
+                retrievedPhotos = await photosAdapter.getPhotosInfoInAlbum(albumId, fromId, limit, false, startDate, endDate);
             } else {
-                retrievedPhotos = await photosAdapter.getAllPhotosInfo(fromId, limit, true, startDate, endDate);
+                retrievedPhotos = await photosAdapter.getAllPhotosInfo(fromId, limit, false, startDate, endDate);
             }
 
             const photosData = retrievedPhotos ?? [];

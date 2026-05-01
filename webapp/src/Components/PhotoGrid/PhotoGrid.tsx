@@ -18,6 +18,7 @@ import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
 import './PhotoGrid.css';
 import {Photo} from "../../Models/Photo";
+import {fetchThumbnailsBatch, getCachedThumbnail, revokeThumbnail} from "../../utils/ThumbnailUtils";
 
 interface IProps {
     photosAdapter: IPhotosAdapter;
@@ -41,11 +42,8 @@ interface GridImageItemProps {
 
 // By adding a custom comparison function to React.memo, we prevent re-renders unless the photo's ID changes.
 const GridImageItem = React.memo(
-    ({photo, isSelectionMode, isSelected, onImageClick, onToggleSelect}: GridImageItemProps) => {
+    ({photo, isSelectionMode, isSelected, onImageClick, onToggleSelect, thumbnailUrl}: GridImageItemProps & { thumbnailUrl: string | undefined }) => {
         const [isLoaded, setIsLoaded] = useState(false);
-        const imgSrc = photo.thumbnail && (photo.thumbnail.startsWith('http') || photo.thumbnail.startsWith('data:image'))
-            ? photo.thumbnail
-            : `data:image/png;base64,${photo.thumbnail}`;
 
         const handleClick = () => {
             if (isSelectionMode) {
@@ -65,19 +63,21 @@ const GridImageItem = React.memo(
                     </div>
                 )}
                 <div className="thumbnail">
-                    {!isLoaded && (
+                    {!thumbnailUrl && (
                         <Skeleton
                             height="100%"
                             width="100%"
                             style={{position: 'absolute', top: 0, left: 0}}
                         />
                     )}
-                    <img
-                        src={imgSrc}
-                        alt={photo.name}
-                        onLoad={() => setIsLoaded(true)}
-                        style={{opacity: isLoaded ? 1 : 0, transition: 'opacity 0.2s'}}
-                    />
+                    {thumbnailUrl && (
+                        <img
+                            src={thumbnailUrl}
+                            alt={photo.name}
+                            onLoad={() => setIsLoaded(true)}
+                            style={{opacity: isLoaded ? 1 : 0, transition: 'opacity 0.2s'}}
+                        />
+                    )}
                     {!isSelectionMode && isLoaded && (
                         <div className="photo-hover-overlay" style={{
                             position: 'absolute',
@@ -113,7 +113,8 @@ const GridImageItem = React.memo(
     (prevProps, nextProps) =>
         prevProps.photo.id === nextProps.photo.id &&
         prevProps.isSelectionMode === nextProps.isSelectionMode &&
-        prevProps.isSelected === nextProps.isSelected
+        prevProps.isSelected === nextProps.isSelected &&
+        prevProps.thumbnailUrl === nextProps.thumbnailUrl
 );
 GridImageItem.displayName = 'GridImageItem';
 
@@ -138,6 +139,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const [tagModalOpen, setTagModalOpen] = useState(false);
     const [tagModalMode, setTagModalMode] = useState<'add' | 'remove'>('add');
     const [tagInput, setTagInput] = useState('');
+    const [thumbnailUrls, setThumbnailUrls] = useState<Map<string, string>>(new Map());
     const isMobile = useMediaQuery('(max-width: 50em)');
 
     useEffect(() => {
@@ -151,6 +153,43 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
 
     // The hook now provides a simple, flat, de-duplicated array of photos.
     const {photos, albumName, allRetrieved, fetchNextPage, isFetchingNextPage, refetch} = usePhotoGrid(props.photosAdapter, props.albumsAdapter, id, startDate, endDate, props.tags);
+
+    // Batch load thumbnails for new photos
+    useEffect(() => {
+        if (photos.length === 0) return;
+        let cancelled = false;
+
+        const loadThumbnails = async () => {
+            const uncachedIds = photos
+                .map(p => p.id)
+                .filter(id => !getCachedThumbnail(id));
+
+            console.log('[PhotoGrid] Loading thumbnails for', uncachedIds.length, 'photos');
+
+            if (uncachedIds.length === 0) return;
+
+            const newThumbnails = await fetchThumbnailsBatch(props.photosAdapter, uncachedIds);
+            console.log('[PhotoGrid] Received', newThumbnails.size, 'thumbnails');
+            if (!cancelled) {
+                setThumbnailUrls(prev => {
+                    const next = new Map(prev);
+                    newThumbnails.forEach((url, id) => next.set(id, url));
+                    console.log('[PhotoGrid] Setting thumbnailUrls state, total:', next.size);
+                    return next;
+                });
+            }
+        };
+
+        loadThumbnails();
+        return () => { cancelled = true; };
+    }, [photos.length, props.photosAdapter]);
+
+    // Cleanup thumbnails on unmount or album change
+    useEffect(() => {
+        return () => {
+            thumbnailUrls.forEach((_, id) => revokeThumbnail(id));
+        };
+    }, [id]);
 
     const photosRef = useRef(photos);
     photosRef.current = photos;
@@ -490,6 +529,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                             data-grid-groupkey={Math.floor(index / 30)}
                             key={photo.id}
                             photo={photo}
+                            thumbnailUrl={thumbnailUrls.get(photo.id)}
                             isSelectionMode={isSelectionMode}
                             isSelected={selectedIds.has(photo.id)}
                             onImageClick={onImageClick}

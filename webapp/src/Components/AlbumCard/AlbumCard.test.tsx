@@ -161,9 +161,9 @@ describe('AlbumCard', () => {
         });
     });
 
-    it('should prefix base64 data when thumbnail has no protocol', async () => {
+    it('should use thumbnail URL from hook directly', async () => {
         (useAlbumCard as ReturnType<typeof vi.fn>).mockReturnValue({
-            thumbnailUrl: 'rawbase64data',
+            thumbnailUrl: 'blob:http://localhost/abc123',
             photoCount: 7,
             isLoading: false
         });
@@ -179,7 +179,7 @@ describe('AlbumCard', () => {
 
         await waitFor(() => {
             const image = screen.getByRole('img');
-            expect(image).toHaveAttribute('src', 'data:image/png;base64,rawbase64data');
+            expect(image).toHaveAttribute('src', 'blob:http://localhost/abc123');
         });
     });
 

@@ -6,6 +6,7 @@ import { EmptyState } from '../EmptyState/EmptyState';
 import { Loader, Center, Title } from '@mantine/core';
 import { IconMap } from '@tabler/icons-react';
 import 'leaflet/dist/leaflet.css';
+import { fetchThumbnailWithAuth, getCachedThumbnail, revokeThumbnail } from '../../utils/ThumbnailUtils';
 
 interface MapViewProps {
   photosAdapter: IPhotosAdapter;
@@ -23,12 +24,25 @@ const BoundsSetter: React.FC<{ bounds: LatLngBounds | null }> = ({ bounds }) => 
 
 export const MapView: React.FC<MapViewProps> = ({ photosAdapter }) => {
   const [photos, setPhotos] = useState<PhotoGeoData[]>([]);
+  const [thumbnailUrls, setThumbnailUrls] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
 
   const loadGeodata = useCallback(async () => {
     try {
       const data = await photosAdapter.getGeodata(90, -90, 180, -180);
       setPhotos(data || []);
+
+      const urls = new Map<string, string>();
+      for (const photo of data || []) {
+        const cached = getCachedThumbnail(photo.id);
+        if (cached) {
+          urls.set(photo.id, cached);
+        } else {
+          const url = await fetchThumbnailWithAuth(photosAdapter, photo.id);
+          urls.set(photo.id, url);
+        }
+      }
+      setThumbnailUrls(urls);
     } catch (e) {
       setPhotos([]);
     } finally {
@@ -38,6 +52,9 @@ export const MapView: React.FC<MapViewProps> = ({ photosAdapter }) => {
 
   useEffect(() => {
     loadGeodata();
+    return () => {
+      thumbnailUrls.forEach((_, id) => revokeThumbnail(id));
+    };
   }, [loadGeodata]);
 
   if (loading) {
@@ -83,11 +100,9 @@ export const MapView: React.FC<MapViewProps> = ({ photosAdapter }) => {
           <Marker key={photo.id} position={[photo.lat, photo.lng]}>
             <Popup>
               <div style={{ textAlign: 'center' }}>
-                {photo.thumbnail && (
+                {thumbnailUrls.get(photo.id) && (
                   <img
-                    src={photo.thumbnail.startsWith('http') || photo.thumbnail.startsWith('data:image')
-                      ? photo.thumbnail
-                      : `data:image/png;base64,${photo.thumbnail}`}
+                    src={thumbnailUrls.get(photo.id)}
                     alt=""
                     style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 4 }}
                   />

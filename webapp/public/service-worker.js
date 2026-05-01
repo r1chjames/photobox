@@ -1,4 +1,4 @@
-const CACHE_NAME = 'photobox-v1';
+const CACHE_NAME = 'photobox-v2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -16,8 +16,14 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Only cache GET requests for static assets and API thumbnails
+  // Only cache GET requests for static assets
   if (event.request.method !== 'GET') {
+    return;
+  }
+
+  // Don't cache API requests - they require auth headers that service worker can't provide
+  const url = new URL(event.request.url);
+  if (url.pathname.startsWith('/api/')) {
     return;
   }
 
@@ -28,9 +34,8 @@ self.addEventListener('fetch', (event) => {
           return response;
         }
         return fetch(event.request).then((networkResponse) => {
-          // Cache thumbnail and image responses for offline viewing
-          const url = new URL(event.request.url);
-          if (url.pathname.includes('/thumbnail/') || url.pathname.includes('/bin/')) {
+          // Only cache successful responses for static assets
+          if (networkResponse.ok && networkResponse.type === 'basic') {
             const responseClone = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => {
               cache.put(event.request, responseClone);

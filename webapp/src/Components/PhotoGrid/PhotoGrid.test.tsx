@@ -32,16 +32,17 @@ describe('PhotoGrid', () => {
                 {
                     id: 'photo-1',
                     name: 'photo1.jpg',
-                    thumbnail: 'base64data1',
+                    thumbnailUrl: '/api/photo/thumbnail/photo-1',
                     createdAt: '2024-01-01',
                 },
                 {
                     id: 'photo-2',
                     name: 'photo2.jpg',
-                    thumbnail: 'base64data2',
+                    thumbnailUrl: '/api/photo/thumbnail/photo-2',
                     createdAt: '2024-01-02',
                 },
             ]),
+            getThumbnailUrl: vi.fn((photoId: string) => `/api/photo/thumbnail/${photoId}`),
         } as unknown as IPhotosAdapter;
 
         mockAlbumsAdapter = {
@@ -122,7 +123,7 @@ describe('PhotoGrid', () => {
                 'test-album-id',
                 expect.any(String), // fromId
                 30, // limit
-                true, // includeThumbnails
+                false, // includeThumbnails
                 undefined, // startDate
                 undefined  // endDate
             );
@@ -194,12 +195,13 @@ describe('PhotoGrid', () => {
         const manyPhotos = Array.from({ length: 65 }, (_, i) => ({
             id: `photo-${i}`,
             name: `photo${i}.jpg`,
-            thumbnail: `base64data${i}`,
+            thumbnailUrl: `/api/photo/thumbnail/photo-${i}`,
             createdAt: '2024-01-01',
         }));
 
         const manyPhotosAdapter = {
             getPhotosInfoInAlbum: vi.fn().mockResolvedValue(manyPhotos),
+            getThumbnailUrl: vi.fn((photoId: string) => `/api/photo/thumbnail/${photoId}`),
         } as unknown as IPhotosAdapter;
 
         render(

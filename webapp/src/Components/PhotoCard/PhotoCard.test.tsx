@@ -31,7 +31,9 @@ describe('PhotoCard', () => {
     let mockProps: any;
 
     beforeEach(() => {
-        mockPhotosAdapter = {} as IPhotosAdapter;
+        mockPhotosAdapter = {
+            getThumbnailUrl: vi.fn((photoId: string) => `/api/photo/thumbnail/${photoId}`),
+        } as unknown as IPhotosAdapter;
         mockAlbumsAdapter = {
             getAlbumInfoById: vi.fn().mockResolvedValue({ id: 'album-1', name: 'Test Album' }),
         } as unknown as IAlbumsAdapter;
@@ -41,7 +43,7 @@ describe('PhotoCard', () => {
             name: 'test-photo.jpg',
             albumId: 'album-1',
             createdAt: '2024-01-15T10:30:00Z',
-            thumbnail: 'base64thumbnaildata',
+            thumbnailUrl: '/api/photo/thumbnail/photo-1',
         } as Photo;
 
         mockProps = {
