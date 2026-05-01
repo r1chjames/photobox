@@ -7,6 +7,7 @@ export interface Photo {
   tags: string;
   metadata: Record<string, unknown>;
   createdAt: string;
+  dateTaken?: string;
   thumbnailUrl: string;
   favorite?: boolean;
   fileHash?: string;

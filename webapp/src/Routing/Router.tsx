@@ -171,7 +171,7 @@ const Router: React.FunctionComponent = () => {
                     path="/shares"
                     element={
                         <ProtectedRoute>
-                            <AppBar activeLink={Labels.Settings}>
+                            <AppBar activeLink={Labels.Shares}>
                                 <ShareManagement
                                     sharesAdapter={sharesAdapter}
                                 />
@@ -183,7 +183,7 @@ const Router: React.FunctionComponent = () => {
                     path="/users"
                     element={
                         <ProtectedRoute>
-                            <AppBar activeLink={Labels.Settings}>
+                            <AppBar activeLink={Labels.Users}>
                                 <UserManagement
                                     usersAdapter={usersAdapter}
                                 />

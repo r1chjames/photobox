@@ -275,19 +275,22 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
                                 </Text>
                                 <Breadcrumbs separator="›" ml="md" visibleFrom="sm">
                                     {breadcrumbItems.map((item, index) => (
-                                        <Text
+                                        <span
                                             key={index}
-                                            size="sm"
-                                            c={index === breadcrumbItems.length - 1 ? 'var(--mantine-primary-color-filled)' : 'dimmed'}
-                                            fw={index === breadcrumbItems.length - 1 ? 600 : 400}
-                                            style={{ cursor: item.href ? 'pointer' : 'default' }}
+                                            style={{
+                                                cursor: item.href ? 'pointer' : 'default',
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: 4,
+                                                color: index === breadcrumbItems.length - 1 ? 'var(--mantine-primary-color-filled)' : 'var(--mantine-color-dimmed)',
+                                                fontWeight: index === breadcrumbItems.length - 1 ? 600 : 400,
+                                                fontSize: 'var(--mantine-font-size-sm)',
+                                            }}
                                             onClick={() => item.href && navigate(item.href)}
                                         >
-                                            <Group gap={4}>
-                                                {item.icon}
-                                                {item.label}
-                                            </Group>
-                                        </Text>
+                                            {item.icon}
+                                            {item.label}
+                                        </span>
                                     ))}
                                 </Breadcrumbs>
                             </Group>
@@ -382,6 +385,7 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
             {/* Mobile bottom navigation */}
             <div
                 className="mobile-bottom-nav"
+                hidden-from="sm"
                 style={{
                     position: 'fixed',
                     bottom: 0,

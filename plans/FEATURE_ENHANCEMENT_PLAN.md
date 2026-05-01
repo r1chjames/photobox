@@ -248,6 +248,19 @@ The backend has full user CRUD (`POST /api/user/register`, `POST /api/user/updat
 - Change role dropdown.
 - Delete user.
 
+### 6.4 Account Settings (Self-Service Profile)
+**P1 · S · Medium**
+
+The "Account settings" item in the User dropdown (AppBar.tsx:337) is a dead placeholder — it has no `onClick` handler and there is no account settings page. The backend `POST /user/update` self-service endpoint already exists in `router.go:87`; only the frontend needs building.
+
+- **Backend:** Already complete — `POST /user/update` accepts partial updates to username, email, and password.
+- **Frontend:**
+  - Decode the JWT token payload (contains `id`, `username`, `role`) into `AuthContext` so the current user's identity is available app-wide.
+  - Add `getCurrentUser()` and `updateCurrentUser()` methods to `IUsersAdapter` / `UsersAdapter`.
+  - Wire `onClick` on the "Account settings" `Menu.Item` to navigate to `/account`.
+  - Create an `AccountSettings` page with: current username display (read-only), editable email field, change password fields (current + new + confirm), Save button, and success/error toasts.
+  - Add a `/account` route in `Router.tsx`.
+
 ---
 
 ## 7. Smart & AI Features
@@ -514,6 +527,7 @@ Use TanStack Query's `queryClient.prefetchQuery` to preload neighboring photos w
 | 27 | Accessibility audit (keyboard + ARIA) | 11.1-11.2 | M |
 | 28 | HEIC/RAW preview generation | 8.2 | M |
 | 29 | Photo rotation & flip | 3.3 | M |
+| 29b | Account settings (self-service profile) | 6.4 | S |
 | 30 | User management UI | 6.3 | M |
 
 ### Phase 6 — Delight & Future (Ongoing)

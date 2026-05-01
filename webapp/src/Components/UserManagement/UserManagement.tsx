@@ -17,7 +17,6 @@ export const UserManagement: React.FC<UserManagementProps> = ({ usersAdapter }) 
 
     const loadUsers = useCallback(async () => {
         try {
-            // @ts-expect-error getAllUsers not in interface yet
             const data = await usersAdapter.getAllUsers();
             setUsers(data || []);
         } catch (e) {
@@ -38,7 +37,6 @@ export const UserManagement: React.FC<UserManagementProps> = ({ usersAdapter }) 
 
     const handleRoleChange = async (userId: string, newRole: string) => {
         try {
-            // @ts-expect-error updateUser not in interface yet
             await usersAdapter.updateUser(userId, { role: newRole });
             notifications.show({
                 title: 'User updated',
@@ -63,7 +61,6 @@ export const UserManagement: React.FC<UserManagementProps> = ({ usersAdapter }) 
             confirmProps: { color: 'red' },
             onConfirm: async () => {
                 try {
-                    // @ts-expect-error deleteUser not in interface yet
                     await usersAdapter.deleteUser(user.id!);
                     notifications.show({
                         title: 'User deleted',

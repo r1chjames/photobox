@@ -1,0 +1,7 @@
+- Adding a photo to favourites returns 404
+- Users gives a "usersAdapter.getAllUsers is not a function" error
+- Clicking on a thumbnail to open the photo card opens it at a prefined size before it jumps to the correct size. It could obtain the photo dimensions from the server when it gets the list of photos to pre-advise the size of the modal and skeleton
+- Compact/comfortable/large on photogrid have no impact on the look, nothing changes
+- Error when clicking Trash on the appbar - "trashed is not iterable"
+- Videos on the appbar just shows photos
+- Share doesn't work, clicking share on the photo card "Share failed. Failed to execute 'share' on 'Navigator': An earlier share has not yet completed."

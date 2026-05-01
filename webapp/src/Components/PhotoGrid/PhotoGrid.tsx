@@ -20,6 +20,45 @@ import './PhotoGrid.css';
 import {Photo} from "../../Models/Photo";
 import {fetchThumbnailsBatch, getCachedThumbnail} from "../../utils/ThumbnailUtils";
 
+const getPhotoDisplayDate = (photo: Photo): string => {
+    // Try top-level dateTaken first
+    if (photo.dateTaken) {
+        try { return new Date(photo.dateTaken).toLocaleDateString(); } catch { /* ignore */ }
+    }
+
+    // Recursively search metadata for common date fields
+    const findDate = (obj: unknown): string | undefined => {
+        if (!obj || typeof obj !== 'object') return undefined;
+        const record = obj as Record<string, unknown>;
+        for (const key of ['DateTimeOriginal', 'DateTime', 'dateTaken', 'CreateDate', 'ModifyDate']) {
+            if (key in record && record[key]) {
+                const val = String(record[key]);
+                // EXIF dates are often in format "2006:01:02 15:04:05"
+                if (/^\d{4}:\d{2}:\d{2}/.test(val)) {
+                    return val.replace(/^\d{4}:\d{2}:\d{2}/, (m) => m.replace(/:/g, '-'));
+                }
+                return val;
+            }
+        }
+        // Search nested objects
+        for (const val of Object.values(record)) {
+            if (val && typeof val === 'object') {
+                const found = findDate(val);
+                if (found) return found;
+            }
+        }
+        return undefined;
+    };
+
+    const raw = findDate(photo.metadata) || photo.createdAt;
+    if (!raw) return '';
+    try {
+        return new Date(raw).toLocaleDateString();
+    } catch {
+        return raw;
+    }
+};
+
 interface IProps {
     photosAdapter: IPhotosAdapter;
     albumsAdapter: IAlbumsAdapter;
@@ -27,6 +66,8 @@ interface IProps {
     maxDisplayed?: number;
     tags?: string;
     mediaType?: string;
+    searchQuery?: string;
+    favoritesOnly?: boolean;
 }
 
 const defaultProps = {
@@ -152,7 +193,7 @@ const GridImageItem = React.memo(
                                 {photo.name}
                             </div>
                             <div style={{ opacity: 0.8, fontSize: 11 }}>
-                                {photo.createdAt ? new Date(photo.createdAt).toLocaleDateString() : ''}
+                                {getPhotoDisplayDate(photo)}
                                 {cameraModel ? ` · ${cameraModel}` : ''}
                             </div>
                         </div>
@@ -221,7 +262,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const endDate = dateFilter ? `${dateFilter.year}-${String(dateFilter.month).padStart(2, '0')}-31` : undefined;
 
     // The hook now provides a simple, flat, de-duplicated array of photos.
-    const {photos, albumName, allRetrieved, fetchNextPage, isFetchingNextPage, refetch} = usePhotoGrid(props.photosAdapter, props.albumsAdapter, id, startDate, endDate, props.tags, props.mediaType);
+    const {photos, albumName, allRetrieved, fetchNextPage, isFetchingNextPage, refetch} = usePhotoGrid(props.photosAdapter, props.albumsAdapter, id, startDate, endDate, props.tags, props.mediaType, props.searchQuery, props.favoritesOnly);
 
     const photoIdsKey = React.useMemo(() => photos.map(p => p.id).join(','), [photos]);
 
@@ -695,7 +736,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                                             />
                                         </Table.Td>
                                         <Table.Td>{photo.name}</Table.Td>
-                                        <Table.Td>{new Date(photo.createdAt).toLocaleDateString()}</Table.Td>
+                                        <Table.Td>{getPhotoDisplayDate(photo)}</Table.Td>
                                         <Table.Td>
                                             <Group gap={4}>
                                                 {photo.tags && photo.tags.split(',').map(t => t.trim()).filter(Boolean).map(tag => (

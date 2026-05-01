@@ -35,6 +35,18 @@ export class UsersAdapter implements IUsersAdapter {
     };
     return this.restApiAdapter.postApiCall(registerPath, body, this.buildHeaders());
   }
+
+  public getAllUsers = async (): Promise<User[]> => {
+    return this.restApiAdapter.getApiCall("users", this.buildHeaders(), {});
+  }
+
+  public updateUser = async (userId: string, updates: Partial<User>): Promise<User> => {
+    return this.restApiAdapter.putApiCall(`users/${userId}`, updates as Record<string, unknown>, this.buildHeaders());
+  }
+
+  public deleteUser = async (userId: string): Promise<void> => {
+    return this.restApiAdapter.deleteApiCall(`users/${userId}`, this.buildHeaders());
+  }
 }
 
 export interface Token {

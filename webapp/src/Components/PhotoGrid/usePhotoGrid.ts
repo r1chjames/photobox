@@ -2,7 +2,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 
-const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapter, albumIdentifier: string | undefined, startDate?: string, endDate?: string, tags?: string, mediaType?: string) => {
+const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapter, albumIdentifier: string | undefined, startDate?: string, endDate?: string, tags?: string, mediaType?: string, searchQuery?: string, favoritesOnly?: boolean) => {
     const limit = 30;
 
     // When an albumIdentifier is present, it's used to fetch album details.
@@ -14,7 +14,7 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapt
     });
 
     // Use the fetched album's name if available, otherwise default to "All Photos".
-    const albumName = albumIdentifier ? album?.name : (tags ? `Tag: ${tags}` : (mediaType === 'video' ? 'Videos' : 'All Photos'));
+    const albumName = albumIdentifier ? album?.name : (searchQuery ? `Search: "${searchQuery}"` : (tags ? `Tag: ${tags}` : (favoritesOnly ? 'Favorites' : (mediaType === 'video' ? 'Videos' : 'All Photos'))));
     const albumId = album?.id; // The actual ID of the album, to be used for fetching photos.
 
     const {
@@ -26,7 +26,7 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapt
     } = useInfiniteQuery({
         // The query key for photos is now dependent on the actual albumId and date filters.
         // This ensures that if the albumId or date range changes, the photos are re-fetched.
-        queryKey: ['albumPhotos', albumId, startDate, endDate, tags, mediaType],
+        queryKey: ['albumPhotos', albumId, startDate, endDate, tags, mediaType, searchQuery, favoritesOnly],
         async queryFn({ pageParam = "" }) {
             const fromId = pageParam;
 
@@ -37,7 +37,9 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapt
             }
 
             let retrievedPhotos;
-            if (tags) {
+            if (searchQuery) {
+                retrievedPhotos = await photosAdapter.searchPhotos(searchQuery, fromId, limit);
+            } else if (tags) {
                 retrievedPhotos = await photosAdapter.getPhotosByTag(tags, fromId, limit, false);
             } else if (mediaType === 'video') {
                 retrievedPhotos = await photosAdapter.getVideos(fromId, limit);
@@ -57,11 +59,20 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapt
         // This query is enabled only if:
         // 1. We are not in an album context (albumIdentifier is null/undefined).
         // 2. We ARE in an album context AND we have successfully fetched the album's ID.
-        enabled: (!albumIdentifier || (!!albumIdentifier && !!albumId)) && (!tags || !!tags) && (!mediaType || !!mediaType),
+        // 3. For search queries, enabled whenever searchQuery is provided.
+        enabled: (!albumIdentifier || (!!albumIdentifier && !!albumId)) && (!tags || !!tags) && (!!searchQuery || !searchQuery) && (!mediaType || !!mediaType) && (!favoritesOnly || !!favoritesOnly),
         initialPageParam: "",
         getNextPageParam: (lastPage) => lastPage.nextCursor,
         select: (data) => {
-            const allPhotos = data.pages.flatMap(page => page.data).filter(Boolean);
+            let allPhotos = data.pages.flatMap(page => page.data).filter(Boolean);
+            // Client-side safety filter for mediaType
+            if (mediaType) {
+                allPhotos = allPhotos.filter(p => p.mediaType === mediaType);
+            }
+            // Client-side filter for favorites
+            if (favoritesOnly) {
+                allPhotos = allPhotos.filter(p => p.favorite);
+            }
             const uniquePhotos = Array.from(new Map(allPhotos.map(photo => [photo.id, photo])).values());
             return {
                 pages: data.pages,

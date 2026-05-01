@@ -20,10 +20,11 @@ export const TrashView: React.FC<TrashViewProps> = ({ photosAdapter }) => {
     const loadTrash = useCallback(async () => {
         try {
             const trashed = await photosAdapter.getTrashedPhotos('', 100);
-            setPhotos(trashed);
+            const safeTrashed = trashed || [];
+            setPhotos(safeTrashed);
 
             const urls = new Map<string, string>();
-            for (const photo of trashed) {
+            for (const photo of safeTrashed) {
                 const cached = getCachedThumbnail(photo.id);
                 if (cached) {
                     urls.set(photo.id, cached);

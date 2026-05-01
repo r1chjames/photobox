@@ -13,4 +13,16 @@ export class MockUsersAdapter implements IUsersAdapter {
     console.log("MockUsersAdapter.register: " + JSON.stringify(user));
     return { token: "mock-registration-token" };
   }
+
+  public getAllUsers = async (): Promise<User[]> => {
+    return [];
+  }
+
+  public updateUser = async (_userId: string, updates: Partial<User>): Promise<User> => {
+    return { username: 'mock', email: 'mock@example.com', ...updates };
+  }
+
+  public deleteUser = async (_userId: string): Promise<void> => {
+    return;
+  }
 }
