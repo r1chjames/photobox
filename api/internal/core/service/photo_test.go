@@ -152,6 +152,14 @@ func (m *MockPhotoRepository) UpdatePhotoTags(photoId string, tags string) error
 	return args.Error(0)
 }
 
+func (m *MockPhotoRepository) GetDuplicatePhotos() ([]*domain.Photo, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
 // MockAlbumService is a mock implementation of port.AlbumService
 type MockAlbumService struct {
 	mock.Mock

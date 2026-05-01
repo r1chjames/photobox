@@ -21,6 +21,7 @@ const MapView = React.lazy(() => import('../Components/MapView/MapView').then(m 
 const TagsView = React.lazy(() => import('../Components/TagsView/TagsView').then(m => ({default: m.TagsView})));
 const TagPhotosView = React.lazy(() => import('../Components/TagsView/TagPhotosView').then(m => ({default: m.TagPhotosView})));
 const SharedView = React.lazy(() => import('../Components/SharedView/SharedView').then(m => ({default: m.SharedView})));
+const DuplicatesView = React.lazy(() => import('../Components/DuplicatesView/DuplicatesView').then(m => ({default: m.DuplicatesView})));
 
 const PageLoader = () => (
     <Center h="100vh">
@@ -245,6 +246,18 @@ const Router: React.FunctionComponent = () => {
                     path="/shared/:token"
                     element={
                         <SharedView />
+                    }
+                />
+                <Route
+                    path="/duplicates"
+                    element={
+                        <ProtectedRoute>
+                            <AppBar activeLink={Labels.Duplicates}>
+                                <DuplicatesView
+                                    photosAdapter={photosAdapter}
+                                />
+                            </AppBar>
+                        </ProtectedRoute>
                     }
                 />
             </Routes>

@@ -5,6 +5,7 @@ import (
 	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"log/slog"
 	"os"
@@ -100,6 +101,19 @@ func (ps *PhotoService) setPhotosSourcePath(photos []*domain.Photo) {
 	}
 }
 
+func computeFileHash(path string) string {
+	file, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	defer file.Close()
+	hash := fnv.New64a()
+	if _, err := io.Copy(hash, file); err != nil {
+		return ""
+	}
+	return fmt.Sprintf("%x", hash.Sum64())
+}
+
 func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 	if len(photos) == 0 {
 		return nil
@@ -145,6 +159,7 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 			Metadata:       photoMetadata,
 			Thumbnail:      photo.Thumbnail,
 			CreatedEpoch:   time.Now().UnixMilli(),
+			FileHash:       computeFileHash(photo.Path),
 		}
 
 		slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
@@ -181,6 +196,7 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 		Metadata:       photoMetadata,
 		Thumbnail:      photo.Thumbnail,
 		CreatedEpoch:   time.Now().UnixMilli(),
+		FileHash:       computeFileHash(photo.Path),
 	}
 
 	slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
@@ -377,4 +393,13 @@ func (ps *PhotoService) BatchUpdatePhotoTags(photoIds []string, tags []string, o
 		_ = ps.photoRepo.UpdatePhotoTags(photoId, tagsStr)
 	}
 	return nil
+}
+
+func (ps *PhotoService) GetDuplicatePhotos() ([]*domain.Photo, error) {
+	resp, err := ps.photoRepo.GetDuplicatePhotos()
+	if err != nil {
+		return nil, err
+	}
+	ps.setPhotosSourcePath(resp)
+	return resp, nil
 }

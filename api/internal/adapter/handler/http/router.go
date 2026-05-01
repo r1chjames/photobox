@@ -129,6 +129,7 @@ func defineResources(
 	photos.GET("/geodata", photoHandler.GetGeodata)
 	photos.GET("/tags", photoHandler.GetAllTags)
 	photos.POST("/tags/batch", photoHandler.BatchUpdatePhotoTags)
+	photos.GET("/duplicates", photoHandler.GetDuplicatePhotos)
 	}
 
 	// Individual photo actions

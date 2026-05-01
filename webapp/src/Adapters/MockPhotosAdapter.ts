@@ -165,6 +165,22 @@ export class MockPhotosAdapter implements IPhotosAdapter {
     return filtered.slice(startIndex, startIndex + limit);
   }
 
+  public getDuplicatePhotos = async (): Promise<Photo[]> => {
+    const hashMap = new Map<string, Photo[]>();
+    this._photos.forEach(p => {
+      if (p.fileHash) {
+        const existing = hashMap.get(p.fileHash) || [];
+        existing.push(p);
+        hashMap.set(p.fileHash, existing);
+      }
+    });
+    const duplicates: Photo[] = [];
+    hashMap.forEach(group => {
+      if (group.length > 1) duplicates.push(...group);
+    });
+    return duplicates;
+  }
+
   public getPhotoThumbnails = async (photoIds: string[]): Promise<Map<string, string>> => {
     const thumbnailMap = new Map<string, string>();
     for (const photoId of photoIds) {

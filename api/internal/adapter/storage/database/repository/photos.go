@@ -312,3 +312,25 @@ func (pr *PhotoRepository) UpdatePhotoTags(photoId string, tags string) error {
 		Update("tags", tags)
 	return result.Error
 }
+
+func (pr *PhotoRepository) GetDuplicatePhotos() ([]*domain.Photo, error) {
+	var photos []*domain.Photo
+	result := pr.dbEnv.Db.Raw(`
+		SELECT p.* FROM photobox.photos p
+		INNER JOIN (
+			SELECT file_hash FROM photobox.photos
+			WHERE deleted_at IS NULL AND file_hash <> ''
+			GROUP BY file_hash
+			HAVING COUNT(*) > 1
+		) dup ON p.file_hash = dup.file_hash
+		WHERE p.deleted_at IS NULL
+		ORDER BY p.file_hash, p.created_epoch ASC
+	`).Scan(&photos)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if len(photos) == 0 {
+		return nil, domain.ErrDataNotFound
+	}
+	return photos, nil
+}

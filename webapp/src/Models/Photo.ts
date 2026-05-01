@@ -9,4 +9,5 @@ export interface Photo {
   createdAt: string;
   thumbnailUrl: string;
   favorite?: boolean;
+  fileHash?: string;
 }

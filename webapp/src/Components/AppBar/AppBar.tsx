@@ -25,6 +25,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
     IconAlbum,
     IconChevronDown,
+    IconCopy,
     IconHeart,
     IconHelp,
     IconHome,
@@ -58,6 +59,7 @@ export enum Labels {
     Users = "Users",
     Map = "Map",
     Tags = "Tags",
+    Duplicates = "Duplicates",
     Settings = "Settings"
 }
 
@@ -117,6 +119,12 @@ const navLinkData = [
         description: 'Browse by tag'
     },
     {
+        icon: IconCopy,
+        label: Labels.Duplicates,
+        href: '/duplicates',
+        description: 'Find duplicate photos'
+    },
+    {
         icon: IconSettings,
         label: Labels.Settings,
         href: '/settings',
@@ -163,6 +171,8 @@ const buildBreadcrumbs = (location: string, activeLink: Labels, id?: string) => 
         items.push({ label: 'Map', icon: <IconMap size="0.9rem" /> });
     } else if (activeLink === Labels.Tags) {
         items.push({ label: 'Tags', icon: <IconTag size="0.9rem" /> });
+    } else if (activeLink === Labels.Duplicates) {
+        items.push({ label: 'Duplicates', icon: <IconCopy size="0.9rem" /> });
     } else if (activeLink === Labels.Settings) {
         items.push({ label: 'Settings', icon: <IconSettings size="0.9rem" /> });
     }

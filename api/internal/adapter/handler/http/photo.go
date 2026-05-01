@@ -358,6 +358,15 @@ func (ph *PhotoHandler) GetGeodata(ctx *gin.Context) {
 	handleSuccess(ctx, entries)
 }
 
+func (ph *PhotoHandler) GetDuplicatePhotos(ctx *gin.Context) {
+	photos, err := ph.photoSvc.GetDuplicatePhotos()
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	handleSuccess(ctx, photos)
+}
+
 func (ph *PhotoHandler) GetAllTags(ctx *gin.Context) {
 	tags, err := ph.photoSvc.GetAllTags()
 	if err != nil {

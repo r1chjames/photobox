@@ -188,6 +188,14 @@ func (m *MockSearchPhotoService) BatchUpdatePhotoTags(photoIds []string, tags []
 	return args.Error(0)
 }
 
+func (m *MockSearchPhotoService) GetDuplicatePhotos() ([]*domain.Photo, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
 // MockSearchAlbumService is a mock implementation of port.AlbumService for search tests
 type MockSearchAlbumService struct {
 	mock.Mock

@@ -150,6 +150,11 @@ export class PhotosAdapter implements IPhotosAdapter {
     return this.restApiAdapter.getPaginatedApiCall(path, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 
+  public getDuplicatePhotos = async (): Promise<Photo[]> => {
+    const path = 'photos/duplicates';
+    return this.restApiAdapter.getApiCall(path, this.buildHeaders(this.restApiAdapter.authHeader()), {});
+  }
+
   public uploadPhoto = async (body: Record<string, unknown>) => {
     const uploadPhotoPath = `photo`;
     return this.restApiAdapter.postApiCall(uploadPhotoPath, body, this.buildHeaders(this.restApiAdapter.authHeader()));

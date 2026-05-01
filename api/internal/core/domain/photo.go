@@ -22,6 +22,7 @@ type Photo struct {
 	DeletedAt      *time.Time     `json:"deletedAt" gorm:"index;index:idx_album_deleted_epoch,priority:2;index:idx_deleted_epoch,priority:1"`
 	Blurhash       string         `json:"blurhash"`
 	DominantColor  string         `json:"dominantColor"`
+	FileHash       string         `json:"fileHash" gorm:"index"`
 }
 
 type TimelineEntry struct {

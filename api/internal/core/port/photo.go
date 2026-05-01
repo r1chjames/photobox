@@ -48,6 +48,8 @@ type PhotoRepository interface {
 	ListPhotosByTags(tags []string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
 	// UpdatePhotoTags updates the tags for a single photo
 	UpdatePhotoTags(photoId string, tags string) error
+	// GetDuplicatePhotos returns photos that have duplicate file hashes
+	GetDuplicatePhotos() ([]*domain.Photo, error)
 }
 
 // PhotoService is an interface for interacting with photo-related business logic
@@ -102,4 +104,6 @@ type PhotoService interface {
 	UpdatePhotoTags(photoId string, tags []string) (*domain.Photo, error)
 	// BatchUpdatePhotoTags adds/removes/sets tags for multiple photos
 	BatchUpdatePhotoTags(photoIds []string, tags []string, operation string) error
+	// GetDuplicatePhotos returns photos with duplicate file hashes
+	GetDuplicatePhotos() ([]*domain.Photo, error)
 }

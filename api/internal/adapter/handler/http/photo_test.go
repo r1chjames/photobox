@@ -188,6 +188,14 @@ func (m *MockPhotoService) BatchUpdatePhotoTags(photoIds []string, tags []string
 	return args.Error(0)
 }
 
+func (m *MockPhotoService) GetDuplicatePhotos() ([]*domain.Photo, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
 // MockJobService is a mock implementation of port.JobService
 type MockJobService struct {
 	mock.Mock

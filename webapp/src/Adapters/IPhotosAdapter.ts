@@ -34,9 +34,8 @@ export interface IPhotosAdapter {
   updatePhotoTags(photoId: string, tags: string[]): Promise<Photo>;
   batchUpdatePhotoTags(photoIds: string[], tags: string[], operation: 'add' | 'remove' | 'set'): Promise<void>;
   getPhotosByTag(tag: string, fromId: string, limit: number, includeThumbnails: boolean): Promise<Photo[]>;
+  getDuplicatePhotos(): Promise<Photo[]>;
+  getPhotoThumbnailBlob(photoId: string): Promise<Blob | string>;
   uploadPhoto(body: Record<string, unknown>): Promise<any>;
   index(): Promise<any>;
-  getPhotoThumbnails(photoIds: string[]): Promise<Map<string, string>>;
-  getThumbnailUrl(photoId: string): string;
-  getPhotoThumbnailBlob(photoId: string): Promise<Blob | string>;
 }
