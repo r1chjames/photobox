@@ -156,7 +156,7 @@ type updateUserRequest struct {
 	Username string          `json:"username" binding:"omitempty,required" example:"John Doe"`
 	Email    string          `json:"email" binding:"omitempty,required,email" example:"test@example.com"`
 	Password string          `json:"password" binding:"omitempty,required,min=8" example:"12345678"`
-	Role     domain.UserRole `json:"role" binding:"omitempty,required,user_role" example:"admin"`
+	Role     domain.UserRole `json:"role" binding:"omitempty,required,oneof=administrator viewer contributor" example:"admin"`
 }
 
 // UpdateUser godoc
