@@ -374,6 +374,21 @@ func (mr *MockPhotoRepositoryMockRecorder) UpdatePhotoTags(photoId, tags interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePhotoTags", reflect.TypeOf((*MockPhotoRepository)(nil).UpdatePhotoTags), photoId, tags)
 }
 
+// GetPhotoIndexCache mocks base method.
+func (m *MockPhotoRepository) GetPhotoIndexCache() (map[string]struct{ FileHash string; FileModifiedTime int64 }, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPhotoIndexCache")
+	ret0, _ := ret[0].(map[string]struct{ FileHash string; FileModifiedTime int64 })
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPhotoIndexCache indicates an expected call of GetPhotoIndexCache.
+func (mr *MockPhotoRepositoryMockRecorder) GetPhotoIndexCache() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPhotoIndexCache", reflect.TypeOf((*MockPhotoRepository)(nil).GetPhotoIndexCache))
+}
+
 // MockPhotoService is a mock of PhotoService interface.
 type MockPhotoService struct {
 	ctrl     *gomock.Controller
@@ -805,4 +820,19 @@ func (m *MockPhotoService) UpdatePhotoTags(photoId string, tags []string) (*doma
 func (mr *MockPhotoServiceMockRecorder) UpdatePhotoTags(photoId, tags interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePhotoTags", reflect.TypeOf((*MockPhotoService)(nil).UpdatePhotoTags), photoId, tags)
+}
+
+// GenerateThumbnailForPhoto mocks base method.
+func (m *MockPhotoService) GenerateThumbnailForPhoto(photoId string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GenerateThumbnailForPhoto", photoId)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GenerateThumbnailForPhoto indicates an expected call of GenerateThumbnailForPhoto.
+func (mr *MockPhotoServiceMockRecorder) GenerateThumbnailForPhoto(photoId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateThumbnailForPhoto", reflect.TypeOf((*MockPhotoService)(nil).GenerateThumbnailForPhoto), photoId)
 }

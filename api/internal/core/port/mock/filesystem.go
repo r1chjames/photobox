@@ -169,15 +169,15 @@ func (mr *MockFilesystemServiceMockRecorder) MoveToTrash(path interface{}) *gomo
 }
 
 // PerformPhotoIndex mocks base method.
-func (m *MockFilesystemService) PerformPhotoIndex(save func(domain.PhotoFile) error) {
+func (m *MockFilesystemService) PerformPhotoIndex(save func([]domain.PhotoFile) error, indexCache map[string]struct{ FileHash string; FileModifiedTime int64 }) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "PerformPhotoIndex", save)
+	m.ctrl.Call(m, "PerformPhotoIndex", save, indexCache)
 }
 
 // PerformPhotoIndex indicates an expected call of PerformPhotoIndex.
-func (mr *MockFilesystemServiceMockRecorder) PerformPhotoIndex(save interface{}) *gomock.Call {
+func (mr *MockFilesystemServiceMockRecorder) PerformPhotoIndex(save, indexCache interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PerformPhotoIndex", reflect.TypeOf((*MockFilesystemService)(nil).PerformPhotoIndex), save)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PerformPhotoIndex", reflect.TypeOf((*MockFilesystemService)(nil).PerformPhotoIndex), save, indexCache)
 }
 
 // RenameDirectory mocks base method.

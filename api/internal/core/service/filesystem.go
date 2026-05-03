@@ -3,7 +3,11 @@ package service
 import (
 	b64 "encoding/base64"
 	"fmt"
+	"image"
+	_ "image/jpeg"
+	_ "image/png"
 	"log/slog"
+	"net/http"
 	"os"
 	"runtime"
 	"strings"
@@ -34,7 +38,7 @@ func NewFilesystemService(fsRepo port.FilesystemRepository, jobSvc port.JobServi
 	}
 }
 
-func (fss *FilesystemService) PerformPhotoIndex(save func(domain.PhotoFile) error) {
+func (fss *FilesystemService) PerformPhotoIndex(save func([]domain.PhotoFile) error, indexCache map[string]struct{ FileHash string; FileModifiedTime int64 }) {
 	_ = fss.jobSvc.JobStart("Photo_index")
 	slog.Info("Starting photo index")
 
@@ -54,17 +58,37 @@ func (fss *FilesystemService) PerformPhotoIndex(save func(domain.PhotoFile) erro
 		go func(workerID int) {
 			defer wg.Done()
 			slog.Info("Worker started", "workerID", workerID)
+			batch := make([]domain.PhotoFile, 0, 100)
 			for path := range photoChan {
 				slog.Debug("Worker processing photo", "workerID", workerID, "path", path)
-				photoFile, err := os.Lstat(path)
+				photoFileInfo, err := os.Lstat(path)
 				if err != nil {
 					slog.Error("Unable to process photo", "workerID", workerID, "path", path, "error", err)
 					continue
 				}
-				photo := fss.getMetaData(path, photoFile.Name(), photoFile.Size())
-				err = save(photo)
-				if err != nil {
-					slog.Error("Unable to save photo", "workerID", workerID, "photo", photo.Name, "error", err)
+
+				// Check index cache to skip unchanged files
+				photoId := b64.StdEncoding.EncodeToString([]byte(path))
+				if cached, exists := indexCache[photoId]; exists {
+					if photoFileInfo.ModTime().Unix() == cached.FileModifiedTime {
+						slog.Debug("Skipping unchanged photo", "path", path)
+						continue
+					}
+				}
+
+				photo := fss.getMetaData(path, photoFileInfo.Name(), photoFileInfo)
+				batch = append(batch, photo)
+				if len(batch) >= 100 {
+					if err := save(batch); err != nil {
+						slog.Error("Failed to save batch", "error", err)
+					}
+					batch = batch[:0]
+				}
+			}
+			// Flush remaining items
+			if len(batch) > 0 {
+				if err := save(batch); err != nil {
+					slog.Error("Failed to save final batch", "error", err)
 				}
 			}
 			slog.Info("Worker finished", "workerID", workerID)
@@ -101,11 +125,11 @@ func (fss *FilesystemService) WriteFileToFilesystem(photo domain.PhotoUpload) do
 
 	fileInfo, _ := os.Lstat(fileSavePath)
 
-	return fss.getMetaData(fileSavePath, fileInfo.Name(), fileInfo.Size())
+	return fss.getMetaData(fileSavePath, fileInfo.Name(), fileInfo)
 
 }
 
-func (fss *FilesystemService) getMetaData(path string, name string, size int64) domain.PhotoFile {
+func (fss *FilesystemService) getMetaData(path string, name string, fileInfo os.FileInfo) domain.PhotoFile {
 	slashIndices := utils.AllIndicesOfChar(path, "/")
 	photoDirectory := path[slashIndices[len(slashIndices)-2]+1 : slashIndices[len(slashIndices)-1]]
 
@@ -121,62 +145,72 @@ func (fss *FilesystemService) getMetaData(path string, name string, size int64) 
 			width = w
 			height = h
 		}
-	} else {
-		w, h, err := utils.GetImageDimensions(path)
-		if err == nil {
-			width = w
-			height = h
-		}
 	}
 
-	file, err := utils.OpenFile(path)
+	// Open file once for all operations
+	file, err := os.Open(path)
 	if err != nil {
 		slog.Error("Unable to open file", "error", err)
-		// Return empty domain.PhotoFile if file cannot be opened
+		// Return minimal PhotoFile if file cannot be opened
 		return domain.PhotoFile{
-			Path:      path,
-			Directory: photoDirectory,
-			Size:      size,
-			Extension: utils.GetExtension(path),
-			Name:      name,
-			MediaType: mediaType,
-			Duration:  duration,
-			Width:     width,
-			Height:    height,
+			Path:         path,
+			Directory:    photoDirectory,
+			Size:         fileInfo.Size(),
+			Extension:    utils.GetExtension(path),
+			Name:         name,
+			MediaType:    mediaType,
+			Duration:     duration,
+			Width:        width,
+			Height:       height,
+			ModifiedTime: fileInfo.ModTime().Unix(),
 		}
 	}
 	defer func(f *os.File) {
 		_ = f.Close()
 	}(file)
 
+	// For images: get dimensions from the open file
+	if mediaType == "image" {
+		cfg, _, err := image.DecodeConfig(file)
+		if err == nil {
+			width = cfg.Width
+			height = cfg.Height
+		}
+		// Reset file position for subsequent reads
+		file.Seek(0, 0)
+	}
+
+	// Get MIME type by reading first 512 bytes
+	buffer := make([]byte, 512)
+	n, _ := file.Read(buffer)
+	mimeType := http.DetectContentType(buffer[:n])
+	file.Seek(0, 0)
+
+	// Get MD5 sum
 	md5Sum, err := utils.GetSum(file)
 	if err != nil {
 		slog.Error("Unable to calculate MD5 sum", "path", path, "error", err)
 		md5Sum = ""
 	}
+	file.Seek(0, 0)
 
-	mimeType, err := utils.GetFileType(path)
-	if err != nil {
-		slog.Error("Unable to get file type", "path", path, "error", err)
-		mimeType = ""
-	}
-
+	// Get EXIF data
 	exifData := utils.GetExifData(file)
-	thumbnail := fss.GenerateThumbnail(path, exifData)
+
 	return domain.PhotoFile{
-		MD5:       md5Sum,
-		Path:      path,
-		Directory: photoDirectory,
-		Size:      size,
-		Extension: utils.GetExtension(path),
-		Name:      name,
-		Exif:      exifData,
-		Mime:      mimeType,
-		Thumbnail: thumbnail,
-		MediaType: mediaType,
-		Duration:  duration,
-		Width:     width,
-		Height:    height,
+		MD5:          md5Sum,
+		Path:         path,
+		Directory:    photoDirectory,
+		Size:         fileInfo.Size(),
+		Extension:    utils.GetExtension(path),
+		Name:         name,
+		Exif:         exifData,
+		Mime:         mimeType,
+		MediaType:    mediaType,
+		Duration:     duration,
+		Width:        width,
+		Height:       height,
+		ModifiedTime: fileInfo.ModTime().Unix(),
 	}
 }
 

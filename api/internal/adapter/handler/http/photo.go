@@ -160,7 +160,17 @@ func (ph *PhotoHandler) GetPhotoThumbnail(ctx *gin.Context) {
 		return
 	}
 
-	// Fallback to DB
+	// Generate on-demand if missing
+	generatedPath, err := ph.photoSvc.GenerateThumbnailForPhoto(photoId)
+	if err == nil && generatedPath != "" {
+		ctx.Header("Content-Type", "image/jpeg")
+		ctx.Header("Cache-Control", "public, max-age=31536000, immutable")
+		ctx.Header("ETag", fmt.Sprintf(`"%s"`, photoId))
+		ctx.File(generatedPath)
+		return
+	}
+
+	// Fallback to DB bytes
 	photoBinary, err := ph.photoSvc.PhotoThumbnailBytes(photoId)
 	if err != nil {
 		handleError(ctx, err)

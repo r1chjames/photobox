@@ -23,8 +23,9 @@ type Photo struct {
 	DeletedAt      *time.Time     `json:"deletedAt" gorm:"index;index:idx_album_deleted_epoch,priority:2;index:idx_deleted_epoch,priority:1"`
 	Blurhash       string         `json:"blurhash"`
 	DominantColor  string         `json:"dominantColor"`
-	FileHash       string         `json:"fileHash" gorm:"index"`
-	MediaType      string         `json:"mediaType" gorm:"default:'image'"`
+	FileHash       string `json:"fileHash" gorm:"index"`
+	FileModifiedTime int64 `json:"fileModifiedTime" gorm:"index"`
+	MediaType      string `json:"mediaType" gorm:"default:'image'"`
 	Duration       int            `json:"duration"`
 	Width          int            `json:"width"`
 	Height         int            `json:"height"`

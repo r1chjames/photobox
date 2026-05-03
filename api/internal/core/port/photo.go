@@ -56,6 +56,8 @@ type PhotoRepository interface {
 	UpdatePhotoTags(photoId string, tags string) error
 	// GetDuplicatePhotos returns photos that have duplicate file hashes
 	GetDuplicatePhotos() ([]*domain.Photo, error)
+	// GetPhotoIndexCache returns a map of photo ID to file hash and modified time for skip-unchanged optimization
+	GetPhotoIndexCache() (map[string]struct{FileHash string; FileModifiedTime int64}, error)
 }
 
 // PhotoService is an interface for interacting with photo-related business logic
@@ -116,4 +118,6 @@ type PhotoService interface {
 	BatchUpdatePhotoTags(photoIds []string, tags []string, operation string) error
 	// GetDuplicatePhotos returns photos with duplicate file hashes
 	GetDuplicatePhotos() ([]*domain.Photo, error)
+	// GenerateThumbnailForPhoto generates a thumbnail on-demand for a photo
+	GenerateThumbnailForPhoto(photoId string) (string, error)
 }

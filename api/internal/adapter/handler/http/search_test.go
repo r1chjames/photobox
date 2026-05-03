@@ -209,6 +209,11 @@ func (m *MockSearchPhotoService) GetDuplicatePhotos() ([]*domain.Photo, error) {
 	return args.Get(0).([]*domain.Photo), args.Error(1)
 }
 
+func (m *MockSearchPhotoService) GenerateThumbnailForPhoto(photoId string) (string, error) {
+	args := m.Called(photoId)
+	return args.String(0), args.Error(1)
+}
+
 // MockSearchAlbumService is a mock implementation of port.AlbumService for search tests
 type MockSearchAlbumService struct {
 	mock.Mock

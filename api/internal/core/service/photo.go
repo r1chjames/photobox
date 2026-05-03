@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rwcarlsen/goexif/exif"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
@@ -64,7 +65,8 @@ func (ps *PhotoService) GetPhoto(photoId string, includeThumbnail bool) (*domain
 }
 
 func (ps *PhotoService) PerformPhotoIndex() {
-	ps.filesystemSvc.PerformPhotoIndex(ps.SavePhoto)
+	cache, _ := ps.photoRepo.GetPhotoIndexCache()
+	ps.filesystemSvc.PerformPhotoIndex(ps.SavePhotos, cache)
 }
 
 func (ps *PhotoService) PhotoCount(albumId string) (int64, error) {
@@ -197,6 +199,7 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 			Thumbnail:      photo.Thumbnail,
 			CreatedEpoch:   time.Now().UnixMilli(),
 			FileHash:       computeFileHash(photo.Path),
+			FileModifiedTime: photo.ModifiedTime,
 			MediaType:      photo.MediaType,
 			Duration:       photo.Duration,
 			Width:          photo.Width,
@@ -248,6 +251,7 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 		Thumbnail:      photo.Thumbnail,
 		CreatedEpoch:   time.Now().UnixMilli(),
 		FileHash:       computeFileHash(photo.Path),
+		FileModifiedTime: photo.ModifiedTime,
 		MediaType:      photo.MediaType,
 		Duration:       photo.Duration,
 		Width:          photo.Width,
@@ -266,6 +270,35 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 	}
 
 	return ps.photoRepo.CreatePhotoInfo(photoInfo)
+}
+
+func (ps *PhotoService) GenerateThumbnailForPhoto(photoId string) (string, error) {
+	photo, err := ps.photoRepo.GetPhotoById(photoId, false)
+	if err != nil {
+		return "", err
+	}
+	if photo.FilesystemPath == "" {
+		return "", domain.ErrDataNotFound
+	}
+
+	// Generate thumbnail from original file
+	thumbnail := ps.filesystemSvc.GenerateThumbnail(photo.FilesystemPath, exif.Exif{})
+	if len(thumbnail) == 0 {
+		return "", fmt.Errorf("failed to generate thumbnail")
+	}
+
+	// Write to disk
+	thumbPath, err := ps.writeThumbnailToDisk(photoId, thumbnail)
+	if err != nil {
+		return "", err
+	}
+
+	// Update DB with path
+	photo.ThumbnailPath = thumbPath
+	photo.Thumbnail = thumbnail
+	_ = ps.photoRepo.UpdatePhoto(*photo)
+
+	return thumbPath, nil
 }
 
 func (ps *PhotoService) DeletePhoto(photoId string) error {

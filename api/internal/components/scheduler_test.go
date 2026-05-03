@@ -295,6 +295,11 @@ func (m *MockPhotoService) GetDuplicatePhotos() ([]*domain.Photo, error) {
 	return args.Get(0).([]*domain.Photo), args.Error(1)
 }
 
+func (m *MockPhotoService) GenerateThumbnailForPhoto(photoId string) (string, error) {
+	args := m.Called(photoId)
+	return args.String(0), args.Error(1)
+}
+
 // TestNewScheduler tests scheduler creation
 func TestNewScheduler(t *testing.T) {
 	mockUtil := new(MockUtilityService)

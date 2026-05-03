@@ -339,3 +339,21 @@ func (pr *PhotoRepository) GetDuplicatePhotos() ([]*domain.Photo, error) {
 	`).Scan(&photos)
 	return photos, result.Error
 }
+
+func (pr *PhotoRepository) GetPhotoIndexCache() (map[string]struct{ FileHash string; FileModifiedTime int64 }, error) {
+	type cacheEntry struct {
+		ID               string
+		FileHash         string
+		FileModifiedTime int64
+	}
+	var entries []cacheEntry
+	result := pr.dbEnv.Db.Model(&domain.Photo{}).Select("id", "file_hash", "file_modified_time").Where("deleted_at IS NULL").Find(&entries)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	cache := make(map[string]struct{ FileHash string; FileModifiedTime int64 }, len(entries))
+	for _, e := range entries {
+		cache[e.ID] = struct{ FileHash string; FileModifiedTime int64 }{FileHash: e.FileHash, FileModifiedTime: e.FileModifiedTime}
+	}
+	return cache, nil
+}

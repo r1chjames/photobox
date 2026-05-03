@@ -69,56 +69,23 @@ Reuse ffmpeg processes or use a thumbnail extraction library like `github.com/u2
 
 ---
 
-## 3. Thumbnail Serving (Critical)
+## 3. Thumbnail Serving
 
-### Current Issues
-- **Thumbnails stored in PostgreSQL**: The `thumbnail` column is `[]byte`. PostgreSQL stores large byte arrays in TOAST tables. Fetching thumbnails means decompressing from TOAST + network transfer for every request.
-- **No caching layer**: Every thumbnail request hits the database.
-- **No content-type headers**: `GetPhotoThumbnail` returns `application/octet-stream` instead of `image/jpeg` or `image/png`.
-- **No ETag/Last-Modified**: Browsers can't conditional-fetch. The batch endpoint has 1-year cache, but individual thumbnails have no cache headers.
-- **ZIP batch is inefficient**: `POST /photos/thumbnails` creates a ZIP on-the-fly. ZIP is CPU overhead and prevents streaming.
+### Status
+**Phase 1 & 2 completed.** Thumbnails are now served from the filesystem with DB fallback.
 
-### Recommendations
+### Resolved Issues
+- ✅ **Thumbnails moved out of PostgreSQL** — stored on disk at `<PhotoDir>/.thumbnails/{safeId}.jpg`
+- ✅ **Dedicated thumbnail query** — `GetThumbnailBytes` selects only the `thumbnail` column
+- ✅ **Proper HTTP headers** — `Content-Type: image/jpeg`, `Cache-Control: public, max-age=31536000, immutable`, and `ETag` added
+- ✅ **Filesystem-first serving** — `GetPhotoThumbnail` uses `ctx.File()` when `thumbnail_path` is set; falls back to DB bytes
+- ✅ **Startup migration** — `MigrateThumbnailsToFilesystem` extracts existing DB thumbnails to disk on boot
 
-**a. Move thumbnails to filesystem or object storage** (Highest impact)
-Store thumbnails on disk in a structured directory (e.g., `/thumbnails/{size}/{photo_id}.webp`). This removes DB pressure entirely and allows the web server (or future CDN) to serve them directly.
-
-*Alternative:* If keeping in DB, create a separate `thumbnails` table with `photo_id`, `size`, `format`, `data` columns to avoid loading thumbnail bytes when querying photo metadata.
-
-*Files:* `api/internal/core/domain/photo.go:19`, `api/internal/adapter/storage/database/repository/photos.go:23-36`
-
-**b. Add Redis/in-memory caching**
-Cache hot thumbnails in Redis or an in-memory LRU cache. Thumbnails are immutable once generated, making them perfect for caching.
-
-**c. Proper HTTP headers for thumbnails**
-```go
-ctx.Header("Content-Type", "image/jpeg") // or detect from thumbnail
-ctx.Header("Cache-Control", "public, max-age=31536000, immutable")
-ctx.Header("ETag", fmt.Sprintf(`"%s"`, photoId))
-```
-
-*Files:* `api/internal/adapter/handler/http/photo.go:145-158`
-
-**d. Replace ZIP batch with binary stream or individual URLs**
-The frontend already fetches thumbnails individually with concurrency limiting (6 at a time). The ZIP batch endpoint adds complexity. Consider:
-- Returning a JSON array of base64 thumbnails (for very small batches)
-- Or removing the batch endpoint and letting the frontend use the individual `/thumbnail/:id` endpoint with HTTP/2 multiplexing
-- If batch is needed, use a multipart response or binary framing instead of ZIP
+### Remaining Recommendations
+- **Add Redis/in-memory caching** — Cache hot thumbnails in an LRU cache. Thumbnails are immutable once generated, making them perfect for caching.
+- **Replace ZIP batch with individual URLs** — The frontend already fetches thumbnails individually with concurrency limiting (6 at a time). The ZIP batch endpoint adds complexity. Consider removing it and relying on HTTP/2 multiplexing.
 
 *Files:* `api/internal/adapter/handler/http/photo.go:243-279`, `webapp/src/utils/ThumbnailUtils.ts:32-64`
-
-**e. Dedicated thumbnail endpoint without full row fetch**
-`PhotoThumbnail` currently calls `GetPhotoById(photoId, true)` which loads the entire `Photo` row. Add a query that only selects the `thumbnail` column:
-
-```go
-func (pr *PhotoRepository) GetThumbnailBytes(photoId string) ([]byte, error) {
-    var result struct{ Thumbnail []byte }
-    err := pr.dbEnv.Db.Model(&domain.Photo{}).Select("thumbnail").Where("id = ?", photoId).Scan(&result).Error
-    return result.Thumbnail, err
-}
-```
-
-*Files:* `api/internal/core/service/photo.go:81-87`, `api/internal/adapter/storage/database/repository/photos.go:23-36`
 
 ---
 
@@ -255,7 +222,7 @@ The global 100 req/s limiter applies, but thumbnails are bursty. Consider a sepa
 
 ## 7. Implementation Roadmap
 
-### Phase 1: Quick Wins (1-2 weeks) ✅ COMPLETE
+### Phase 1: Quick Wins ✅ COMPLETE (`5a9d7b6`)
 1. ✅ Add `gzip` middleware to Gin router
 2. ✅ Add `Content-Type`, `Cache-Control`, and `ETag` headers to thumbnail endpoint
 3. ✅ Add `GetThumbnailBytes` query-only method to photo repository
@@ -263,52 +230,21 @@ The global 100 req/s limiter applies, but thumbnails are bursty. Consider a sepa
 5. ✅ Remove default admin password fallback
 6. ✅ Enable `pg_stat_statements`
 
-### Phase 2: Thumbnail Infrastructure (In Progress)
-Move thumbnail storage from PostgreSQL TOAST blobs to the filesystem. This removes DB pressure, enables web server-level serving, and makes future CDN integration trivial.
+### Phase 2: Thumbnail Infrastructure ✅ COMPLETE (`d605521`)
+1. ✅ Add `ThumbnailPath` field to `Photo` domain model (GORM auto-migrate)
+2. ✅ Add `PhotoThumbnailPath` service + repository method
+3. ✅ Update `SavePhoto`/`SavePhotos` to write thumbnail bytes to disk and store path
+4. ✅ Update `GetPhotoThumbnail` handler to serve from filesystem; fall back to DB
+5. ✅ Add startup migration (`MigrateThumbnailsToFilesystem`) for existing DB thumbnails
+6. ✅ Update tests and mocks for new interface methods
 
-**Design decisions:**
-- Thumbnails live in `<PhotoDir>/.thumbnails/`
-- Filename is the base64 photo ID with filesystem sanitisation (`/`→`_`, `+`→`-`, `=` stripped)
-- A new `thumbnail_path` column on `photos` stores the resolved path
-- Existing DB thumbnails are migrated to disk on startup (one-time)
-- The DB `thumbnail` column is kept as a fallback during the transition
-- `GetPhotoThumbnail` serves directly from disk via `ctx.File()` when `thumbnail_path` is set
-
-**Tasks:**
-1. Add `ThumbnailPath` to `Photo` domain model (GORM auto-migrate)
-2. Add `PhotoThumbnailPath` service + repository method
-3. Update `SavePhoto`/`SavePhotos` to write thumbnail bytes to disk and store path
-4. Update `GetPhotoThumbnail` handler to serve from filesystem; fall back to DB
-5. Add startup migration that extracts existing `thumbnail` bytes to disk
-6. Update `GenerateThumbnail` in filesystem repo to support path-based writing
-7. Update tests and mocks for new interface methods
-
-### Phase 3: Indexing Optimization (2-3 weeks)
+### Phase 3: Indexing Optimization (Next)
 1. Refactor `PerformPhotoIndex` to batch saves (100-500 per batch)
 2. Single-pass file I/O in `getMetaData`
 3. Skip unchanged files using `file_hash` + `mtime`
 4. Generate thumbnails asynchronously (post-index or on-demand)
 
-### Phase 4: Schema & Query Improvements (2-3 weeks)
-1. Add `latitude`, `longitude` columns to `Photo`
-2. Migrate GPS data from JSON metadata during index
-3. Create `photo_tags` junction table
-4. Add appropriate indexes
-5. Update `GetPhotosWithGeodata` and `ListPhotosByTags` to use new columns
-
-### Phase 5: Advanced (Optional)
-1. WebP thumbnail generation
-2. Multiple thumbnail sizes
-3. Redis caching layer
-4. HTTP/2 server push for thumbnail batches
-
-### Phase 3: Indexing Optimization (2-3 weeks)
-1. Refactor `PerformPhotoIndex` to batch saves (100-500 per batch)
-2. Single-pass file I/O in `getMetaData`
-3. Skip unchanged files using `file_hash` + `mtime`
-4. Generate thumbnails asynchronously (post-index or on-demand)
-
-### Phase 4: Schema & Query Improvements (2-3 weeks)
+### Phase 4: Schema & Query Improvements
 1. Add `latitude`, `longitude` columns to `Photo`
 2. Migrate GPS data from JSON metadata during index
 3. Create `photo_tags` junction table
