@@ -1,11 +1,13 @@
 const CACHE_NAME = 'photobox-v2';
+const precacheManifest = self.__WB_MANIFEST || [];
 const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
   '/favicon.ico',
   '/logo192.png',
-  '/logo512.png'
+  '/logo512.png',
+  ...precacheManifest.map(entry => typeof entry === 'string' ? entry : entry.url)
 ];
 
 self.addEventListener('install', (event) => {

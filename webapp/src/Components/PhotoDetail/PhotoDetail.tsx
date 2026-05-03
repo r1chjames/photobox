@@ -11,6 +11,7 @@ import {useNavigate, useParams} from "react-router-dom";
 import {fetchPhotoBinWithAuth, revokeBlobUrl} from "../../utils/ImageUtils";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {notifications} from '@mantine/notifications';
+import {optimisticallyUpdatePhoto} from '../../utils/queryClientHelpers';
 
 interface IProps {
     photosAdapter: IPhotosAdapter;
@@ -105,23 +106,7 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
         try {
             await props.photosAdapter.favoritePhoto(photo.id, newFavorite);
             setIsFavorite(newFavorite);
-            queryClient.setQueriesData(
-                { queryKey: ['albumPhotos'] },
-                (oldData: any) => {
-                    if (!oldData) return oldData;
-                    return {
-                        ...oldData,
-                        pages: oldData.pages.map((page: any) => ({
-                            ...page,
-                            data: page.data.map((p: any) =>
-                                p.id === photo.id
-                                    ? { ...p, favorite: newFavorite }
-                                    : p
-                            ),
-                        })),
-                    };
-                }
-            );
+            optimisticallyUpdatePhoto(queryClient, photo.id, { favorite: newFavorite });
             notifications.show({
                 title: newFavorite ? 'Added to favorites' : 'Removed from favorites',
                 message: newFavorite ? 'Photo added to your favorites' : 'Photo removed from your favorites',

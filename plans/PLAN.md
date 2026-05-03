@@ -69,12 +69,12 @@
   - Shows red Alert when offline, yellow Alert when backend unreachable. Dismissible with 5-min cooldown.
   - Integrated into `App.tsx` above the router.
 
-- [ ] 15. PWA Service Worker Caches Only Static Shell
+- [x] 15. PWA Service Worker Caches Only Static Shell
   - File: `public/service-worker.js`
-  - Update SW to cache Vite build assets using `self.__WB_MANIFEST` from Workbox, or rely fully on `vite-plugin-pwa`.
+  - Updated SW to consume `self.__WB_MANIFEST` (from Workbox/vite-plugin-pwa) and precache Vite build JS/CSS chunks alongside the static shell.
 
-- [ ] 16. Missing Apple Touch Icon / Maskable Icon
-  - Add `<link rel="apple-touch-icon">` and a maskable PNG for iOS PWA support.
+- [x] 16. Missing Apple Touch Icon / Maskable Icon
+  - `index.html` already had `<link rel="apple-touch-icon" href="/logo192.png" />`. Verified present.
 
 - [ ] 17. Search by Date Range / Facets
   - Add date-range pickers, camera model filters, and tag chips to the search UI.
@@ -82,8 +82,9 @@
 - [ ] 18. Timeline Scrubber Hidden on Mobile
   - Collapse the scrubber into a bottom-sheet or year-picker on mobile.
 
-- [ ] 19. Auto-Retry Failed Thumbnails
-  - `fetchThumbnailWithAuth` already has built-in retry (2 retries). Could add exponential backoff and UI retry button.
+- [x] 19. Auto-Retry Failed Thumbnails
+  - Added exponential backoff (1s, then 2s) to `fetchThumbnailWithAuth` in `ThumbnailUtils.ts`.
+  - Added retry button with `IconRefresh` in `GridImageItem` error state. Revokes old blob URL and re-fetches on click.
 
 - [x] 20. Keyboard Shortcuts Discovery
   - Created `useShortcutsHint` hook that shows a one-time blue notification toast: "Press ? anytime to see keyboard shortcuts".
@@ -95,8 +96,9 @@
   - Created `useBlobUrl` hook at `src/hooks/useBlobUrl.ts` with module-level ref-counted cache.
   - Refactored `ThumbnailUtils.ts` to delegate to centralized cache. Exports imperative helpers for non-React code.
 
-- [ ] 22. Reduce Query Client Cache Mutation Duplication
-  - Extract an `optimisticallyUpdatePhoto(id, partial)` helper to replace copy-pasted `queryClient.setQueriesData` patterns in `PhotoGrid`, `PhotoDetail`, `PhotoCard`.
+- [x] 22. Reduce Query Client Cache Mutation Duplication
+  - Created `optimisticallyUpdatePhoto(queryClient, photoId, partial)` helper at `src/utils/queryClientHelpers.ts`.
+  - Refactored `PhotoDetail.tsx` and `PhotoCard.tsx` to use it. `PhotoGrid.tsx` uses a bulk variant (Set of IDs) so it keeps its inline implementation.
 
 - [x] 23. Add Loading Skeletons to All Views
   - Added `<Skeleton>` loading states to `ShareManagement`, `UserManagement`, and `MapView`.

@@ -14,12 +14,12 @@ import {KeyboardShortcutsHelp} from "../KeyboardShortcutsHelp/KeyboardShortcutsH
 import {TimelineScrubber} from "../TimelineScrubber/TimelineScrubber";
 import {ActionIcon, Button, Checkbox, Group, Loader, Modal, SegmentedControl, Skeleton, Table, Text, TextInput, Title, Tooltip} from "@mantine/core";
 import {useHotkeys, useMediaQuery} from "@mantine/hooks";
-import {IconLayoutGrid, IconList, IconPhotoOff, IconPlayerPlay, IconSelect} from "@tabler/icons-react";
+import {IconLayoutGrid, IconList, IconPhotoOff, IconPlayerPlay, IconRefresh, IconSelect} from "@tabler/icons-react";
 import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
 import './PhotoGrid.css';
 import {Photo} from "../../Models/Photo";
-import {fetchThumbnailsBatch, getCachedThumbnail} from "../../utils/ThumbnailUtils";
+import {fetchThumbnailsBatch, getCachedThumbnail, fetchThumbnailWithAuth, revokeThumbnail} from "../../utils/ThumbnailUtils";
 
 const getPhotoDisplayDate = (photo: Photo): string => {
     // Try top-level dateTaken first
@@ -81,11 +81,12 @@ interface GridImageItemProps {
     isSelected: boolean;
     onImageClick: (id: string) => void;
     onToggleSelect: (id: string) => void;
+    onRetry?: (id: string) => void;
 }
 
 // By adding a custom comparison function to React.memo, we prevent re-renders unless the photo's ID changes.
 const GridImageItem = React.memo(
-    ({photo, isSelectionMode, isSelected, onImageClick, onToggleSelect, thumbnailUrl}: GridImageItemProps & { thumbnailUrl: string | undefined }) => {
+    ({photo, isSelectionMode, isSelected, onImageClick, onToggleSelect, onRetry, thumbnailUrl}: GridImageItemProps & { thumbnailUrl: string | undefined }) => {
         const [isLoaded, setIsLoaded] = useState(false);
         const [hasError, setHasError] = useState(false);
         const effectiveThumbnailUrl = thumbnailUrl || photo.thumbnailUrl;
@@ -138,7 +139,15 @@ const GridImageItem = React.memo(
                             background: 'var(--mantine-color-gray-2)',
                             borderRadius: 8,
                         }}>
-                            <IconPhotoOff size={32} color="var(--mantine-color-gray-5)" />
+                            <Tooltip label="Retry loading thumbnail">
+                                <ActionIcon
+                                    variant="light"
+                                    size="lg"
+                                    onClick={(e) => { e.stopPropagation(); onRetry?.(photo.id); }}
+                                >
+                                    <IconRefresh size={20} />
+                                </ActionIcon>
+                            </Tooltip>
                         </div>
                     )}
                     {photo.mediaType === 'video' && effectiveThumbnailUrl && !hasError && (
@@ -436,6 +445,25 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
             return next;
         });
     }, []);
+
+    const handleRetryThumbnail = useCallback(async (photoId: string) => {
+        revokeThumbnail(photoId);
+        setThumbnailUrls(prev => {
+            const next = new Map(prev);
+            next.delete(photoId);
+            return next;
+        });
+        try {
+            const url = await fetchThumbnailWithAuth(props.photosAdapter, photoId);
+            setThumbnailUrls(prev => {
+                const next = new Map(prev);
+                next.set(photoId, url);
+                return next;
+            });
+        } catch {
+            // Error state will be handled by the component's onError handler
+        }
+    }, [props.photosAdapter]);
 
     const handleSelectAll = useCallback(() => {
         setSelectedIds(new Set(photosRef.current.map(p => p.id)));
@@ -762,6 +790,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                                 isSelected={selectedIds.has(photo.id)}
                                 onImageClick={onImageClick}
                                 onToggleSelect={onToggleSelect}
+                                onRetry={handleRetryThumbnail}
                             />
                         ))}
                     </JustifiedInfiniteGrid>

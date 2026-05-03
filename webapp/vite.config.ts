@@ -50,9 +50,6 @@ export default defineConfig({
             },
         }),
     ],
-    resolve: {
-        alias: {},
-    },
     build: {
         outDir: 'build',
         sourcemap: true,
@@ -60,15 +57,27 @@ export default defineConfig({
     test: {
         setupFiles: ['./src/test/setup.ts'],
         environment: 'jsdom',
+        poolOptions: {
+            threads: {
+                maxThreads: 2,
+            },
+        },
         alias: [
             {
                 find: '@tabler/icons-react',
-                replacement: require.resolve('@tabler/icons-react/dist/cjs/tabler-icons-react.cjs'),
+                replacement: '@tabler/icons-react/dist/cjs/tabler-icons-react.cjs',
             },
         ],
         server: {
             deps: {
                 inline: ['@tabler/icons-react'],
+            },
+        },
+        deps: {
+            optimizer: {
+                web: {
+                    exclude: ['@tabler/icons-react'],
+                },
             },
         },
     },

@@ -12,6 +12,7 @@ import {ISharesAdapter} from "../../Adapters/ISharesAdapter";
 import {ShareModal} from "../ShareModal/ShareModal";
 import {fetchPhotoBinWithAuth, revokeBlobUrl} from "../../utils/ImageUtils";
 import {fetchThumbnailWithAuth} from "../../utils/ThumbnailUtils";
+import {optimisticallyUpdatePhoto} from "../../utils/queryClientHelpers";
 
 interface IProps {
     photosAdapter: IPhotosAdapter;
@@ -99,23 +100,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
         try {
             await props.photosAdapter.favoritePhoto(props.source.id, newFavorite);
             setIsFavorite(newFavorite);
-            queryClient.setQueriesData(
-                { queryKey: ['albumPhotos'] },
-                (oldData: any) => {
-                    if (!oldData) return oldData;
-                    return {
-                        ...oldData,
-                        pages: oldData.pages.map((page: any) => ({
-                            ...page,
-                            data: page.data.map((photo: any) =>
-                                photo.id === props.source.id
-                                    ? { ...photo, favorite: newFavorite }
-                                    : photo
-                            ),
-                        })),
-                    };
-                }
-            );
+            optimisticallyUpdatePhoto(queryClient, props.source.id, { favorite: newFavorite });
             notifications.show({
                 title: newFavorite ? 'Added to favorites' : 'Removed from favorites',
                 message: newFavorite ? 'Photo added to your favorites' : 'Photo removed from your favorites',
