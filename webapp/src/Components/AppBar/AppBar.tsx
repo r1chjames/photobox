@@ -22,6 +22,7 @@ import {Link, useLocation, useNavigate, useParams} from "react-router-dom";
 import {useAuth} from "../../Routing/AuthContext";
 import {useAdapters} from "../../Routing/AdapterContext";
 import {KeyboardShortcutsHelp} from "../KeyboardShortcutsHelp/KeyboardShortcutsHelp";
+import {useShortcutsHint} from "./useShortcutsHint";
 import cx from 'clsx';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -212,6 +213,7 @@ const buildBreadcrumbs = (location: string, activeLink: Labels, id?: string, alb
 };
 
 export const AppBar: React.FunctionComponent<IProps> = (props) => {
+    useShortcutsHint();
     const [opened, {toggle}] = useDisclosure(false);
     const location = useLocation();
     const activeLink = getActiveLinkFromPath(location.pathname);

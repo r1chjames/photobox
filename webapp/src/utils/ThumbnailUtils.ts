@@ -1,13 +1,12 @@
 import { IPhotosAdapter } from '../Adapters/IPhotosAdapter';
-
-const thumbnailCache = new Map<string, string>();
+import { getCachedBlobUrl, cacheBlobUrl, releaseBlobUrl, clearBlobCache } from '../hooks/useBlobUrl';
 
 export async function fetchThumbnailWithAuth(
   photosAdapter: IPhotosAdapter,
   photoId: string,
   retries = 2
 ): Promise<string> {
-  const cached = thumbnailCache.get(photoId);
+  const cached = getCachedBlobUrl(photoId);
   if (cached) {
     console.log('[ThumbnailUtils] Cache hit for', photoId);
     return cached;
@@ -18,14 +17,7 @@ export async function fetchThumbnailWithAuth(
     const blob = await photosAdapter.getPhotoThumbnailBlob(photoId);
     console.log('[ThumbnailUtils] Got response for', photoId, typeof blob, blob instanceof Blob ? blob.size : 'N/A');
 
-    if (typeof blob === 'string') {
-      thumbnailCache.set(photoId, blob);
-      return blob;
-    }
-
-    const url = URL.createObjectURL(blob);
-    thumbnailCache.set(photoId, url);
-    return url;
+    return cacheBlobUrl(photoId, blob);
   } catch (error) {
     if (retries > 0) {
       console.warn('[ThumbnailUtils] Retry fetching thumbnail for', photoId, 'retries left:', retries);
@@ -50,7 +42,7 @@ export async function fetchThumbnailsBatch(
     const chunk = photoIds.slice(i, i + CHUNK_SIZE);
     const results = await Promise.allSettled(
       chunk.map(async (id) => {
-        const cached = thumbnailCache.get(id);
+        const cached = getCachedBlobUrl(id);
         if (cached) {
           return { id, url: cached };
         }
@@ -70,22 +62,13 @@ export async function fetchThumbnailsBatch(
 }
 
 export function getCachedThumbnail(photoId: string): string | undefined {
-  return thumbnailCache.get(photoId);
+  return getCachedBlobUrl(photoId);
 }
 
 export function revokeThumbnail(photoId: string) {
-  const url = thumbnailCache.get(photoId);
-  if (url && url.startsWith('blob:')) {
-    URL.revokeObjectURL(url);
-  }
-  thumbnailCache.delete(photoId);
+  releaseBlobUrl(photoId);
 }
 
 export function clearThumbnailCache() {
-  thumbnailCache.forEach((url) => {
-    if (url.startsWith('blob:')) {
-      URL.revokeObjectURL(url);
-    }
-  });
-  thumbnailCache.clear();
+  clearBlobCache();
 }

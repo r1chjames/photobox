@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { LatLngBounds } from 'leaflet';
 import { IPhotosAdapter, PhotoGeoData } from '../../Adapters/IPhotosAdapter';
 import { EmptyState } from '../EmptyState/EmptyState';
-import { Loader, Center, Title } from '@mantine/core';
+import { Loader, Center, Title, Skeleton } from '@mantine/core';
 import { IconMap } from '@tabler/icons-react';
 import 'leaflet/dist/leaflet.css';
 import { fetchThumbnailWithAuth, getCachedThumbnail, revokeThumbnail } from '../../utils/ThumbnailUtils';
@@ -64,9 +64,10 @@ export const MapView: React.FC<MapViewProps> = ({ photosAdapter }) => {
 
   if (loading) {
     return (
-      <Center h="50vh">
-        <Loader size="lg" />
-      </Center>
+      <div>
+        <Title size="h4" mb="md">Map</Title>
+        <Skeleton height="calc(100vh - 160px)" radius="md" />
+      </div>
     );
   }
 

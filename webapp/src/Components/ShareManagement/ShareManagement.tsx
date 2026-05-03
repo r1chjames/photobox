@@ -3,7 +3,7 @@ import { ISharesAdapter, ShareLink } from '../../Adapters/ISharesAdapter';
 import { EmptyState } from '../EmptyState/EmptyState';
 import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
-import { Group, Table, Title, Text, Badge, ActionIcon, Tooltip, CopyButton } from '@mantine/core';
+import { Group, Table, Title, Text, Badge, ActionIcon, Tooltip, CopyButton, Skeleton } from '@mantine/core';
 import { IconCopy, IconCheck, IconLink, IconTrash } from '@tabler/icons-react';
 
 interface ShareManagementProps {
@@ -60,7 +60,33 @@ export const ShareManagement: React.FC<ShareManagementProps> = ({ sharesAdapter 
     };
 
     if (loading) {
-        return <Title size="h4">Share Management</Title>;
+        return (
+            <div>
+                <Title size="h4" mb="md">Share Management</Title>
+                <Table>
+                    <Table.Thead>
+                        <Table.Tr>
+                            <Table.Th>Type</Table.Th>
+                            <Table.Th>Resource ID</Table.Th>
+                            <Table.Th>Link</Table.Th>
+                            <Table.Th>Expiry</Table.Th>
+                            <Table.Th>Actions</Table.Th>
+                        </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
+                        {Array.from({ length: 5 }).map((_, i) => (
+                            <Table.Tr key={i}>
+                                <Table.Td><Skeleton height={20} width={60} radius="sm" /></Table.Td>
+                                <Table.Td><Skeleton height={20} width={120} radius="sm" /></Table.Td>
+                                <Table.Td><Skeleton height={20} width={200} radius="sm" /></Table.Td>
+                                <Table.Td><Skeleton height={20} width={80} radius="sm" /></Table.Td>
+                                <Table.Td><Skeleton height={28} width={28} radius="sm" /></Table.Td>
+                            </Table.Tr>
+                        ))}
+                    </Table.Tbody>
+                </Table>
+            </div>
+        );
     }
 
     if (shares.length === 0) {

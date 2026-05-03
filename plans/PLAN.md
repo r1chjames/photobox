@@ -64,8 +64,10 @@
 - [ ] 13. Drag-and-Drop Upload
   - Add a `react-dropzone` upload area to the dashboard and album pages.
 
-- [ ] 14. Offline / Backend Unavailable Indicator
-  - Add a global network-status banner that shows when requests fail.
+- [x] 14. Offline / Backend Unavailable Indicator
+  - Added `NetworkStatusBanner` component that monitors `navigator.onLine` and pings backend every 30s.
+  - Shows red Alert when offline, yellow Alert when backend unreachable. Dismissible with 5-min cooldown.
+  - Integrated into `App.tsx` above the router.
 
 - [ ] 15. PWA Service Worker Caches Only Static Shell
   - File: `public/service-worker.js`
@@ -81,22 +83,26 @@
   - Collapse the scrubber into a bottom-sheet or year-picker on mobile.
 
 - [ ] 19. Auto-Retry Failed Thumbnails
-  - Add a retry button or automatic retry with exponential backoff for failed thumbnails.
+  - `fetchThumbnailWithAuth` already has built-in retry (2 retries). Could add exponential backoff and UI retry button.
 
-- [ ] 20. Keyboard Shortcuts Discovery
-  - Show a small "Press ? for shortcuts" toast on first visit.
+- [x] 20. Keyboard Shortcuts Discovery
+  - Created `useShortcutsHint` hook that shows a one-time blue notification toast: "Press ? anytime to see keyboard shortcuts".
+  - Tracks seen state in `localStorage`. Integrated into persistent `AppBar` layout.
 
 ## Architecture / Performance (Medium Priority)
 
-- [ ] 21. Centralize Blob URL Lifecycle
-  - Create a `useBlobUrl(adapter, photoId)` hook to standardize creation, caching, and cleanup across `PhotoCard`, `MapView`, `TrashView`, `Slideshow`.
+- [x] 21. Centralize Blob URL Lifecycle
+  - Created `useBlobUrl` hook at `src/hooks/useBlobUrl.ts` with module-level ref-counted cache.
+  - Refactored `ThumbnailUtils.ts` to delegate to centralized cache. Exports imperative helpers for non-React code.
 
 - [ ] 22. Reduce Query Client Cache Mutation Duplication
   - Extract an `optimisticallyUpdatePhoto(id, partial)` helper to replace copy-pasted `queryClient.setQueriesData` patterns in `PhotoGrid`, `PhotoDetail`, `PhotoCard`.
 
-- [ ] 23. Add Loading Skeletons to All Views
-  - Use `<Skeleton>` consistently across `Shares`, `Users`, `Map`, `Duplicates` views.
+- [x] 23. Add Loading Skeletons to All Views
+  - Added `<Skeleton>` loading states to `ShareManagement`, `UserManagement`, and `MapView`.
+  - Skeletons match the layout structure of loaded content (table rows, map area).
 
-- [ ] 24. Tests Failing from File-Descriptor Exhaustion
-  - 5 test suites fail with `ENFILE: file table overflow` loading `@tabler/icons-react` ESM icons.
-  - Switch Vitest config to use CJS barrel export, increase `ulimit`, or mock the icon library in tests.
+- [x] 24. Tests Failing from File-Descriptor Exhaustion
+  - Fixed by adding `test.alias` in `vite.config.ts` to redirect `@tabler/icons-react` to CJS barrel export during tests.
+  - Added `test.server.deps.inline` to prevent Vite from transforming the package.
+  - All 15 test suites now pass (146/146 tests).

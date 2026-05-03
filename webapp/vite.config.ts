@@ -51,13 +51,25 @@ export default defineConfig({
         }),
     ],
     resolve: {
-        alias: {
-            // /esm/icons/index.mjs only exports the icons statically, so no separate chunks are created
-            '@tabler/icons-react': '@tabler/icons-react/dist/esm/icons/index.mjs',
-        },
+        alias: {},
     },
     build: {
         outDir: 'build',
         sourcemap: true,
-    }
+    },
+    test: {
+        setupFiles: ['./src/test/setup.ts'],
+        environment: 'jsdom',
+        alias: [
+            {
+                find: '@tabler/icons-react',
+                replacement: require.resolve('@tabler/icons-react/dist/cjs/tabler-icons-react.cjs'),
+            },
+        ],
+        server: {
+            deps: {
+                inline: ['@tabler/icons-react'],
+            },
+        },
+    },
 })

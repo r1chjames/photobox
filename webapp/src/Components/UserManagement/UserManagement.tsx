@@ -4,7 +4,7 @@ import { User } from '../../Models/User';
 import { EmptyState } from '../EmptyState/EmptyState';
 import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
-import { Table, Title, Select, ActionIcon, Loader, Center, Text, Tooltip } from '@mantine/core';
+import { Table, Title, Select, ActionIcon, Loader, Center, Text, Tooltip, Skeleton } from '@mantine/core';
 import { IconTrash, IconUsers } from '@tabler/icons-react';
 
 interface UserManagementProps {
@@ -92,9 +92,31 @@ export const UserManagement: React.FC<UserManagementProps> = ({ usersAdapter }) 
 
     if (loading) {
         return (
-            <Center h="50vh">
-                <Loader size="lg" />
-            </Center>
+            <div>
+                <Title size="h4" mb="md">User Management</Title>
+                <Table>
+                    <Table.Thead>
+                        <Table.Tr>
+                            <Table.Th>Username</Table.Th>
+                            <Table.Th>Email</Table.Th>
+                            <Table.Th>Role</Table.Th>
+                            <Table.Th>Created</Table.Th>
+                            <Table.Th>Actions</Table.Th>
+                        </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
+                        {Array.from({ length: 5 }).map((_, i) => (
+                            <Table.Tr key={i}>
+                                <Table.Td><Skeleton height={20} width={100} radius="sm" /></Table.Td>
+                                <Table.Td><Skeleton height={20} width={160} radius="sm" /></Table.Td>
+                                <Table.Td><Skeleton height={28} width={90} radius="sm" /></Table.Td>
+                                <Table.Td><Skeleton height={20} width={80} radius="sm" /></Table.Td>
+                                <Table.Td><Skeleton height={28} width={28} radius="sm" /></Table.Td>
+                            </Table.Tr>
+                        ))}
+                    </Table.Tbody>
+                </Table>
+            </div>
         );
     }
 

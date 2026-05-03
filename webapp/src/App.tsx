@@ -6,6 +6,7 @@ import {theme} from "./theme";
 import Router from "./Routing/Router";
 import {AdapterProvider} from "./Routing/AdapterContext";
 import {ErrorBoundary} from "./Components/ErrorBoundary/ErrorBoundary";
+import {NetworkStatusBanner} from "./Components/NetworkStatusBanner/NetworkStatusBanner";
 import '@mantine/notifications/styles.css';
 
 interface IProps {
@@ -16,6 +17,7 @@ export const App: React.FunctionComponent<IProps> = (props) => {
 
     return (
         <MantineProvider theme={theme}>
+            <NetworkStatusBanner baseApiUrl={props.baseApiUrl}/>
             <Notifications position="top-right" zIndex={1000}/>
             <ModalsProvider>
                 <ErrorBoundary>
