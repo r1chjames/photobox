@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { IPhotosAdapter, TimelineEntry } from '../../Adapters/IPhotosAdapter';
-import { ActionIcon, Badge, Tooltip, ScrollArea, Text } from '@mantine/core';
+import { ActionIcon, Badge, Drawer, Tooltip, ScrollArea, Text } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import { IconClock, IconX } from '@tabler/icons-react';
 
 interface TimelineScrubberProps {
@@ -20,6 +21,9 @@ export const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
 }) => {
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const isMobile = useMediaQuery('(max-width: 48em)');
 
   const loadTimeline = useCallback(async () => {
     try {
@@ -53,22 +57,15 @@ export const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
     return new Date(2000, month - 1, 1).toLocaleString('default', { month: 'short' });
   };
 
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 60,
-        right: 8,
-        width: 120,
-        maxHeight: 'calc(100% - 80px)',
-        zIndex: 5,
-        background: 'var(--mantine-color-body)',
-        border: '1px solid var(--mantine-color-default-border)',
-        borderRadius: 8,
-        padding: '8px 4px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-      }}
-    >
+  const handleSelectMonth = (year: number, month: number) => {
+    onSelectMonth(year, month);
+    if (isMobile) {
+      setDrawerOpen(false);
+    }
+  };
+
+  const scrubberContent = (
+    <>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, padding: '0 4px' }}>
         <Text size="xs" fw={700} c="dimmed">
           <IconClock size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
@@ -93,7 +90,7 @@ export const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
               return (
                 <div
                   key={`${entry.year}-${entry.month}`}
-                  onClick={() => onSelectMonth(entry.year, entry.month)}
+                  onClick={() => handleSelectMonth(entry.year, entry.month)}
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -116,6 +113,67 @@ export const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
           </div>
         ))}
       </ScrollArea>
+    </>
+  );
+
+  // Mobile: FAB + Drawer
+  if (isMobile) {
+    return (
+      <>
+        <ActionIcon
+          size="lg"
+          radius="xl"
+          variant="filled"
+          color="var(--mantine-primary-color-filled)"
+          style={{
+            position: 'fixed',
+            bottom: 20,
+            right: 20,
+            zIndex: 100,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          }}
+          onClick={() => setDrawerOpen(true)}
+        >
+          <IconClock size={20} />
+        </ActionIcon>
+        <Drawer
+          opened={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          position="bottom"
+          size="100%"
+          radius="lg"
+          padding="md"
+          title={
+            <Text size="sm" fw={700}>
+              <IconClock size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }} />
+              Timeline
+            </Text>
+          }
+        >
+          {scrubberContent}
+        </Drawer>
+      </>
+    );
+  }
+
+  // Desktop: absolute-positioned side panel
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 60,
+        right: 8,
+        width: 120,
+        maxHeight: 'calc(100% - 80px)',
+        zIndex: 5,
+        background: 'var(--mantine-color-body)',
+        border: '1px solid var(--mantine-color-default-border)',
+        borderRadius: 8,
+        padding: '8px 4px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+      }}
+    >
+      {scrubberContent}
     </div>
   );
 };

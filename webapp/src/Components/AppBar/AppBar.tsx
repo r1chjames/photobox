@@ -311,7 +311,7 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
                                                 display: 'inline-flex',
                                                 alignItems: 'center',
                                                 gap: 4,
-                                                color: index === breadcrumbItems.length - 1 ? 'var(--mantine-primary-color-filled)' : 'var(--mantine-color-dimmed)',
+                                                color: index === breadcrumbItems.length - 1 ? 'var(--mantine-primary-color-filled)' : 'var(--mantine-color-gray-7)',
                                                 fontWeight: index === breadcrumbItems.length - 1 ? 600 : 400,
                                                 fontSize: 'var(--mantine-font-size-sm)',
                                             }}
@@ -445,7 +445,7 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
                                 alignItems: 'center',
                                 gap: 4,
                                 cursor: 'pointer',
-                                color: isActive ? 'var(--mantine-primary-color-filled)' : 'var(--mantine-color-dimmed)',
+                                color: isActive ? 'var(--mantine-primary-color-filled)' : 'var(--mantine-color-gray-7)',
                                 fontSize: 12,
                                 padding: '8px 16px',
                             }}

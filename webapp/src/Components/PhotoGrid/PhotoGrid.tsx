@@ -1,4 +1,5 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {useDropzone} from 'react-dropzone';
 import { useParams, useNavigate } from "react-router-dom";
 import { useQueryClient } from '@tanstack/react-query';
 import {JustifiedInfiniteGrid} from '@egjs/react-infinitegrid';
@@ -12,7 +13,7 @@ import {EmptyState} from "../EmptyState/EmptyState";
 import {BulkActionsToolbar} from "../BulkActionsToolbar/BulkActionsToolbar";
 import {KeyboardShortcutsHelp} from "../KeyboardShortcutsHelp/KeyboardShortcutsHelp";
 import {TimelineScrubber} from "../TimelineScrubber/TimelineScrubber";
-import {ActionIcon, Button, Checkbox, Group, Loader, Modal, SegmentedControl, Skeleton, Table, Text, TextInput, Title, Tooltip} from "@mantine/core";
+import {ActionIcon, Button, Card, Checkbox, Group, Loader, Modal, Paper, Progress, SegmentedControl, Skeleton, Stack, Table, Text, TextInput, Title, Tooltip} from "@mantine/core";
 import {useHotkeys, useMediaQuery} from "@mantine/hooks";
 import {IconLayoutGrid, IconList, IconPhotoOff, IconPlayerPlay, IconRefresh, IconSelect} from "@tabler/icons-react";
 import { notifications } from '@mantine/notifications';
@@ -58,6 +59,100 @@ const getPhotoDisplayDate = (photo: Photo): string => {
     } catch {
         return raw;
     }
+};
+
+const readUploadedFileAsText = (inputFile: File) => {
+    const temporaryFileReader = new FileReader();
+
+    return new Promise<string>((resolve, reject) => {
+        temporaryFileReader.onerror = () => {
+            temporaryFileReader.abort();
+            reject(new DOMException('Problem parsing input file.'));
+        };
+
+        temporaryFileReader.onload = () => {
+            resolve(temporaryFileReader.result as string);
+        };
+        temporaryFileReader.readAsDataURL(inputFile);
+    });
+};
+
+const PhotoGridUploadDropzone: React.FunctionComponent<{ photosAdapter: IPhotosAdapter }> = ({ photosAdapter }) => {
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
+
+    const handleFileUpload = useCallback(async (acceptedFiles: File[]) => {
+        setIsUploading(true);
+        setUploadProgress({ current: 0, total: acceptedFiles.length });
+        let uploadedCount = 0;
+        try {
+            for (const file of acceptedFiles) {
+                const fileContent = await readUploadedFileAsText(file);
+                const photoContent = {
+                    name: file.name,
+                    albumName: 'General',
+                    binaryContent: fileContent,
+                };
+                await photosAdapter.uploadPhoto(photoContent);
+                uploadedCount++;
+                setUploadProgress({ current: uploadedCount, total: acceptedFiles.length });
+            }
+            notifications.show({
+                title: 'Upload complete',
+                message: `${uploadedCount} photo${uploadedCount !== 1 ? 's' : ''} uploaded successfully`,
+                color: 'green',
+            });
+        } catch (e) {
+            const message = e instanceof Error ? e.message : 'Upload failed';
+            notifications.show({
+                title: 'Upload failed',
+                message,
+                color: 'red',
+            });
+        } finally {
+            setIsUploading(false);
+            setUploadProgress({ current: 0, total: 0 });
+        }
+    }, [photosAdapter]);
+
+    const onDrop = useCallback((acceptedFiles: File[]) => {
+        handleFileUpload(acceptedFiles);
+    }, [handleFileUpload]);
+
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+        onDrop,
+        accept: { 'image/*': [] },
+        disabled: isUploading,
+    });
+
+    return (
+        <Card mb="md" p="md" withBorder>
+            <Paper
+                {...getRootProps()}
+                p="xl"
+                withBorder
+                style={{
+                    border: isDragActive ? '2px dashed var(--mantine-color-blue-6)' : '2px dashed var(--mantine-color-gray-4)',
+                    borderRadius: 'var(--mantine-radius-md)',
+                    textAlign: 'center',
+                    cursor: isUploading ? 'default' : 'pointer',
+                    background: isDragActive ? 'var(--mantine-color-blue-light)' : 'transparent',
+                    transition: 'all 0.2s ease',
+                }}
+            >
+                <input {...getInputProps()} />
+                <Text size="lg" c={isDragActive ? 'blue' : 'dimmed'}>
+                    {isDragActive ? 'Drop photos here...' : 'Drag photos here or click to upload'}
+                </Text>
+            </Paper>
+            {isUploading && uploadProgress.total > 0 && (
+                <Stack gap="xs" mt="md">
+                    <Text size="sm">Uploading {uploadProgress.current} of {uploadProgress.total} photos...</Text>
+                    <Progress value={(uploadProgress.current / uploadProgress.total) * 100} size="lg" />
+                </Stack>
+            )}
+        </Card>
+    );
 };
 
 interface IProps {
@@ -752,6 +847,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
             )}
             <div style={{ transform: `translateY(${showPullIndicator ? pullDistance : 0}px)`, transition: isRefreshing ? 'transform 0.3s ease' : undefined }}>
                 <AlbumTitle/>
+                <PhotoGridUploadDropzone photosAdapter={props.photosAdapter} />
                 {isSelectionMode && (
                     <BulkActionsToolbar
                         selectedCount={selectedIds.size}
@@ -882,7 +978,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                     />
                 </Modal>
             )}
-            {!isMobile && !id && (
+            {!id && (
                 <TimelineScrubber
                     photosAdapter={props.photosAdapter}
                     onSelectMonth={(year, month) => setDateFilter({ year, month })}

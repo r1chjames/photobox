@@ -11,10 +11,10 @@
   - File: `src/Components/LoginCard/LoginCard.tsx`
   - Removed hardcoded `error="Invalid username"` and `error="Invalid email"` on registration inputs; validate on submit/blur instead.
 
-- [ ] 2. Accessibility — Color Contrast Failures
-  - Active nav-link label/description contrast too low (`#4c6ef5` on `#edf1fe` = 3.83:1, `#868e96` on `#ffffff` = 3.32:1)
-  - "Create album" / "Upload photos" button labels fail contrast (4.32:1, needs 4.5:1)
-  - Use Mantine theme tokens or darken text to meet WCAG AA.
+- [x] 2. Accessibility — Color Contrast Failures
+  - Replaced default Mantine `indigo` palette with custom darker `indigoDark` palette (primary: `#4263eb`, >4.5:1 on white).
+  - Changed breadcrumb and mobile nav inactive items from `dimmed` (`#868e96`, 3.32:1) to `gray.7` (meets WCAG AA).
+  - Files: `src/theme.ts`, `src/Components/AppBar/AppBar.tsx`.
 
 - [x] 3. Password Field Not in a `<form>`
   - Login `PasswordInput` not wrapped in `<form>`, breaking browser password managers and autofill.
@@ -61,8 +61,10 @@
 
 ## Feature Suggestions (Medium Priority)
 
-- [ ] 13. Drag-and-Drop Upload
-  - Add a `react-dropzone` upload area to the dashboard and album pages.
+- [x] 13. Drag-and-Drop Upload
+  - Added `useDropzone`-based upload areas to `Dashboard.tsx` and `PhotoGrid.tsx`.
+  - Supports drag-and-drop or click-to-upload for `image/*` files.
+  - Uploads to "General" album via `photosAdapter.uploadPhoto()` with progress bar and notifications.
 
 - [x] 14. Offline / Backend Unavailable Indicator
   - Added `NetworkStatusBanner` component that monitors `navigator.onLine` and pings backend every 30s.
@@ -76,11 +78,15 @@
 - [x] 16. Missing Apple Touch Icon / Maskable Icon
   - `index.html` already had `<link rel="apple-touch-icon" href="/logo192.png" />`. Verified present.
 
-- [ ] 17. Search by Date Range / Facets
-  - Add date-range pickers, camera model filters, and tag chips to the search UI.
+- [x] 17. Search by Date Range / Facets
+  - Added native date inputs ("From"/"To") and tag chips to `SearchView.tsx`.
+  - Fetches tags via `photosAdapter.getAllTags()` and displays as clickable `Chip` components.
+  - Added "Clear filters" button to reset all filters.
+  - Tags are passed to `PhotoGrid` via its existing `tags` prop.
 
-- [ ] 18. Timeline Scrubber Hidden on Mobile
-  - Collapse the scrubber into a bottom-sheet or year-picker on mobile.
+- [x] 18. Timeline Scrubber Hidden on Mobile
+  - Made `TimelineScrubber` responsive: desktop keeps the side panel; mobile shows a FAB (floating action button) that opens a bottom `Drawer` with the year/month list.
+  - Removed `!isMobile` guard in `PhotoGrid.tsx` — the scrubber now handles responsiveness internally.
 
 - [x] 19. Auto-Retry Failed Thumbnails
   - Added exponential backoff (1s, then 2s) to `fetchThumbnailWithAuth` in `ThumbnailUtils.ts`.
