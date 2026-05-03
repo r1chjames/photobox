@@ -12,7 +12,7 @@ import {EmptyState} from "../EmptyState/EmptyState";
 import {BulkActionsToolbar} from "../BulkActionsToolbar/BulkActionsToolbar";
 import {KeyboardShortcutsHelp} from "../KeyboardShortcutsHelp/KeyboardShortcutsHelp";
 import {TimelineScrubber} from "../TimelineScrubber/TimelineScrubber";
-import {ActionIcon, Button, Checkbox, Group, Loader, Modal, SegmentedControl, Skeleton, Table, TextInput, Title, Tooltip} from "@mantine/core";
+import {ActionIcon, Button, Checkbox, Group, Loader, Modal, SegmentedControl, Skeleton, Table, Text, TextInput, Title, Tooltip} from "@mantine/core";
 import {useHotkeys, useMediaQuery} from "@mantine/hooks";
 import {IconLayoutGrid, IconList, IconPhotoOff, IconPlayerPlay, IconSelect} from "@tabler/icons-react";
 import { notifications } from '@mantine/notifications';
@@ -245,6 +245,9 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const [tagModalOpen, setTagModalOpen] = useState(false);
     const [tagModalMode, setTagModalMode] = useState<'add' | 'remove'>('add');
     const [tagInput, setTagInput] = useState('');
+    const [albumModalOpen, setAlbumModalOpen] = useState(false);
+    const [availableAlbums, setAvailableAlbums] = useState<{ id: string; name: string }[]>([]);
+    const [albumModalLoading, setAlbumModalLoading] = useState(false);
     const [thumbnailUrls, setThumbnailUrls] = useState<Map<string, string>>(new Map());
     const isMobile = useMediaQuery('(max-width: 50em)');
 
@@ -557,6 +560,45 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         }
     }, [props.photosAdapter, selectedIds, tagInput, tagModalMode, refetch]);
 
+    const handleBulkAddToAlbum = useCallback(async (albumId: string) => {
+        try {
+            await props.albumsAdapter.addPhotosToAlbum(albumId, Array.from(selectedIds));
+            notifications.show({
+                title: 'Added to album',
+                message: `${selectedIds.size} photo${selectedIds.size !== 1 ? 's' : ''} added to album`,
+                color: 'green',
+            });
+            setAlbumModalOpen(false);
+            setIsSelectionMode(false);
+            setSelectedIds(new Set());
+            refetch();
+        } catch (e) {
+            notifications.show({
+                title: 'Failed to add to album',
+                message: e instanceof Error ? e.message : 'An error occurred',
+                color: 'red',
+            });
+        }
+    }, [props.albumsAdapter, selectedIds, refetch]);
+
+    const handleOpenAlbumModal = useCallback(async () => {
+        setAlbumModalLoading(true);
+        try {
+            const albums = await props.albumsAdapter.getAllAlbumsInfo();
+            const albumList = Array.isArray(albums) ? albums : (albums?.data ?? []);
+            setAvailableAlbums(albumList.map((a: { id: string; name: string }) => ({ id: a.id, name: a.name })));
+            setAlbumModalOpen(true);
+        } catch (e) {
+            notifications.show({
+                title: 'Failed to load albums',
+                message: e instanceof Error ? e.message : 'An error occurred',
+                color: 'red',
+            });
+        } finally {
+            setAlbumModalLoading(false);
+        }
+    }, [props.albumsAdapter]);
+
     const closeModal = useCallback(() => {
         setImageModalOpen(false);
     }, []);
@@ -693,6 +735,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                         onDownload={handleBulkDownload}
                         onAddTag={() => { setTagModalMode('add'); setTagModalOpen(true); }}
                         onRemoveTag={() => { setTagModalMode('remove'); setTagModalOpen(true); }}
+                        onAddToAlbum={handleOpenAlbumModal}
                         onCancel={() => { setIsSelectionMode(false); setSelectedIds(new Set()); }}
                     />
                 )}
@@ -847,6 +890,33 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                         {tagModalMode === 'add' ? 'Add tags' : 'Remove tags'}
                     </Button>
                 </div>
+            </Modal>
+            <Modal
+                opened={albumModalOpen}
+                onClose={() => setAlbumModalOpen(false)}
+                title="Add to album"
+                size="sm"
+            >
+                {albumModalLoading ? (
+                    <div style={{ textAlign: 'center', padding: 16 }}>
+                        <Loader size="sm" />
+                    </div>
+                ) : availableAlbums.length === 0 ? (
+                    <Text size="sm" c="dimmed">No albums available. Create an album first.</Text>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {availableAlbums.map(album => (
+                            <Button
+                                key={album.id}
+                                variant="light"
+                                fullWidth
+                                onClick={() => handleBulkAddToAlbum(album.id)}
+                            >
+                                {album.name}
+                            </Button>
+                        ))}
+                    </div>
+                )}
             </Modal>
         </div>
     );

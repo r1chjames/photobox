@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { IPhotosAdapter } from '../../Adapters/IPhotosAdapter';
 import { Photo } from '../../Models/Photo';
 import { EmptyState } from '../EmptyState/EmptyState';
@@ -15,6 +15,7 @@ interface TrashViewProps {
 export const TrashView: React.FC<TrashViewProps> = ({ photosAdapter }) => {
     const [photos, setPhotos] = useState<Photo[]>([]);
     const [thumbnailUrls, setThumbnailUrls] = useState<Map<string, string>>(new Map());
+    const thumbnailUrlsRef = useRef(thumbnailUrls);
     const [loading, setLoading] = useState(true);
 
     const loadTrash = useCallback(async () => {
@@ -46,10 +47,14 @@ export const TrashView: React.FC<TrashViewProps> = ({ photosAdapter }) => {
     }, [photosAdapter]);
 
     useEffect(() => {
-        loadTrash();
-        return () => {
-            thumbnailUrls.forEach((_, id) => revokeThumbnail(id));
-        };
+      thumbnailUrlsRef.current = thumbnailUrls;
+    }, [thumbnailUrls]);
+
+    useEffect(() => {
+      loadTrash();
+      return () => {
+        thumbnailUrlsRef.current.forEach((_, id) => revokeThumbnail(id));
+      };
     }, [loadTrash]);
 
     const handleRestore = async (photoId: string) => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { LatLngBounds } from 'leaflet';
 import { IPhotosAdapter, PhotoGeoData } from '../../Adapters/IPhotosAdapter';
@@ -25,6 +25,7 @@ const BoundsSetter: React.FC<{ bounds: LatLngBounds | null }> = ({ bounds }) => 
 export const MapView: React.FC<MapViewProps> = ({ photosAdapter }) => {
   const [photos, setPhotos] = useState<PhotoGeoData[]>([]);
   const [thumbnailUrls, setThumbnailUrls] = useState<Map<string, string>>(new Map());
+  const thumbnailUrlsRef = useRef(thumbnailUrls);
   const [loading, setLoading] = useState(true);
 
   const loadGeodata = useCallback(async () => {
@@ -51,9 +52,13 @@ export const MapView: React.FC<MapViewProps> = ({ photosAdapter }) => {
   }, [photosAdapter]);
 
   useEffect(() => {
+    thumbnailUrlsRef.current = thumbnailUrls;
+  }, [thumbnailUrls]);
+
+  useEffect(() => {
     loadGeodata();
     return () => {
-      thumbnailUrls.forEach((_, id) => revokeThumbnail(id));
+      thumbnailUrlsRef.current.forEach((_, id) => revokeThumbnail(id));
     };
   }, [loadGeodata]);
 

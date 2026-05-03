@@ -1,5 +1,5 @@
 import type {Meta, StoryObj} from '@storybook/react-vite';
-import {AppBar, Labels} from "./AppBar";
+import {AppBar} from "./AppBar";
 import {AlbumGrid} from "../AlbumGrid/AlbumGrid";
 import {MockAlbumsAdapter} from "../../Adapters/MockAlbumsAdapter";
 import {MockPhotosAdapter} from "../../Adapters/MockPhotosAdapter";
@@ -9,6 +9,7 @@ import {Dashboard} from "../Dashboard/Dashboard";
 import {PhotoDetail} from "../PhotoDetail/PhotoDetail";
 import {SettingsView} from "../SettingsView/SettingsView";
 import {MockSettingsAdapter} from "../../Adapters/MockSettingsAdapter";
+import {MemoryRouter} from "react-router-dom";
 
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
@@ -43,53 +44,61 @@ type Story = StoryObj<typeof AppBar>;
 
 export const Home: Story = {
     render: () => (
-        <AppBar activeLink={Labels.Dashboard}>
-            <Dashboard
-                albumsAdapter={new MockAlbumsAdapter()
-                    .withAlbums(albumWithPhotos.getAlbums())}
-                photosAdapter={new MockPhotosAdapter()
-                    .withPhotos(albumWithPhotos.getPhotos())}
-            />
-        </AppBar>
+        <MemoryRouter initialEntries={['/']}>
+            <AppBar>
+                <Dashboard
+                    albumsAdapter={new MockAlbumsAdapter()
+                        .withAlbums(albumWithPhotos.getAlbums())}
+                    photosAdapter={new MockPhotosAdapter()
+                        .withPhotos(albumWithPhotos.getPhotos())}
+                />
+            </AppBar>
+        </MemoryRouter>
     )
 };
 
 export const Photos: Story = {
     render: () => (
-        <AppBar activeLink={Labels.Photos}>
-            <PhotoGrid
-                photosAdapter={new MockPhotosAdapter()
-                    .withPhotos(albumWithPhotos.getPhotos())}
-                albumsAdapter={new MockAlbumsAdapter()
-                    .withAlbums(albumWithPhotos.getAlbums())}
-                maxDisplayed={20}
-            />
-        </AppBar>
+        <MemoryRouter initialEntries={['/photos']}>
+            <AppBar>
+                <PhotoGrid
+                    photosAdapter={new MockPhotosAdapter()
+                        .withPhotos(albumWithPhotos.getPhotos())}
+                    albumsAdapter={new MockAlbumsAdapter()
+                        .withAlbums(albumWithPhotos.getAlbums())}
+                    maxDisplayed={20}
+                />
+            </AppBar>
+        </MemoryRouter>
     )
 };
 
 export const PhotoInfo: Story = {
     render: () => (
-        <AppBar activeLink={Labels.Photos}>
-            <PhotoDetail
-                photosAdapter={new MockPhotosAdapter()
-                    .withPhotos(albumWithPhotos.getPhotos())}
-            />
-        </AppBar>
+        <MemoryRouter initialEntries={['/photo/1']}>
+            <AppBar>
+                <PhotoDetail
+                    photosAdapter={new MockPhotosAdapter()
+                        .withPhotos(albumWithPhotos.getPhotos())}
+                />
+            </AppBar>
+        </MemoryRouter>
     )
 };
 
 export const Albums: Story = {
     render: () => (
-        <AppBar activeLink={Labels.Albums}>
-            <AlbumGrid
-                albumsAdapter={new MockAlbumsAdapter()
-                    .withAlbums(albumWithPhotos.getAlbums())}
-                photosAdapter={new MockPhotosAdapter()
-                                .withPhotos(albumWithPhotos.getPhotos())}
-                maxDisplayed={20}
-            />
-        </AppBar>
+        <MemoryRouter initialEntries={['/albums']}>
+            <AppBar>
+                <AlbumGrid
+                    albumsAdapter={new MockAlbumsAdapter()
+                        .withAlbums(albumWithPhotos.getAlbums())}
+                    photosAdapter={new MockPhotosAdapter()
+                                    .withPhotos(albumWithPhotos.getPhotos())}
+                    maxDisplayed={20}
+                />
+            </AppBar>
+        </MemoryRouter>
     )
 };
 
@@ -102,13 +111,15 @@ const settings = [
 
 export const Settings: Story = {
     render: () => (
-        <AppBar activeLink={Labels.Settings}>
-            <SettingsView
-                settingsAdapter={new MockSettingsAdapter()
-                    .withSettings(settings)}
-                photosAdapter={new MockPhotosAdapter()
-                    .withPhotos(albumWithPhotos.getPhotos())}
-            />
-        </AppBar>
+        <MemoryRouter initialEntries={['/settings']}>
+            <AppBar>
+                <SettingsView
+                    settingsAdapter={new MockSettingsAdapter()
+                        .withSettings(settings)}
+                    photosAdapter={new MockPhotosAdapter()
+                        .withPhotos(albumWithPhotos.getPhotos())}
+                />
+            </AppBar>
+        </MemoryRouter>
     )
 };

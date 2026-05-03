@@ -18,7 +18,7 @@ import {
 } from '@mantine/core';
 import {getHotkeyHandler, useInputState} from "@mantine/hooks";
 import {useState} from 'react';
-import {IconAlertTriangle, IconCheck, IconX} from '@tabler/icons-react';
+import {IconCheck, IconX} from '@tabler/icons-react';
 import {IUsersAdapter} from "../../Adapters/IUsersAdapter";
 import {notifications} from '@mantine/notifications';
 
@@ -150,21 +150,17 @@ export const LoginCard: React.FunctionComponent<IProps> = (props) => {
                 <TextInput
                     value={username}
                     label="Username"
-                    error="Invalid username"
                     placeholder="username"
                     width="75%"
                     required
                     onChange={setUsername}
-                    rightSection={<IconAlertTriangle stroke={1.5} size={18} className={classes.icon}/>}
                 />
                 <TextInput
                     value={email}
                     label="Email"
-                    error="Invalid email"
                     placeholder="hello@gmail.com"
                     width="75%"
                     onChange={setEmail}
-                    rightSection={<IconAlertTriangle stroke={1.5} size={18} className={classes.icon}/>}
                 />
                 <PasswordInput
                     value={registrationPassword}
@@ -199,22 +195,24 @@ export const LoginCard: React.FunctionComponent<IProps> = (props) => {
                 </Anchor>
             </Text>
             <Paper withBorder shadow="md" p={30} mt={30} radius="md">
-                <SegmentedControl data={['Login', 'Register']} fullWidth value={segmentedValue} onChange={setSegmentedValue}/>
-                <Space h={20}/>
-                {segmentedValue === 'Login' ? loginForm() : registrationForm()}
-                <Group justify="space-between" mt="lg">
-                    <Anchor component="button" size="sm">
-                        Forgot password?
-                    </Anchor>
-                </Group>
-                {error && (
-                    <Text c="red" size="sm" ta="center" mt="sm">
-                        {error}
-                    </Text>
-                )}
-                <Button fullWidth mt="xl" onClick={() => handleSubmit()} loading={isSubmitting} disabled={isSubmitting}>
-                    {segmentedValue}
-                </Button>
+                <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+                    <SegmentedControl data={['Login', 'Register']} fullWidth value={segmentedValue} onChange={setSegmentedValue}/>
+                    <Space h={20}/>
+                    {segmentedValue === 'Login' ? loginForm() : registrationForm()}
+                    <Group justify="space-between" mt="lg">
+                        <Anchor component="button" size="sm">
+                            Forgot password?
+                        </Anchor>
+                    </Group>
+                    {error && (
+                        <Text c="red" size="sm" ta="center" mt="sm">
+                            {error}
+                        </Text>
+                    )}
+                    <Button fullWidth mt="xl" type="submit" loading={isSubmitting} disabled={isSubmitting}>
+                        {segmentedValue}
+                    </Button>
+                </form>
             </Paper>
         </Container>
     );

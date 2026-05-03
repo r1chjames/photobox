@@ -1,8 +1,8 @@
 import React, {Suspense} from 'react';
-import {Navigate, Route, Routes} from "react-router-dom";
+import {Navigate, Outlet, Route, Routes} from "react-router-dom";
 import {useAuth} from "./AuthContext";
 import {useAdapters} from "./AdapterContext";
-import {AppBar, Labels} from "../Components/AppBar/AppBar";
+import {AppBar} from "../Components/AppBar/AppBar";
 import {Loader, Center} from "@mantine/core";
 
 const PhotoGrid = React.lazy(() => import('../Components/PhotoGrid/PhotoGrid').then(m => ({default: m.PhotoGrid})));
@@ -38,245 +38,44 @@ const ProtectedRoute = (props: { children: React.ReactNode }) => {
     return <>{props.children}</>;
 };
 
+const AppShellLayout = () => {
+    return (
+        <AppBar>
+            <Suspense fallback={<PageLoader/>}>
+                <Outlet />
+            </Suspense>
+        </AppBar>
+    );
+};
+
 const Router: React.FunctionComponent = () => {
     const {photosAdapter, albumsAdapter, settingsAdapter, usersAdapter, sharesAdapter} = useAdapters();
 
 
     return (
-        <Suspense fallback={<PageLoader/>}>
-            <Routes>
-                <Route
-                    path="/"
-                    element={
-                        <ProtectedRoute>
-                            <AppBar activeLink={Labels.Dashboard}>
-                                <Dashboard
-                                    albumsAdapter={albumsAdapter}
-                                    photosAdapter={photosAdapter}
-                                />
-                            </AppBar>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/login"
-                    element={
-                        <LoginCard
-                            usersAdapter={usersAdapter}
-                        />
-                    }
-                />
-                <Route
-                    path="/photos"
-                    element={
-                        <ProtectedRoute>
-                            <AppBar activeLink={Labels.Photos}>
-                                <PhotoGrid
-                                    photosAdapter={photosAdapter}
-                                    albumsAdapter={albumsAdapter}
-                                    sharesAdapter={sharesAdapter}
-                                />
-                            </AppBar>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/photo/:id"
-                    element={
-                        <ProtectedRoute>
-                            <AppBar activeLink={Labels.Photos}>
-                                <PhotoDetail photosAdapter={photosAdapter} sharesAdapter={sharesAdapter}/>
-                            </AppBar>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/albums"
-                    element={
-                        <ProtectedRoute>
-                            <AppBar activeLink={Labels.Albums}>
-                                <AlbumGrid
-                                    albumsAdapter={albumsAdapter}
-                                    photosAdapter={photosAdapter}
-                                />
-                            </AppBar>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/album/:id"
-                    element={
-                        <ProtectedRoute>
-                            <AppBar activeLink={Labels.Albums}>
-                                <PhotoGrid
-                                    photosAdapter={photosAdapter}
-                                    albumsAdapter={albumsAdapter}
-                                    sharesAdapter={sharesAdapter}
-                                />
-                            </AppBar>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/album/new/:name"
-                    element={
-                        <ProtectedRoute>
-                            <CreateAlbumView
-                                photosAdapter={photosAdapter}
-                            />
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/search"
-                    element={
-                        <ProtectedRoute>
-                            <AppBar activeLink={Labels.Photos}>
-                                <SearchView
-                                    photosAdapter={photosAdapter}
-                                    albumsAdapter={albumsAdapter}
-                                    sharesAdapter={sharesAdapter}
-                                />
-                            </AppBar>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/favorites"
-                    element={
-                        <ProtectedRoute>
-                            <AppBar activeLink={Labels.Favorites}>
-                                <FavoritesView
-                                    photosAdapter={photosAdapter}
-                                    albumsAdapter={albumsAdapter}
-                                    sharesAdapter={sharesAdapter}
-                                />
-                            </AppBar>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/trash"
-                    element={
-                        <ProtectedRoute>
-                            <AppBar activeLink={Labels.Trash}>
-                                <TrashView
-                                    photosAdapter={photosAdapter}
-                                />
-                            </AppBar>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/shares"
-                    element={
-                        <ProtectedRoute>
-                            <AppBar activeLink={Labels.Shares}>
-                                <ShareManagement
-                                    sharesAdapter={sharesAdapter}
-                                />
-                            </AppBar>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/users"
-                    element={
-                        <ProtectedRoute>
-                            <AppBar activeLink={Labels.Users}>
-                                <UserManagement
-                                    usersAdapter={usersAdapter}
-                                />
-                            </AppBar>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/map"
-                    element={
-                        <ProtectedRoute>
-                            <AppBar activeLink={Labels.Map}>
-                                <MapView
-                                    photosAdapter={photosAdapter}
-                                />
-                            </AppBar>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/settings"
-                    element={
-                        <ProtectedRoute>
-                            <AppBar activeLink={Labels.Settings}>
-                                <SettingsView
-                                    settingsAdapter={settingsAdapter}
-                                    photosAdapter={photosAdapter}
-                                />
-                            </AppBar>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/tags"
-                    element={
-                        <ProtectedRoute>
-                            <AppBar activeLink={Labels.Tags}>
-                                <TagsView
-                                    photosAdapter={photosAdapter}
-                                />
-                            </AppBar>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/tags/:tag"
-                    element={
-                        <ProtectedRoute>
-                            <AppBar activeLink={Labels.Tags}>
-                                <TagPhotosView
-                                    photosAdapter={photosAdapter}
-                                    albumsAdapter={albumsAdapter}
-                                    sharesAdapter={sharesAdapter}
-                                />
-                            </AppBar>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/shared/:token"
-                    element={
-                        <SharedView />
-                    }
-                />
-                <Route
-                    path="/duplicates"
-                    element={
-                        <ProtectedRoute>
-                            <AppBar activeLink={Labels.Duplicates}>
-                                <DuplicatesView
-                                    photosAdapter={photosAdapter}
-                                />
-                            </AppBar>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/videos"
-                    element={
-                        <ProtectedRoute>
-                            <AppBar activeLink={Labels.Videos}>
-                                <PhotoGrid
-                                    photosAdapter={photosAdapter}
-                                    albumsAdapter={albumsAdapter}
-                                    sharesAdapter={sharesAdapter}
-                                    mediaType="video"
-                                />
-                            </AppBar>
-                        </ProtectedRoute>
-                    }
-                />
-            </Routes>
-        </Suspense>
+        <Routes>
+            <Route path="/login" element={<LoginCard usersAdapter={usersAdapter} />} />
+            <Route path="/shared/:token" element={<SharedView />} />
+            <Route element={<ProtectedRoute><AppShellLayout /></ProtectedRoute>}>
+                <Route path="/" element={<Dashboard albumsAdapter={albumsAdapter} photosAdapter={photosAdapter} />} />
+                <Route path="/photos" element={<PhotoGrid photosAdapter={photosAdapter} albumsAdapter={albumsAdapter} sharesAdapter={sharesAdapter} />} />
+                <Route path="/photo/:id" element={<PhotoDetail photosAdapter={photosAdapter} sharesAdapter={sharesAdapter}/>} />
+                <Route path="/albums" element={<AlbumGrid albumsAdapter={albumsAdapter} photosAdapter={photosAdapter} />} />
+                <Route path="/album/:id" element={<PhotoGrid photosAdapter={photosAdapter} albumsAdapter={albumsAdapter} sharesAdapter={sharesAdapter} />} />
+                <Route path="/album/new/:name" element={<CreateAlbumView photosAdapter={photosAdapter} />} />
+                <Route path="/search" element={<SearchView photosAdapter={photosAdapter} albumsAdapter={albumsAdapter} sharesAdapter={sharesAdapter} />} />
+                <Route path="/favorites" element={<FavoritesView photosAdapter={photosAdapter} albumsAdapter={albumsAdapter} sharesAdapter={sharesAdapter} />} />
+                <Route path="/trash" element={<TrashView photosAdapter={photosAdapter} />} />
+                <Route path="/shares" element={<ShareManagement sharesAdapter={sharesAdapter} />} />
+                <Route path="/users" element={<UserManagement usersAdapter={usersAdapter} />} />
+                <Route path="/map" element={<MapView photosAdapter={photosAdapter} />} />
+                <Route path="/settings" element={<SettingsView settingsAdapter={settingsAdapter} photosAdapter={photosAdapter} />} />
+                <Route path="/tags" element={<TagsView photosAdapter={photosAdapter} />} />
+                <Route path="/tags/:tag" element={<TagPhotosView photosAdapter={photosAdapter} albumsAdapter={albumsAdapter} sharesAdapter={sharesAdapter} />} />
+                <Route path="/duplicates" element={<DuplicatesView photosAdapter={photosAdapter} />} />
+                <Route path="/videos" element={<PhotoGrid photosAdapter={photosAdapter} albumsAdapter={albumsAdapter} sharesAdapter={sharesAdapter} mediaType="video" />} />
+            </Route>
+        </Routes>
     );
 };
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '../../test/test-utils';
-import { AppBar, Labels } from './AppBar';
+import { AppBar } from './AppBar';
 
 // Mock Mantine hooks
 vi.mock('@mantine/hooks', () => ({
@@ -19,13 +19,13 @@ describe('AppBar', () => {
     });
 
     it('should render app name "Photobox"', () => {
-        render(<AppBar activeLink={Labels.Dashboard}><div>Content</div></AppBar>);
+        render(<AppBar><div>Content</div></AppBar>);
 
         expect(screen.getByText('Photobox')).toBeInTheDocument();
     });
 
     it('should render navigation links', () => {
-        render(<AppBar activeLink={Labels.Dashboard}><div>Content</div></AppBar>);
+        render(<AppBar><div>Content</div></AppBar>);
 
         // Use getAllByText because breadcrumbs also contain these labels
         expect(screen.getAllByText('Dashboard').length).toBeGreaterThanOrEqual(1);
@@ -35,14 +35,14 @@ describe('AppBar', () => {
     });
 
     it('should render user avatar and name', () => {
-        render(<AppBar activeLink={Labels.Dashboard}><div>Content</div></AppBar>);
+        render(<AppBar><div>Content</div></AppBar>);
 
         expect(screen.getByText('User')).toBeInTheDocument();
     });
 
     it('should render children content', () => {
         render(
-            <AppBar activeLink={Labels.Dashboard}>
+            <AppBar>
                 <div>Test Content</div>
             </AppBar>
         );
@@ -51,7 +51,7 @@ describe('AppBar', () => {
     });
 
     it('should highlight active navigation link', () => {
-        const { container } = render(<AppBar activeLink={Labels.Photos}><div>Content</div></AppBar>);
+        const { container } = render(<AppBar><div>Content</div></AppBar>);
 
         // Find nav links and check if Photos is active
         const navLinks = container.querySelectorAll('.mantine-NavLink-root');
@@ -59,21 +59,21 @@ describe('AppBar', () => {
     });
 
     it('should render color scheme toggle button', () => {
-        const { container } = render(<AppBar activeLink={Labels.Dashboard}><div>Content</div></AppBar>);
+        const { container } = render(<AppBar><div>Content</div></AppBar>);
 
         const toggleButton = container.querySelector('[aria-label="Toggle color scheme"]');
         expect(toggleButton).toBeInTheDocument();
     });
 
     it('should render burger menu for mobile', () => {
-        const { container } = render(<AppBar activeLink={Labels.Dashboard}><div>Content</div></AppBar>);
+        const { container } = render(<AppBar><div>Content</div></AppBar>);
 
         const burger = container.querySelector('.mantine-Burger-root');
         expect(burger).toBeInTheDocument();
     });
 
     it('should render user menu trigger', () => {
-        render(<AppBar activeLink={Labels.Dashboard}><div>Content</div></AppBar>);
+        render(<AppBar><div>Content</div></AppBar>);
 
         // Menu items are only rendered when menu is opened due to withinPortal
         // Just verify the user name trigger is present
@@ -81,14 +81,14 @@ describe('AppBar', () => {
     });
 
     it('should render menu component', () => {
-        const { container } = render(<AppBar activeLink={Labels.Dashboard}><div>Content</div></AppBar>);
+        const { container } = render(<AppBar><div>Content</div></AppBar>);
 
         // Verify menu structure exists (items are in portal, not visible until opened)
         expect(container).toBeInTheDocument();
     });
 
     it('should render navigation with correct descriptions', () => {
-        render(<AppBar activeLink={Labels.Dashboard}><div>Content</div></AppBar>);
+        render(<AppBar><div>Content</div></AppBar>);
 
         expect(screen.getByText('All photos & albums')).toBeInTheDocument();
         expect(screen.getByText('All photos')).toBeInTheDocument();
@@ -96,9 +96,9 @@ describe('AppBar', () => {
     });
 
     it('should render app logo icon', () => {
-        const { container } = render(<AppBar activeLink={Labels.Dashboard}><div>Content</div></AppBar>);
+        const { container } = render(<AppBar><div>Content</div></AppBar>);
 
-        // Check for IconLibraryPhoto
+        // Check forIconLibraryPhoto
         const svgs = container.querySelectorAll('svg');
         expect(svgs.length).toBeGreaterThan(0);
     });

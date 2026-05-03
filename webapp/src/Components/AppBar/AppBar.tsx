@@ -6,6 +6,7 @@ import {
     Breadcrumbs,
     Burger,
     Container,
+    Drawer,
     Group,
     Menu,
     NavLink,
@@ -34,6 +35,7 @@ import {
     IconLink,
     IconLogout,
     IconMap,
+    IconMenu2,
     IconMessage,
     IconMoon,
     IconPhoto,
@@ -47,7 +49,6 @@ import {
 } from "@tabler/icons-react";
 
 interface IProps {
-    activeLink: Labels;
     children: React.ReactNode;
 }
 
@@ -146,10 +147,29 @@ const bottomNavData = [
     { icon: IconPhoto, label: 'Photos', href: '/photos' },
     { icon: IconAlbum, label: 'Albums', href: '/albums' },
     { icon: IconMap, label: 'Map', href: '/map' },
-    { icon: IconTag, label: 'Tags', href: '/tags' },
+    { icon: IconMenu2, label: 'More', href: null },
 ];
 
+const overflowNavLinks = navLinkData.filter(
+    (item) => ![Labels.Dashboard, Labels.Photos, Labels.Albums, Labels.Map, Labels.Tags].includes(item.label)
+);
+
 const activeLinkIndex = (index: Labels) => navLinkData.map(item => item.label).indexOf(index);
+
+const getActiveLinkFromPath = (pathname: string): Labels => {
+    if (pathname === '/') return Labels.Dashboard;
+    if (pathname.startsWith('/photo/')) return Labels.Photos;
+    if (pathname.startsWith('/photos') || pathname.startsWith('/search') || pathname.startsWith('/favorites') || pathname.startsWith('/trash') || pathname.startsWith('/videos')) return Labels.Photos;
+    if (pathname.startsWith('/album/')) return Labels.Albums;
+    if (pathname === '/albums') return Labels.Albums;
+    if (pathname.startsWith('/shares')) return Labels.Shares;
+    if (pathname.startsWith('/users')) return Labels.Users;
+    if (pathname.startsWith('/map')) return Labels.Map;
+    if (pathname.startsWith('/tags')) return Labels.Tags;
+    if (pathname.startsWith('/duplicates')) return Labels.Duplicates;
+    if (pathname.startsWith('/settings')) return Labels.Settings;
+    return Labels.Dashboard;
+};
 
 const buildBreadcrumbs = (location: string, activeLink: Labels, id?: string, albumName?: string) => {
     const items: { label: string; href?: string; icon?: React.ReactNode }[] = [];
@@ -193,28 +213,34 @@ const buildBreadcrumbs = (location: string, activeLink: Labels, id?: string, alb
 
 export const AppBar: React.FunctionComponent<IProps> = (props) => {
     const [opened, {toggle}] = useDisclosure(false);
-    const [active, setActive] = useState(activeLinkIndex(props.activeLink));
+    const location = useLocation();
+    const activeLink = getActiveLinkFromPath(location.pathname);
+    const [active, setActive] = useState(activeLinkIndex(activeLink));
+    const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
     const [showHelp, setShowHelp] = useState(false);
     const [searchValue, setSearchValue] = useState('');
     const [albumName, setAlbumName] = useState<string | undefined>();
     const {colorScheme, setColorScheme} = useMantineColorScheme();
     const computedColorScheme = useComputedColorScheme('light', {getInitialValueInEffect: true});
     const navigate = useNavigate();
-    const location = useLocation();
     const { id } = useParams<{ id: string }>();
     const {logout} = useAuth();
     const {albumsAdapter} = useAdapters();
-    const breadcrumbItems = buildBreadcrumbs(location.pathname, props.activeLink, id, albumName);
+    const breadcrumbItems = buildBreadcrumbs(location.pathname, activeLink, id, albumName);
 
     useEffect(() => {
-        if (props.activeLink === Labels.Albums && id) {
+        setActive(activeLinkIndex(activeLink));
+    }, [activeLink]);
+
+    useEffect(() => {
+        if (activeLink === Labels.Albums && id) {
             albumsAdapter.getAlbumInfoById(id)
                 .then(album => setAlbumName(album?.name))
                 .catch(() => setAlbumName(undefined));
         } else {
             setAlbumName(undefined);
         }
-    }, [props.activeLink, id, albumsAdapter]);
+    }, [activeLink, id, albumsAdapter]);
 
     const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && searchValue.trim()) {
@@ -403,11 +429,14 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
                 }}
             >
                 {bottomNavData.map((item) => {
-                    const isActive = location.pathname === item.href || (item.href !== '/' && location.pathname.startsWith(item.href));
+                    const isMore = item.href === null;
+                    const isActive = isMore
+                        ? overflowNavLinks.some((link) => location.pathname === link.href || location.pathname.startsWith(link.href))
+                        : location.pathname === item.href || (item.href !== '/' && location.pathname.startsWith(item.href));
                     return (
                         <div
-                            key={item.href}
-                            onClick={() => navigate(item.href)}
+                            key={item.label}
+                            onClick={() => isMore ? setBottomSheetOpen(true) : navigate(item.href)}
                             style={{
                                 display: 'flex',
                                 flexDirection: 'column',
@@ -425,6 +454,35 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
                     );
                 })}
             </div>
+
+            {/* Mobile "More" bottom sheet */}
+            <Drawer
+                position="bottom"
+                opened={bottomSheetOpen}
+                onClose={() => setBottomSheetOpen(false)}
+                size="100%"
+                radius="lg"
+                withCloseButton={false}
+                styles={{
+                    body: { padding: '8px 16px 24px' },
+                }}
+            >
+                {overflowNavLinks.map((item) => {
+                    const isActive = location.pathname === item.href || location.pathname.startsWith(item.href);
+                    return (
+                        <NavLink
+                            component={Link}
+                            to={item.href}
+                            key={item.label}
+                            active={isActive}
+                            label={item.label.toString()}
+                            description={item.description}
+                            leftSection={<item.icon size="1rem" stroke={isActive ? 2 : 1.5} />}
+                            onClick={() => setBottomSheetOpen(false)}
+                        />
+                    );
+                })}
+            </Drawer>
 
             <KeyboardShortcutsHelp opened={showHelp} onClose={() => setShowHelp(false)} />
         </AppShell>

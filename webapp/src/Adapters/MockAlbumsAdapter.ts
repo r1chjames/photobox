@@ -54,4 +54,9 @@ export class MockAlbumsAdapter implements IAlbumsAdapter {
   public deleteAlbum = async (albumId: string, deletePhotos?: boolean): Promise<void> => {
     return;
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public addPhotosToAlbum = async (albumId: string, photoIds: string[]): Promise<void> => {
+    return;
+  }
 }

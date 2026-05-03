@@ -1,13 +1,13 @@
 import React, {useCallback, useEffect, useState} from 'react';
-import {useDisclosure} from '@mantine/hooks';
-import {Button, Chip, Dialog, Drawer, Group, Image, Loader, Modal, ScrollArea, Table, TextInput} from '@mantine/core';
+import {useDisclosure, useHotkeys} from '@mantine/hooks';
+import {ActionIcon, Button, Chip, Dialog, Drawer, Group, Image, Loader, Modal, ScrollArea, Table, TextInput} from '@mantine/core';
 import {useMediaQuery} from '@mantine/hooks';
-import {IconDownload, IconHeart, IconHeartFilled, IconRotateClockwise, IconShare2, IconTag} from '@tabler/icons-react';
+import {IconArrowLeftDashed, IconArrowRightDashed, IconDownload, IconHeart, IconHeartFilled, IconRotateClockwise, IconShare2, IconTag} from '@tabler/icons-react';
 import {valueType} from "../../utils/TypeUtils";
 import {IPhotosAdapter} from '../../Adapters/IPhotosAdapter';
 import {ISharesAdapter} from '../../Adapters/ISharesAdapter';
 import {ShareModal} from '../ShareModal/ShareModal';
-import {useParams} from "react-router-dom";
+import {useNavigate, useParams} from "react-router-dom";
 import {fetchPhotoBinWithAuth, revokeBlobUrl} from "../../utils/ImageUtils";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {notifications} from '@mantine/notifications';
@@ -19,6 +19,7 @@ interface IProps {
 
 export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
     const {id} = useParams();
+    const navigate = useNavigate();
     const [opened, {toggle, close}] = useDisclosure(true);
     const [isFavorite, setIsFavorite] = useState(false);
     const [showShareModal, setShowShareModal] = useState(false);
@@ -26,6 +27,33 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
     const [tagInput, setTagInput] = useState('');
     const isMobile = useMediaQuery('(max-width: 50em)');
     const queryClient = useQueryClient();
+
+    // Fetch surrounding photos to determine prev/next navigation
+    const {data: allPhotos} = useQuery({
+        queryKey: ['allPhotosForNavigation'],
+        queryFn: () => props.photosAdapter.getAllPhotosInfo('', 1000, false),
+        staleTime: 1000 * 60 * 5,
+    });
+
+    const currentIndex = allPhotos?.findIndex(p => p.id === id) ?? -1;
+    const prevPhotoId = currentIndex > 0 ? allPhotos![currentIndex - 1].id : null;
+    const nextPhotoId = currentIndex >= 0 && currentIndex < (allPhotos?.length ?? 0) - 1 ? allPhotos![currentIndex + 1].id : null;
+    const isFirstPhoto = currentIndex <= 0;
+    const isLastPhoto = currentIndex >= (allPhotos?.length ?? 0) - 1 || currentIndex === -1;
+
+    const navigateToPhoto = useCallback((photoId: string | null) => {
+        if (photoId) {
+            navigate(`/photo/${photoId}`);
+        }
+    }, [navigate]);
+
+    const handlePrevious = useCallback(() => navigateToPhoto(prevPhotoId), [navigateToPhoto, prevPhotoId]);
+    const handleNext = useCallback(() => navigateToPhoto(nextPhotoId), [navigateToPhoto, nextPhotoId]);
+
+    useHotkeys([
+        ['ArrowLeft', handlePrevious],
+        ['ArrowRight', handleNext],
+    ]);
 
     const fetchPhoto = async () => {
         return props.photosAdapter.getPhotoInfoById(id!);
@@ -193,20 +221,56 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
     return (
         photo && photoUrl ?
             <>
-                {photo.mediaType === 'video' ? (
-                    <video
-                        src={photoUrl}
-                        controls
-                        style={{ maxHeight: '600px', width: '100%', borderRadius: '8px' }}
-                    />
-                ) : (
-                    <Image
-                        radius={"md"}
-                        mah="600px"
-                        fit="scale-down"
-                        src={photoUrl}
-                    />
-                )}
+                <div style={{ position: 'relative' }}>
+                    {photo.mediaType === 'video' ? (
+                        <video
+                            src={photoUrl}
+                            controls
+                            style={{ maxHeight: '600px', width: '100%', borderRadius: '8px' }}
+                        />
+                    ) : (
+                        <Image
+                            radius={"md"}
+                            mah="600px"
+                            fit="scale-down"
+                            src={photoUrl}
+                        />
+                    )}
+                    {!isFirstPhoto && (
+                        <ActionIcon
+                            variant="light"
+                            size="xl"
+                            onClick={handlePrevious}
+                            aria-label="Previous photo"
+                            style={{
+                                position: 'absolute',
+                                left: 8,
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                zIndex: 10,
+                            }}
+                        >
+                            <IconArrowLeftDashed size="2.125rem" />
+                        </ActionIcon>
+                    )}
+                    {!isLastPhoto && (
+                        <ActionIcon
+                            variant="light"
+                            size="xl"
+                            onClick={handleNext}
+                            aria-label="Next photo"
+                            style={{
+                                position: 'absolute',
+                                right: 8,
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                zIndex: 10,
+                            }}
+                        >
+                            <IconArrowRightDashed size="2.125rem" />
+                        </ActionIcon>
+                    )}
+                </div>
                 <Group justify="center" mt="md" gap="md">
                     <Button onClick={handleFavorite} leftSection={isFavorite ? <IconHeartFilled size={16} /> : <IconHeart size={16} />} color={isFavorite ? 'pink' : undefined}>
                         {isFavorite ? 'Favorited' : 'Favorite'}

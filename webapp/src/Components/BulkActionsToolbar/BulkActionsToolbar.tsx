@@ -3,6 +3,7 @@ import { ActionIcon, Button, Group, Text, Tooltip } from '@mantine/core';
 import {
     IconDownload,
     IconHeart,
+    IconPhotoPlus,
     IconSelectAll,
     IconSquare,
     IconTag,
@@ -21,6 +22,7 @@ interface BulkActionsToolbarProps {
     onDownload: () => void;
     onAddTag?: () => void;
     onRemoveTag?: () => void;
+    onAddToAlbum?: () => void;
     onCancel: () => void;
 }
 
@@ -34,6 +36,7 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
     onDownload,
     onAddTag,
     onRemoveTag,
+    onAddToAlbum,
     onCancel,
 }) => {
     return (
@@ -69,6 +72,13 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
                     <Tooltip label="Remove tag">
                         <ActionIcon variant="light" color="orange" onClick={onRemoveTag} disabled={selectedCount === 0}>
                             <IconTagOff size="1.25rem" />
+                        </ActionIcon>
+                    </Tooltip>
+                )}
+                {onAddToAlbum && (
+                    <Tooltip label="Add to album">
+                        <ActionIcon variant="light" color="violet" onClick={onAddToAlbum} disabled={selectedCount === 0}>
+                            <IconPhotoPlus size="1.25rem" />
                         </ActionIcon>
                     </Tooltip>
                 )}

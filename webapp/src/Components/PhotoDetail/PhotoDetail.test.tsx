@@ -19,6 +19,7 @@ vi.mock('../../utils/ImageUtils', () => ({
 vi.mock('@mantine/hooks', () => ({
     useDisclosure: () => [true, { toggle: vi.fn(), close: vi.fn() }],
     useMediaQuery: () => false,
+    useHotkeys: () => {},
 }));
 
 describe('PhotoDetail', () => {
@@ -36,6 +37,11 @@ describe('PhotoDetail', () => {
                     ExifVersion: '0232',
                 },
             }),
+            getAllPhotosInfo: vi.fn().mockResolvedValue([
+                { id: 'photo-1', name: 'photo-1.jpg' },
+                { id: 'test-photo-id', name: 'test-photo.jpg' },
+                { id: 'photo-3', name: 'photo-3.jpg' },
+            ]),
         } as unknown as IPhotosAdapter;
     });
 
@@ -58,6 +64,9 @@ describe('PhotoDetail', () => {
                     metadata: { Camera: 'Canon' },
                 }), 100))
             ),
+            getAllPhotosInfo: vi.fn().mockResolvedValue([
+                { id: 'test-photo-id', name: 'test-photo.jpg' },
+            ]),
         } as unknown as IPhotosAdapter;
 
         const { container } = render(<PhotoDetail photosAdapter={slowAdapter} />);
@@ -103,6 +112,9 @@ describe('PhotoDetail', () => {
                     ISO: 'ISO 400',  // Changed from '400' to 'ISO 400' to avoid JSON parsing
                 },
             }),
+            getAllPhotosInfo: vi.fn().mockResolvedValue([
+                { id: 'test-photo-id', name: 'test-photo.jpg' },
+            ]),
         } as unknown as IPhotosAdapter;
 
         render(<PhotoDetail photosAdapter={adapterWithNumericKeys} />);
@@ -127,6 +139,9 @@ describe('PhotoDetail', () => {
                     },
                 },
             }),
+            getAllPhotosInfo: vi.fn().mockResolvedValue([
+                { id: 'test-photo-id', name: 'test-photo.jpg' },
+            ]),
         } as unknown as IPhotosAdapter;
 
         render(<PhotoDetail photosAdapter={adapterWithNestedMetadata} />);
@@ -151,6 +166,9 @@ describe('PhotoDetail', () => {
                     ISO: 'ISO 400',  // Changed from '400' to 'ISO 400' to avoid JSON parsing
                 },
             }),
+            getAllPhotosInfo: vi.fn().mockResolvedValue([
+                { id: 'test-photo-id', name: 'test-photo.jpg' },
+            ]),
         } as unknown as IPhotosAdapter;
 
         render(<PhotoDetail photosAdapter={adapterWithEmptyValues} />);
@@ -176,6 +194,7 @@ describe('PhotoDetail', () => {
     it('should handle missing photo gracefully', () => {
         const adapterWithError = {
             getPhotoInfoById: vi.fn().mockRejectedValue(new Error('Photo not found')),
+            getAllPhotosInfo: vi.fn().mockResolvedValue([]),
         } as unknown as IPhotosAdapter;
 
         // Component should render without crashing even when adapter fails
@@ -204,6 +223,9 @@ describe('PhotoDetail', () => {
                     EXIF: '{"Make":"Canon","Model":"EOS R5"}',
                 },
             }),
+            getAllPhotosInfo: vi.fn().mockResolvedValue([
+                { id: 'test-photo-id', name: 'test-photo.jpg' },
+            ]),
         } as unknown as IPhotosAdapter;
 
         render(<PhotoDetail photosAdapter={adapterWithJSONMetadata} />);

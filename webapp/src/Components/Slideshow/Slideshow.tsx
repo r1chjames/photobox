@@ -70,8 +70,22 @@ export const Slideshow: React.FC<SlideshowProps> = ({ photos, startIndex, photos
             onMouseMove={handleMouseMove}
             onClick={() => setShowControls(prev => !prev)}
         >
-            {imageUrl && (
+            {imageUrl && photo?.mediaType === 'video' ? (
+                <video
+                    key={imageUrl}
+                    src={imageUrl}
+                    controls={false}
+                    autoPlay
+                    muted
+                    style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                    }}
+                />
+            ) : imageUrl && (
                 <img
+                    key={imageUrl}
                     src={imageUrl}
                     alt={photo?.name}
                     style={{

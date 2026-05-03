@@ -3,15 +3,17 @@ import { Setting } from '../../Models/Setting';
 import { SettingModal } from '../SettingModal/SettingModal';
 import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
-import {ActionIcon, Button, Flex, Table, TextInput} from '@mantine/core';
+import {ActionIcon, Button, Flex, Skeleton, Table, TextInput} from '@mantine/core';
 import {
     IconDeviceFloppy,
     IconLayoutGridAdd,
     IconPencil,
-    IconPencilCancel
+    IconPencilCancel,
+    IconSettings
 } from "@tabler/icons-react";
 import {ISettingsAdapter} from "../../Adapters/ISettingsAdapter";
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
+import {EmptyState} from "../EmptyState/EmptyState";
 
 interface IProps {
     settingsAdapter: ISettingsAdapter;
@@ -80,13 +82,26 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
   const [settings, setSettings] = useState<Setting[]>([]);
   const [editing, setEditing] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async function retrieveAllSettings() {
+  const loadSettings = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
       const retrievedSettings = await getAllSettings(props.settingsAdapter);
       setSettings(retrievedSettings);
-    })();
-  },[props.settingsAdapter]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load settings');
+      setSettings([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [props.settingsAdapter]);
+
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
 
   const handleValueChange = useCallback((setting: Setting, field: keyof Setting, value: string) => {
     setSettings(prev => prev.map(s =>
@@ -96,9 +111,8 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
 
   const resetForm = useCallback(async () => {
     setEditing(false);
-    const refreshedSettings = await getAllSettings(props.settingsAdapter);
-    setSettings(refreshedSettings);
-  }, [props.settingsAdapter]);
+    await loadSettings();
+  }, [loadSettings]);
 
   const handleSave = useCallback(async () => {
     try {
@@ -173,14 +187,37 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
                 </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {settings.map((setting: Setting) => (
-                <SettingsTableRow
-                    key={setting.key}
-                    setting={setting}
-                    editing={editing}
-                    onChange={handleValueChange}
-                />
-              ))}
+              {loading
+                ? Array.from({ length: 5 }).map((_, i) => (
+                    <Table.Tr key={i}>
+                      {Array.from({ length: 5 }).map((_, j) => (
+                        <Table.Td key={j}>
+                          <Skeleton height={20} radius="sm" />
+                        </Table.Td>
+                      ))}
+                    </Table.Tr>
+                  ))
+                : error && settings.length === 0
+                  ? (
+                    <Table.Tr>
+                      <Table.Td colSpan={5}>
+                        <EmptyState
+                          title="No settings available"
+                          description="Settings could not be loaded. Check your connection and try again."
+                          icon={<IconSettings size="2rem" />}
+                          action={{ label: 'Retry', onClick: loadSettings }}
+                        />
+                      </Table.Td>
+                    </Table.Tr>
+                  )
+                  : settings.map((setting: Setting) => (
+                    <SettingsTableRow
+                        key={setting.key}
+                        setting={setting}
+                        editing={editing}
+                        onChange={handleValueChange}
+                    />
+                  ))}
             </Table.Tbody>
           </Table>
         <Flex direction="row" style={{width: "100%", justifyContent: "right"}}>

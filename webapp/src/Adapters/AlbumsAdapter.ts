@@ -45,4 +45,9 @@ export class AlbumsAdapter implements IAlbumsAdapter {
     const deleteAlbumPath = `albums/${albumId}?deletePhotos=${deletePhotos ?? false}`;
     return this.restApiAdapter.postApiCall(deleteAlbumPath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
+
+  public addPhotosToAlbum = async (albumId: string, photoIds: string[]) => {
+    const addPhotosPath = `albums/${albumId}/photos`;
+    return this.restApiAdapter.postApiCall(addPhotosPath, { photoIds }, this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
 }

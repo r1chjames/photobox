@@ -35,7 +35,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const [isFavorite, setIsFavorite] = useState(props.source.favorite ?? false);
     const [showShareModal, setShowShareModal] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const img: React.Ref<HTMLImageElement> = React.createRef();
+    const img = useRef<HTMLImageElement>(null);
     const cardRef = useRef<HTMLDivElement>(null);
     const blobUrlRef = useRef<string | undefined>(undefined);
     const touchStartRef = useRef<{ x: number; y: number } | null>(null);
