@@ -4,6 +4,8 @@ import (
 	"errors"
 	"log/slog"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
@@ -77,6 +79,36 @@ func (dbEnv *Env) createSearchIndexes() {
 			slog.Warn("Failed to create search index", "error", err, "index", idx)
 		}
 	}
+}
+
+func (dbEnv *Env) MigrateThumbnailsToFilesystem(photoDir string) {
+	var photos []domain.Photo
+	result := dbEnv.Db.Where("thumbnail_path = ? OR thumbnail_path IS NULL", "").Where("thumbnail IS NOT NULL AND length(thumbnail) > 0").Find(&photos)
+	if result.Error != nil {
+		slog.Warn("Failed to query photos for thumbnail migration", "error", result.Error)
+		return
+	}
+	if len(photos) == 0 {
+		return
+	}
+	slog.Info("Migrating thumbnails to filesystem", "count", len(photos))
+	thumbsDir := filepath.Join(photoDir, ".thumbnails")
+	for _, p := range photos {
+		safeId := strings.ReplaceAll(p.ID, "/", "_")
+		safeId = strings.ReplaceAll(safeId, "+", "-")
+		safeId = strings.ReplaceAll(safeId, "=", "")
+		path := filepath.Join(thumbsDir, safeId+".jpg")
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			slog.Warn("Failed to create thumbnail directory", "error", err)
+			continue
+		}
+		if err := os.WriteFile(path, p.Thumbnail, 0644); err != nil {
+			slog.Warn("Failed to write thumbnail to disk", "photo", p.ID, "error", err)
+			continue
+		}
+		dbEnv.Db.Model(&domain.Photo{}).Where("id = ?", p.ID).Update("thumbnail_path", path)
+	}
+	slog.Info("Thumbnail migration complete")
 }
 
 // Ping checks the database connection is alive

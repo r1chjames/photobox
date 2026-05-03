@@ -173,6 +173,11 @@ func (m *MockPhotoRepository) GetThumbnailBytes(photoId string) ([]byte, error) 
 	return args.Get(0).([]byte), args.Error(1)
 }
 
+func (m *MockPhotoRepository) GetThumbnailPath(photoId string) (string, error) {
+	args := m.Called(photoId)
+	return args.String(0), args.Error(1)
+}
+
 // MockAlbumService is a mock implementation of port.AlbumService
 type MockAlbumService struct {
 	mock.Mock

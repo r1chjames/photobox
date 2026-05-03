@@ -150,6 +150,17 @@ func (ph *PhotoHandler) GetPhotoThumbnail(ctx *gin.Context) {
 		return
 	}
 
+	// Try filesystem first
+	thumbnailPath, err := ph.photoSvc.PhotoThumbnailPath(photoId)
+	if err == nil && thumbnailPath != "" {
+		ctx.Header("Content-Type", "image/jpeg")
+		ctx.Header("Cache-Control", "public, max-age=31536000, immutable")
+		ctx.Header("ETag", fmt.Sprintf(`"%s"`, photoId))
+		ctx.File(thumbnailPath)
+		return
+	}
+
+	// Fallback to DB
 	photoBinary, err := ph.photoSvc.PhotoThumbnailBytes(photoId)
 	if err != nil {
 		handleError(ctx, err)

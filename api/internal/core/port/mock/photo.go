@@ -182,6 +182,21 @@ func (mr *MockPhotoRepositoryMockRecorder) GetThumbnailBytes(photoId interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetThumbnailBytes", reflect.TypeOf((*MockPhotoRepository)(nil).GetThumbnailBytes), photoId)
 }
 
+// GetThumbnailPath mocks base method.
+func (m *MockPhotoRepository) GetThumbnailPath(photoId string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetThumbnailPath", photoId)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetThumbnailPath indicates an expected call of GetThumbnailPath.
+func (mr *MockPhotoRepositoryMockRecorder) GetThumbnailPath(photoId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetThumbnailPath", reflect.TypeOf((*MockPhotoRepository)(nil).GetThumbnailPath), photoId)
+}
+
 // GetTimeline mocks base method.
 func (m *MockPhotoRepository) GetTimeline() ([]domain.TimelineEntry, error) {
 	m.ctrl.T.Helper()
@@ -658,6 +673,21 @@ func (m *MockPhotoService) PhotoThumbnailBytes(photoId string) ([]byte, error) {
 func (mr *MockPhotoServiceMockRecorder) PhotoThumbnailBytes(photoId interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PhotoThumbnailBytes", reflect.TypeOf((*MockPhotoService)(nil).PhotoThumbnailBytes), photoId)
+}
+
+// PhotoThumbnailPath mocks base method.
+func (m *MockPhotoService) PhotoThumbnailPath(photoId string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PhotoThumbnailPath", photoId)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PhotoThumbnailPath indicates an expected call of PhotoThumbnailPath.
+func (mr *MockPhotoServiceMockRecorder) PhotoThumbnailPath(photoId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PhotoThumbnailPath", reflect.TypeOf((*MockPhotoService)(nil).PhotoThumbnailPath), photoId)
 }
 
 // PhotoThumbnails mocks base method.

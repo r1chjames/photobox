@@ -17,6 +17,7 @@ type Photo struct {
 	CreatedEpoch   int64          `json:"createdEpoch" gorm:"index;index:idx_album_deleted_epoch,priority:3;index:idx_deleted_epoch,priority:2"`
 	UpdatedAt      time.Time      `json:"updatedAt"`
 	Thumbnail      []byte         `json:"-"`
+	ThumbnailPath  string         `json:"-"`
 	ThumbnailUrl   string         `json:"thumbnailUrl" gorm:"-"`
 	Favorite       bool           `json:"favorite" gorm:"default:false;index"`
 	DeletedAt      *time.Time     `json:"deletedAt" gorm:"index;index:idx_album_deleted_epoch,priority:2;index:idx_deleted_epoch,priority:1"`

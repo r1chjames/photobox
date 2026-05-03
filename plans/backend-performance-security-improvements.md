@@ -255,21 +255,52 @@ The global 100 req/s limiter applies, but thumbnails are bursty. Consider a sepa
 
 ## 7. Implementation Roadmap
 
-### Phase 1: Quick Wins (1-2 weeks)
-1. Add `gzip` middleware to Gin router
-2. Add `Content-Type` and `Cache-Control` headers to thumbnail endpoint
-3. Add `GetThumbnailBytes` query-only method to photo repository
-4. Add path traversal validation to `GetPhotoBin`
-5. Remove default admin password
-6. Enable `pg_stat_statements`
+### Phase 1: Quick Wins (1-2 weeks) ✅ COMPLETE
+1. ✅ Add `gzip` middleware to Gin router
+2. ✅ Add `Content-Type`, `Cache-Control`, and `ETag` headers to thumbnail endpoint
+3. ✅ Add `GetThumbnailBytes` query-only method to photo repository
+4. ✅ Add path traversal validation to `GetPhotoBin`
+5. ✅ Remove default admin password fallback
+6. ✅ Enable `pg_stat_statements`
 
-### Phase 2: Thumbnail Infrastructure (2-4 weeks)
-1. Create `thumbnails` directory structure on filesystem
-2. Add migration to extract existing DB thumbnails to disk
-3. Update `GenerateThumbnail` to write to disk instead of returning bytes
-4. Update `GetPhotoThumbnail` to serve from filesystem (bypass DB)
-5. Add `ETag` support
-6. Deprecate `Thumbnail` column (or keep as fallback)
+### Phase 2: Thumbnail Infrastructure (In Progress)
+Move thumbnail storage from PostgreSQL TOAST blobs to the filesystem. This removes DB pressure, enables web server-level serving, and makes future CDN integration trivial.
+
+**Design decisions:**
+- Thumbnails live in `<PhotoDir>/.thumbnails/`
+- Filename is the base64 photo ID with filesystem sanitisation (`/`→`_`, `+`→`-`, `=` stripped)
+- A new `thumbnail_path` column on `photos` stores the resolved path
+- Existing DB thumbnails are migrated to disk on startup (one-time)
+- The DB `thumbnail` column is kept as a fallback during the transition
+- `GetPhotoThumbnail` serves directly from disk via `ctx.File()` when `thumbnail_path` is set
+
+**Tasks:**
+1. Add `ThumbnailPath` to `Photo` domain model (GORM auto-migrate)
+2. Add `PhotoThumbnailPath` service + repository method
+3. Update `SavePhoto`/`SavePhotos` to write thumbnail bytes to disk and store path
+4. Update `GetPhotoThumbnail` handler to serve from filesystem; fall back to DB
+5. Add startup migration that extracts existing `thumbnail` bytes to disk
+6. Update `GenerateThumbnail` in filesystem repo to support path-based writing
+7. Update tests and mocks for new interface methods
+
+### Phase 3: Indexing Optimization (2-3 weeks)
+1. Refactor `PerformPhotoIndex` to batch saves (100-500 per batch)
+2. Single-pass file I/O in `getMetaData`
+3. Skip unchanged files using `file_hash` + `mtime`
+4. Generate thumbnails asynchronously (post-index or on-demand)
+
+### Phase 4: Schema & Query Improvements (2-3 weeks)
+1. Add `latitude`, `longitude` columns to `Photo`
+2. Migrate GPS data from JSON metadata during index
+3. Create `photo_tags` junction table
+4. Add appropriate indexes
+5. Update `GetPhotosWithGeodata` and `ListPhotosByTags` to use new columns
+
+### Phase 5: Advanced (Optional)
+1. WebP thumbnail generation
+2. Multiple thumbnail sizes
+3. Redis caching layer
+4. HTTP/2 server push for thumbnail batches
 
 ### Phase 3: Indexing Optimization (2-3 weeks)
 1. Refactor `PerformPhotoIndex` to batch saves (100-500 per batch)

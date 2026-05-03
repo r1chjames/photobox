@@ -46,6 +46,8 @@ type PhotoRepository interface {
 	GetPhotoThumbnails(photoIds []string) (map[string][]byte, error)
 	// GetThumbnailBytes returns thumbnail bytes for a single photo
 	GetThumbnailBytes(photoId string) ([]byte, error)
+	// GetThumbnailPath returns the filesystem path for a photo's thumbnail
+	GetThumbnailPath(photoId string) (string, error)
 	// GetAllTags returns all distinct tags across photos
 	GetAllTags() ([]string, error)
 	// ListPhotosByTags returns photos matching all specified tags
@@ -72,6 +74,8 @@ type PhotoService interface {
 	PhotoThumbnail(photoId string) ([]byte, error)
 	//PhotoThumbnailBytes returns thumbnail bytes directly from DB
 	PhotoThumbnailBytes(photoId string) ([]byte, error)
+	//PhotoThumbnailPath returns the filesystem path for a photo's thumbnail
+	PhotoThumbnailPath(photoId string) (string, error)
 	//PhotoThumbnails returns thumbnails for multiple photos
 	PhotoThumbnails(photoIds []string) (map[string][]byte, error)
 	//SavePhoto saves photo to database

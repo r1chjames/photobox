@@ -20,6 +20,7 @@ func main() {
 
 	dbEnv := database.InitDbConnection(appConfig)
 	dbEnv.PerformDbSetup()
+	dbEnv.MigrateThumbnailsToFilesystem(appConfig.PhotoDir)
 
 	services := setupAppServices(dbEnv, appConfig)
 	services.utilityService.CreateBaseSettings(appConfig.ResetSettings)

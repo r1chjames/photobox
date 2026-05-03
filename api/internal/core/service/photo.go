@@ -97,6 +97,32 @@ func (ps *PhotoService) PhotoThumbnailBytes(photoId string) ([]byte, error) {
 	return ps.photoRepo.GetThumbnailBytes(photoId)
 }
 
+func (ps *PhotoService) PhotoThumbnailPath(photoId string) (string, error) {
+	return ps.photoRepo.GetThumbnailPath(photoId)
+}
+
+func (ps *PhotoService) thumbnailPath(photoId string) string {
+	safeId := strings.ReplaceAll(photoId, "/", "_")
+	safeId = strings.ReplaceAll(safeId, "+", "-")
+	safeId = strings.ReplaceAll(safeId, "=", "")
+	return filepath.Join(ps.config.PhotoDir, ".thumbnails", safeId+".jpg")
+}
+
+func (ps *PhotoService) writeThumbnailToDisk(photoId string, data []byte) (string, error) {
+	if len(data) == 0 {
+		return "", nil
+	}
+	path := ps.thumbnailPath(photoId)
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return "", err
+	}
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
 func (ps *PhotoService) PhotoThumbnails(photoIds []string) (map[string][]byte, error) {
 	return ps.photoRepo.GetPhotoThumbnails(photoIds)
 }
@@ -178,6 +204,16 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 		}
 
 		slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
+
+		if len(photo.Thumbnail) > 0 {
+			thumbPath, err := ps.writeThumbnailToDisk(photoHash, photo.Thumbnail)
+			if err == nil {
+				photoInfo.ThumbnailPath = thumbPath
+			} else {
+				slog.Error("Failed to write thumbnail to disk", "photo", photo.Name, "error", err)
+			}
+		}
+
 		photoRecords = append(photoRecords, photoInfo)
 	}
 
@@ -219,6 +255,15 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 	}
 
 	slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
+
+	if len(photo.Thumbnail) > 0 {
+		thumbPath, err := ps.writeThumbnailToDisk(photoHash, photo.Thumbnail)
+		if err == nil {
+			photoInfo.ThumbnailPath = thumbPath
+		} else {
+			slog.Error("Failed to write thumbnail to disk", "photo", photo.Name, "error", err)
+		}
+	}
 
 	return ps.photoRepo.CreatePhotoInfo(photoInfo)
 }
