@@ -2,6 +2,7 @@ package http
 
 import (
 	"archive/zip"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -149,12 +150,15 @@ func (ph *PhotoHandler) GetPhotoThumbnail(ctx *gin.Context) {
 		return
 	}
 
-	photoBinary, err := ph.photoSvc.PhotoThumbnail(photoId)
+	photoBinary, err := ph.photoSvc.PhotoThumbnailBytes(photoId)
 	if err != nil {
 		handleError(ctx, err)
 		return
 	}
-	ctx.Data(http.StatusOK, "application/octet-stream", photoBinary)
+	ctx.Header("Content-Type", "image/jpeg")
+	ctx.Header("Cache-Control", "public, max-age=31536000, immutable")
+	ctx.Header("ETag", fmt.Sprintf(`"%s"`, photoId))
+	ctx.Data(http.StatusOK, "image/jpeg", photoBinary)
 }
 
 func (ph *PhotoHandler) IndexPhotos(c *gin.Context) {

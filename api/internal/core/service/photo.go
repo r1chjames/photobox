@@ -9,6 +9,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -75,6 +76,12 @@ func (ps *PhotoService) PhotoBinary(photoId string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// Validate path is within photo directory
+	absBase, _ := filepath.Abs(ps.config.PhotoDir)
+	absReq, _ := filepath.Abs(photoInfo.FilesystemPath)
+	if !strings.HasPrefix(absReq, absBase) {
+		return "", domain.ErrForbidden
+	}
 	return photoInfo.FilesystemPath, nil
 }
 
@@ -84,6 +91,10 @@ func (ps *PhotoService) PhotoThumbnail(photoId string) ([]byte, error) {
 		return nil, err
 	}
 	return photoInfo.Thumbnail, nil
+}
+
+func (ps *PhotoService) PhotoThumbnailBytes(photoId string) ([]byte, error) {
+	return ps.photoRepo.GetThumbnailBytes(photoId)
 }
 
 func (ps *PhotoService) PhotoThumbnails(photoIds []string) (map[string][]byte, error) {

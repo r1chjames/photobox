@@ -44,6 +44,8 @@ type PhotoRepository interface {
 	GetPhotosWithGeodata(north, south, east, west float64) ([]domain.PhotoGeoData, error)
 	// GetPhotoThumbnails returns thumbnails for multiple photos
 	GetPhotoThumbnails(photoIds []string) (map[string][]byte, error)
+	// GetThumbnailBytes returns thumbnail bytes for a single photo
+	GetThumbnailBytes(photoId string) ([]byte, error)
 	// GetAllTags returns all distinct tags across photos
 	GetAllTags() ([]string, error)
 	// ListPhotosByTags returns photos matching all specified tags
@@ -68,6 +70,8 @@ type PhotoService interface {
 	PhotoBinary(photoId string) (string, error)
 	//PhotoThumbnail returns the binary photo from disk
 	PhotoThumbnail(photoId string) ([]byte, error)
+	//PhotoThumbnailBytes returns thumbnail bytes directly from DB
+	PhotoThumbnailBytes(photoId string) ([]byte, error)
 	//PhotoThumbnails returns thumbnails for multiple photos
 	PhotoThumbnails(photoIds []string) (map[string][]byte, error)
 	//SavePhoto saves photo to database

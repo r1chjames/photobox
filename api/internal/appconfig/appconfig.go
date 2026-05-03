@@ -2,6 +2,8 @@ package appconfig
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
 	"gitlab.com/r1chjames/photobox/api/internal/core/utils"
 	"strconv"
 	"strings"
@@ -38,7 +40,11 @@ func New() *AppConfig {
 	tokenDuration, _ := time.ParseDuration(utils.GetEnv("TOKEN_DURATION", "1h"))
 
 	adminUsername := utils.GetEnv("DEFAULT_ADMIN_USERNAME", "admin")
-	adminPassword := utils.GetEnv("DEFAULT_ADMIN_PASSWORD", "password")
+	adminPassword := utils.GetEnv("DEFAULT_ADMIN_PASSWORD", "")
+	if adminPassword == "" {
+		slog.Error("DEFAULT_ADMIN_PASSWORD environment variable must be set")
+		os.Exit(1)
+	}
 
 	// Parse CORS allowed origins - comma-separated list
 	corsOriginsStr := utils.GetEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")

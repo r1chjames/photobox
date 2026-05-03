@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
@@ -39,6 +40,7 @@ func NewRouter(
 	config.MaxAge = 12 * time.Hour
 
 	router.Use(cors.New(config))
+	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(requestIDMiddleware())
 	router.Use(contentTypeMiddleware())
 

@@ -165,6 +165,14 @@ func (m *MockPhotoRepository) GetDuplicatePhotos() ([]*domain.Photo, error) {
 	return args.Get(0).([]*domain.Photo), args.Error(1)
 }
 
+func (m *MockPhotoRepository) GetThumbnailBytes(photoId string) ([]byte, error) {
+	args := m.Called(photoId)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]byte), args.Error(1)
+}
+
 // MockAlbumService is a mock implementation of port.AlbumService
 type MockAlbumService struct {
 	mock.Mock
@@ -625,6 +633,20 @@ func TestPhotoBinary(t *testing.T) {
 				assert.Empty(t, path)
 			},
 		},
+		{
+			name:    "path traversal detected",
+			photoId: "photo-evil",
+			mockSetup: func(m *MockPhotoRepository) {
+				m.On("GetPhotoById", "photo-evil", false).Return(&domain.Photo{
+					ID:             "photo-evil",
+					FilesystemPath: "/etc/passwd",
+				}, nil)
+			},
+			validate: func(t *testing.T, path string, err error) {
+				assert.ErrorIs(t, err, domain.ErrForbidden)
+				assert.Empty(t, path)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -632,7 +654,7 @@ func TestPhotoBinary(t *testing.T) {
 			mockRepo := new(MockPhotoRepository)
 			mockAlbumSvc := new(MockAlbumService)
 			mockFsSvc := new(MockFilesystemService)
-			config := appconfig.AppConfig{}
+			config := appconfig.AppConfig{PhotoDir: "/storage/photos"}
 
 			tt.mockSetup(mockRepo)
 			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)

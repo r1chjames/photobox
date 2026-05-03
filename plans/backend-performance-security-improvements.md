@@ -1,0 +1,307 @@
+# Backend Improvements Plan: Performance & Security
+
+## Priority Summary
+
+| Priority | Area | Impact | Effort |
+|----------|------|--------|--------|
+| **P0** | Thumbnail storage & serving | High perf gain, reduces DB load | Medium |
+| **P0** | Photo indexing batching & I/O | Dramatically faster re-index | Medium |
+| **P1** | Database query & index optimization | Faster list views, less memory | Low |
+| **P1** | Security hardening | Auth, path traversal, headers | Low-Medium |
+| **P2** | Serialization format | Marginal gain unless huge payloads | Medium-High |
+| **P2** | Thumbnail generation pipeline | Better video support, progressive JPEG | Medium |
+
+---
+
+## 1. Photo Indexing (Highest Impact)
+
+### Current Issues
+- **Individual saves**: `PerformPhotoIndex` calls `save(photo)` per file. The callback `SavePhoto` does a single `INSERT` per photo with album lookup. No batching during the actual index run.
+- **Redundant file I/O**: `getMetaData` opens the file once for dimensions, then again for MD5/MIME/EXIF/thumbnail (`utils.OpenFile` at line 132).
+- **Album lookup N+1**: Every single photo triggers an album lookup or creation, even though `SavePhotos` exists with caching.
+- **Thumbnail always regenerated**: Even if photo hasn't changed, the full thumbnail pipeline runs.
+
+### Recommendations
+
+**a. Batch save during indexing**
+Change `PerformPhotoIndex` to collect photo metadata into chunks (e.g., 100-500) and call `SavePhotos` instead of `SavePhoto`. This requires changing the `save func(domain.PhotoFile) error` signature to accept batches or buffering in the service layer.
+
+*Files:* `api/internal/core/service/filesystem.go:37-82`, `api/internal/core/service/photo.go:117-175`
+
+**b. Single-pass file I/O**
+Refactor `getMetaData` to open the file once and reuse the handle for dimensions, hash, MIME, and EXIF extraction.
+
+*Files:* `api/internal/core/service/filesystem.go:108-181`
+
+**c. Skip unchanged files during re-index**
+Use `file_hash` + `filesystem_path` + `modified time` to detect unchanged files. Only process files that are new or have changed.
+
+*Files:* `api/internal/core/service/filesystem.go:37-82`, `api/internal/core/domain/photo.go:8-30`
+
+**d. Parallelize thumbnail generation separately**
+Separate the thumbnail generation from metadata extraction. Thumbnails can be generated in a second pass or lazily, allowing the index to complete much faster.
+
+---
+
+## 2. Thumbnail Generation
+
+### Current Issues
+- **Fixed 600x600 size**: No responsive sizes. Every thumbnail is 600x600 regardless of use case (grid vs detail view).
+- **Video thumbnails spawn ffmpeg per file**: Slow and resource-intensive.
+- **No format optimization**: JPEG thumbnails are encoded with default quality. No progressive JPEG or WebP.
+- **Memory overhead**: `imaging.Open` decodes the entire image into memory, then creates a second full copy for the thumbnail.
+
+### Recommendations
+
+**a. Multiple thumbnail sizes**
+Generate `small` (200x200), `medium` (600x600), and `large` (1200x1200) variants. Store them in separate columns or migrate to a dedicated table.
+
+*Files:* `api/internal/adapter/storage/filesystem/repository/filesystem.go:87-123`
+
+**b. WebP for thumbnails**
+WebP typically produces 25-35% smaller files than JPEG at equivalent quality. Go's `golang.org/x/image/webp` or `github.com/chai2010/webp` can encode.
+
+**c. Streaming/sequential decode for large images**
+For very large photos (>20MP), `imaging.Open` allocates a huge RGBA buffer. Consider using `imaging.Decode` with `image.Config` to check dimensions first and use a downscaling decoder if available.
+
+**d. Video thumbnail pooling**
+Reuse ffmpeg processes or use a thumbnail extraction library like `github.com/u2takey/ffmpeg-go` with better process management.
+
+---
+
+## 3. Thumbnail Serving (Critical)
+
+### Current Issues
+- **Thumbnails stored in PostgreSQL**: The `thumbnail` column is `[]byte`. PostgreSQL stores large byte arrays in TOAST tables. Fetching thumbnails means decompressing from TOAST + network transfer for every request.
+- **No caching layer**: Every thumbnail request hits the database.
+- **No content-type headers**: `GetPhotoThumbnail` returns `application/octet-stream` instead of `image/jpeg` or `image/png`.
+- **No ETag/Last-Modified**: Browsers can't conditional-fetch. The batch endpoint has 1-year cache, but individual thumbnails have no cache headers.
+- **ZIP batch is inefficient**: `POST /photos/thumbnails` creates a ZIP on-the-fly. ZIP is CPU overhead and prevents streaming.
+
+### Recommendations
+
+**a. Move thumbnails to filesystem or object storage** (Highest impact)
+Store thumbnails on disk in a structured directory (e.g., `/thumbnails/{size}/{photo_id}.webp`). This removes DB pressure entirely and allows the web server (or future CDN) to serve them directly.
+
+*Alternative:* If keeping in DB, create a separate `thumbnails` table with `photo_id`, `size`, `format`, `data` columns to avoid loading thumbnail bytes when querying photo metadata.
+
+*Files:* `api/internal/core/domain/photo.go:19`, `api/internal/adapter/storage/database/repository/photos.go:23-36`
+
+**b. Add Redis/in-memory caching**
+Cache hot thumbnails in Redis or an in-memory LRU cache. Thumbnails are immutable once generated, making them perfect for caching.
+
+**c. Proper HTTP headers for thumbnails**
+```go
+ctx.Header("Content-Type", "image/jpeg") // or detect from thumbnail
+ctx.Header("Cache-Control", "public, max-age=31536000, immutable")
+ctx.Header("ETag", fmt.Sprintf(`"%s"`, photoId))
+```
+
+*Files:* `api/internal/adapter/handler/http/photo.go:145-158`
+
+**d. Replace ZIP batch with binary stream or individual URLs**
+The frontend already fetches thumbnails individually with concurrency limiting (6 at a time). The ZIP batch endpoint adds complexity. Consider:
+- Returning a JSON array of base64 thumbnails (for very small batches)
+- Or removing the batch endpoint and letting the frontend use the individual `/thumbnail/:id` endpoint with HTTP/2 multiplexing
+- If batch is needed, use a multipart response or binary framing instead of ZIP
+
+*Files:* `api/internal/adapter/handler/http/photo.go:243-279`, `webapp/src/utils/ThumbnailUtils.ts:32-64`
+
+**e. Dedicated thumbnail endpoint without full row fetch**
+`PhotoThumbnail` currently calls `GetPhotoById(photoId, true)` which loads the entire `Photo` row. Add a query that only selects the `thumbnail` column:
+
+```go
+func (pr *PhotoRepository) GetThumbnailBytes(photoId string) ([]byte, error) {
+    var result struct{ Thumbnail []byte }
+    err := pr.dbEnv.Db.Model(&domain.Photo{}).Select("thumbnail").Where("id = ?", photoId).Scan(&result).Error
+    return result.Thumbnail, err
+}
+```
+
+*Files:* `api/internal/core/service/photo.go:81-87`, `api/internal/adapter/storage/database/repository/photos.go:23-36`
+
+---
+
+## 4. Serialization Format: JSON vs Protobuf
+
+### Analysis
+
+| Format | Pros | Cons | Verdict |
+|--------|------|------|---------|
+| **JSON (current)** | Human-readable, easy debug, native browser support, Gin handles automatically | Larger payload, slower parse/serialize, no schema enforcement | Keep for now |
+| **Protobuf** | Compact, fast deserialization, strong typing | Requires `.proto` definitions, extra build step, harder to debug, browser needs library | Not worth it |
+| **MessagePack** | Binary JSON, smaller, fast, no schema required | Browser needs decoder library | Moderate benefit |
+| **JSON + zstd/gzip** | Transparent, huge size reduction, minimal code change | Slight CPU cost | **Recommended** |
+
+### Recommendation
+**Do not migrate to Protobuf.** The API is not a high-throughput microservices mesh. The overhead of maintaining `.proto` files, generating code, and adding a decoder to the React frontend outweighs the benefits for a photo gallery app.
+
+**Instead:**
+1. **Enable response compression** in Gin. Add `gzip` middleware:
+   ```go
+   import "github.com/gin-contrib/gzip"
+   router.Use(gzip.Gzip(gzip.DefaultCompression))
+   ```
+   This reduces JSON payload size by 60-80% for list endpoints with no frontend changes.
+
+2. **Use `goccy/go-json` explicitly** for large marshal/unmarshal operations. It's already in your dependency tree (via Gin) and is ~2x faster than `encoding/json`.
+
+3. **If you still want binary:** Consider **MessagePack** with `github.com/vmihailenco/msgpack/v5`. It requires only a small frontend library and no schema definitions.
+
+*Files:* `api/internal/adapter/handler/http/router.go:30-61`
+
+---
+
+## 5. Database Performance
+
+### Current Issues
+- **`GetPhotosWithGeodata`** loads all GPS-tagged photos into memory then maps them in Go.
+- **`ListPhotosByTags`** uses `string_to_array(tags, ',')` which is not indexable. Tags are stored as comma-separated strings.
+- **`GetPhotoById`** with `includeThumbnail=true` fetches the entire row including the TOAST'd thumbnail column.
+- **No connection pool tuning** for the workload. 100 max open might be too high or too low depending on concurrency.
+- **`metadata` is `datatypes.JSON`**: Queries like `metadata::jsonb -> 'Exif' ->> 'GPSLatitude'` work but can't use indexes well.
+
+### Recommendations
+
+**a. Extract key metadata fields to columns**
+Move frequently queried metadata (GPS lat/lng, camera model, orientation) into proper indexed columns. This eliminates JSON path queries.
+
+*Files:* `api/internal/core/domain/photo.go:8-30`
+
+**b. Normalize tags**
+Move from comma-separated string to a `photo_tags` junction table. Enables proper indexing and efficient queries.
+
+*Files:* `api/internal/core/domain/photo.go:14`, `api/internal/adapter/storage/database/repository/photos.go:284-299`
+
+**c. Add partial index for geodata**
+```sql
+CREATE INDEX idx_photos_gps ON photobox.photos (id) 
+WHERE metadata::jsonb -> 'Exif' ->> 'GPSLatitude' IS NOT NULL;
+```
+Or better, add `latitude`/`longitude` columns and a GiST index.
+
+**d. Query-only thumbnail access**
+As mentioned in section 3e, never fetch the thumbnail column when loading photo lists or metadata.
+
+**e. Add `pg_stat_statements`**
+Enable this PostgreSQL extension to identify slow queries in production.
+
+---
+
+## 6. Security Improvements
+
+### Current Issues
+- **Default admin password**: `DEFAULT_ADMIN_PASSWORD` defaults to `"password"` if not set.
+- **Path traversal risk**: `GetPhotoBin` does `strings.ReplaceAll(photoBinary, \'\, \'\')` then `ctx.File(unescapedPath)`. If the database is compromised or a path is crafted, this could read arbitrary files.
+- **No request size limits**: Upload endpoints could receive unlimited payloads.
+- **No TLS configuration**: Database DSN has no `sslmode` parameter.
+- **`IndexPhotos` runs in goroutine with detached context**: Errors during indexing are only logged, not returned to the caller. The `202 Accepted` response is fine, but there's no status tracking beyond the job table.
+- **Thumbnail endpoint lacks auth check**: It uses the `photo` group which has `authMiddleware`, but the raw bytes are returned with no content-type validation.
+
+### Recommendations
+
+**a. Remove insecure defaults**
+```go
+adminPassword := utils.GetEnv("DEFAULT_ADMIN_PASSWORD", "")
+if adminPassword == "" {
+    slog.Error("DEFAULT_ADMIN_PASSWORD must be set")
+    os.Exit(1)
+}
+```
+
+*Files:* `api/internal/appconfig/appconfig.go:41`
+
+**b. Path traversal hardening**
+Validate that `photoInfo.FilesystemPath` is within `appConfig.PhotoDir` before serving:
+
+```go
+func validatePhotoPath(baseDir, requestedPath string) error {
+    absBase, _ := filepath.Abs(baseDir)
+    absReq, _ := filepath.Abs(requestedPath)
+    if !strings.HasPrefix(absReq, absBase) {
+        return domain.ErrForbidden
+    }
+    return nil
+}
+```
+
+*Files:* `api/internal/adapter/handler/http/photo.go:127-143`
+
+**c. Add request body limits**
+```go
+router.MaxMultipartMemory = 32 << 20 // 32 MB
+// Or for general body size:
+router.Use(func(c *gin.Context) {
+    c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 50*1024*1024)
+})
+```
+
+**d. Database SSL**
+Add `sslmode` to DSN based on env var:
+```go
+sslMode := utils.GetEnv("DB_SSL_MODE", "require")
+dbURL := fmt.Sprintf("host=%s ... sslmode=%s", ..., sslMode)
+```
+
+*Files:* `api/internal/appconfig/appconfig.go:25-32`
+
+**e. Security headers**
+Add middleware for `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Content-Security-Policy`.
+
+**f. Rate limit thumbnail endpoints**
+The global 100 req/s limiter applies, but thumbnails are bursty. Consider a separate, stricter limiter for resource-heavy endpoints.
+
+---
+
+## 7. Implementation Roadmap
+
+### Phase 1: Quick Wins (1-2 weeks)
+1. Add `gzip` middleware to Gin router
+2. Add `Content-Type` and `Cache-Control` headers to thumbnail endpoint
+3. Add `GetThumbnailBytes` query-only method to photo repository
+4. Add path traversal validation to `GetPhotoBin`
+5. Remove default admin password
+6. Enable `pg_stat_statements`
+
+### Phase 2: Thumbnail Infrastructure (2-4 weeks)
+1. Create `thumbnails` directory structure on filesystem
+2. Add migration to extract existing DB thumbnails to disk
+3. Update `GenerateThumbnail` to write to disk instead of returning bytes
+4. Update `GetPhotoThumbnail` to serve from filesystem (bypass DB)
+5. Add `ETag` support
+6. Deprecate `Thumbnail` column (or keep as fallback)
+
+### Phase 3: Indexing Optimization (2-3 weeks)
+1. Refactor `PerformPhotoIndex` to batch saves (100-500 per batch)
+2. Single-pass file I/O in `getMetaData`
+3. Skip unchanged files using `file_hash` + `mtime`
+4. Generate thumbnails asynchronously (post-index or on-demand)
+
+### Phase 4: Schema & Query Improvements (2-3 weeks)
+1. Add `latitude`, `longitude` columns to `Photo`
+2. Migrate GPS data from JSON metadata during index
+3. Create `photo_tags` junction table
+4. Add appropriate indexes
+5. Update `GetPhotosWithGeodata` and `ListPhotosByTags` to use new columns
+
+### Phase 5: Advanced (Optional)
+1. WebP thumbnail generation
+2. Multiple thumbnail sizes
+3. Redis caching layer
+4. HTTP/2 server push for thumbnail batches
+
+---
+
+## Files to Reference for Implementation
+
+| File | Relevance |
+|------|-----------|
+| `api/internal/adapter/handler/http/photo.go` | Thumbnail handlers, cache headers, path validation |
+| `api/internal/adapter/handler/http/router.go` | Compression middleware, rate limiters |
+| `api/internal/core/service/filesystem.go` | Indexing pipeline, worker pool, metadata extraction |
+| `api/internal/core/service/photo.go` | SavePhoto/SavePhotos, album caching |
+| `api/internal/adapter/storage/filesystem/repository/filesystem.go` | Thumbnail generation, ffmpeg |
+| `api/internal/adapter/storage/database/repository/photos.go` | DB queries, batch operations |
+| `api/internal/core/domain/photo.go` | Domain model, indexes |
+| `api/internal/appconfig/appconfig.go` | Security defaults, DB SSL |
+| `webapp/src/utils/ThumbnailUtils.ts` | Frontend batch fetching logic |

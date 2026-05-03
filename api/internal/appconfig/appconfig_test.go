@@ -23,7 +23,9 @@ func TestNew_WithDefaultValues(t *testing.T) {
 
 	// TOKEN is required, set a default
 	os.Setenv("TOKEN", "test-token")
+	os.Setenv("DEFAULT_ADMIN_PASSWORD", "password")
 	defer os.Unsetenv("TOKEN")
+	defer os.Unsetenv("DEFAULT_ADMIN_PASSWORD")
 
 	config := New()
 
@@ -108,12 +110,14 @@ func TestNew_WithPartialCustomValues(t *testing.T) {
 
 	// Set only some variables (TOKEN is required)
 	os.Setenv("TOKEN", "test-token")
+	os.Setenv("DEFAULT_ADMIN_PASSWORD", "password")
 	os.Setenv("DB_HOST", "partial-host")
 	os.Setenv("PHOTO_DIR", "/partial/photos")
 	os.Setenv("DEBUG_MODE", "true")
 
 	defer func() {
 		os.Unsetenv("TOKEN")
+		os.Unsetenv("DEFAULT_ADMIN_PASSWORD")
 		os.Unsetenv("DB_HOST")
 		os.Unsetenv("PHOTO_DIR")
 		os.Unsetenv("DEBUG_MODE")
@@ -133,6 +137,7 @@ func TestNew_WithPartialCustomValues(t *testing.T) {
 // TestNew_DbUrlFormat tests the database URL format
 func TestNew_DbUrlFormat(t *testing.T) {
 	os.Setenv("TOKEN", "test-token")
+	os.Setenv("DEFAULT_ADMIN_PASSWORD", "password")
 	os.Setenv("DB_HOST", "testhost")
 	os.Setenv("DB_PORT", "5433")
 	os.Setenv("DB_USER", "testuser")
@@ -141,6 +146,7 @@ func TestNew_DbUrlFormat(t *testing.T) {
 
 	defer func() {
 		os.Unsetenv("TOKEN")
+		os.Unsetenv("DEFAULT_ADMIN_PASSWORD")
 		os.Unsetenv("DB_HOST")
 		os.Unsetenv("DB_PORT")
 		os.Unsetenv("DB_USER")
@@ -157,11 +163,13 @@ func TestNew_DbUrlFormat(t *testing.T) {
 // TestNew_InvalidBooleanValues tests config with invalid boolean values (defaults to false)
 func TestNew_InvalidBooleanValues(t *testing.T) {
 	os.Setenv("TOKEN", "test-token")
+	os.Setenv("DEFAULT_ADMIN_PASSWORD", "password")
 	os.Setenv("RESET_SETTINGS", "invalid")
 	os.Setenv("DEBUG_MODE", "not-a-bool")
 
 	defer func() {
 		os.Unsetenv("TOKEN")
+		os.Unsetenv("DEFAULT_ADMIN_PASSWORD")
 		os.Unsetenv("RESET_SETTINGS")
 		os.Unsetenv("DEBUG_MODE")
 	}()
@@ -176,10 +184,12 @@ func TestNew_InvalidBooleanValues(t *testing.T) {
 // TestNew_InvalidTimezone tests config with invalid timezone (results in nil)
 func TestNew_InvalidTimezone(t *testing.T) {
 	os.Setenv("TOKEN", "test-token")
+	os.Setenv("DEFAULT_ADMIN_PASSWORD", "password")
 	os.Setenv("TIMEZONE", "Invalid/Timezone")
 
 	defer func() {
 		os.Unsetenv("TOKEN")
+		os.Unsetenv("DEFAULT_ADMIN_PASSWORD")
 		os.Unsetenv("TIMEZONE")
 	}()
 
@@ -192,10 +202,12 @@ func TestNew_InvalidTimezone(t *testing.T) {
 // TestNew_InvalidTokenDuration tests config with invalid duration (falls back to zero)
 func TestNew_InvalidTokenDuration(t *testing.T) {
 	os.Setenv("TOKEN", "test-token")
+	os.Setenv("DEFAULT_ADMIN_PASSWORD", "password")
 	os.Setenv("TOKEN_DURATION", "invalid-duration")
 
 	defer func() {
 		os.Unsetenv("TOKEN")
+		os.Unsetenv("DEFAULT_ADMIN_PASSWORD")
 		os.Unsetenv("TOKEN_DURATION")
 	}()
 

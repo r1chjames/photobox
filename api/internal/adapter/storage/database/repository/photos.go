@@ -254,6 +254,15 @@ func (pr *PhotoRepository) GetPhotoThumbnails(photoIds []string) (map[string][]b
 	return thumbnails, nil
 }
 
+func (pr *PhotoRepository) GetThumbnailBytes(photoId string) ([]byte, error) {
+	var result struct{ Thumbnail []byte }
+	err := pr.dbEnv.Db.Model(&domain.Photo{}).Select("thumbnail").Where("id = ?", photoId).Scan(&result).Error
+	if err != nil {
+		return nil, err
+	}
+	return result.Thumbnail, nil
+}
+
 func (pr *PhotoRepository) GetAllTags() ([]string, error) {
 	var results []struct{ Tags string }
 	result := pr.dbEnv.Db.Model(&domain.Photo{}).

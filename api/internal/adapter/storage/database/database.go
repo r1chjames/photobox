@@ -60,6 +60,11 @@ func (dbEnv *Env) PerformDbSetup() {
 
 	// Create GIN indexes for full-text search
 	dbEnv.createSearchIndexes()
+
+	// Enable query performance tracking
+	if err := dbEnv.Db.Exec("CREATE EXTENSION IF NOT EXISTS pg_stat_statements").Error; err != nil {
+		slog.Warn("Failed to enable pg_stat_statements", "error", err)
+	}
 }
 
 func (dbEnv *Env) createSearchIndexes() {

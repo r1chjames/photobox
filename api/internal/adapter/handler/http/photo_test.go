@@ -61,6 +61,14 @@ func (m *MockPhotoService) PhotoThumbnail(photoId string) ([]byte, error) {
 	return args.Get(0).([]byte), args.Error(1)
 }
 
+func (m *MockPhotoService) PhotoThumbnailBytes(photoId string) ([]byte, error) {
+	args := m.Called(photoId)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]byte), args.Error(1)
+}
+
 func (m *MockPhotoService) PhotoThumbnails(photoIds []string) (map[string][]byte, error) {
 	args := m.Called(photoIds)
 	if args.Get(0) == nil {
