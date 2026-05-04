@@ -255,11 +255,27 @@ The global 100 req/s limiter applies, but thumbnails are bursty. Consider a sepa
 7. ✅ Update `GetAllTags` to query `PhotoTag` directly
 8. ✅ Update `UpdatePhotoTags` to sync both legacy `tags` column and junction table
 
-### Phase 5: Advanced (Optional / Future)
-1. WebP thumbnail generation
-2. Multiple thumbnail sizes (small/medium/large)
-3. Redis caching layer for hot thumbnails
-4. HTTP/2 server push for thumbnail batches
+### Phase 5: Advanced ✅ COMPLETE (`f094907`)
+1. ❌ WebP thumbnail generation — deferred; requires CGO/libwebp, limited pure-Go encoders available
+2. ✅ Multiple thumbnail sizes — `GenerateThumbnail` now accepts `width, height`; generates small (200x200), medium (600x600), large (1200x1200); stored in `.thumbnails/{s,m,l}/`
+3. ✅ Valkey/Redis caching layer — `CacheService` with `go-redis/v9`; caches thumbnail paths with 24h TTL; graceful degradation when disabled or unreachable; config via `CACHE_ENABLED`, `CACHE_HOST`, `CACHE_PORT`, `CACHE_PASSWORD`, `CACHE_DB`
+4. ❌ HTTP/2 server push for thumbnail batches — deferred; modern browsers deprecating server push, HTTP/2 multiplexing + individual requests is sufficient
+
+**New env vars for cache:**
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CACHE_ENABLED` | `false` | Enable Valkey/Redis caching |
+| `CACHE_HOST` | `localhost` | Cache server host |
+| `CACHE_PORT` | `6379` | Cache server port |
+| `CACHE_PASSWORD` | `""` | Auth password (optional) |
+| `CACHE_DB` | `0` | Redis DB number |
+
+**Thumbnail endpoint now supports:**
+```
+GET /photo/{id}/thumbnail?size=s   # 200x200
+GET /photo/{id}/thumbnail?size=m   # 600x600 (default)
+GET /photo/{id}/thumbnail?size=l   # 1200x1200
+```
 
 ---
 
