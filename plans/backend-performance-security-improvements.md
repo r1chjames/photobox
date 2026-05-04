@@ -245,17 +245,20 @@ The global 100 req/s limiter applies, but thumbnails are bursty. Consider a sepa
 4. ✅ Generate thumbnails asynchronously — removed from indexing pipeline, generated on-demand in handler via `GenerateThumbnailForPhoto`
 5. ✅ Add `FileModifiedTime` to `Photo` and `PhotoFile` domain models
 
-### Phase 4: Schema & Query Improvements (Next)
-1. Add `latitude`, `longitude` columns to `Photo`
-2. Migrate GPS data from JSON metadata during index
-3. Create `photo_tags` junction table
-4. Add appropriate indexes
-5. Update `GetPhotosWithGeodata` and `ListPhotosByTags` to use new columns
+### Phase 4: Schema & Query Improvements ✅ COMPLETE (`11c0359`)
+1. ✅ Add `latitude`, `longitude` columns to `Photo` with btree partial index
+2. ✅ Extract GPS from EXIF during indexing (DMS → decimal degrees with hemisphere handling)
+3. ✅ Create `PhotoTag` junction table with composite PK (`photo_id`, `tag`) and indexes
+4. ✅ Add `idx_photos_lat_lng` partial index for geospatial queries
+5. ✅ Update `GetPhotosWithGeodata` to use indexed `lat/lng BETWEEN` instead of JSON path
+6. ✅ Update `ListPhotosByTags` to use junction table JOINs instead of `string_to_array`
+7. ✅ Update `GetAllTags` to query `PhotoTag` directly
+8. ✅ Update `UpdatePhotoTags` to sync both legacy `tags` column and junction table
 
-### Phase 5: Advanced (Optional)
+### Phase 5: Advanced (Optional / Future)
 1. WebP thumbnail generation
-2. Multiple thumbnail sizes
-3. Redis caching layer
+2. Multiple thumbnail sizes (small/medium/large)
+3. Redis caching layer for hot thumbnails
 4. HTTP/2 server push for thumbnail batches
 
 ---
