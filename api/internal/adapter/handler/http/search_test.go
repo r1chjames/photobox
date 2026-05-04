@@ -214,6 +214,11 @@ func (m *MockSearchPhotoService) GenerateThumbnailForPhoto(photoId string) (stri
 	return args.String(0), args.Error(1)
 }
 
+func (m *MockSearchPhotoService) PhotoThumbnailPathForSize(photoId string, size string) (string, error) {
+	args := m.Called(photoId, size)
+	return args.String(0), args.Error(1)
+}
+
 // MockSearchAlbumService is a mock implementation of port.AlbumService for search tests
 type MockSearchAlbumService struct {
 	mock.Mock

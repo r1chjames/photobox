@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/rwcarlsen/goexif/exif"
 	"github.com/stretchr/testify/assert"
@@ -266,8 +267,8 @@ func (m *MockFilesystemService) PerformPhotoIndex(callback func([]domain.PhotoFi
 	m.Called(callback, indexCache)
 }
 
-func (m *MockFilesystemService) GenerateThumbnail(path string, exifData exif.Exif) []byte {
-	args := m.Called(path, exifData)
+func (m *MockFilesystemService) GenerateThumbnail(path string, exifData exif.Exif, width, height int) []byte {
+	args := m.Called(path, exifData, width, height)
 	if args.Get(0) == nil {
 		return nil
 	}
@@ -291,6 +292,31 @@ func (m *MockFilesystemService) RestoreFromTrash(trashPath, originalPath string)
 
 func (m *MockFilesystemService) RenameDirectory(oldPath, newPath string) error {
 	args := m.Called(oldPath, newPath)
+	return args.Error(0)
+}
+
+// MockCacheService is a mock implementation of port.CacheService
+type MockCacheService struct {
+	mock.Mock
+}
+
+func (m *MockCacheService) Get(key string) (string, error) {
+	args := m.Called(key)
+	return args.String(0), args.Error(1)
+}
+
+func (m *MockCacheService) Set(key, value string, ttl time.Duration) error {
+	args := m.Called(key, value, ttl)
+	return args.Error(0)
+}
+
+func (m *MockCacheService) Delete(key string) error {
+	args := m.Called(key)
+	return args.Error(0)
+}
+
+func (m *MockCacheService) DeletePattern(pattern string) error {
+	args := m.Called(pattern)
 	return args.Error(0)
 }
 
@@ -365,7 +391,7 @@ func TestGetPhoto(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), config)
 
 			result, err := service.GetPhoto(tt.photoId, tt.includeThumbnail)
 
@@ -462,7 +488,7 @@ func TestListPhotos(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), config)
 
 			result, err := service.ListPhotos(tt.fromId, tt.limit, tt.includeThumbnail, "", "", "")
 
@@ -542,7 +568,7 @@ func TestListPhotosInAlbum(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), config)
 
 			result, err := service.ListPhotosInAlbum(tt.albumId, tt.fromId, tt.limit, tt.includeThumbnail, "", "", "")
 
@@ -603,7 +629,7 @@ func TestPhotoCount(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), config)
 
 			result, err := service.PhotoCount(tt.albumId)
 
@@ -670,7 +696,7 @@ func TestPhotoBinary(t *testing.T) {
 			config := appconfig.AppConfig{PhotoDir: "/storage/photos"}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), config)
 
 			result, err := service.PhotoBinary(tt.photoId)
 
@@ -723,7 +749,7 @@ func TestPhotoThumbnail(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), config)
 
 			result, err := service.PhotoThumbnail(tt.photoId)
 
@@ -825,7 +851,7 @@ func TestSavePhoto(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo, mockAlbumSvc)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), config)
 
 			err := service.SavePhoto(tt.photoFile)
 
@@ -907,7 +933,7 @@ func TestSavePhotos(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo, mockAlbumSvc)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), config)
 
 			err := service.SavePhotos(tt.photoFiles)
 
@@ -931,7 +957,7 @@ func TestPerformPhotoIndex(t *testing.T) {
 		// Mock expects the callback function and indexCache to be passed
 		mockFsSvc.On("PerformPhotoIndex", mock.AnythingOfType("func([]domain.PhotoFile) error"), mock.Anything).Return()
 
-		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), config)
 		service.PerformPhotoIndex()
 
 		mockRepo.AssertExpectations(t)
@@ -981,7 +1007,7 @@ func TestDeletePhoto(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo, mockFsSvc)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), config)
 
 			err := service.DeletePhoto(tt.photoId)
 
@@ -1033,7 +1059,7 @@ func TestRestorePhoto(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), config)
 
 			err := service.RestorePhoto(tt.photoId)
 
@@ -1081,7 +1107,7 @@ func TestListTrashPhotos(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), config)
 
 			result, err := service.ListTrashPhotos(tt.fromId, tt.limit, tt.includeThumbnail)
 
@@ -1101,7 +1127,7 @@ func TestEmptyTrash(t *testing.T) {
 
 		mockRepo.On("EmptyTrash").Return(nil)
 
-		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), config)
 		err := service.EmptyTrash()
 
 		assert.NoError(t, err)
@@ -1159,7 +1185,7 @@ func TestSetFavorite(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), config)
 
 			result, err := service.SetFavorite(tt.photoId, tt.favorite)
 
@@ -1207,7 +1233,7 @@ func TestListFavoritePhotos(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), config)
 
 			result, err := service.ListFavoritePhotos(tt.fromId, tt.limit, tt.includeThumbnail, "", "")
 
@@ -1264,7 +1290,7 @@ func TestSearch(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), config)
 
 			result, err := service.Search(tt.query, tt.limit)
 
@@ -1288,7 +1314,7 @@ func TestGetTimeline(t *testing.T) {
 		}
 		mockRepo.On("GetTimeline").Return(entries, nil)
 
-		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), config)
 		result, err := service.GetTimeline()
 
 		assert.NoError(t, err)
@@ -1312,7 +1338,7 @@ func TestGetGeodata(t *testing.T) {
 		}
 		mockRepo.On("GetPhotosWithGeodata", 52.0, 50.0, 1.0, -1.0).Return(geoData, nil)
 
-		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), config)
 		result, err := service.GetGeodata(52.0, 50.0, 1.0, -1.0)
 
 		assert.NoError(t, err)
@@ -1369,7 +1395,7 @@ func TestRotatePhoto(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), config)
 
 			result, err := service.RotatePhoto(tt.photoId, tt.direction)
 
@@ -1403,7 +1429,7 @@ func TestDownloadPhotos(t *testing.T) {
 			FilesystemPath: tmpFile.Name(),
 		}, nil)
 
-		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, config)
+		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), config)
 
 		var buf bytes.Buffer
 		err = service.DownloadPhotos([]string{"photo-123"}, &buf)

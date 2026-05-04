@@ -150,12 +150,17 @@ func (ph *PhotoHandler) GetPhotoThumbnail(ctx *gin.Context) {
 		return
 	}
 
-	// Try filesystem first
-	thumbnailPath, err := ph.photoSvc.PhotoThumbnailPath(photoId)
+	size := ctx.DefaultQuery("size", "m")
+	if size != "s" && size != "m" && size != "l" {
+		size = "m"
+	}
+
+	// Try filesystem/cache first
+	thumbnailPath, err := ph.photoSvc.PhotoThumbnailPathForSize(photoId, size)
 	if err == nil && thumbnailPath != "" {
 		ctx.Header("Content-Type", "image/jpeg")
 		ctx.Header("Cache-Control", "public, max-age=31536000, immutable")
-		ctx.Header("ETag", fmt.Sprintf(`"%s"`, photoId))
+		ctx.Header("ETag", fmt.Sprintf(`"%s:%s"`, photoId, size))
 		ctx.File(thumbnailPath)
 		return
 	}
@@ -163,23 +168,32 @@ func (ph *PhotoHandler) GetPhotoThumbnail(ctx *gin.Context) {
 	// Generate on-demand if missing
 	generatedPath, err := ph.photoSvc.GenerateThumbnailForPhoto(photoId)
 	if err == nil && generatedPath != "" {
+		// After generation, try again with the requested size
+		thumbnailPath, err = ph.photoSvc.PhotoThumbnailPathForSize(photoId, size)
+		if err == nil && thumbnailPath != "" {
+			ctx.Header("Content-Type", "image/jpeg")
+			ctx.Header("Cache-Control", "public, max-age=31536000, immutable")
+			ctx.Header("ETag", fmt.Sprintf(`"%s:%s"`, photoId, size))
+			ctx.File(thumbnailPath)
+			return
+		}
+	}
+
+	// Fallback to DB bytes (only for medium size)
+	if size == "m" {
+		photoBinary, err := ph.photoSvc.PhotoThumbnailBytes(photoId)
+		if err != nil {
+			handleError(ctx, err)
+			return
+		}
 		ctx.Header("Content-Type", "image/jpeg")
 		ctx.Header("Cache-Control", "public, max-age=31536000, immutable")
-		ctx.Header("ETag", fmt.Sprintf(`"%s"`, photoId))
-		ctx.File(generatedPath)
+		ctx.Header("ETag", fmt.Sprintf(`"%s:%s"`, photoId, size))
+		ctx.Data(http.StatusOK, "image/jpeg", photoBinary)
 		return
 	}
 
-	// Fallback to DB bytes
-	photoBinary, err := ph.photoSvc.PhotoThumbnailBytes(photoId)
-	if err != nil {
-		handleError(ctx, err)
-		return
-	}
-	ctx.Header("Content-Type", "image/jpeg")
-	ctx.Header("Cache-Control", "public, max-age=31536000, immutable")
-	ctx.Header("ETag", fmt.Sprintf(`"%s"`, photoId))
-	ctx.Data(http.StatusOK, "image/jpeg", photoBinary)
+	handleError(ctx, domain.ErrDataNotFound)
 }
 
 func (ph *PhotoHandler) IndexPhotos(c *gin.Context) {

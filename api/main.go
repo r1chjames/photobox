@@ -65,6 +65,7 @@ type AppServices struct {
 	utilityService    *service.UtilityService
 	filesystemService *service.FilesystemService
 	shareService      *service.ShareService
+	cacheService      *service.CacheService
 }
 
 func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServices {
@@ -96,9 +97,12 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 	filesystemRepo := filesystemRepos.NewFilesystemRepository(*config, jobService)
 	filesystemService := service.NewFilesystemService(filesystemRepo, jobService, utilityService)
 
+	// Cache
+	cacheService := service.NewCacheService(*config)
+
 	// Photo
 	photoRepo := repository.NewPhotoRepository(dbEnv)
-	photoService := service.NewPhotoService(photoRepo, albumService, filesystemService, *config)
+	photoService := service.NewPhotoService(photoRepo, albumService, filesystemService, cacheService, *config)
 
 	// Share
 	shareRepo := repository.NewShareRepository(dbEnv)
@@ -116,6 +120,7 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 		utilityService,
 		filesystemService,
 		shareService,
+		cacheService,
 	}
 }
 

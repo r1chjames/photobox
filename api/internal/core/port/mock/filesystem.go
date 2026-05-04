@@ -48,17 +48,17 @@ func (mr *MockFilesystemRepositoryMockRecorder) CreateDirectoryIfNotExists(baseP
 }
 
 // GenerateThumbnail mocks base method.
-func (m *MockFilesystemRepository) GenerateThumbnail(path string) []byte {
+func (m *MockFilesystemRepository) GenerateThumbnail(path string, width, height int) []byte {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GenerateThumbnail", path)
+	ret := m.ctrl.Call(m, "GenerateThumbnail", path, width, height)
 	ret0, _ := ret[0].([]byte)
 	return ret0
 }
 
 // GenerateThumbnail indicates an expected call of GenerateThumbnail.
-func (mr *MockFilesystemRepositoryMockRecorder) GenerateThumbnail(path interface{}) *gomock.Call {
+func (mr *MockFilesystemRepositoryMockRecorder) GenerateThumbnail(path, width, height interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateThumbnail", reflect.TypeOf((*MockFilesystemRepository)(nil).GenerateThumbnail), path)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateThumbnail", reflect.TypeOf((*MockFilesystemRepository)(nil).GenerateThumbnail), path, width, height)
 }
 
 // MoveToTrash mocks base method.
@@ -140,17 +140,17 @@ func (m *MockFilesystemService) EXPECT() *MockFilesystemServiceMockRecorder {
 }
 
 // GenerateThumbnail mocks base method.
-func (m *MockFilesystemService) GenerateThumbnail(path string, exifData exif.Exif) []byte {
+func (m *MockFilesystemService) GenerateThumbnail(path string, exifData exif.Exif, width, height int) []byte {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GenerateThumbnail", path, exifData)
+	ret := m.ctrl.Call(m, "GenerateThumbnail", path, exifData, width, height)
 	ret0, _ := ret[0].([]byte)
 	return ret0
 }
 
 // GenerateThumbnail indicates an expected call of GenerateThumbnail.
-func (mr *MockFilesystemServiceMockRecorder) GenerateThumbnail(path, exifData interface{}) *gomock.Call {
+func (mr *MockFilesystemServiceMockRecorder) GenerateThumbnail(path, exifData, width, height interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateThumbnail", reflect.TypeOf((*MockFilesystemService)(nil).GenerateThumbnail), path, exifData)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateThumbnail", reflect.TypeOf((*MockFilesystemService)(nil).GenerateThumbnail), path, exifData, width, height)
 }
 
 // MoveToTrash mocks base method.

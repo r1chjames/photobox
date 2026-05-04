@@ -836,3 +836,18 @@ func (mr *MockPhotoServiceMockRecorder) GenerateThumbnailForPhoto(photoId interf
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateThumbnailForPhoto", reflect.TypeOf((*MockPhotoService)(nil).GenerateThumbnailForPhoto), photoId)
 }
+
+// PhotoThumbnailPathForSize mocks base method.
+func (m *MockPhotoService) PhotoThumbnailPathForSize(photoId, size string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PhotoThumbnailPathForSize", photoId, size)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PhotoThumbnailPathForSize indicates an expected call of PhotoThumbnailPathForSize.
+func (mr *MockPhotoServiceMockRecorder) PhotoThumbnailPathForSize(photoId, size interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PhotoThumbnailPathForSize", reflect.TypeOf((*MockPhotoService)(nil).PhotoThumbnailPathForSize), photoId, size)
+}

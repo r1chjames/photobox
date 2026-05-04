@@ -15,7 +15,8 @@ func TestNew_WithDefaultValues(t *testing.T) {
 		"DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME",
 		"PHOTO_DIR", "API_BASE_PATH", "RESET_SETTINGS", "DEBUG_MODE",
 		"TIMEZONE", "TOKEN_DURATION", "DEFAULT_ADMIN_USERNAME",
-		"DEFAULT_ADMIN_PASSWORD",
+		"DEFAULT_ADMIN_PASSWORD", "CACHE_HOST", "CACHE_PORT", "CACHE_PASSWORD",
+		"CACHE_ENABLED", "CACHE_DB",
 	}
 	for _, v := range envVars {
 		os.Unsetenv(v)
@@ -69,7 +70,8 @@ func TestNew_WithCustomValues(t *testing.T) {
 			"DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME",
 			"PHOTO_DIR", "API_BASE_PATH", "RESET_SETTINGS", "DEBUG_MODE",
 			"TIMEZONE", "TOKEN", "TOKEN_DURATION", "DEFAULT_ADMIN_USERNAME",
-			"DEFAULT_ADMIN_PASSWORD",
+			"DEFAULT_ADMIN_PASSWORD", "CACHE_HOST", "CACHE_PORT", "CACHE_PASSWORD",
+			"CACHE_ENABLED", "CACHE_DB",
 		}
 		for _, v := range envVars {
 			os.Unsetenv(v)
@@ -102,7 +104,8 @@ func TestNew_WithPartialCustomValues(t *testing.T) {
 		"DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME",
 		"PHOTO_DIR", "API_BASE_PATH", "RESET_SETTINGS", "DEBUG_MODE",
 		"TIMEZONE", "TOKEN_DURATION", "DEFAULT_ADMIN_USERNAME",
-		"DEFAULT_ADMIN_PASSWORD",
+		"DEFAULT_ADMIN_PASSWORD", "CACHE_HOST", "CACHE_PORT", "CACHE_PASSWORD",
+		"CACHE_ENABLED", "CACHE_DB",
 	}
 	for _, v := range envVars {
 		os.Unsetenv(v)

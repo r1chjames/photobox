@@ -239,13 +239,13 @@ func (fss *FilesystemService) getMetaData(path string, name string, fileInfo os.
 	}
 }
 
-func (fss *FilesystemService) GenerateThumbnail(path string, exifData exif.Exif) []byte {
+func (fss *FilesystemService) GenerateThumbnail(path string, exifData exif.Exif, width, height int) []byte {
 	if utils.IsVideoFile(path) {
-		return fss.fsRepo.GenerateThumbnail(path)
+		return fss.fsRepo.GenerateThumbnail(path, width, height)
 	}
 	parsedThumbnail, _ := exifData.JpegThumbnail()
 	if len(parsedThumbnail) == 0 {
-		parsedThumbnail = fss.fsRepo.GenerateThumbnail(path)
+		parsedThumbnail = fss.fsRepo.GenerateThumbnail(path, width, height)
 	}
 	return parsedThumbnail
 }

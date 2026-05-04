@@ -120,4 +120,6 @@ type PhotoService interface {
 	GetDuplicatePhotos() ([]*domain.Photo, error)
 	// GenerateThumbnailForPhoto generates a thumbnail on-demand for a photo
 	GenerateThumbnailForPhoto(photoId string) (string, error)
+	// PhotoThumbnailPathForSize returns the filesystem path for a photo's thumbnail at a given size
+	PhotoThumbnailPathForSize(photoId string, size string) (string, error)
 }

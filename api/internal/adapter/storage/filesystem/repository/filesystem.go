@@ -84,9 +84,9 @@ func (fs *FilesystemRepository) walkDir(dir string, photoChan chan string) {
 	}
 }
 
-func (fs *FilesystemRepository) GenerateThumbnail(path string) []byte {
+func (fs *FilesystemRepository) GenerateThumbnail(path string, width, height int) []byte {
 	if utils.IsVideoFile(path) {
-		return fs.generateVideoThumbnail(path)
+		return fs.generateVideoThumbnail(path, width, height)
 	}
 	extension := utils.GetFileExtension(path)
 	img, err := imaging.Open(path)
@@ -94,7 +94,7 @@ func (fs *FilesystemRepository) GenerateThumbnail(path string) []byte {
 		slog.Error("Unable to open file for thumbnail", "path", path, "error", err)
 		return nil
 	}
-	thumb := imaging.Thumbnail(img, 600, 600, imaging.CatmullRom)
+	thumb := imaging.Thumbnail(img, width, height, imaging.CatmullRom)
 	var buffer bytes.Buffer
 	writer := io.MultiWriter(&buffer)
 	format, _ := imaging.FormatFromExtension(extension)
@@ -102,7 +102,7 @@ func (fs *FilesystemRepository) GenerateThumbnail(path string) []byte {
 	return buffer.Bytes()
 }
 
-func (fs *FilesystemRepository) generateVideoThumbnail(path string) []byte {
+func (fs *FilesystemRepository) generateVideoThumbnail(path string, width, height int) []byte {
 	cmd := exec.Command("ffmpeg", "-i", path, "-ss", "00:00:01", "-vframes", "1", "-f", "image2pipe", "-vcodec", "png", "-")
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -116,7 +116,7 @@ func (fs *FilesystemRepository) generateVideoThumbnail(path string) []byte {
 		slog.Error("Unable to decode video frame", "path", path, "error", err)
 		return nil
 	}
-	thumb := imaging.Thumbnail(img, 600, 600, imaging.CatmullRom)
+	thumb := imaging.Thumbnail(img, width, height, imaging.CatmullRom)
 	var buffer bytes.Buffer
 	_ = imaging.Encode(&buffer, thumb, imaging.PNG)
 	return buffer.Bytes()

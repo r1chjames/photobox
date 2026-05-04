@@ -22,6 +22,11 @@ type AppConfig struct {
 	AdminUsername      string
 	AdminPassword      string
 	CorsAllowedOrigins []string
+	CacheHost          string
+	CachePort          string
+	CachePassword      string
+	CacheEnabled       bool
+	CacheDB            int
 }
 
 func New() *AppConfig {
@@ -57,6 +62,9 @@ func New() *AppConfig {
 		}
 	}
 
+	cacheEnabled, _ := strconv.ParseBool(utils.GetEnv("CACHE_ENABLED", "false"))
+	cacheDB, _ := strconv.Atoi(utils.GetEnv("CACHE_DB", "0"))
+
 	return &AppConfig{
 		PhotoDir:           utils.GetEnv("PHOTO_DIR", "/photos"),
 		ApiBasePath:        utils.GetEnv("API_BASE_PATH", "/api"),
@@ -69,5 +77,10 @@ func New() *AppConfig {
 		AdminUsername:      adminUsername,
 		AdminPassword:      adminPassword,
 		CorsAllowedOrigins: corsOrigins,
+		CacheHost:          utils.GetEnv("CACHE_HOST", "localhost"),
+		CachePort:          utils.GetEnv("CACHE_PORT", "6379"),
+		CachePassword:      utils.GetEnv("CACHE_PASSWORD", "-"),
+		CacheEnabled:       cacheEnabled,
+		CacheDB:            cacheDB,
 	}
 }

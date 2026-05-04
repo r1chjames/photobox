@@ -24,15 +24,17 @@ type PhotoService struct {
 	photoRepo     port.PhotoRepository
 	albumSvc      port.AlbumService
 	filesystemSvc port.FilesystemService
+	cacheSvc      port.CacheService
 	config        appconfig.AppConfig
 }
 
 // NewPhotoService creates a new Photo service instance
-func NewPhotoService(photoRepo port.PhotoRepository, albumRepo port.AlbumService, filesystemSvc port.FilesystemService, config appconfig.AppConfig) *PhotoService {
+func NewPhotoService(photoRepo port.PhotoRepository, albumRepo port.AlbumService, filesystemSvc port.FilesystemService, cacheSvc port.CacheService, config appconfig.AppConfig) *PhotoService {
 	return &PhotoService{
 		photoRepo,
 		albumRepo,
 		filesystemSvc,
+		cacheSvc,
 		config,
 	}
 }
@@ -103,18 +105,18 @@ func (ps *PhotoService) PhotoThumbnailPath(photoId string) (string, error) {
 	return ps.photoRepo.GetThumbnailPath(photoId)
 }
 
-func (ps *PhotoService) thumbnailPath(photoId string) string {
+func (ps *PhotoService) thumbnailPathForSize(photoId string, size string) string {
 	safeId := strings.ReplaceAll(photoId, "/", "_")
 	safeId = strings.ReplaceAll(safeId, "+", "-")
 	safeId = strings.ReplaceAll(safeId, "=", "")
-	return filepath.Join(ps.config.PhotoDir, ".thumbnails", safeId+".jpg")
+	return filepath.Join(ps.config.PhotoDir, ".thumbnails", size, safeId+".jpg")
 }
 
-func (ps *PhotoService) writeThumbnailToDisk(photoId string, data []byte) (string, error) {
+func (ps *PhotoService) writeThumbnailToDisk(photoId string, data []byte, size string) (string, error) {
 	if len(data) == 0 {
 		return "", nil
 	}
-	path := ps.thumbnailPath(photoId)
+	path := ps.thumbnailPathForSize(photoId, size)
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return "", err
@@ -211,7 +213,7 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 		slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
 
 		if len(photo.Thumbnail) > 0 {
-			thumbPath, err := ps.writeThumbnailToDisk(photoHash, photo.Thumbnail)
+			thumbPath, err := ps.writeThumbnailToDisk(photoHash, photo.Thumbnail, "m")
 			if err == nil {
 				photoInfo.ThumbnailPath = thumbPath
 			} else {
@@ -265,7 +267,7 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 	slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
 
 	if len(photo.Thumbnail) > 0 {
-		thumbPath, err := ps.writeThumbnailToDisk(photoHash, photo.Thumbnail)
+		thumbPath, err := ps.writeThumbnailToDisk(photoHash, photo.Thumbnail, "m")
 		if err == nil {
 			photoInfo.ThumbnailPath = thumbPath
 		} else {
@@ -285,24 +287,71 @@ func (ps *PhotoService) GenerateThumbnailForPhoto(photoId string) (string, error
 		return "", domain.ErrDataNotFound
 	}
 
-	// Generate thumbnail from original file
-	thumbnail := ps.filesystemSvc.GenerateThumbnail(photo.FilesystemPath, exif.Exif{})
-	if len(thumbnail) == 0 {
-		return "", fmt.Errorf("failed to generate thumbnail")
+	sizes := map[string][2]int{
+		"s": {200, 200},
+		"m": {600, 600},
+		"l": {1200, 1200},
 	}
 
-	// Write to disk
-	thumbPath, err := ps.writeThumbnailToDisk(photoId, thumbnail)
-	if err != nil {
-		return "", err
+	var mediumPath string
+	for sizeCode, dims := range sizes {
+		thumbnail := ps.filesystemSvc.GenerateThumbnail(photo.FilesystemPath, exif.Exif{}, dims[0], dims[1])
+		if len(thumbnail) == 0 {
+			continue
+		}
+		path, err := ps.writeThumbnailToDisk(photoId, thumbnail, sizeCode)
+		if err != nil {
+			slog.Error("Failed to write thumbnail", "size", sizeCode, "error", err)
+			continue
+		}
+		if sizeCode == "m" {
+			mediumPath = path
+		}
+
+		// Cache the path
+		cacheKey := fmt.Sprintf("thumbnail:%s:%s", photoId, sizeCode)
+		_ = ps.cacheSvc.Set(cacheKey, path, 24*time.Hour)
 	}
 
-	// Update DB with path
-	photo.ThumbnailPath = thumbPath
-	photo.Thumbnail = thumbnail
+	// Update DB
+	photo.ThumbnailPath = mediumPath
 	_ = ps.photoRepo.UpdatePhoto(*photo)
 
-	return thumbPath, nil
+	return mediumPath, nil
+}
+
+func (ps *PhotoService) PhotoThumbnailPathForSize(photoId string, size string) (string, error) {
+	if size == "" {
+		size = "m"
+	}
+
+	// Check cache first
+	cacheKey := fmt.Sprintf("thumbnail:%s:%s", photoId, size)
+	if cachedPath, err := ps.cacheSvc.Get(cacheKey); err == nil && cachedPath != "" {
+		if _, err := os.Stat(cachedPath); err == nil {
+			return cachedPath, nil
+		}
+	}
+
+	// Check filesystem
+	path := ps.thumbnailPathForSize(photoId, size)
+	if _, err := os.Stat(path); err == nil {
+		_ = ps.cacheSvc.Set(cacheKey, path, 24*time.Hour)
+		return path, nil
+	}
+
+	// Check DB (legacy ThumbnailPath for medium size)
+	if size == "m" {
+		dbPath, err := ps.photoRepo.GetThumbnailPath(photoId)
+		if err == nil && dbPath != "" {
+			if _, err := os.Stat(dbPath); err == nil {
+				_ = ps.cacheSvc.Set(cacheKey, dbPath, 24*time.Hour)
+				return dbPath, nil
+			}
+		}
+	}
+
+	return "", domain.ErrDataNotFound
 }
 
 func (ps *PhotoService) DeletePhoto(photoId string) error {

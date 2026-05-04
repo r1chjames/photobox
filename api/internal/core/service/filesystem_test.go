@@ -22,8 +22,8 @@ func (m *MockFilesystemRepository) ScanFilesystem(photoChan chan string) {
 	m.Called(photoChan)
 }
 
-func (m *MockFilesystemRepository) GenerateThumbnail(path string) []byte {
-	args := m.Called(path)
+func (m *MockFilesystemRepository) GenerateThumbnail(path string, width, height int) []byte {
+	args := m.Called(path, width, height)
 	if args.Get(0) == nil {
 		return nil
 	}
@@ -161,9 +161,9 @@ func TestGenerateThumbnail_WithExifThumbnail(t *testing.T) {
 	expectedThumbnail := []byte{0x01, 0x02, 0x03}
 
 	// Mock repository to return generated thumbnail
-	mockFsRepo.On("GenerateThumbnail", path).Return(expectedThumbnail)
+	mockFsRepo.On("GenerateThumbnail", path, 600, 600).Return(expectedThumbnail)
 
-	result := service.GenerateThumbnail(path, exifData)
+	result := service.GenerateThumbnail(path, exifData, 600, 600)
 
 	assert.Equal(t, expectedThumbnail, result)
 	mockFsRepo.AssertExpectations(t)
@@ -181,9 +181,9 @@ func TestGenerateThumbnail_NoExifThumbnail(t *testing.T) {
 	exifData := exif.Exif{}
 	expectedThumbnail := []byte{0xFF, 0xD8, 0xFF}
 
-	mockFsRepo.On("GenerateThumbnail", path).Return(expectedThumbnail)
+	mockFsRepo.On("GenerateThumbnail", path, 600, 600).Return(expectedThumbnail)
 
-	result := service.GenerateThumbnail(path, exifData)
+	result := service.GenerateThumbnail(path, exifData, 600, 600)
 
 	assert.NotNil(t, result)
 	mockFsRepo.AssertExpectations(t)
@@ -200,9 +200,9 @@ func TestGenerateThumbnail_NilRepository(t *testing.T) {
 	path := "/path/to/photo.jpg"
 	exifData := exif.Exif{}
 
-	mockFsRepo.On("GenerateThumbnail", path).Return(nil)
+	mockFsRepo.On("GenerateThumbnail", path, 600, 600).Return(nil)
 
-	result := service.GenerateThumbnail(path, exifData)
+	result := service.GenerateThumbnail(path, exifData, 600, 600)
 
 	// Should return nil if repository returns nil
 	assert.Nil(t, result)

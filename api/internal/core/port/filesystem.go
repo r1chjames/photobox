@@ -11,7 +11,7 @@ import (
 type FilesystemRepository interface {
 	// ScanFilesystem scans a directory on the filesystem
 	ScanFilesystem(photoChan chan string)
-	GenerateThumbnail(path string) []byte
+	GenerateThumbnail(path string, width, height int) []byte
 	CreateDirectoryIfNotExists(basePhotoPath string, directoryName string)
 	MoveToTrash(path string) (string, error)
 	RestoreFromTrash(trashPath, originalPath string) error
@@ -24,7 +24,7 @@ type FilesystemService interface {
 	PerformPhotoIndex(save func([]domain.PhotoFile) error, indexCache map[string]struct{FileHash string; FileModifiedTime int64})
 	// WriteFileToFilesystem writes a photo to the filesystem
 	WriteFileToFilesystem(photo domain.PhotoUpload) domain.PhotoFile
-	GenerateThumbnail(path string, exifData exif.Exif) []byte
+	GenerateThumbnail(path string, exifData exif.Exif, width, height int) []byte
 	MoveToTrash(path string) (string, error)
 	RestoreFromTrash(trashPath, originalPath string) error
 	RenameDirectory(oldPath, newPath string) error
