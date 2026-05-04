@@ -54,7 +54,7 @@ func InitDbConnection(appConfig *appconfig.AppConfig) *Env {
 
 func (dbEnv *Env) PerformDbSetup() {
 	// Migrate the schema
-	err := dbEnv.Db.AutoMigrate(&domain.Album{}, &domain.Photo{}, &domain.Setting{}, &domain.Job{}, &domain.User{}, &domain.SharedLink{})
+	err := dbEnv.Db.AutoMigrate(&domain.Album{}, &domain.Photo{}, &domain.PhotoTag{}, &domain.Setting{}, &domain.Job{}, &domain.User{}, &domain.SharedLink{})
 	if err != nil {
 		slog.Error("Failed to perform database migration", "error", err)
 		os.Exit(1)
@@ -62,6 +62,9 @@ func (dbEnv *Env) PerformDbSetup() {
 
 	// Create GIN indexes for full-text search
 	dbEnv.createSearchIndexes()
+
+	// Create GiST index for geospatial queries
+	dbEnv.createGeoIndexes()
 
 	// Enable query performance tracking
 	if err := dbEnv.Db.Exec("CREATE EXTENSION IF NOT EXISTS pg_stat_statements").Error; err != nil {
@@ -77,6 +80,17 @@ func (dbEnv *Env) createSearchIndexes() {
 	for _, idx := range indexes {
 		if err := dbEnv.Db.Exec(idx).Error; err != nil {
 			slog.Warn("Failed to create search index", "error", err, "index", idx)
+		}
+	}
+}
+
+func (dbEnv *Env) createGeoIndexes() {
+	indexes := []string{
+		`CREATE INDEX IF NOT EXISTS idx_photos_lat_lng ON photobox.photos USING btree (latitude, longitude) WHERE latitude IS NOT NULL AND longitude IS NOT NULL`,
+	}
+	for _, idx := range indexes {
+		if err := dbEnv.Db.Exec(idx).Error; err != nil {
+			slog.Warn("Failed to create geo index", "error", err, "index", idx)
 		}
 	}
 }

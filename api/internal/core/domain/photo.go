@@ -29,6 +29,13 @@ type Photo struct {
 	Duration       int            `json:"duration"`
 	Width          int            `json:"width"`
 	Height         int            `json:"height"`
+	Latitude       float64        `json:"latitude" gorm:"index"`
+	Longitude      float64        `json:"longitude" gorm:"index"`
+}
+
+type PhotoTag struct {
+	PhotoID string `gorm:"primaryKey;index:idx_photo_tag,priority:1"`
+	Tag     string `gorm:"primaryKey;index:idx_photo_tag,priority:2;index:idx_tag_photo,priority:1"`
 }
 
 type TimelineEntry struct {

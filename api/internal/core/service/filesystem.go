@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/rwcarlsen/goexif/exif"
+	"github.com/rwcarlsen/goexif/tiff"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 	"gitlab.com/r1chjames/photobox/api/internal/core/utils"
@@ -163,6 +164,8 @@ func (fss *FilesystemService) getMetaData(path string, name string, fileInfo os.
 			Width:        width,
 			Height:       height,
 			ModifiedTime: fileInfo.ModTime().Unix(),
+			Latitude:     0,
+			Longitude:    0,
 		}
 	}
 	defer func(f *os.File) {
@@ -197,6 +200,26 @@ func (fss *FilesystemService) getMetaData(path string, name string, fileInfo os.
 	// Get EXIF data
 	exifData := utils.GetExifData(file)
 
+	// Extract GPS coordinates from EXIF
+	lat, lng := 0.0, 0.0
+	if latTag, err := exifData.Get(exif.GPSLatitude); err == nil {
+		if lngTag, err := exifData.Get(exif.GPSLongitude); err == nil {
+			lat = convertGPSCoordinate(latTag)
+			lng = convertGPSCoordinate(lngTag)
+			// Check GPSLatitudeRef and GPSLongitudeRef for negative values
+			if ref, err := exifData.Get(exif.GPSLatitudeRef); err == nil {
+				if refStr, _ := ref.StringVal(); refStr == "S" {
+					lat = -lat
+				}
+			}
+			if ref, err := exifData.Get(exif.GPSLongitudeRef); err == nil {
+				if refStr, _ := ref.StringVal(); refStr == "W" {
+					lng = -lng
+				}
+			}
+		}
+	}
+
 	return domain.PhotoFile{
 		MD5:          md5Sum,
 		Path:         path,
@@ -211,6 +234,8 @@ func (fss *FilesystemService) getMetaData(path string, name string, fileInfo os.
 		Width:        width,
 		Height:       height,
 		ModifiedTime: fileInfo.ModTime().Unix(),
+		Latitude:     lat,
+		Longitude:    lng,
 	}
 }
 
@@ -235,4 +260,28 @@ func (fss *FilesystemService) RestoreFromTrash(trashPath, originalPath string) e
 
 func (fss *FilesystemService) RenameDirectory(oldPath, newPath string) error {
 	return fss.fsRepo.RenameDirectory(oldPath, newPath)
+}
+
+// convertGPSCoordinate converts an EXIF GPS rational tag to decimal degrees
+func convertGPSCoordinate(tag *tiff.Tag) float64 {
+	// GPS coordinates are stored as 3 rational values: degrees, minutes, seconds
+	num, den, err := tag.Rat2(0)
+	if err != nil {
+		return 0
+	}
+	degrees := float64(num) / float64(den)
+
+	num, den, err = tag.Rat2(1)
+	if err != nil {
+		return 0
+	}
+	minutes := float64(num) / float64(den)
+
+	num, den, err = tag.Rat2(2)
+	if err != nil {
+		return 0
+	}
+	seconds := float64(num) / float64(den)
+
+	return degrees + minutes/60 + seconds/3600
 }

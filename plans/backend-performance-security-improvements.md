@@ -238,13 +238,14 @@ The global 100 req/s limiter applies, but thumbnails are bursty. Consider a sepa
 5. ✅ Add startup migration (`MigrateThumbnailsToFilesystem`) for existing DB thumbnails
 6. ✅ Update tests and mocks for new interface methods
 
-### Phase 3: Indexing Optimization (Next)
-1. Refactor `PerformPhotoIndex` to batch saves (100-500 per batch)
-2. Single-pass file I/O in `getMetaData`
-3. Skip unchanged files using `file_hash` + `mtime`
-4. Generate thumbnails asynchronously (post-index or on-demand)
+### Phase 3: Indexing Optimization ✅ COMPLETE (`cada184`)
+1. ✅ Refactor `PerformPhotoIndex` to batch saves (100 per flush via `CreatePhotosInfo`)
+2. ✅ Single-pass file I/O in `getMetaData` — file opened once, dimensions/MIME/MD5/EXIF read via `Seek(0,0)`
+3. ✅ Skip unchanged files using in-memory index cache (`file_hash` + `FileModifiedTime`)
+4. ✅ Generate thumbnails asynchronously — removed from indexing pipeline, generated on-demand in handler via `GenerateThumbnailForPhoto`
+5. ✅ Add `FileModifiedTime` to `Photo` and `PhotoFile` domain models
 
-### Phase 4: Schema & Query Improvements
+### Phase 4: Schema & Query Improvements (Next)
 1. Add `latitude`, `longitude` columns to `Photo`
 2. Migrate GPS data from JSON metadata during index
 3. Create `photo_tags` junction table

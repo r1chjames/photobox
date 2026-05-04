@@ -809,14 +809,14 @@ func TestGetPhotosWithGeodata_Success(t *testing.T) {
 	env, mock, dbConn := database.MockDB(t)
 	defer dbConn.Close()
 
-	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "source_path", "album_id", "tags", "metadata", "created_at", "created_epoch", "updated_at", "favorite", "deleted_at", "blurhash", "dominant_color"}).
-		AddRow("photo1", "test1.jpg", "/path/to/test1.jpg", "source1", "album1", "", []byte("{}"), time.Now(), time.Now().UnixMilli(), time.Now(), false, nil, "", "").
-		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", "source2", "album1", "", []byte("{}"), time.Now(), time.Now().UnixMilli(), time.Now(), false, nil, "", "")
+	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "source_path", "album_id", "tags", "metadata", "created_at", "created_epoch", "updated_at", "favorite", "deleted_at", "blurhash", "dominant_color", "latitude", "longitude"}).
+		AddRow("photo1", "test1.jpg", "/path/to/test1.jpg", "source1", "album1", "", []byte("{}"), time.Now(), time.Now().UnixMilli(), time.Now(), false, nil, "", "", 51.5, -0.1).
+		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", "source2", "album1", "", []byte("{}"), time.Now(), time.Now().UnixMilli(), time.Now(), false, nil, "", "", 40.7, -74.0)
 
-	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND metadata::jsonb -> 'Exif' ->> 'GPSLatitude' IS NOT NULL`, expectedPhotos)
+	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND \(latitude IS NOT NULL AND longitude IS NOT NULL\) AND \(latitude BETWEEN \$1 AND \$2\) AND \(longitude BETWEEN \$3 AND \$4\)`, expectedPhotos)
 
 	repo := NewPhotoRepository(env)
-	photos, err := repo.GetPhotosWithGeodata(1.0, 0.0, 1.0, 0.0)
+	photos, err := repo.GetPhotosWithGeodata(52.0, 50.0, 1.0, -1.0)
 
 	if err != nil {
 		t.Errorf("error was not expected while getting photos with geodata: %s", err)
@@ -825,6 +825,14 @@ func TestGetPhotosWithGeodata_Success(t *testing.T) {
 	expectedCount := 2
 	if len(photos) != expectedCount {
 		t.Errorf("expected %d photos, got %d", expectedCount, len(photos))
+	}
+
+	// Verify GPS data is populated
+	if photos[0].Lat != 51.5 || photos[0].Lng != -0.1 {
+		t.Errorf("expected photo1 lat=51.5, lng=-0.1, got lat=%f, lng=%f", photos[0].Lat, photos[0].Lng)
+	}
+	if photos[1].Lat != 40.7 || photos[1].Lng != -74.0 {
+		t.Errorf("expected photo2 lat=40.7, lng=-74.0, got lat=%f, lng=%f", photos[1].Lat, photos[1].Lng)
 	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {

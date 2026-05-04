@@ -2,6 +2,7 @@ package repository
 
 import (
 	b64 "encoding/base64"
+	"fmt"
 	"strings"
 	"time"
 
@@ -219,7 +220,9 @@ func (pr *PhotoRepository) GetPhotosWithGeodata(north, south, east, west float64
 	var photos []domain.Photo
 	result := pr.dbEnv.Db.Model(&domain.Photo{}).
 		Where("deleted_at IS NULL").
-		Where("metadata::jsonb -> 'Exif' ->> 'GPSLatitude' IS NOT NULL").
+		Where("latitude IS NOT NULL AND longitude IS NOT NULL").
+		Where("latitude BETWEEN ? AND ?", south, north).
+		Where("longitude BETWEEN ? AND ?", west, east).
 		Omit("thumbnail").
 		Find(&photos)
 	if result.Error != nil {
@@ -230,6 +233,8 @@ func (pr *PhotoRepository) GetPhotosWithGeodata(north, south, east, west float64
 	for _, p := range photos {
 		results = append(results, domain.PhotoGeoData{
 			ID:        p.ID,
+			Lat:       p.Latitude,
+			Lng:       p.Longitude,
 			Thumbnail: p.SourcePath,
 			DateTaken: p.CreatedAt.Format(time.RFC3339),
 		})
@@ -273,38 +278,33 @@ func (pr *PhotoRepository) GetThumbnailPath(photoId string) (string, error) {
 }
 
 func (pr *PhotoRepository) GetAllTags() ([]string, error) {
-	var results []struct{ Tags string }
-	result := pr.dbEnv.Db.Model(&domain.Photo{}).
-		Where("deleted_at IS NULL AND tags <> ''").
-		Select("tags").
-		Find(&results)
+	var tags []string
+	result := pr.dbEnv.Db.Model(&domain.PhotoTag{}).
+		Distinct("tag").
+		Where("tag <> ''").
+		Order("tag ASC").
+		Pluck("tag", &tags)
 	if result.Error != nil {
 		return nil, result.Error
-	}
-
-	tagSet := make(map[string]struct{})
-	for _, r := range results {
-		for _, tag := range strings.Split(r.Tags, ",") {
-			tag = strings.TrimSpace(tag)
-			if tag != "" {
-				tagSet[tag] = struct{}{}
-			}
-		}
-	}
-
-	tags := make([]string, 0, len(tagSet))
-	for tag := range tagSet {
-		tags = append(tags, tag)
 	}
 	return tags, nil
 }
 
 func (pr *PhotoRepository) ListPhotosByTags(tags []string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
-	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("deleted_at IS NULL").Order("created_epoch ASC").Omit("thumbnail")
-	for _, tag := range tags {
-		result = result.Where("? = ANY(string_to_array(tags, ','))", tag)
+
+	// Build subquery for photos matching ALL tags
+	result := pr.dbEnv.Db.Model(&domain.Photo{}).
+		Where("deleted_at IS NULL").
+		Order("created_epoch ASC").
+		Omit("thumbnail")
+
+	// Join with photo_tags and filter
+	for i, tag := range tags {
+		alias := fmt.Sprintf("pt%d", i)
+		result = result.Joins(fmt.Sprintf("JOIN photobox.photo_tags %s ON %s.photo_id = photobox.photos.id AND %s.tag = ?", alias, alias, alias), tag)
 	}
+
 	if fromId != "" {
 		fromPhoto, err := pr.GetPhotoById(fromId, false)
 		if err != nil {
@@ -318,10 +318,28 @@ func (pr *PhotoRepository) ListPhotosByTags(tags []string, fromId string, limit 
 }
 
 func (pr *PhotoRepository) UpdatePhotoTags(photoId string, tags string) error {
+	// Update legacy tags column
 	result := pr.dbEnv.Db.Model(&domain.Photo{}).
 		Where("id = ?", photoId).
 		Update("tags", tags)
-	return result.Error
+	if result.Error != nil {
+		return result.Error
+	}
+
+	// Sync junction table
+	pr.dbEnv.Db.Where("photo_id = ?", photoId).Delete(&domain.PhotoTag{})
+
+	tagList := []domain.PhotoTag{}
+	for _, tag := range strings.Split(tags, ",") {
+		tag = strings.TrimSpace(tag)
+		if tag != "" {
+			tagList = append(tagList, domain.PhotoTag{PhotoID: photoId, Tag: tag})
+		}
+	}
+	if len(tagList) > 0 {
+		return pr.dbEnv.Db.Create(&tagList).Error
+	}
+	return nil
 }
 
 func (pr *PhotoRepository) GetDuplicatePhotos() ([]*domain.Photo, error) {

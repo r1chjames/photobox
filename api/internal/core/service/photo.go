@@ -204,6 +204,8 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 			Duration:       photo.Duration,
 			Width:          photo.Width,
 			Height:         photo.Height,
+			Latitude:       photo.Latitude,
+			Longitude:      photo.Longitude,
 		}
 
 		slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
@@ -256,6 +258,8 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 		Duration:       photo.Duration,
 		Width:          photo.Width,
 		Height:         photo.Height,
+		Latitude:       photo.Latitude,
+		Longitude:      photo.Longitude,
 	}
 
 	slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
