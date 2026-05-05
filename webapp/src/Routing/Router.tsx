@@ -1,9 +1,10 @@
 import React, {Suspense} from 'react';
-import {Navigate, Outlet, Route, Routes} from "react-router-dom";
+import {Navigate, Outlet, Route, Routes, useLocation} from "react-router-dom";
 import {useAuth} from "./AuthContext";
 import {useAdapters} from "./AdapterContext";
 import {AppBar} from "../Components/AppBar/AppBar";
 import {Loader, Center} from "@mantine/core";
+import { AnimatePresence, motion } from 'framer-motion';
 
 const PhotoGrid = React.lazy(() => import('../Components/PhotoGrid/PhotoGrid').then(m => ({default: m.PhotoGrid})));
 const Dashboard = React.lazy(() => import('../Components/Dashboard/Dashboard').then(m => ({default: m.Dashboard})));
@@ -38,11 +39,29 @@ const ProtectedRoute = (props: { children: React.ReactNode }) => {
     return <>{props.children}</>;
 };
 
+const AnimatedOutlet = () => {
+    const location = useLocation();
+    return (
+        <AnimatePresence mode="wait">
+            <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+                style={{ height: '100%' }}
+            >
+                <Outlet />
+            </motion.div>
+        </AnimatePresence>
+    );
+};
+
 const AppShellLayout = () => {
     return (
         <AppBar>
             <Suspense fallback={<PageLoader/>}>
-                <Outlet />
+                <AnimatedOutlet />
             </Suspense>
         </AppBar>
     );

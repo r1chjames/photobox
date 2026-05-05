@@ -221,11 +221,11 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
             </Table.Tbody>
           </Table>
         <Flex direction="row" style={{width: "100%", justifyContent: "right"}}>
-            <ActionIcon color="dark" size="xl" m={"1rem"}>
-              {editing ? <IconPencilCancel onClick={resetForm} /> : <IconPencil onClick={() => setEditing(true)} />}
+            <ActionIcon variant="subtle" size="xl" m={"1rem"} onClick={editing ? resetForm : () => setEditing(true)}>
+              {editing ? <IconPencilCancel size="1.5rem" /> : <IconPencil size="1.5rem" />}
             </ActionIcon>
-            <ActionIcon color="dark" size="xl" m={"1rem"}>
-              {editing ? <IconDeviceFloppy size="2.125rem" onClick={handleSave} /> : <IconLayoutGridAdd size="2.125rem" onClick={() => setShowModal(true)}/>}
+            <ActionIcon variant="subtle" size="xl" m={"1rem"} onClick={editing ? handleSave : () => setShowModal(true)}>
+              {editing ? <IconDeviceFloppy size="1.5rem" /> : <IconLayoutGridAdd size="1.5rem"/>}
             </ActionIcon>
         </Flex>
         <Button onClick={handleIndex}>

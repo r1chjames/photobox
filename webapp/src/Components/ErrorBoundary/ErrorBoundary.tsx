@@ -1,5 +1,5 @@
 import React from 'react';
-import {Button, Container, Text, Title, Stack} from '@mantine/core';
+import {Button, Container, Text, Title, Stack, Group} from '@mantine/core';
 
 interface ErrorBoundaryState {
     hasError: boolean;
@@ -27,7 +27,10 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
                     <Stack align="center" gap="md">
                         <Title order={2}>Something went wrong</Title>
                         <Text c="dimmed">{this.state.error?.message}</Text>
-                        <Button onClick={this.handleReset}>Try again</Button>
+                        <Group gap="sm">
+                            <Button variant="default" onClick={() => window.history.back()}>Go back</Button>
+                            <Button onClick={this.handleReset}>Try again</Button>
+                        </Group>
                     </Stack>
                 </Container>
             );

@@ -24,7 +24,7 @@ import {useAdapters} from "../../Routing/AdapterContext";
 import {KeyboardShortcutsHelp} from "../KeyboardShortcutsHelp/KeyboardShortcutsHelp";
 import {useShortcutsHint} from "./useShortcutsHint";
 import cx from 'clsx';
-import { AnimatePresence, motion } from 'framer-motion';
+
 import {
     IconAlbum,
     IconChevronDown,
@@ -250,7 +250,7 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
         }
     };
 
-    const navBarItems = navLinkData.map((item, index) => (
+    const navBarItems = React.useMemo(() => navLinkData.map((item, index) => (
         <NavLink
             component={Link}
             to={item.href}
@@ -258,11 +258,9 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
             active={index === active}
             label={item.label.toString()}
             description={item.description}
-            // rightSection={item.rightSection}
             leftSection={<item.icon size="1rem" stroke={1.5}/>}
-            onClick={() => setActive(index)}
         />
-    ));
+    )), [active]);
 
     const handleLogout = () => {
         logout();
@@ -396,19 +394,8 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
                 {navBarItems}
             </AppShell.Navbar>
 
-            <AppShell.Main>
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        key={location.pathname}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        transition={{ duration: 0.2 }}
-                        style={{ height: '100%' }}
-                    >
-                        {props.children}
-                    </motion.div>
-                </AnimatePresence>
+            <AppShell.Main bg="var(--mantine-color-body)">
+                {props.children}
             </AppShell.Main>
 
             {/* Mobile bottom navigation */}

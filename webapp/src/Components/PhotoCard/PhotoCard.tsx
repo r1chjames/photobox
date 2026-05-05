@@ -76,7 +76,11 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
             blobUrlRef.current = undefined;
             // Do NOT revoke thumbnail here — the grid owns thumbnail lifecycle
         };
-    }, [props.source, fetchImage, fetchThumbnail, fetchAlbumName]);
+    }, [props.source.id, props.source.albumId, fetchImage, fetchThumbnail, fetchAlbumName]);
+
+    useEffect(() => {
+        setIsFavorite(props.source.favorite ?? false);
+    }, [props.source.favorite]);
 
     const handleDownload = useCallback(async () => {
         try {
@@ -217,8 +221,8 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const previousButton = useCallback(() => {
         if (!props.firstInAlbum) {
             return (
-                <ActionIcon color="dark" size="xl" onClick={handlePrevious} aria-label="Previous photo">
-                    <IconArrowLeftDashed size="2.125rem"/>
+                <ActionIcon variant="subtle" color="gray.3" size="xl" onClick={handlePrevious} aria-label="Previous photo">
+                    <IconArrowLeftDashed size="1.5rem"/>
                 </ActionIcon>
             );
         }
@@ -228,8 +232,8 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const nextButton = useCallback(() => {
         if (!props.lastInAlbum) {
             return (
-                <ActionIcon color="dark" size="xl" onClick={handleNext} aria-label="Next photo">
-                    <IconArrowRightDashed size="2.125rem"/>
+                <ActionIcon variant="subtle" color="gray.3" size="xl" onClick={handleNext} aria-label="Next photo">
+                    <IconArrowRightDashed size="1.5rem"/>
                 </ActionIcon>
             );
         }
@@ -314,52 +318,52 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                         />
                     }
                     <Overlay color="#000" backgroundOpacity={0} opacity={0.5}>
-                        <Flex direction="row" style={{width: "100%", justifyContent: "right"}} gap="xs">
+                        <Group justify="flex-end" gap="xs" p="sm">
                             {props.onSlideshow && (
                                 <Tooltip label="Slideshow">
-                                    <ActionIcon color="dark" size="l" opacity={1} onClick={(e) => { e.stopPropagation(); props.onSlideshow!(); }} aria-label="Slideshow">
-                                        <IconPlayerPlay size="1.75rem"/>
+                                    <ActionIcon variant="subtle" color="gray.3" size="lg" onClick={(e) => { e.stopPropagation(); props.onSlideshow!(); }} aria-label="Slideshow">
+                                        <IconPlayerPlay size="1.25rem"/>
                                     </ActionIcon>
                                 </Tooltip>
                             )}
                             <Tooltip label="Native share (S)">
-                                <ActionIcon color="dark" size="l" opacity={1} onClick={(e) => { e.stopPropagation(); handleNativeShare(); }} aria-label="Native share">
-                                    <IconShare2 size="1.75rem"/>
+                                <ActionIcon variant="subtle" color="gray.3" size="lg" onClick={(e) => { e.stopPropagation(); handleNativeShare(); }} aria-label="Native share">
+                                    <IconShare2 size="1.25rem"/>
                                 </ActionIcon>
                             </Tooltip>
                             {props.sharesAdapter && (
                                 <Tooltip label="Create share link">
-                                    <ActionIcon color="dark" size="l" opacity={1} onClick={(e) => { e.stopPropagation(); setShowShareModal(true); }} aria-label="Create share link">
-                                        <IconShare2 size="1.75rem"/>
+                                    <ActionIcon variant="subtle" color="gray.3" size="lg" onClick={(e) => { e.stopPropagation(); setShowShareModal(true); }} aria-label="Create share link">
+                                        <IconShare2 size="1.25rem"/>
                                     </ActionIcon>
                                 </Tooltip>
                             )}
                             <Tooltip label={isFullscreen ? 'Exit fullscreen (F11)' : 'Enter fullscreen (F11)'}>
-                                <ActionIcon color="dark" size="l" opacity={1} onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }} aria-label="Toggle fullscreen">
-                                    {isFullscreen ? <IconMinimize size="1.75rem" /> : <IconMaximize size="1.75rem" />}
+                                <ActionIcon variant="subtle" color="gray.3" size="lg" onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }} aria-label="Toggle fullscreen">
+                                    {isFullscreen ? <IconMinimize size="1.25rem" /> : <IconMaximize size="1.25rem" />}
                                 </ActionIcon>
                             </Tooltip>
                             <Tooltip label="Rotate clockwise (R)">
-                                <ActionIcon color="dark" size="l" opacity={1} onClick={(e) => { e.stopPropagation(); handleRotate('cw'); }} aria-label="Rotate clockwise">
-                                    <IconRotateClockwise size="1.75rem"/>
+                                <ActionIcon variant="subtle" color="gray.3" size="lg" onClick={(e) => { e.stopPropagation(); handleRotate('cw'); }} aria-label="Rotate clockwise">
+                                    <IconRotateClockwise size="1.25rem"/>
                                 </ActionIcon>
                             </Tooltip>
                             <Tooltip label={isFavorite ? 'Remove from favorites (F)' : 'Add to favorites (F)'}>
-                                <ActionIcon color="dark" size="l" opacity={1} onClick={(e) => { e.stopPropagation(); handleFavorite(); }} aria-label="Toggle favorite">
-                                    {isFavorite ? <IconHeartFilled size="1.75rem" color="var(--mantine-color-pink-filled)" /> : <IconHeart size="1.75rem" />}
+                                <ActionIcon variant="subtle" color="gray.3" size="lg" onClick={(e) => { e.stopPropagation(); handleFavorite(); }} aria-label="Toggle favorite">
+                                    {isFavorite ? <IconHeartFilled size="1.25rem" color="var(--mantine-color-pink-filled)" /> : <IconHeart size="1.25rem" />}
                                 </ActionIcon>
                             </Tooltip>
                             <Tooltip label="Download (D)">
-                                <ActionIcon color="dark" size="l" opacity={1} onClick={handleDownload} aria-label="Download">
-                                    <IconDownload size="1.75rem"/>
+                                <ActionIcon variant="subtle" color="gray.3" size="lg" onClick={handleDownload} aria-label="Download">
+                                    <IconDownload size="1.25rem"/>
                                 </ActionIcon>
                             </Tooltip>
                             <Tooltip label="Close (Esc)">
-                                <ActionIcon color="dark" size="l" opacity={1} onClick={handleClose} aria-label="Close">
-                                    <IconX size="1.75rem"/>
+                                <ActionIcon variant="subtle" color="gray.3" size="lg" onClick={handleClose} aria-label="Close">
+                                    <IconX size="1.25rem"/>
                                 </ActionIcon>
                             </Tooltip>
-                        </Flex>
+                        </Group>
                         <Flex direction="row" style={{
                             width: "100%",
                             height: "100%",

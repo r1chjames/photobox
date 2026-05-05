@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {useDisclosure, useHotkeys} from '@mantine/hooks';
 import {ActionIcon, Button, Chip, Dialog, Drawer, Group, Image, Loader, Modal, ScrollArea, Table, TextInput} from '@mantine/core';
 import {useMediaQuery} from '@mantine/hooks';
-import {IconArrowLeftDashed, IconArrowRightDashed, IconDownload, IconHeart, IconHeartFilled, IconRotateClockwise, IconShare2, IconTag} from '@tabler/icons-react';
+import {IconArrowLeftDashed, IconArrowRightDashed, IconDownload, IconHeart, IconHeartFilled, IconListDetails, IconRotateClockwise, IconShare2, IconTag} from '@tabler/icons-react';
 import {valueType} from "../../utils/TypeUtils";
 import {IPhotosAdapter} from '../../Adapters/IPhotosAdapter';
 import {ISharesAdapter} from '../../Adapters/ISharesAdapter';
@@ -269,7 +269,7 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                         Rotate
                     </Button>
                     <Button onClick={handleDownload} leftSection={<IconDownload size={16} />}>Download</Button>
-                    <Button onClick={toggle}>Metadata</Button>
+                    <Button onClick={toggle} leftSection={<IconListDetails size={16} />} variant="light">Metadata</Button>
                 </Group>
                 {isMobile ? (
                     <Drawer opened={opened} onClose={close} title="Metadata" position="bottom" size="md">
