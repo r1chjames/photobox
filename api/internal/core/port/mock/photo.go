@@ -374,6 +374,35 @@ func (mr *MockPhotoRepositoryMockRecorder) UpdatePhotoTags(photoId, tags interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePhotoTags", reflect.TypeOf((*MockPhotoRepository)(nil).UpdatePhotoTags), photoId, tags)
 }
 
+// AddAITags mocks base method.
+func (m *MockPhotoRepository) AddAITags(photoId string, tags []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddAITags", photoId, tags)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddAITags indicates an expected call of AddAITags.
+func (mr *MockPhotoRepositoryMockRecorder) AddAITags(photoId, tags interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddAITags", reflect.TypeOf((*MockPhotoRepository)(nil).AddAITags), photoId, tags)
+}
+
+// ListPhotosWithoutAITags mocks base method.
+func (m *MockPhotoRepository) ListPhotosWithoutAITags(limit int) ([]*domain.Photo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListPhotosWithoutAITags", limit)
+	ret0, _ := ret[0].([]*domain.Photo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListPhotosWithoutAITags indicates an expected call of ListPhotosWithoutAITags.
+func (mr *MockPhotoRepositoryMockRecorder) ListPhotosWithoutAITags(limit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPhotosWithoutAITags", reflect.TypeOf((*MockPhotoRepository)(nil).ListPhotosWithoutAITags), limit)
+}
+
 // GetPhotoIndexCache mocks base method.
 func (m *MockPhotoRepository) GetPhotoIndexCache() (map[string]struct{ FileHash string; FileModifiedTime int64 }, error) {
 	m.ctrl.T.Helper()
@@ -850,4 +879,18 @@ func (m *MockPhotoService) PhotoThumbnailPathForSize(photoId, size string) (stri
 func (mr *MockPhotoServiceMockRecorder) PhotoThumbnailPathForSize(photoId, size interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PhotoThumbnailPathForSize", reflect.TypeOf((*MockPhotoService)(nil).PhotoThumbnailPathForSize), photoId, size)
+}
+
+// AnalyzeExistingPhotos mocks base method.
+func (m *MockPhotoService) AnalyzeExistingPhotos() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AnalyzeExistingPhotos")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AnalyzeExistingPhotos indicates an expected call of AnalyzeExistingPhotos.
+func (mr *MockPhotoServiceMockRecorder) AnalyzeExistingPhotos() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnalyzeExistingPhotos", reflect.TypeOf((*MockPhotoService)(nil).AnalyzeExistingPhotos))
 }

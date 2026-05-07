@@ -100,9 +100,16 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 	// Cache
 	cacheService := service.NewCacheService(*config)
 
+	// AI
+	var aiService port.AIService
+	if config.AIEnabled {
+		aiService = service.NewOllamaClient(*config)
+		slog.Info("AI service enabled", "model", config.OllamaModel, "host", config.OllamaHost)
+	}
+
 	// Photo
 	photoRepo := repository.NewPhotoRepository(dbEnv)
-	photoService := service.NewPhotoService(photoRepo, albumService, filesystemService, cacheService, *config)
+	photoService := service.NewPhotoService(photoRepo, albumService, filesystemService, cacheService, aiService, *config)
 
 	// Share
 	shareRepo := repository.NewShareRepository(dbEnv)

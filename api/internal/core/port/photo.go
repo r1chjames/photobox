@@ -52,8 +52,12 @@ type PhotoRepository interface {
 	GetAllTags() ([]string, error)
 	// ListPhotosByTags returns photos matching all specified tags
 	ListPhotosByTags(tags []string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
-	// UpdatePhotoTags updates the tags for a single photo
+	// UpdatePhotoTags updates the tags for a single photo (preserves AI tags)
 	UpdatePhotoTags(photoId string, tags string) error
+	// AddAITags adds AI-generated tags for a photo
+	AddAITags(photoId string, tags []string) error
+	// ListPhotosWithoutAITags returns photos that have no AI-generated tags
+	ListPhotosWithoutAITags(limit int) ([]*domain.Photo, error)
 	// GetDuplicatePhotos returns photos that have duplicate file hashes
 	GetDuplicatePhotos() ([]*domain.Photo, error)
 	// GetPhotoIndexCache returns a map of photo ID to file hash and modified time for skip-unchanged optimization
@@ -122,4 +126,6 @@ type PhotoService interface {
 	GenerateThumbnailForPhoto(photoId string) (string, error)
 	// PhotoThumbnailPathForSize returns the filesystem path for a photo's thumbnail at a given size
 	PhotoThumbnailPathForSize(photoId string, size string) (string, error)
+	// AnalyzeExistingPhotos runs AI analysis on photos that haven't been analyzed yet
+	AnalyzeExistingPhotos() error
 }

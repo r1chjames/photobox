@@ -74,7 +74,7 @@ func (dbEnv *Env) PerformDbSetup() {
 
 func (dbEnv *Env) createSearchIndexes() {
 	indexes := []string{
-		`CREATE INDEX IF NOT EXISTS idx_photo_search ON photobox.photos USING GIN (to_tsvector('english', coalesce(name, '')))`,
+		`CREATE INDEX IF NOT EXISTS idx_photo_search ON photobox.photos USING GIN (to_tsvector('english', coalesce(name, '') || ' ' || coalesce(tags, '')))`,
 		`CREATE INDEX IF NOT EXISTS idx_album_search ON photobox.albums USING GIN (to_tsvector('english', coalesce(name, '')))`,
 	}
 	for _, idx := range indexes {

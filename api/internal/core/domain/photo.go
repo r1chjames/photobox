@@ -36,6 +36,7 @@ type Photo struct {
 type PhotoTag struct {
 	PhotoID string `gorm:"primaryKey;index:idx_photo_tag,priority:1"`
 	Tag     string `gorm:"primaryKey;index:idx_photo_tag,priority:2;index:idx_tag_photo,priority:1"`
+	Source  string `gorm:"default:''"`
 }
 
 type TimelineEntry struct {

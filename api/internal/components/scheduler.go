@@ -42,6 +42,17 @@ func (s *Scheduler) AddScheduledJobs() {
 	if err != nil {
 		slog.Error("Unable to add job schedule, check CRON expression in settings", "key", setting.Key, "cron", setting.Value, "error", err)
 	}
+
+	// Schedule AI analysis job to run every hour
+	_, err = s.cron.AddFunc("0 * * * *", func() {
+		if err := s.photoSvc.AnalyzeExistingPhotos(); err != nil {
+			slog.Error("AI analysis job failed", "error", err)
+		}
+	})
+	if err != nil {
+		slog.Error("Unable to add AI analysis job schedule", "error", err)
+	}
+
 	slog.Info("Scheduled jobs loaded", "entries", len(s.cron.Entries()))
 }
 

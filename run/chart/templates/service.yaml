@@ -3,17 +3,18 @@ kind: Service
 metadata:
   name: {{ include "photobox.fullname" . }}
   labels:
-{{ include "photobox.labels" . | indent 4 }}
+    {{- include "photobox.labels" . | nindent 4 }}
+    app.kubernetes.io/component: webapp
 spec:
-  type: {{ .Values.service.type }}
-  {{- if .Values.service.loadBalancerIP }}
-  loadBalancerIP: {{ .Values.service.loadBalancerIP }}
+  type: {{ .Values.webapp.service.type }}
+  {{- if and (eq .Values.webapp.service.type "LoadBalancer") .Values.webapp.service.loadBalancerIP }}
+  loadBalancerIP: {{ .Values.webapp.service.loadBalancerIP }}
   {{- end }}
   ports:
-    - port: {{ .Values.service.port }}
-      targetPort: {{ .Values.service.port }}
+    - port: {{ .Values.webapp.service.port }}
+      targetPort: http
       protocol: TCP
       name: http
   selector:
-    app.kubernetes.io/name: {{ include "photobox.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
+    {{- include "photobox.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: webapp

@@ -219,6 +219,11 @@ func (m *MockPhotoService) PhotoThumbnailPathForSize(photoId string, size string
 	return args.String(0), args.Error(1)
 }
 
+func (m *MockPhotoService) AnalyzeExistingPhotos() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
 // MockJobService is a mock implementation of port.JobService
 type MockJobService struct {
 	mock.Mock

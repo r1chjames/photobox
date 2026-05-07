@@ -25,16 +25,18 @@ type PhotoService struct {
 	albumSvc      port.AlbumService
 	filesystemSvc port.FilesystemService
 	cacheSvc      port.CacheService
+	aiSvc         port.AIService
 	config        appconfig.AppConfig
 }
 
 // NewPhotoService creates a new Photo service instance
-func NewPhotoService(photoRepo port.PhotoRepository, albumRepo port.AlbumService, filesystemSvc port.FilesystemService, cacheSvc port.CacheService, config appconfig.AppConfig) *PhotoService {
+func NewPhotoService(photoRepo port.PhotoRepository, albumRepo port.AlbumService, filesystemSvc port.FilesystemService, cacheSvc port.CacheService, aiSvc port.AIService, config appconfig.AppConfig) *PhotoService {
 	return &PhotoService{
 		photoRepo,
 		albumRepo,
 		filesystemSvc,
 		cacheSvc,
+		aiSvc,
 		config,
 	}
 }
@@ -225,7 +227,19 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 	}
 
 	// Batch insert all photos
-	return ps.photoRepo.CreatePhotosInfo(photoRecords)
+	err := ps.photoRepo.CreatePhotosInfo(photoRecords)
+	if err != nil {
+		return err
+	}
+
+	// Run AI analysis asynchronously for each photo if enabled
+	if ps.config.AIEnabled && ps.aiSvc != nil {
+		for _, photo := range photoRecords {
+			go ps.analyzeAndTagPhoto(photo.ID, photo.FilesystemPath)
+		}
+	}
+
+	return nil
 }
 
 func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
@@ -275,7 +289,61 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 		}
 	}
 
-	return ps.photoRepo.CreatePhotoInfo(photoInfo)
+	err = ps.photoRepo.CreatePhotoInfo(photoInfo)
+	if err != nil {
+		return err
+	}
+
+	if ps.config.AIEnabled && ps.aiSvc != nil {
+		go ps.analyzeAndTagPhoto(photoInfo.ID, photoInfo.FilesystemPath)
+	}
+
+	return nil
+}
+
+func (ps *PhotoService) analyzeAndTagPhoto(photoId string, imagePath string) {
+	analysis, err := ps.aiSvc.AnalyzeImage(imagePath)
+	if err != nil {
+		slog.Warn("AI analysis failed", "photo", photoId, "error", err)
+		return
+	}
+
+	// Combine tags and objects for storage
+	allTags := make([]string, 0, len(analysis.Tags)+len(analysis.Objects))
+	allTags = append(allTags, analysis.Tags...)
+	allTags = append(allTags, analysis.Objects...)
+
+	if len(allTags) == 0 && analysis.Caption == "" {
+		return
+	}
+
+	if err := ps.photoRepo.AddAITags(photoId, allTags); err != nil {
+		slog.Warn("Failed to store AI tags", "photo", photoId, "error", err)
+	}
+
+	slog.Info("AI analysis complete", "photo", photoId, "tags", len(allTags), "caption", analysis.Caption)
+}
+
+func (ps *PhotoService) AnalyzeExistingPhotos() error {
+	if !ps.config.AIEnabled || ps.aiSvc == nil {
+		return nil
+	}
+
+	photos, err := ps.photoRepo.ListPhotosWithoutAITags(50)
+	if err != nil {
+		return err
+	}
+
+	if len(photos) == 0 {
+		return nil
+	}
+
+	slog.Info("Analyzing existing photos with AI", "count", len(photos))
+	for _, photo := range photos {
+		ps.analyzeAndTagPhoto(photo.ID, photo.FilesystemPath)
+	}
+
+	return nil
 }
 
 func (ps *PhotoService) GenerateThumbnailForPhoto(photoId string) (string, error) {

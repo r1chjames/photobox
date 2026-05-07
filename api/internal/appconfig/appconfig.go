@@ -27,6 +27,9 @@ type AppConfig struct {
 	CachePassword      string
 	CacheEnabled       bool
 	CacheDB            int
+	AIEnabled          bool
+	OllamaHost         string
+	OllamaModel        string
 }
 
 func New() *AppConfig {
@@ -65,6 +68,8 @@ func New() *AppConfig {
 	cacheEnabled, _ := strconv.ParseBool(utils.GetEnv("CACHE_ENABLED", "false"))
 	cacheDB, _ := strconv.Atoi(utils.GetEnv("CACHE_DB", "0"))
 
+	aiEnabled, _ := strconv.ParseBool(utils.GetEnv("AI_ENABLED", "false"))
+
 	return &AppConfig{
 		PhotoDir:           utils.GetEnv("PHOTO_DIR", "/photos"),
 		ApiBasePath:        utils.GetEnv("API_BASE_PATH", "/api"),
@@ -82,5 +87,8 @@ func New() *AppConfig {
 		CachePassword:      utils.GetEnv("CACHE_PASSWORD", "-"),
 		CacheEnabled:       cacheEnabled,
 		CacheDB:            cacheDB,
+		AIEnabled:          aiEnabled,
+		OllamaHost:         utils.GetEnv("OLLAMA_HOST", "http://localhost:11434"),
+		OllamaModel:        utils.GetEnv("OLLAMA_MODEL", "moondream"),
 	}
 }
