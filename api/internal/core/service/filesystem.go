@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"runtime"
 	"strings"
 	"sync"
 
@@ -25,17 +24,19 @@ import (
  * and provides an access to the utility repository
  */
 type FilesystemService struct {
-	fsRepo     port.FilesystemRepository
-	jobSvc     port.JobService
-	utilitySvc port.UtilityService
+	fsRepo       port.FilesystemRepository
+	jobSvc       port.JobService
+	utilitySvc   port.UtilityService
+	indexWorkers int
 }
 
 // NewFilesystemService creates a new filesystem service instance
-func NewFilesystemService(fsRepo port.FilesystemRepository, jobSvc port.JobService, utilitySvc port.UtilityService) *FilesystemService {
+func NewFilesystemService(fsRepo port.FilesystemRepository, jobSvc port.JobService, utilitySvc port.UtilityService, indexWorkers int) *FilesystemService {
 	return &FilesystemService{
 		fsRepo,
 		jobSvc,
 		utilitySvc,
+		indexWorkers,
 	}
 }
 
@@ -49,7 +50,10 @@ func (fss *FilesystemService) PerformPhotoIndex(save func([]domain.PhotoFile) er
 	}("Photo_index")
 
 	// Create buffered channel for photo paths
-	numWorkers := runtime.NumCPU()
+	numWorkers := fss.indexWorkers
+	if numWorkers < 1 {
+		numWorkers = 1
+	}
 	photoChan := make(chan string, numWorkers*2)
 
 	// Create worker pool

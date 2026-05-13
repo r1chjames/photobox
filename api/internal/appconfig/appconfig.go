@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"gitlab.com/r1chjames/photobox/api/internal/core/utils"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -31,6 +32,7 @@ type AppConfig struct {
 	OllamaHost         string
 	OllamaModel        string
 	ThumbnailStorage   string
+	PhotoIndexWorkers  int
 }
 
 func New() *AppConfig {
@@ -73,6 +75,14 @@ func New() *AppConfig {
 
 	thumbnailStorage := utils.GetEnv("THUMBNAIL_STORAGE", "filesystem")
 
+	indexWorkers, _ := strconv.Atoi(utils.GetEnv("PHOTO_INDEX_WORKERS", fmt.Sprintf("%d", runtime.NumCPU())))
+	if indexWorkers < 1 {
+		indexWorkers = 1
+	}
+	if indexWorkers > runtime.NumCPU() {
+		indexWorkers = runtime.NumCPU()
+	}
+
 	return &AppConfig{
 		PhotoDir:           utils.GetEnv("PHOTO_DIR", "/photos"),
 		ApiBasePath:        utils.GetEnv("API_BASE_PATH", "/api"),
@@ -94,5 +104,6 @@ func New() *AppConfig {
 		OllamaHost:         utils.GetEnv("OLLAMA_HOST", "http://localhost:11434"),
 		OllamaModel:        utils.GetEnv("OLLAMA_MODEL", "moondream"),
 		ThumbnailStorage:   thumbnailStorage,
+		PhotoIndexWorkers:  indexWorkers,
 	}
 }
