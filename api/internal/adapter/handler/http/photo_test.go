@@ -219,6 +219,10 @@ func (m *MockPhotoService) PhotoThumbnailPathForSize(photoId string, size string
 	return args.String(0), args.Error(1)
 }
 
+func (m *MockPhotoService) PhotoThumbnailBytesForSize(photoId string, size string) ([]byte, error) {
+	return nil, nil
+}
+
 func (m *MockPhotoService) AnalyzeExistingPhotos() error {
 	args := m.Called()
 	return args.Error(0)

@@ -77,6 +77,21 @@ func (mr *MockCacheServiceMockRecorder) Get(key interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockCacheService)(nil).Get), key)
 }
 
+// GetBytes mocks base method.
+func (m *MockCacheService) GetBytes(key string) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBytes", key)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBytes indicates an expected call of GetBytes.
+func (mr *MockCacheServiceMockRecorder) GetBytes(key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBytes", reflect.TypeOf((*MockCacheService)(nil).GetBytes), key)
+}
+
 // Set mocks base method.
 func (m *MockCacheService) Set(key, value string, ttl time.Duration) error {
 	m.ctrl.T.Helper()
@@ -89,4 +104,18 @@ func (m *MockCacheService) Set(key, value string, ttl time.Duration) error {
 func (mr *MockCacheServiceMockRecorder) Set(key, value, ttl interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockCacheService)(nil).Set), key, value, ttl)
+}
+
+// SetBytes mocks base method.
+func (m *MockCacheService) SetBytes(key string, value []byte, ttl time.Duration) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetBytes", key, value, ttl)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetBytes indicates an expected call of SetBytes.
+func (mr *MockCacheServiceMockRecorder) SetBytes(key, value, ttl interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetBytes", reflect.TypeOf((*MockCacheService)(nil).SetBytes), key, value, ttl)
 }

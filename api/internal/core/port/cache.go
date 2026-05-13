@@ -9,4 +9,6 @@ type CacheService interface {
 	Set(key string, value string, ttl time.Duration) error
 	Delete(key string) error
 	DeletePattern(pattern string) error
+	GetBytes(key string) ([]byte, error)
+	SetBytes(key string, value []byte, ttl time.Duration) error
 }
