@@ -215,11 +215,15 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 		slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
 
 		if len(photo.Thumbnail) > 0 {
-			thumbPath, err := ps.writeThumbnailToDisk(photoHash, photo.Thumbnail, "m")
-			if err == nil {
-				photoInfo.ThumbnailPath = thumbPath
+			if ps.config.ThumbnailStorage == "valkey" && ps.config.CacheEnabled {
+				ps.storeThumbnailToValkey(photoHash, "m", photo.Thumbnail)
 			} else {
-				slog.Error("Failed to write thumbnail to disk", "photo", photo.Name, "error", err)
+				thumbPath, err := ps.writeThumbnailToDisk(photoHash, photo.Thumbnail, "m")
+				if err == nil {
+					photoInfo.ThumbnailPath = thumbPath
+				} else {
+					slog.Error("Failed to write thumbnail to disk", "photo", photo.Name, "error", err)
+				}
 			}
 		}
 
@@ -281,11 +285,15 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 	slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
 
 	if len(photo.Thumbnail) > 0 {
-		thumbPath, err := ps.writeThumbnailToDisk(photoHash, photo.Thumbnail, "m")
-		if err == nil {
-			photoInfo.ThumbnailPath = thumbPath
+		if ps.config.ThumbnailStorage == "valkey" && ps.config.CacheEnabled {
+			ps.storeThumbnailToValkey(photoHash, "m", photo.Thumbnail)
 		} else {
-			slog.Error("Failed to write thumbnail to disk", "photo", photo.Name, "error", err)
+			thumbPath, err := ps.writeThumbnailToDisk(photoHash, photo.Thumbnail, "m")
+			if err == nil {
+				photoInfo.ThumbnailPath = thumbPath
+			} else {
+				slog.Error("Failed to write thumbnail to disk", "photo", photo.Name, "error", err)
+			}
 		}
 	}
 
@@ -367,18 +375,26 @@ func (ps *PhotoService) GenerateThumbnailForPhoto(photoId string) (string, error
 		if len(thumbnail) == 0 {
 			continue
 		}
-		path, err := ps.writeThumbnailToDisk(photoId, thumbnail, sizeCode)
-		if err != nil {
-			slog.Error("Failed to write thumbnail", "size", sizeCode, "error", err)
-			continue
-		}
-		if sizeCode == "m" {
-			mediumPath = path
-		}
 
-		// Cache the path
-		cacheKey := fmt.Sprintf("thumbnail:%s:%s", photoId, sizeCode)
-		_ = ps.cacheSvc.Set(cacheKey, path, 24*time.Hour)
+		if ps.config.ThumbnailStorage == "valkey" && ps.config.CacheEnabled {
+			ps.storeThumbnailToValkey(photoId, sizeCode, thumbnail)
+			if sizeCode == "m" {
+				mediumPath = fmt.Sprintf("valkey:thumbdata:%s:%s", photoId, sizeCode)
+			}
+		} else {
+			path, err := ps.writeThumbnailToDisk(photoId, thumbnail, sizeCode)
+			if err != nil {
+				slog.Error("Failed to write thumbnail", "size", sizeCode, "error", err)
+				continue
+			}
+			if sizeCode == "m" {
+				mediumPath = path
+			}
+
+			// Cache the path
+			cacheKey := fmt.Sprintf("thumbnail:%s:%s", photoId, sizeCode)
+			_ = ps.cacheSvc.Set(cacheKey, path, 24*time.Hour)
+		}
 	}
 
 	// Update DB
@@ -420,6 +436,46 @@ func (ps *PhotoService) PhotoThumbnailPathForSize(photoId string, size string) (
 	}
 
 	return "", domain.ErrDataNotFound
+}
+
+func (ps *PhotoService) getThumbnailFromValkey(photoId, size string) ([]byte, error) {
+	key := fmt.Sprintf("thumbdata:%s:%s", photoId, size)
+	return ps.cacheSvc.GetBytes(key)
+}
+
+func (ps *PhotoService) storeThumbnailToValkey(photoId, size string, data []byte) {
+	if len(data) == 0 {
+		return
+	}
+	key := fmt.Sprintf("thumbdata:%s:%s", photoId, size)
+	if err := ps.cacheSvc.SetBytes(key, data, 0); err != nil {
+		slog.Error("Failed to store thumbnail in cache", "photo", photoId, "size", size, "error", err)
+	}
+}
+
+func (ps *PhotoService) PhotoThumbnailBytesForSize(photoId string, size string) ([]byte, error) {
+	if size == "" {
+		size = "m"
+	}
+
+	// When valkey is configured, try Valkey first
+	if ps.config.ThumbnailStorage == "valkey" && ps.config.CacheEnabled {
+		data, err := ps.getThumbnailFromValkey(photoId, size)
+		if err == nil && len(data) > 0 {
+			return data, nil
+		}
+	}
+
+	// Try filesystem
+	path, err := ps.PhotoThumbnailPathForSize(photoId, size)
+	if err == nil && path != "" {
+		data, err := os.ReadFile(path)
+		if err == nil {
+			return data, nil
+		}
+	}
+
+	return nil, domain.ErrDataNotFound
 }
 
 func (ps *PhotoService) DeletePhoto(photoId string) error {

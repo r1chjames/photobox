@@ -72,3 +72,21 @@ func (cs *CacheService) DeletePattern(pattern string) error {
 	}
 	return iter.Err()
 }
+
+func (cs *CacheService) GetBytes(key string) ([]byte, error) {
+	if !cs.enabled {
+		return nil, fmt.Errorf("cache disabled")
+	}
+	val, err := cs.client.Get(cs.ctx, key).Bytes()
+	if err == redis.Nil {
+		return nil, fmt.Errorf("cache miss")
+	}
+	return val, err
+}
+
+func (cs *CacheService) SetBytes(key string, value []byte, ttl time.Duration) error {
+	if !cs.enabled {
+		return nil
+	}
+	return cs.client.Set(cs.ctx, key, value, ttl).Err()
+}

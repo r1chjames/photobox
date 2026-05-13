@@ -126,6 +126,8 @@ type PhotoService interface {
 	GenerateThumbnailForPhoto(photoId string) (string, error)
 	// PhotoThumbnailPathForSize returns the filesystem path for a photo's thumbnail at a given size
 	PhotoThumbnailPathForSize(photoId string, size string) (string, error)
+	// PhotoThumbnailBytesForSize returns the raw thumbnail bytes for a photo at a given size
+	PhotoThumbnailBytesForSize(photoId string, size string) ([]byte, error)
 	// AnalyzeExistingPhotos runs AI analysis on photos that haven't been analyzed yet
 	AnalyzeExistingPhotos() error
 }

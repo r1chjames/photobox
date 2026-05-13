@@ -155,26 +155,28 @@ func (ph *PhotoHandler) GetPhotoThumbnail(ctx *gin.Context) {
 		size = "m"
 	}
 
-	// Try filesystem/cache first
-	thumbnailPath, err := ph.photoSvc.PhotoThumbnailPathForSize(photoId, size)
-	if err == nil && thumbnailPath != "" {
+	setThumbnailHeaders := func() {
 		ctx.Header("Content-Type", "image/jpeg")
 		ctx.Header("Cache-Control", "public, max-age=31536000, immutable")
 		ctx.Header("ETag", fmt.Sprintf(`"%s:%s"`, photoId, size))
-		ctx.File(thumbnailPath)
+	}
+
+	// Try unified thumbnail retrieval (handles valkey or filesystem)
+	thumbnailBytes, err := ph.photoSvc.PhotoThumbnailBytesForSize(photoId, size)
+	if err == nil && len(thumbnailBytes) > 0 {
+		setThumbnailHeaders()
+		ctx.Data(http.StatusOK, "image/jpeg", thumbnailBytes)
 		return
 	}
 
 	// Generate on-demand if missing
 	generatedPath, err := ph.photoSvc.GenerateThumbnailForPhoto(photoId)
 	if err == nil && generatedPath != "" {
-		// After generation, try again with the requested size
-		thumbnailPath, err = ph.photoSvc.PhotoThumbnailPathForSize(photoId, size)
-		if err == nil && thumbnailPath != "" {
-			ctx.Header("Content-Type", "image/jpeg")
-			ctx.Header("Cache-Control", "public, max-age=31536000, immutable")
-			ctx.Header("ETag", fmt.Sprintf(`"%s:%s"`, photoId, size))
-			ctx.File(thumbnailPath)
+		// After generation, try again
+		thumbnailBytes, err = ph.photoSvc.PhotoThumbnailBytesForSize(photoId, size)
+		if err == nil && len(thumbnailBytes) > 0 {
+			setThumbnailHeaders()
+			ctx.Data(http.StatusOK, "image/jpeg", thumbnailBytes)
 			return
 		}
 	}

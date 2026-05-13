@@ -30,6 +30,7 @@ type AppConfig struct {
 	AIEnabled          bool
 	OllamaHost         string
 	OllamaModel        string
+	ThumbnailStorage   string
 }
 
 func New() *AppConfig {
@@ -70,6 +71,8 @@ func New() *AppConfig {
 
 	aiEnabled, _ := strconv.ParseBool(utils.GetEnv("AI_ENABLED", "false"))
 
+	thumbnailStorage := utils.GetEnv("THUMBNAIL_STORAGE", "filesystem")
+
 	return &AppConfig{
 		PhotoDir:           utils.GetEnv("PHOTO_DIR", "/photos"),
 		ApiBasePath:        utils.GetEnv("API_BASE_PATH", "/api"),
@@ -90,5 +93,6 @@ func New() *AppConfig {
 		AIEnabled:          aiEnabled,
 		OllamaHost:         utils.GetEnv("OLLAMA_HOST", "http://localhost:11434"),
 		OllamaModel:        utils.GetEnv("OLLAMA_MODEL", "moondream"),
+		ThumbnailStorage:   thumbnailStorage,
 	}
 }

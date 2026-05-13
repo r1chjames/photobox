@@ -333,6 +333,14 @@ func (m *MockCacheService) DeletePattern(pattern string) error {
 	return args.Error(0)
 }
 
+func (m *MockCacheService) GetBytes(key string) ([]byte, error) {
+	return nil, nil
+}
+
+func (m *MockCacheService) SetBytes(key string, value []byte, ttl time.Duration) error {
+	return nil
+}
+
 // TestGetPhoto tests retrieving a photo by ID
 func TestGetPhoto(t *testing.T) {
 	tests := []struct {

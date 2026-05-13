@@ -881,6 +881,21 @@ func (mr *MockPhotoServiceMockRecorder) PhotoThumbnailPathForSize(photoId, size 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PhotoThumbnailPathForSize", reflect.TypeOf((*MockPhotoService)(nil).PhotoThumbnailPathForSize), photoId, size)
 }
 
+// PhotoThumbnailBytesForSize mocks base method.
+func (m *MockPhotoService) PhotoThumbnailBytesForSize(photoId, size string) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PhotoThumbnailBytesForSize", photoId, size)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PhotoThumbnailBytesForSize indicates an expected call of PhotoThumbnailBytesForSize.
+func (mr *MockPhotoServiceMockRecorder) PhotoThumbnailBytesForSize(photoId, size interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PhotoThumbnailBytesForSize", reflect.TypeOf((*MockPhotoService)(nil).PhotoThumbnailBytesForSize), photoId, size)
+}
+
 // AnalyzeExistingPhotos mocks base method.
 func (m *MockPhotoService) AnalyzeExistingPhotos() error {
 	m.ctrl.T.Helper()
