@@ -95,7 +95,7 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 	jobService := service.NewJobService(jobRepo)
 
 	filesystemRepo := filesystemRepos.NewFilesystemRepository(*config, jobService)
-	filesystemService := service.NewFilesystemService(filesystemRepo, jobService, utilityService)
+	filesystemService := service.NewFilesystemService(filesystemRepo, jobService, utilityService, config.PhotoIndexWorkers)
 
 	// Cache
 	cacheService := service.NewCacheService(*config)

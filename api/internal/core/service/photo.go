@@ -214,16 +214,22 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 
 		slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
 
-		if len(photo.Thumbnail) > 0 {
-			if ps.config.ThumbnailStorage == "valkey" && ps.config.CacheEnabled {
-				ps.storeThumbnailToValkey(photoHash, "m", photo.Thumbnail)
+		if ps.config.ThumbnailStorage == "valkey" && ps.config.CacheEnabled {
+			// Generate medium thumbnail during index for valkey persistence
+			// Use embedded EXIF thumbnail if available (avoids full image decode)
+			thumbnail := ps.filesystemSvc.GenerateThumbnail(photo.Path, photo.Exif, 600, 600)
+			if len(thumbnail) > 0 {
+				ps.storeThumbnailToValkey(photoHash, "m", thumbnail)
+				photoInfo.Thumbnail = thumbnail
 			} else {
-				thumbPath, err := ps.writeThumbnailToDisk(photoHash, photo.Thumbnail, "m")
-				if err == nil {
-					photoInfo.ThumbnailPath = thumbPath
-				} else {
-					slog.Error("Failed to write thumbnail to disk", "photo", photo.Name, "error", err)
-				}
+				slog.Warn("Failed to generate thumbnail", "photo", photo.Name)
+			}
+		} else if len(photo.Thumbnail) > 0 {
+			thumbPath, err := ps.writeThumbnailToDisk(photoHash, photo.Thumbnail, "m")
+			if err == nil {
+				photoInfo.ThumbnailPath = thumbPath
+			} else {
+				slog.Error("Failed to write thumbnail to disk", "photo", photo.Name, "error", err)
 			}
 		}
 
@@ -284,16 +290,19 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 
 	slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
 
-	if len(photo.Thumbnail) > 0 {
-		if ps.config.ThumbnailStorage == "valkey" && ps.config.CacheEnabled {
-			ps.storeThumbnailToValkey(photoHash, "m", photo.Thumbnail)
+	if ps.config.ThumbnailStorage == "valkey" && ps.config.CacheEnabled {
+		// Use embedded EXIF thumbnail if available (avoids full image decode)
+		thumbnail := ps.filesystemSvc.GenerateThumbnail(photo.Path, photo.Exif, 600, 600)
+		if len(thumbnail) > 0 {
+			ps.storeThumbnailToValkey(photoHash, "m", thumbnail)
+			photoInfo.Thumbnail = thumbnail
+		}
+	} else if len(photo.Thumbnail) > 0 {
+		thumbPath, err := ps.writeThumbnailToDisk(photoHash, photo.Thumbnail, "m")
+		if err == nil {
+			photoInfo.ThumbnailPath = thumbPath
 		} else {
-			thumbPath, err := ps.writeThumbnailToDisk(photoHash, photo.Thumbnail, "m")
-			if err == nil {
-				photoInfo.ThumbnailPath = thumbPath
-			} else {
-				slog.Error("Failed to write thumbnail to disk", "photo", photo.Name, "error", err)
-			}
+			slog.Error("Failed to write thumbnail to disk", "photo", photo.Name, "error", err)
 		}
 	}
 
