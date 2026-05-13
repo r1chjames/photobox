@@ -2,19 +2,24 @@ package database
 
 import (
 	"errors"
-	. "gitlab.com/r1chjames/photobox/api/internal/appconfig"
-	. "gitlab.com/r1chjames/photobox/api/internal/core/domain"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
+	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
-	"log"
 )
 
 type Env struct {
 	Db *gorm.DB
 }
 
-func InitDbConnection(appConfig *AppConfig) *Env {
+func InitDbConnection(appConfig *appconfig.AppConfig) *Env {
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN: appConfig.DbUrl,
 	}), &gorm.Config{
@@ -24,22 +29,114 @@ func InitDbConnection(appConfig *AppConfig) *Env {
 		}})
 
 	if err != nil {
-		log.Fatalf("failed to connect database, %s", err)
+		slog.Error("Failed to connect database", "error", err)
+		os.Exit(1)
 	}
+
+	// Configure connection pool
+	sqlDB, err := db.DB()
+	if err != nil {
+		slog.Error("Failed to get database instance", "error", err)
+		os.Exit(1)
+	}
+
+	// Set maximum number of idle connections in the pool
+	sqlDB.SetMaxIdleConns(10)
+
+	// Set maximum number of open connections to the database
+	sqlDB.SetMaxOpenConns(100)
+
+	// Set maximum lifetime of a connection (reuse connections for up to 1 hour)
+	sqlDB.SetConnMaxLifetime(time.Hour)
+
 	return &Env{Db: db}
 }
 
 func (dbEnv *Env) PerformDbSetup() {
 	// Migrate the schema
-	err := dbEnv.Db.AutoMigrate(&Album{}, &Photo{}, &Setting{}, &Job{}, &User{})
+	err := dbEnv.Db.AutoMigrate(&domain.Album{}, &domain.Photo{}, &domain.PhotoTag{}, &domain.Setting{}, &domain.Job{}, &domain.User{}, &domain.SharedLink{})
 	if err != nil {
-		log.Fatalf("failed to perform database migration, %s", err)
+		slog.Error("Failed to perform database migration", "error", err)
+		os.Exit(1)
 	}
+
+	// Create GIN indexes for full-text search
+	dbEnv.createSearchIndexes()
+
+	// Create GiST index for geospatial queries
+	dbEnv.createGeoIndexes()
+
+	// Enable query performance tracking
+	if err := dbEnv.Db.Exec("CREATE EXTENSION IF NOT EXISTS pg_stat_statements").Error; err != nil {
+		slog.Warn("Failed to enable pg_stat_statements", "error", err)
+	}
+}
+
+func (dbEnv *Env) createSearchIndexes() {
+	indexes := []string{
+		`CREATE INDEX IF NOT EXISTS idx_photo_search ON photobox.photos USING GIN (to_tsvector('english', coalesce(name, '') || ' ' || coalesce(tags, '')))`,
+		`CREATE INDEX IF NOT EXISTS idx_album_search ON photobox.albums USING GIN (to_tsvector('english', coalesce(name, '')))`,
+	}
+	for _, idx := range indexes {
+		if err := dbEnv.Db.Exec(idx).Error; err != nil {
+			slog.Warn("Failed to create search index", "error", err, "index", idx)
+		}
+	}
+}
+
+func (dbEnv *Env) createGeoIndexes() {
+	indexes := []string{
+		`CREATE INDEX IF NOT EXISTS idx_photos_lat_lng ON photobox.photos USING btree (latitude, longitude) WHERE latitude IS NOT NULL AND longitude IS NOT NULL`,
+	}
+	for _, idx := range indexes {
+		if err := dbEnv.Db.Exec(idx).Error; err != nil {
+			slog.Warn("Failed to create geo index", "error", err, "index", idx)
+		}
+	}
+}
+
+func (dbEnv *Env) MigrateThumbnailsToFilesystem(photoDir string) {
+	var photos []domain.Photo
+	result := dbEnv.Db.Where("thumbnail_path = ? OR thumbnail_path IS NULL", "").Where("thumbnail IS NOT NULL AND length(thumbnail) > 0").Find(&photos)
+	if result.Error != nil {
+		slog.Warn("Failed to query photos for thumbnail migration", "error", result.Error)
+		return
+	}
+	if len(photos) == 0 {
+		return
+	}
+	slog.Info("Migrating thumbnails to filesystem", "count", len(photos))
+	thumbsDir := filepath.Join(photoDir, ".thumbnails")
+	for _, p := range photos {
+		safeId := strings.ReplaceAll(p.ID, "/", "_")
+		safeId = strings.ReplaceAll(safeId, "+", "-")
+		safeId = strings.ReplaceAll(safeId, "=", "")
+		path := filepath.Join(thumbsDir, safeId+".jpg")
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			slog.Warn("Failed to create thumbnail directory", "error", err)
+			continue
+		}
+		if err := os.WriteFile(path, p.Thumbnail, 0644); err != nil {
+			slog.Warn("Failed to write thumbnail to disk", "photo", p.ID, "error", err)
+			continue
+		}
+		dbEnv.Db.Model(&domain.Photo{}).Where("id = ?", p.ID).Update("thumbnail_path", path)
+	}
+	slog.Info("Thumbnail migration complete")
+}
+
+// Ping checks the database connection is alive
+func (dbEnv *Env) Ping() error {
+	sqlDB, err := dbEnv.Db.DB()
+	if err != nil {
+		return err
+	}
+	return sqlDB.Ping()
 }
 
 func HandleError(result *gorm.DB) error {
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return ErrDataNotFound
+		return domain.ErrDataNotFound
 	} else if result.Error != nil {
 		return result.Error
 	}

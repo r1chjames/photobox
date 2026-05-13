@@ -1,0 +1,35 @@
+{{- if and .Values.persistence.enabled (not .Values.persistence.hostPath) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "photobox.fullname" . }}-photos
+  labels:
+    {{- include "photobox.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.size }}
+  {{- if .Values.persistence.storageClass }}
+  storageClassName: {{ .Values.persistence.storageClass | quote }}
+  {{- end }}
+{{- end }}
+---
+{{- if and .Values.ollama.enabled .Values.ollama.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "photobox.fullname" . }}-ollama
+  labels:
+    {{- include "photobox.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.ollama.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.ollama.persistence.size }}
+  {{- if .Values.ollama.persistence.storageClass }}
+  storageClassName: {{ .Values.ollama.persistence.storageClass | quote }}
+  {{- end }}
+{{- end }}

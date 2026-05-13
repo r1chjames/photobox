@@ -12,6 +12,8 @@ type JobRepository interface {
 	UpdateAllJobsStatus(status string) error
 	// CreateBaseJobs creates the jobs required for a new instance
 	CreateBaseJobs() error
+	// StartJobIfNotRunning atomically starts a job only if it's not already running
+	StartJobIfNotRunning(name string) error
 }
 
 // AlbumService is an interface for interacting with Album-related business logic
@@ -26,4 +28,6 @@ type JobService interface {
 	JobComplete(name string) error
 	// CreateBaseJobs creates the jobs required for a new instance
 	CreateBaseJobs() error
+	// StartJobIfNotRunning atomically starts a job only if it's not already running
+	StartJobIfNotRunning(name string) error
 }

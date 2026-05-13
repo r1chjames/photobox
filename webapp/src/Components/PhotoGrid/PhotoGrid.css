@@ -45,6 +45,18 @@ a {
     opacity: 1;
 }
 
+.density-compact .item {
+    width: 180px;
+}
+
+.density-comfortable .item {
+    width: 250px;
+}
+
+.density-large .item {
+    width: 350px;
+}
+
 .masonrygrid.horizontal .item {
     width: auto;
     height: 250px;
@@ -54,7 +66,8 @@ a {
     overflow: hidden;
     border-radius: 8px;
     font-size: 0;
-    height: calc(100% - 5px);
+    width: 100%;
+    position: relative;
 }
 
 .item .thumbnail img {
@@ -62,7 +75,7 @@ a {
     height: 100%;
     border-radius: 8px;
     background: #fff;
-    /*object-fit: contain;*/
+    object-fit: cover;
 }
 
 .masonrygrid.horizontal .item .thumbnail img {

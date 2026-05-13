@@ -1,16 +1,16 @@
 package repository
 
 import (
-	. "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
+	db "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gorm.io/gorm/clause"
 )
 
 type UserRepository struct {
-	dbEnv *Env
+	dbEnv *db.Env
 }
 
-func NewUserRepository(dbEnv *Env) *UserRepository {
+func NewUserRepository(dbEnv *db.Env) *UserRepository {
 	return &UserRepository{
 		dbEnv,
 	}
@@ -18,8 +18,8 @@ func NewUserRepository(dbEnv *Env) *UserRepository {
 
 func (ur *UserRepository) ListUsers(pageNumber, pageSize int) ([]domain.User, error) {
 	var user []domain.User
-	result := ur.dbEnv.Db.Scopes(Paginate(pageNumber, pageSize)).Find(&user)
-	err := HandleError(result)
+	result := ur.dbEnv.Db.Scopes(db.Paginate(pageNumber, pageSize)).Find(&user)
+	err := db.HandleError(result)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +29,7 @@ func (ur *UserRepository) ListUsers(pageNumber, pageSize int) ([]domain.User, er
 func (ur *UserRepository) GetUserById(id string) (*domain.User, error) {
 	var user *domain.User
 	result := ur.dbEnv.Db.Find(&user, "id = ? ", id)
-	err := HandleError(result)
+	err := db.HandleError(result)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func (ur *UserRepository) GetUserById(id string) (*domain.User, error) {
 func (ur *UserRepository) GetUserByUsername(username string) (*domain.User, error) {
 	var user *domain.User
 	result := ur.dbEnv.Db.Find(&user, "username = ? ", username)
-	err := HandleError(result)
+	err := db.HandleError(result)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (ur *UserRepository) GetUserByUsername(username string) (*domain.User, erro
 func (ur *UserRepository) GetApprovedUserByUsername(username string) (*domain.User, error) {
 	var user *domain.User
 	result := ur.dbEnv.Db.Find(&user, "username = ? AND approved = true", username)
-	err := HandleError(result)
+	err := db.HandleError(result)
 	if err != nil {
 		return nil, err
 	}

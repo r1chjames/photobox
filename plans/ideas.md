@@ -1,0 +1,4 @@
+- Multi-tenancy
+- AI integration for photo analysis
+- Object/cloud storage for photos and thumbnails
+- Serverless architecture

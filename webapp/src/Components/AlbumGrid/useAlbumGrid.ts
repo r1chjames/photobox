@@ -1,10 +1,9 @@
-import {useEffect, useState} from 'react';
-import {Album} from "../../Models/Album";
+import {useState} from 'react';
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
+import {useQuery} from "@tanstack/react-query";
 
 const useAlbumGrid = (albumsAdapter: IAlbumsAdapter) => {
 
-    const [albums, setAlbums] = useState<Album[]>([]);
     const [createAlbumModalAlbumNameErrorText, setCreateAlbumModalAlbumNameErrorText] = useState('Required');
     const [newAlbumName, setNewAlbumName] = useState('');
 
@@ -18,13 +17,13 @@ const useAlbumGrid = (albumsAdapter: IAlbumsAdapter) => {
     };
 
     const getAllAlbums = async() => {
-        const albumSources: Album[] = await albumsAdapter.getAllAlbumsInfo();
-        setAlbums(albumSources);
+        return albumsAdapter.getAllAlbumsInfo();
     };
 
-    useEffect(() => {
-        getAllAlbums();
-    },[]);
+    const {data: albums} = useQuery({
+        queryKey: ['getAllAlbums'],
+        queryFn: getAllAlbums
+    });
 
     return [{albums, createAlbumModalAlbumNameErrorText, newAlbumName, handleNewAlbumNameValueChange}]
 };

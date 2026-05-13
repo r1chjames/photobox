@@ -20,6 +20,7 @@ func main() {
 
 	dbEnv := database.InitDbConnection(appConfig)
 	dbEnv.PerformDbSetup()
+	dbEnv.MigrateThumbnailsToFilesystem(appConfig.PhotoDir)
 
 	services := setupAppServices(dbEnv, appConfig)
 	services.utilityService.CreateBaseSettings(appConfig.ResetSettings)
@@ -28,7 +29,6 @@ func main() {
 	services.scheduler.AddScheduledJobs()
 	addDefaultAdminUser(services.userService, appConfig)
 
-	http.NewDBEnv(dbEnv)
 	router, err := setupHttpHandlers(appConfig, services)
 	if err != nil {
 		slog.Error("Error initializing router", "error", err)
@@ -46,6 +46,7 @@ func addDefaultAdminUser(userService *service.UserService, config *appconfig.App
 	_, err := userService.CreateUser(&domain.User{
 		Username: config.AdminUsername,
 		Password: config.AdminPassword,
+		Role:     domain.ADMINISTRATOR,
 	})
 
 	if err != nil {
@@ -63,6 +64,8 @@ type AppServices struct {
 	jobService        *service.JobService
 	utilityService    *service.UtilityService
 	filesystemService *service.FilesystemService
+	shareService      *service.ShareService
+	cacheService      *service.CacheService
 }
 
 func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServices {
@@ -94,9 +97,23 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 	filesystemRepo := filesystemRepos.NewFilesystemRepository(*config, jobService)
 	filesystemService := service.NewFilesystemService(filesystemRepo, jobService, utilityService)
 
+	// Cache
+	cacheService := service.NewCacheService(*config)
+
+	// AI
+	var aiService port.AIService
+	if config.AIEnabled {
+		aiService = service.NewOllamaClient(*config)
+		slog.Info("AI service enabled", "model", config.OllamaModel, "host", config.OllamaHost)
+	}
+
 	// Photo
 	photoRepo := repository.NewPhotoRepository(dbEnv)
-	photoService := service.NewPhotoService(photoRepo, albumService, filesystemService, *config)
+	photoService := service.NewPhotoService(photoRepo, albumService, filesystemService, cacheService, aiService, *config)
+
+	// Share
+	shareRepo := repository.NewShareRepository(dbEnv)
+	shareService := service.NewShareService(shareRepo, photoService, albumService)
 
 	// Cron
 	return &AppServices{
@@ -109,6 +126,8 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 		jobService,
 		utilityService,
 		filesystemService,
+		shareService,
+		cacheService,
 	}
 }
 
@@ -121,6 +140,8 @@ func setupHttpHandlers(
 	photoHandler := http.NewPhotoHandler(appServices.photoService, appServices.jobService)
 	albumHandler := http.NewAlbumHandler(appServices.albumService)
 	utilityHandler := http.NewUtilityHandler(appServices.utilityService)
+	searchHandler := http.NewSearchHandler(appServices.photoService, appServices.albumService)
+	shareHandler := http.NewShareHandler(appServices.shareService)
 
 	return http.NewRouter(
 		*config,
@@ -130,5 +151,7 @@ func setupHttpHandlers(
 		*albumHandler,
 		*utilityHandler,
 		*userHandler,
+		*searchHandler,
+		*shareHandler,
 	)
 }

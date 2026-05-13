@@ -22,7 +22,7 @@ func (as *AlbumServiceMock) GetAlbum(id string) (*domain.Album, error) {
 		Metadata:    make(datatypes.JSON, 0),
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
-		Thumnail:    "tn",
+		Thumbnail:   "tn",
 	}, nil
 }
 
@@ -36,7 +36,7 @@ func (as *AlbumServiceMock) ListAlbums(page, limit int) ([]*domain.Album, error)
 			Metadata:    make(datatypes.JSON, 0),
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
-			Thumnail:    "tn",
+			Thumbnail:   "tn",
 		},
 		{
 			ID:          "id2",
@@ -46,7 +46,7 @@ func (as *AlbumServiceMock) ListAlbums(page, limit int) ([]*domain.Album, error)
 			Metadata:    make(datatypes.JSON, 0),
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
-			Thumnail:    "tn",
+			Thumbnail:   "tn",
 		},
 	}, nil
 }

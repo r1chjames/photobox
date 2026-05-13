@@ -8,8 +8,6 @@ Expand the name of the chart.
 
 {{/*
 Create a default fully qualified app name.
-We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
-If release name contains chart name it will be used as a full name.
 */}}
 {{- define "photobox.fullname" -}}
 {{- if .Values.fullnameOverride -}}
@@ -45,6 +43,14 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end -}}
 
 {{/*
+Selector labels
+*/}}
+{{- define "photobox.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "photobox.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end -}}
+
+{{/*
 Create the name of the service account to use
 */}}
 {{- define "photobox.serviceAccountName" -}}
@@ -52,5 +58,27 @@ Create the name of the service account to use
     {{ default (include "photobox.fullname" .) .Values.serviceAccount.name }}
 {{- else -}}
     {{ default "default" .Values.serviceAccount.name }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+API secret name
+*/}}
+{{- define "photobox.api.secretName" -}}
+{{- if .Values.api.existingSecret -}}
+    {{ .Values.api.existingSecret }}
+{{- else -}}
+    {{ include "photobox.fullname" . }}-api
+{{- end -}}
+{{- end -}}
+
+{{/*
+Database host
+*/}}
+{{- define "photobox.database.host" -}}
+{{- if .Values.database.enabled -}}
+{{- printf "%s-postgresql" .Release.Name -}}
+{{- else -}}
+{{- required "database.host must be set when database.enabled is false" .Values.database.host -}}
 {{- end -}}
 {{- end -}}

@@ -1,157 +1,173 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Setting } from '../../Models/Setting';
 import { SettingModal } from '../SettingModal/SettingModal';
-import {InfoSnackbar} from '../Snackbar/InfoSnackbar';
-import {ActionIcon, Button, Flex, Table, TextInput} from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import { modals } from '@mantine/modals';
+import {ActionIcon, Button, Flex, Skeleton, Table, TextInput} from '@mantine/core';
 import {
     IconDeviceFloppy,
     IconLayoutGridAdd,
     IconPencil,
-    IconPencilCancel
+    IconPencilCancel,
+    IconSettings
 } from "@tabler/icons-react";
 import {ISettingsAdapter} from "../../Adapters/ISettingsAdapter";
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
+import {EmptyState} from "../EmptyState/EmptyState";
 
 interface IProps {
     settingsAdapter: ISettingsAdapter;
     photosAdapter: IPhotosAdapter;
 }
 
-const getAllSettings = async (propsSettingsAdapter: ISettingsAdapter) => {
-  const settingsAdapter = propsSettingsAdapter;
-  const allSettings: Setting[] = await settingsAdapter.getAllSettings();
-  return allSettings;
+const getAllSettings = async (settingsAdapter: ISettingsAdapter) => {
+  return settingsAdapter.getAllSettings();
 };
 
-const handleSaveSettings = async (settings: Setting[], propsSettingsAdapter: ISettingsAdapter) => {
-  const settingsAdapter = propsSettingsAdapter;
+const handleSaveSettings = async (settings: Setting[], settingsAdapter: ISettingsAdapter) => {
   await settingsAdapter.updateSettings(settings);
 };
+
+interface SettingsTableRowProps {
+    setting: Setting;
+    editing: boolean;
+    onChange: (setting: Setting, field: keyof Setting, value: string) => void;
+}
+
+const SettingsTableRow = React.memo(({ setting, editing, onChange }: SettingsTableRowProps) => {
+    if (editing) {
+        return (
+            <Table.Tr key={setting.key}>
+                <Table.Td>{setting.key}</Table.Td>
+                <Table.Td>
+                    <TextInput
+                        value={setting.value}
+                        onChange={event => onChange(setting, 'value', event.target.value)}
+                    />
+                </Table.Td>
+                <Table.Td>
+                    <TextInput
+                        value={setting.friendlyName}
+                        onChange={event => onChange(setting, 'friendlyName', event.target.value)}
+                    />
+                </Table.Td>
+                <Table.Td>
+                    <TextInput
+                        value={setting.category}
+                        onChange={event => onChange(setting, 'category', event.target.value)}
+                    />
+                </Table.Td>
+                <Table.Td>
+                    <TextInput
+                        value={setting.description}
+                        onChange={event => onChange(setting, 'description', event.target.value)}
+                    />
+                </Table.Td>
+            </Table.Tr>
+        );
+    }
+    return (
+        <Table.Tr key={setting.key}>
+            <Table.Td>{setting.key}</Table.Td>
+            <Table.Td>{setting.value}</Table.Td>
+            <Table.Td>{setting.friendlyName}</Table.Td>
+            <Table.Td>{setting.category}</Table.Td>
+            <Table.Td>{setting.description}</Table.Td>
+        </Table.Tr>
+    );
+});
 
 export const SettingsView: React.FunctionComponent<IProps> = (props) => {
 
   const [settings, setSettings] = useState<Setting[]>([]);
   const [editing, setEditing] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [showSnackbar, setShowSnackbar] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async function retrieveAllSettings() {
+  const loadSettings = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
       const retrievedSettings = await getAllSettings(props.settingsAdapter);
       setSettings(retrievedSettings);
-    })();
-  },[setSettings]);
-
-  const handleValueChange = (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>, setting: Setting) => {
-    const i = settings.findIndex(k => k.key === setting.key);
-    settings[i].value = event.target.value;
-  };
-
-  const tableRow = (setting: Setting) => {
-    if (editing) {
-      return (
-        <Table.Tr>
-          <Table.Td>
-            {setting.key}
-          </Table.Td>
-          <Table.Td>
-            <TextInput
-              defaultValue={setting.value}
-              onChange={event => handleValueChange(event, setting)}
-            />
-          </Table.Td>
-          <Table.Td>
-            <TextInput
-              defaultValue={setting.friendlyName}
-              onChange={event => handleValueChange(event, setting)}
-            />
-          </Table.Td>
-          <Table.Td>
-            <TextInput
-              defaultValue={setting.category}
-              onChange={event => handleValueChange(event, setting)}
-            />
-          </Table.Td>
-          <Table.Td>
-            <TextInput
-              defaultValue={setting.description}
-              onChange={event => handleValueChange(event, setting)}
-            />
-          </Table.Td>
-        </Table.Tr>
-      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load settings');
+      setSettings([]);
+    } finally {
+      setLoading(false);
     }
-    return (
-      <Table.Tr>
-        <Table.Td>
-          {setting.key}
-        </Table.Td>
-        <Table.Td>
-          {setting.value}
-        </Table.Td>
-        <Table.Td>
-          {setting.friendlyName}
-        </Table.Td>
-        <Table.Td>
-          {setting.category}
-        </Table.Td>
-        <Table.Td>
-          {setting.description}
-        </Table.Td>
-      </Table.Tr>
-    );
-  };
+  }, [props.settingsAdapter]);
 
-  const resetForm = () => {
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
+
+  const handleValueChange = useCallback((setting: Setting, field: keyof Setting, value: string) => {
+    setSettings(prev => prev.map(s =>
+        s.key === setting.key ? { ...s, [field]: value } : s
+    ));
+  }, []);
+
+  const resetForm = useCallback(async () => {
     setEditing(false);
-    window.location.reload(); // TODO: not very elegant
-  };
+    await loadSettings();
+  }, [loadSettings]);
 
-  const addCancelButton = () => {
-    if (editing) {
-      return (
-        <IconPencilCancel onClick={() => resetForm()} />
-      );
+  const handleSave = useCallback(async () => {
+    try {
+      await handleSaveSettings(settings, props.settingsAdapter);
+      setEditing(false);
+      notifications.show({
+        title: 'Settings saved',
+        message: 'Your settings have been saved successfully',
+        color: 'green',
+      });
+    } catch (e) {
+      notifications.show({
+        title: 'Save failed',
+        message: e instanceof Error ? e.message : 'Failed to save settings',
+        color: 'red',
+      });
     }
-    return (
-      <IconPencil onClick={() => setEditing(true)} />
-    );
-  };
+  }, [settings, props.settingsAdapter]);
 
-  const editingButton = () => {
-    if (editing) {
-      return (
-          <IconDeviceFloppy size="2.125rem"
-              onClick={() => {
-                handleSaveSettings(settings, props.settingsAdapter);
-                setEditing(false);
-                setShowSnackbar(true);
-              }}
-          />
-      );
-    }
-    return (
-        <IconLayoutGridAdd size="2.125rem" onClick={() => setShowModal(true)}/>
-    );
-  };
+  const handleIndex = useCallback(() => {
+    modals.openConfirmModal({
+      title: 'Start photo indexing?',
+      children: 'This will scan your photo directory and may take a while depending on the number of photos.',
+      labels: { confirm: 'Start indexing', cancel: 'Cancel' },
+      confirmProps: { color: 'blue' },
+      onConfirm: async () => {
+        try {
+          await props.photosAdapter.index();
+          notifications.show({
+            title: 'Indexing started',
+            message: 'Photo indexing is running in the background',
+            color: 'blue',
+          });
+        } catch (e) {
+          notifications.show({
+            title: 'Indexing failed',
+            message: e instanceof Error ? e.message : 'Failed to start indexing',
+            color: 'red',
+          });
+        }
+      },
+    });
+  }, [props.photosAdapter]);
 
-  const handleIndex = async () => {
-      return await props.photosAdapter.index();
-  }
-
-  const snackbar = () => {
-      if (showSnackbar) {
-          return(<InfoSnackbar text={'Settings saved'} show={showSnackbar} handleStopShowing={() => setShowSnackbar(false)}/>)
-      }
-  };
-
-  const handleModalSave = (key: string, value: string, friendlyName: string, category: string, description: string) => {
-    const updatedSettings = settings.concat(new Setting(key, value, friendlyName, category, description));
+  const handleModalSave = useCallback((key: string, value: string, friendlyName: string, category: string, description: string) => {
+    const updatedSettings = settings.concat({ key, value, friendlyName, category, description });
     setSettings(updatedSettings);
     setShowModal(false);
-    setShowSnackbar(true);
+    notifications.show({
+      title: 'Setting added',
+      message: `Added ${friendlyName}`,
+      color: 'green',
+    });
     setEditing(true);
-  };
+  }, [settings]);
 
   return (
     <div>
@@ -171,23 +187,50 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
                 </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {settings.map((setting: Setting) => (
-                tableRow(setting)
-              ))}
-            </ Table.Tbody>
+              {loading
+                ? Array.from({ length: 5 }).map((_, i) => (
+                    <Table.Tr key={i}>
+                      {Array.from({ length: 5 }).map((_, j) => (
+                        <Table.Td key={j}>
+                          <Skeleton height={20} radius="sm" />
+                        </Table.Td>
+                      ))}
+                    </Table.Tr>
+                  ))
+                : error && settings.length === 0
+                  ? (
+                    <Table.Tr>
+                      <Table.Td colSpan={5}>
+                        <EmptyState
+                          title="No settings available"
+                          description="Settings could not be loaded. Check your connection and try again."
+                          icon={<IconSettings size="2rem" />}
+                          action={{ label: 'Retry', onClick: loadSettings }}
+                        />
+                      </Table.Td>
+                    </Table.Tr>
+                  )
+                  : settings.map((setting: Setting) => (
+                    <SettingsTableRow
+                        key={setting.key}
+                        setting={setting}
+                        editing={editing}
+                        onChange={handleValueChange}
+                    />
+                  ))}
+            </Table.Tbody>
           </Table>
         <Flex direction="row" style={{width: "100%", justifyContent: "right"}}>
-            <ActionIcon color="dark" size="xl" m={"1rem"}>
-              {addCancelButton()}
+            <ActionIcon variant="subtle" size="xl" m={"1rem"} onClick={editing ? resetForm : () => setEditing(true)}>
+              {editing ? <IconPencilCancel size="1.5rem" /> : <IconPencil size="1.5rem" />}
             </ActionIcon>
-            <ActionIcon color="dark" size="xl" m={"1rem"}>
-              {editingButton()}
+            <ActionIcon variant="subtle" size="xl" m={"1rem"} onClick={editing ? handleSave : () => setShowModal(true)}>
+              {editing ? <IconDeviceFloppy size="1.5rem" /> : <IconLayoutGridAdd size="1.5rem"/>}
             </ActionIcon>
         </Flex>
-        <Button onClick={() => handleIndex()}>
+        <Button onClick={handleIndex}>
             Index
         </Button>
-        {snackbar()}
     </div>
   );
 };

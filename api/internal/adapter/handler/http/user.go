@@ -66,8 +66,8 @@ func (uh *UserHandler) Register(ctx *gin.Context) {
 
 // listUsersRequest represents the request body for listing users
 type listUsersRequest struct {
-	Skip  int `form:"skip" binding:"required,min=0" example:"0"`
-	Limit int `form:"limit" binding:"required,min=5" example:"5"`
+	Skip  int `form:"skip" binding:"omitempty,min=0" example:"0"`
+	Limit int `form:"limit" binding:"omitempty,min=5,max=500" example:"100"`
 }
 
 // ListUsers godoc
@@ -91,6 +91,10 @@ func (uh *UserHandler) ListUsers(ctx *gin.Context) {
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		validationError(ctx, err)
 		return
+	}
+
+	if req.Limit == 0 {
+		req.Limit = 100
 	}
 
 	users, err := uh.svc.ListUsers(req.Skip, req.Limit)
@@ -152,7 +156,7 @@ type updateUserRequest struct {
 	Username string          `json:"username" binding:"omitempty,required" example:"John Doe"`
 	Email    string          `json:"email" binding:"omitempty,required,email" example:"test@example.com"`
 	Password string          `json:"password" binding:"omitempty,required,min=8" example:"12345678"`
-	Role     domain.UserRole `json:"role" binding:"omitempty,required,user_role" example:"admin"`
+	Role     domain.UserRole `json:"role" binding:"omitempty,required,oneof=administrator viewer contributor" example:"admin"`
 }
 
 // UpdateUser godoc

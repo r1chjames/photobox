@@ -3,9 +3,10 @@ package http
 import (
 	"bytes"
 	"encoding/json"
-	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
-	"log"
+	"log/slog"
 	"net/http"
+
+	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"net/http/httptest"
 )
 
@@ -14,7 +15,8 @@ func PerformRequest(r http.Handler, method, path string, queryParams map[string]
 	if body != nil {
 		payload, err := json.Marshal(&body)
 		if err != nil {
-			log.Fatalf("unable to marshall JSON body payload, %s", err)
+			slog.Error("Unable to marshal JSON body payload", "error", err)
+			panic(err)
 		}
 		bodyPayload := bytes.NewBuffer(payload)
 		req, _ = http.NewRequest(method, path, bodyPayload)

@@ -1,50 +1,195 @@
-import React, {useEffect, useState} from 'react';
-import {Photo} from '../../Models/Photo';
-import {useDisclosure} from '@mantine/hooks';
-import {Button, Dialog, Group, Image, Loader, ScrollArea, Table} from '@mantine/core';
-import {valueType} from "../../utils/TypeUtils.js";
+import React, {useCallback, useEffect, useState} from 'react';
+import {useDisclosure, useHotkeys} from '@mantine/hooks';
+import {ActionIcon, Button, Chip, Dialog, Drawer, Group, Image, Loader, Modal, ScrollArea, Table, TextInput} from '@mantine/core';
+import {useMediaQuery} from '@mantine/hooks';
+import {IconArrowLeftDashed, IconArrowRightDashed, IconDownload, IconHeart, IconHeartFilled, IconListDetails, IconRotateClockwise, IconShare2, IconTag} from '@tabler/icons-react';
+import {valueType} from "../../utils/TypeUtils";
 import {IPhotosAdapter} from '../../Adapters/IPhotosAdapter';
-import {useParams} from "react-router-dom";
-import {fetchPhotoBinWithAuth} from "../../utils/ImageUtils";
+import {ISharesAdapter} from '../../Adapters/ISharesAdapter';
+import {ShareModal} from '../ShareModal/ShareModal';
+import {useNavigate, useParams} from "react-router-dom";
+import {fetchPhotoBinWithAuth, revokeBlobUrl} from "../../utils/ImageUtils";
+import {useQuery, useQueryClient} from "@tanstack/react-query";
+import {notifications} from '@mantine/notifications';
+import {optimisticallyUpdatePhoto} from '../../utils/queryClientHelpers';
 
 interface IProps {
     photosAdapter: IPhotosAdapter;
+    sharesAdapter?: ISharesAdapter;
 }
 
 export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
     const {id} = useParams();
-    const [photo, setPhoto] = useState<Photo>();
-    const [photoUrl, setPhotoUrl] = useState<string>();
+    const navigate = useNavigate();
     const [opened, {toggle, close}] = useDisclosure(true);
-    const img: React.Ref<HTMLImageElement> = React.createRef();
+    const [isFavorite, setIsFavorite] = useState(false);
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [showTagModal, setShowTagModal] = useState(false);
+    const [tagInput, setTagInput] = useState('');
+    const isMobile = useMediaQuery('(max-width: 50em)');
+    const queryClient = useQueryClient();
 
-    const fetchPhoto = async (id: string) => {
-        const photo = await props.photosAdapter.getPhotoInfoById(id);
-        setPhoto(photo);
+    // Fetch surrounding photos to determine prev/next navigation
+    const {data: allPhotos} = useQuery({
+        queryKey: ['allPhotosForNavigation'],
+        queryFn: () => props.photosAdapter.getAllPhotosInfo('', 1000, false),
+        staleTime: 1000 * 60 * 5,
+    });
+
+    const currentIndex = allPhotos?.findIndex(p => p.id === id) ?? -1;
+    const prevPhotoId = currentIndex > 0 ? allPhotos![currentIndex - 1].id : null;
+    const nextPhotoId = currentIndex >= 0 && currentIndex < (allPhotos?.length ?? 0) - 1 ? allPhotos![currentIndex + 1].id : null;
+    const isFirstPhoto = currentIndex <= 0;
+    const isLastPhoto = currentIndex >= (allPhotos?.length ?? 0) - 1 || currentIndex === -1;
+
+    const navigateToPhoto = useCallback((photoId: string | null) => {
+        if (photoId) {
+            navigate(`/photo/${photoId}`);
+        }
+    }, [navigate]);
+
+    const handlePrevious = useCallback(() => navigateToPhoto(prevPhotoId), [navigateToPhoto, prevPhotoId]);
+    const handleNext = useCallback(() => navigateToPhoto(nextPhotoId), [navigateToPhoto, nextPhotoId]);
+
+    useHotkeys([
+        ['ArrowLeft', handlePrevious],
+        ['ArrowRight', handleNext],
+    ]);
+
+    const fetchPhoto = async () => {
+        return props.photosAdapter.getPhotoInfoById(id!);
     }
 
-    const fetchPhotoBin = async (id: string) => {
-        const fetchedPhotoUrl = await fetchPhotoBinWithAuth(props.photosAdapter, id);
-        setPhotoUrl(fetchedPhotoUrl);
+    const fetchPhotoBin = async () => {
+        return fetchPhotoBinWithAuth(props.photosAdapter, id!);
     }
+
+    const {data: photo} = useQuery({
+        queryKey: ['fetchPhoto', id],
+        queryFn: fetchPhoto,
+        enabled: !!id,
+    });
+
+    const {data: photoUrl} = useQuery({
+        queryKey: ['fetchPhotoBin', id],
+        queryFn: fetchPhotoBin,
+        enabled: !!id,
+    });
 
     useEffect(() => {
-        if (id !== undefined) {
-            fetchPhoto(id);
-            fetchPhotoBin(id);
+        if (photo) {
+            setIsFavorite(photo.favorite ?? false);
         }
-    }, []);
+    }, [photo]);
+
+    const handleDownload = useCallback(async () => {
+        if (!photo) return;
+        try {
+            await props.photosAdapter.downloadPhoto(photo.id, photo.name);
+            notifications.show({
+                title: 'Download started',
+                message: `Downloading ${photo.name}`,
+                color: 'blue',
+            });
+        } catch (e) {
+            notifications.show({
+                title: 'Download failed',
+                message: e instanceof Error ? e.message : 'Failed to download photo',
+                color: 'red',
+            });
+        }
+    }, [props.photosAdapter, photo]);
+
+    const handleFavorite = useCallback(async () => {
+        if (!photo) return;
+        const newFavorite = !isFavorite;
+        try {
+            await props.photosAdapter.favoritePhoto(photo.id, newFavorite);
+            setIsFavorite(newFavorite);
+            optimisticallyUpdatePhoto(queryClient, photo.id, { favorite: newFavorite });
+            notifications.show({
+                title: newFavorite ? 'Added to favorites' : 'Removed from favorites',
+                message: newFavorite ? 'Photo added to your favorites' : 'Photo removed from your favorites',
+                color: 'pink',
+            });
+        } catch (e) {
+            notifications.show({
+                title: 'Failed to update favorite',
+                message: e instanceof Error ? e.message : 'An error occurred',
+                color: 'red',
+            });
+        }
+    }, [props.photosAdapter, photo, isFavorite, queryClient]);
+
+    const handleRotate = useCallback(async (direction: 'cw' | 'ccw') => {
+        if (!photo) return;
+        try {
+            await props.photosAdapter.rotatePhoto(photo.id, direction);
+            notifications.show({
+                title: 'Photo rotated',
+                message: `Rotated ${direction === 'cw' ? 'clockwise' : 'counter-clockwise'}`,
+                color: 'green',
+            });
+        } catch (e) {
+            notifications.show({
+                title: 'Rotation failed',
+                message: e instanceof Error ? e.message : 'An error occurred',
+                color: 'red',
+            });
+        }
+    }, [props.photosAdapter, photo]);
+
+    const handleSaveTags = useCallback(async () => {
+        if (!photo) return;
+        const tags = tagInput.split(',').map(t => t.trim()).filter(Boolean);
+        try {
+            await props.photosAdapter.updatePhotoTags(photo.id, tags);
+            notifications.show({
+                title: 'Tags updated',
+                message: `Updated tags for ${photo.name}`,
+                color: 'green',
+            });
+            setShowTagModal(false);
+        } catch (e) {
+            notifications.show({
+                title: 'Failed to update tags',
+                message: e instanceof Error ? e.message : 'An error occurred',
+                color: 'red',
+            });
+        }
+    }, [props.photosAdapter, photo, tagInput]);
+
+    useEffect(() => {
+        if (photo) {
+            setTagInput(photo.tags || '');
+        }
+    }, [photo]);
+
+    const blobUrlRef = React.useRef<string | undefined>(undefined);
+
+    useEffect(() => {
+        if (photoUrl && typeof photoUrl === 'string' && photoUrl.startsWith('blob:')) {
+            blobUrlRef.current = photoUrl;
+        }
+        return () => {
+            revokeBlobUrl(blobUrlRef.current);
+            blobUrlRef.current = undefined;
+        };
+    }, [photoUrl]);
 
     const tableRow = (key: string, value: string) =>
-        <Table.Tr>
+        <Table.Tr key={key}>
             <Table.Td>{key}</Table.Td>
             <Table.Td>{value}</Table.Td>
         </Table.Tr>
 
-    const buildRows = (metadata: Record<string, any>) => {
+    const buildRows = (metadata: Record<string, any>): React.ReactNode => {
+        if (!metadata) {
+            return null;
+        }
         return Object.entries(metadata)
-            .filter(([key, value]) => (typeof value !== 'undefined') && (![...Array(100).keys()].map(v => v.toString()).includes(key)) && (value !== ""))
-            .map(([key, value]) => {
+            .filter(([key, value]) => (value !== undefined) && (![...Array(100).keys()].map(v => v.toString()).includes(key)) && (value !== ""))
+            .map(([key, value]): React.ReactNode => {
                 switch (valueType(value)) {
                     case ('json'):
                         return buildRows(JSON.parse(value));
@@ -53,7 +198,7 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                     case ('string'):
                         return tableRow(key, value);
                     default:
-                        return;
+                        return null;
                 }
             })
     };
@@ -61,35 +206,154 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
     return (
         photo && photoUrl ?
             <>
-                <Image
-                    radius={"md"}
-                    ref={img}
-                    // mah="100"
-                    mah="600px"
-                    // maw={"100%"}
-                    fit="scale-down"
-                    src={photoUrl}
-                />
-                <Group justify="center">
-                    <Button onClick={toggle} mt={50}>Metadata</Button>
+                <div style={{ position: 'relative' }}>
+                    {photo.mediaType === 'video' ? (
+                        <video
+                            src={photoUrl}
+                            controls
+                            style={{ maxHeight: '600px', width: '100%', borderRadius: '8px' }}
+                        />
+                    ) : (
+                        <Image
+                            radius={"md"}
+                            mah="600px"
+                            fit="scale-down"
+                            src={photoUrl}
+                        />
+                    )}
+                    {!isFirstPhoto && (
+                        <ActionIcon
+                            variant="light"
+                            size="xl"
+                            onClick={handlePrevious}
+                            aria-label="Previous photo"
+                            style={{
+                                position: 'absolute',
+                                left: 8,
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                zIndex: 10,
+                            }}
+                        >
+                            <IconArrowLeftDashed size="2.125rem" />
+                        </ActionIcon>
+                    )}
+                    {!isLastPhoto && (
+                        <ActionIcon
+                            variant="light"
+                            size="xl"
+                            onClick={handleNext}
+                            aria-label="Next photo"
+                            style={{
+                                position: 'absolute',
+                                right: 8,
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                zIndex: 10,
+                            }}
+                        >
+                            <IconArrowRightDashed size="2.125rem" />
+                        </ActionIcon>
+                    )}
+                </div>
+                <Group justify="center" mt="md" gap="md">
+                    <Button onClick={handleFavorite} leftSection={isFavorite ? <IconHeartFilled size={16} /> : <IconHeart size={16} />} color={isFavorite ? 'pink' : undefined}>
+                        {isFavorite ? 'Favorited' : 'Favorite'}
+                    </Button>
+                    {props.sharesAdapter && (
+                        <Button onClick={() => setShowShareModal(true)} leftSection={<IconShare2 size={16} />} variant="light">
+                            Share
+                        </Button>
+                    )}
+                    <Button onClick={() => handleRotate('cw')} leftSection={<IconRotateClockwise size={16} />} variant="light">
+                        Rotate
+                    </Button>
+                    <Button onClick={handleDownload} leftSection={<IconDownload size={16} />}>Download</Button>
+                    <Button onClick={toggle} leftSection={<IconListDetails size={16} />} variant="light">Metadata</Button>
                 </Group>
-                <Dialog opened={opened} withCloseButton onClose={close} size="lg" radius="md" mah="50%"
-                        position={{top: "30%", right: 50, bottom: 50}}>
-                    <ScrollArea h={400}>
-                        <Table>
-                            <Table.Thead>
-                                <Table.Tr>
-                                    <Table.Th>Parameter</Table.Th>
-                                    <Table.Th>Value</Table.Th>
-                                </Table.Tr>
-                            </Table.Thead>
-                            <Table.Tbody>
-                                {buildRows(photo.metadata)}
-                            </Table.Tbody>
-                        </Table>
-                    </ScrollArea>
-                </Dialog>
+                {isMobile ? (
+                    <Drawer opened={opened} onClose={close} title="Metadata" position="bottom" size="md">
+                        <ScrollArea>
+                            <Group gap="xs" mb="sm">
+                                <Button size="compact-sm" variant="light" leftSection={<IconTag size={14} />} onClick={() => setShowTagModal(true)}>Edit tags</Button>
+                            </Group>
+                            {photo.tags && (
+                                <Group gap="xs" mb="sm">
+                                    {photo.tags.split(',').map(t => t.trim()).filter(Boolean).map(tag => (
+                                        <Chip key={tag} size="xs" checked={false} onClick={() => {}}>{tag}</Chip>
+                                    ))}
+                                </Group>
+                            )}
+                            <Table>
+                                <Table.Thead>
+                                    <Table.Tr>
+                                        <Table.Th>Parameter</Table.Th>
+                                        <Table.Th>Value</Table.Th>
+                                    </Table.Tr>
+                                </Table.Thead>
+                                <Table.Tbody>
+                                    {photo.metadata && buildRows(photo.metadata)}
+                                </Table.Tbody>
+                            </Table>
+                        </ScrollArea>
+                    </Drawer>
+                ) : (
+                    <Dialog opened={opened} withCloseButton onClose={close} size="lg" radius="md" mah="50%"
+                            position={{top: "30%", right: 50, bottom: 50}}>
+                        <ScrollArea h={400}>
+                            <Group gap="xs" mb="sm">
+                                <Button size="compact-sm" variant="light" leftSection={<IconTag size={14} />} onClick={() => setShowTagModal(true)}>Edit tags</Button>
+                            </Group>
+                            {photo.tags && (
+                                <Group gap="xs" mb="sm">
+                                    {photo.tags.split(',').map(t => t.trim()).filter(Boolean).map(tag => (
+                                        <Chip key={tag} size="xs" checked={false} onClick={() => {}}>{tag}</Chip>
+                                    ))}
+                                </Group>
+                            )}
+                            <Table>
+                                <Table.Thead>
+                                    <Table.Tr>
+                                        <Table.Th>Parameter</Table.Th>
+                                        <Table.Th>Value</Table.Th>
+                                    </Table.Tr>
+                                </Table.Thead>
+                                <Table.Tbody>
+                                    {photo.metadata && buildRows(photo.metadata)}
+                                </Table.Tbody>
+                            </Table>
+                        </ScrollArea>
+                    </Dialog>
+                )}
+                {props.sharesAdapter && photo && (
+                    <ShareModal
+                        opened={showShareModal}
+                        onClose={() => setShowShareModal(false)}
+                        resourceType="photo"
+                        resourceId={photo.id}
+                        resourceName={photo.name}
+                        sharesAdapter={props.sharesAdapter}
+                    />
+                )}
+                <Modal
+                    opened={showTagModal}
+                    onClose={() => setShowTagModal(false)}
+                    title="Edit tags"
+                    size="sm"
+                >
+                    <TextInput
+                        placeholder="Enter tags separated by commas"
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.currentTarget.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTags(); }}
+                        autoFocus
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+                        <Button variant="default" onClick={() => setShowTagModal(false)}>Cancel</Button>
+                        <Button onClick={handleSaveTags}>Save tags</Button>
+                    </div>
+                </Modal>
             </>
             : <Loader size={"md"}/>
     );
-}
+};

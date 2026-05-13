@@ -1,25 +1,29 @@
 package repository
 
 import (
-	. "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
+	db "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gorm.io/gorm/clause"
 )
 
 type UtilityRepository struct {
-	dbEnv *Env
+	dbEnv *db.Env
 }
 
-func NewUtilityRepository(dbEnv *Env) *UtilityRepository {
+func NewUtilityRepository(dbEnv *db.Env) *UtilityRepository {
 	return &UtilityRepository{
 		dbEnv,
 	}
 }
 
+func (ur *UtilityRepository) Ping() error {
+	return ur.dbEnv.Ping()
+}
+
 func (ur *UtilityRepository) GetAllSettings() ([]*domain.Setting, error) {
 	var setting []*domain.Setting
 	result := ur.dbEnv.Db.Find(&setting)
-	err := HandleError(result)
+	err := db.HandleError(result)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +34,7 @@ func (ur *UtilityRepository) GetSetting(key string) (*domain.Setting, error) {
 	var setting domain.Setting
 	setting.Key = key
 	result := ur.dbEnv.Db.Find(&setting)
-	err := HandleError(result)
+	err := db.HandleError(result)
 	if err != nil {
 		return nil, err
 	}
@@ -97,8 +101,6 @@ func (ur *UtilityRepository) CreateBaseSettings(reset bool) error {
 	}
 	if reset {
 		return ur.UpdateAllSettings(settings)
-	} else {
-		return ur.overwriteAllSettings(settings)
 	}
-	return nil
+	return ur.overwriteAllSettings(settings)
 }

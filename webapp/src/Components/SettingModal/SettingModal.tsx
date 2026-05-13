@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import './SettingModal.css';
 import { InputModal } from '../InputModal/InputModal';
 import {TextInput} from '@mantine/core';
 

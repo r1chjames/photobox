@@ -1,7 +1,9 @@
 package http
 
 import (
+	b64 "encoding/base64"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
@@ -16,12 +18,41 @@ type response struct {
 	Data    any    `json:"data,omitempty"`
 }
 
+type paginationMetadata struct {
+	FromId   string `json:"fromId" example:"1"`
+	ToId     string `json:"toId" example:"1"`
+	Count    int    `json:"count" example:"1"`
+	NextPage string `json:"nextPage" example:"1"`
+}
+
+type pageableResponse struct {
+	Success  bool               `json:"success" example:"true"`
+	Message  string             `json:"message" example:"Success"`
+	Data     any                `json:"data,omitempty"`
+	Metadata paginationMetadata `json:"metadata,omitempty"`
+}
+
 // newResponse is a helper function to create a response body
 func newResponse(success bool, message string, data any) response {
 	return response{
 		Success: success,
 		Message: message,
 		Data:    data,
+	}
+}
+
+// newResponse is a helper function to create a response body
+func newPageableResponse(success bool, message string, data any, fromId string, toId string, count int, nextPage string) pageableResponse {
+	return pageableResponse{
+		Success: success,
+		Message: message,
+		Data:    data,
+		Metadata: paginationMetadata{
+			FromId:   b64.StdEncoding.EncodeToString([]byte(fromId)),
+			ToId:     b64.StdEncoding.EncodeToString([]byte(toId)),
+			Count:    count,
+			NextPage: fmt.Sprintf(nextPage, b64.StdEncoding.EncodeToString([]byte(fromId))),
+		},
 	}
 }
 
@@ -58,6 +89,7 @@ type userResponse struct {
 	ID        string    `json:"id" example:"b8d44111-bb92-4013-899f-a4fb9f9436bb"`
 	Username  string    `json:"name" example:"John Doe"`
 	Email     string    `json:"email" example:"test@example.com"`
+	Role      string    `json:"role" example:"viewer"`
 	CreatedAt time.Time `json:"created_at" example:"1970-01-01T00:00:00Z"`
 	UpdatedAt time.Time `json:"updated_at" example:"1970-01-01T00:00:00Z"`
 }
@@ -68,6 +100,7 @@ func newUserResponse(user *domain.User) userResponse {
 		ID:        user.ID,
 		Username:  user.Username,
 		Email:     user.Email,
+		Role:      string(user.Role),
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 	}
@@ -86,6 +119,7 @@ var errorStatusMap = map[error]int{
 	domain.ErrExpiredToken:               http.StatusUnauthorized,
 	domain.ErrForbidden:                  http.StatusForbidden,
 	domain.ErrNoUpdatedData:              http.StatusBadRequest,
+	domain.ErrJobAlreadyRunning:          http.StatusConflict,
 }
 
 // validationError sends an error response for some specific request validation error
@@ -101,9 +135,10 @@ func handleError(ctx *gin.Context, err error) {
 		return
 	}
 
-	if errors.Is(err, domain.ErrDataNotFound) {
-		return
-	}
+    if errors.Is(err, domain.ErrDataNotFound) {
+        ctx.JSON(http.StatusNotFound, newErrorResponse([]string{err.Error()}))
+        return
+    }
 	statusCode, ok := errorStatusMap[err]
 	if !ok {
 		statusCode = http.StatusInternalServerError
@@ -158,5 +193,11 @@ func newErrorResponse(errMsgs []string) errorResponse {
 // handleSuccess sends a success response with the specified status code and optional data
 func handleSuccess(ctx *gin.Context, data any) {
 	rsp := newResponse(true, "Success", data)
+	ctx.JSON(http.StatusOK, rsp)
+}
+
+// handleSuccess sends a success response with the specified status code and optional data
+func handlePaginatedSuccess(ctx *gin.Context, data any, fromId string, toId string, count int, nextPage string) {
+	rsp := newPageableResponse(true, "Success", data, fromId, toId, count, nextPage)
 	ctx.JSON(http.StatusOK, rsp)
 }

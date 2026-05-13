@@ -2,22 +2,34 @@ package appconfig
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
 	"gitlab.com/r1chjames/photobox/api/internal/core/utils"
 	"strconv"
+	"strings"
 	"time"
 )
 
 type AppConfig struct {
-	PhotoDir      string
-	ApiBasePath   string
-	DbUrl         string
-	ResetSettings bool
-	DebugMode     bool
-	Timezone      *time.Location
-	Token         string
-	TokenDuration time.Duration
-	AdminUsername string
-	AdminPassword string
+	PhotoDir           string
+	ApiBasePath        string
+	DbUrl              string
+	ResetSettings      bool
+	DebugMode          bool
+	Timezone           *time.Location
+	Token              string
+	TokenDuration      time.Duration
+	AdminUsername      string
+	AdminPassword      string
+	CorsAllowedOrigins []string
+	CacheHost          string
+	CachePort          string
+	CachePassword      string
+	CacheEnabled       bool
+	CacheDB            int
+	AIEnabled          bool
+	OllamaHost         string
+	OllamaModel        string
 }
 
 func New() *AppConfig {
@@ -36,18 +48,47 @@ func New() *AppConfig {
 	tokenDuration, _ := time.ParseDuration(utils.GetEnv("TOKEN_DURATION", "1h"))
 
 	adminUsername := utils.GetEnv("DEFAULT_ADMIN_USERNAME", "admin")
-	adminPassword := utils.GetEnv("DEFAULT_ADMIN_PASSWORD", "password")
+	adminPassword := utils.GetEnv("DEFAULT_ADMIN_PASSWORD", "")
+	if adminPassword == "" {
+		slog.Error("DEFAULT_ADMIN_PASSWORD environment variable must be set")
+		os.Exit(1)
+	}
+
+	// Parse CORS allowed origins - comma-separated list
+	corsOriginsStr := utils.GetEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")
+	var corsOrigins []string
+	if corsOriginsStr != "" {
+		corsOrigins = strings.Split(corsOriginsStr, ",")
+		// Trim whitespace from each origin
+		for i, origin := range corsOrigins {
+			corsOrigins[i] = strings.TrimSpace(origin)
+		}
+	}
+
+	cacheEnabled, _ := strconv.ParseBool(utils.GetEnv("CACHE_ENABLED", "false"))
+	cacheDB, _ := strconv.Atoi(utils.GetEnv("CACHE_DB", "0"))
+
+	aiEnabled, _ := strconv.ParseBool(utils.GetEnv("AI_ENABLED", "false"))
 
 	return &AppConfig{
-		PhotoDir:      utils.GetEnv("PHOTO_DIR", "/photos"),
-		ApiBasePath:   utils.GetEnv("API_BASE_PATH", "/api"),
-		DbUrl:         dbURL,
-		ResetSettings: resetSettings,
-		DebugMode:     debugMode,
-		Timezone:      timezone,
-		Token:         token,
-		TokenDuration: tokenDuration,
-		AdminUsername: adminUsername,
-		AdminPassword: adminPassword,
+		PhotoDir:           utils.GetEnv("PHOTO_DIR", "/photos"),
+		ApiBasePath:        utils.GetEnv("API_BASE_PATH", "/api"),
+		DbUrl:              dbURL,
+		ResetSettings:      resetSettings,
+		DebugMode:          debugMode,
+		Timezone:           timezone,
+		Token:              token,
+		TokenDuration:      tokenDuration,
+		AdminUsername:      adminUsername,
+		AdminPassword:      adminPassword,
+		CorsAllowedOrigins: corsOrigins,
+		CacheHost:          utils.GetEnv("CACHE_HOST", "localhost"),
+		CachePort:          utils.GetEnv("CACHE_PORT", "6379"),
+		CachePassword:      utils.GetEnv("CACHE_PASSWORD", "-"),
+		CacheEnabled:       cacheEnabled,
+		CacheDB:            cacheDB,
+		AIEnabled:          aiEnabled,
+		OllamaHost:         utils.GetEnv("OLLAMA_HOST", "http://localhost:11434"),
+		OllamaModel:        utils.GetEnv("OLLAMA_MODEL", "moondream"),
 	}
 }

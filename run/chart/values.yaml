@@ -1,104 +1,150 @@
 # Default values for photobox.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
 
-replicaCount: 1
+nameOverride: ""
+fullnameOverride: ""
 
-image:
-  repository: registry.gitlab.com/r1chjames/photobox
-  tag: latest
-  pullPolicy: Always
-
-imagePullSecrets:
-  - name: gitlab-login
-nameOverride: "photobox"
-fullnameOverride: "photobox"
-
-service:
-  type: LoadBalancer
-  loadBalancerIP: 192.168.1.255
-  port: 8080
-
-env:
-  DB_HOST: photobox-mysql
-  DB_USER: photobox_usr
-  DB_PASSWORD: password
-  DB_NAME: photobox_db
-  PHOTO_DIR: /photos
-  API_BASE_PATH: /api
-
-hostMounts:
-  - name: photos
-    hostPath: /home/rich/Pictures
-    mountPath: /photos
+imagePullSecrets: []
 
 serviceAccount:
   create: true
+  annotations: {}
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
 
-persistence:
-  enabled: false
+# Node scheduling
+nodeSelector: {}
+tolerations: []
+affinity: {}
 
+# ---------------------------------------------------------
+# Ingress
+# ---------------------------------------------------------
 ingress:
   enabled: false
-  annotations:
+  className: ""
+  annotations: {}
   hosts:
-    - host: ""
+    - host: photobox.local
       paths:
-        - 
+        - path: /
+          pathType: Prefix
+  tls: []
 
-resources:
-  limits:
-    cpu: "100m"
-    memory: "128Mi"
-  requests:
-    cpu: "50m"
-    memory: "64Mi"
+# ---------------------------------------------------------
+# Shared Persistence (Photos)
+# ---------------------------------------------------------
+persistence:
+  enabled: false
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 10Gi
+  # If set, uses a hostPath volume instead of a PVC.
+  hostPath: ""
 
-mysql:
+# ---------------------------------------------------------
+# API (Go backend)
+# ---------------------------------------------------------
+api:
   enabled: true
-  initdbScripts:
-    photobox.sql: |
-      CREATE DATABASE photobox_db;
-      CREATE USER 'photobox_usr'@'%' IDENTIFIED BY 'password';
-      GRANT USAGE ON *.* TO 'photobox_usr'@'%';
-      GRANT ALL privileges ON photobox_db.* TO 'photobox_usr'@'%';
-      USE photobox_db;
-      CREATE TABLE albums (
-          id                      VARCHAR(36) PRIMARY KEY,
-          name                    VARCHAR(255) NOT NULL,
-          description             VARCHAR(255),
-          tags                    VARCHAR(255),
-          metadata                JSON
-      );
-      CREATE TABLE photos (
-          id                      VARCHAR(100) PRIMARY KEY,
-          name                    VARCHAR(255) NOT NULL,
-          filesystemPath          VARCHAR(255) NOT NULL,
-          albumId                 VARCHAR(36) NOT NULL,
-          tags                    VARCHAR(255),
-          metadata                JSON,
+  replicaCount: 1
+  image:
+    # Update to your published API image
+    repository: photobox-api
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8080
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  env:
+    DB_PORT: "5432"
+    DB_USER: photobox
+    DB_NAME: photobox
+    PHOTO_DIR: /photos
+    API_BASE_PATH: /api
+    AI_ENABLED: "true"
+    OLLAMA_MODEL: moondream
+    # If empty, defaults to the internal Ollama service when ollama.enabled is true
+    OLLAMA_HOST: ""
+    DEFAULT_ADMIN_USERNAME: admin
+    CORS_ALLOWED_ORIGINS: ""
+    TOKEN_DURATION: 24h
+    CACHE_ENABLED: "false"
+  # Secrets for the API. If existingSecret is set, a secret will not be created.
+  existingSecret: ""
+  secrets:
+    # Must match database.postgresql.auth.password when database.enabled is true
+    dbPassword: photobox
+    token: change-me
+    adminPassword: admin
 
-          FOREIGN KEY (albumId) REFERENCES albums(id)
-      );
-      CREATE TABLE settings (
-          setting                 VARCHAR(255) NOT NULL,
-          value                   VARCHAR(255) NOT NULL
-      );
-      CREATE TABLE jobs (
-          job                     VARCHAR(255) NOT NULL,
-          running                 BOOLEAN,
-          lastRun                 VARCHAR(50)
-      );
-      INSERT INTO jobs VALUES ('Photo_index', false, null);
-      INSERT INTO settings VALUES ('api_base_path', '/api');
+# ---------------------------------------------------------
+# Webapp (React frontend)
+# ---------------------------------------------------------
+webapp:
+  enabled: true
+  replicaCount: 1
+  image:
+    # Update to your published webapp image
+    repository: photobox-webapp
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+    loadBalancerIP: ""
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
 
-  replication:
+# ---------------------------------------------------------
+# Ollama (AI runtime)
+# ---------------------------------------------------------
+ollama:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ollama/ollama
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 11434
+  resources: {}
+  persistence:
     enabled: false
-  master:
-    readinessProbe:
-      enabled: false
-  slave:
-    replicas: 0
-  root:
-    password: password
-    forcePassword: true
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 10Gi
+
+# ---------------------------------------------------------
+# Database
+# ---------------------------------------------------------
+# When enabled, deploys a Bitnami PostgreSQL subchart.
+# When disabled, set database.host and api.secrets.dbPassword
+# (and matching api.env.DB_* values) to point to an external database.
+database:
+  enabled: true
+  # If disabled, set this to your external DB host.
+  host: ""
+  postgresql:
+    auth:
+      database: photobox
+      username: photobox
+      password: photobox
+      postgresPassword: photobox
+    primary:
+      persistence:
+        enabled: true
+        storageClass: ""
+        size: 10Gi

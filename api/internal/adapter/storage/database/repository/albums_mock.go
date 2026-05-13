@@ -1,14 +1,14 @@
 package repository
 
 import (
-	. "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
+	db "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gorm.io/datatypes"
 	"time"
 )
 
 type AlbumRepositoryMock struct {
-	dbEnv *Env
+	dbEnv *db.Env
 }
 
 func NewAlbumRepositoryMock() *AlbumRepositoryMock {
@@ -24,7 +24,7 @@ func (ar *AlbumRepositoryMock) GetAlbumById(id string) (*domain.Album, error) {
 		Metadata:    make(datatypes.JSON, 0),
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
-		Thumnail:    "tn",
+		Thumbnail:   "tn",
 	}
 	return &album, nil
 }
@@ -38,7 +38,7 @@ func (ar *AlbumRepositoryMock) GetAlbumByName(name string) (*domain.Album, error
 		Metadata:    make(datatypes.JSON, 0),
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
-		Thumnail:    "tn",
+		Thumbnail:   "tn",
 	}
 	return &album, nil
 }
@@ -52,7 +52,7 @@ func (ar *AlbumRepositoryMock) CreateAlbum(name string) (*domain.Album, error) {
 		Metadata:    make(datatypes.JSON, 0),
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
-		Thumnail:    "tn",
+		Thumbnail:   "tn",
 	}
 	return &album, nil
 }
@@ -66,12 +66,12 @@ func (ar *AlbumRepositoryMock) CreateAlbumIfNotExists(name string) (*domain.Albu
 		Metadata:    make(datatypes.JSON, 0),
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
-		Thumnail:    "tn",
+		Thumbnail:   "tn",
 	}
 	return &album, nil
 }
 
-func (ar *AlbumRepositoryMock) ListAllAlbums(page int, limit int) ([]*domain.Album, error) {
+func (ar *AlbumRepositoryMock) ListAllAlbums(fromId string, pageSize int) ([]*domain.Album, error) {
 	return []*domain.Album{
 		{
 			ID:          "id1",
@@ -81,7 +81,7 @@ func (ar *AlbumRepositoryMock) ListAllAlbums(page int, limit int) ([]*domain.Alb
 			Metadata:    make(datatypes.JSON, 0),
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
-			Thumnail:    "tn",
+			Thumbnail:   "tn",
 		},
 		{
 			ID:          "id2",
@@ -91,7 +91,7 @@ func (ar *AlbumRepositoryMock) ListAllAlbums(page int, limit int) ([]*domain.Alb
 			Metadata:    make(datatypes.JSON, 0),
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
-			Thumnail:    "tn",
+			Thumbnail:   "tn",
 		},
 	}, nil
 }

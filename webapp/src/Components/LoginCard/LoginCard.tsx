@@ -17,11 +17,14 @@ import {
     Title
 } from '@mantine/core';
 import {getHotkeyHandler, useInputState} from "@mantine/hooks";
-import {IconAlertTriangle, IconCheck, IconX} from '@tabler/icons-react';
+import {useState} from 'react';
+import {IconCheck, IconX} from '@tabler/icons-react';
 import {IUsersAdapter} from "../../Adapters/IUsersAdapter";
-import {User} from "../../Models/User";
+import {notifications} from '@mantine/notifications';
+
 import classes = Combobox.classes;
 import {useNavigate} from "react-router-dom";
+import {useAuth} from "../../Routing/AuthContext";
 
 interface IProps {
     usersAdapter: IUsersAdapter;
@@ -64,6 +67,7 @@ export const LoginCard: React.FunctionComponent<IProps> = (props) => {
     const [email, setEmail] = useInputState('');
     const [password, setPassword] = useInputState('');
     const navigate = useNavigate()
+    const {login} = useAuth();
     const checks = requirements.map((requirement, index) => (
         <PasswordRequirement key={index} label={requirement.label} meets={requirement.re.test(registrationPassword)}/>
     ));
@@ -81,18 +85,37 @@ export const LoginCard: React.FunctionComponent<IProps> = (props) => {
             />
         ));
 
+    const [error, setError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const handleSubmit = async () => {
-        let token;
-        switch (segmentedValue) {
-            case 'Login':
-                token = await props.usersAdapter.login(new User(username, "", password));
-                break;
-            case 'Register':
-                token = await props.usersAdapter.register(new User(username, email, registrationPassword));
-                break;
+        setError(null);
+        setIsSubmitting(true);
+        try {
+            let result;
+            if (segmentedValue === 'Register') {
+                result = await props.usersAdapter.register({ username, email, password: registrationPassword });
+                notifications.show({
+                    title: 'Account created',
+                    message: 'Your account has been registered successfully',
+                    color: 'green',
+                });
+            } else {
+                result = await props.usersAdapter.login({ username, email: "", password });
+            }
+            login(result.token);
+            navigate("/")
+        } catch (e) {
+            const message = e instanceof Error ? e.message : 'Authentication failed';
+            setError(message);
+            notifications.show({
+                title: 'Authentication failed',
+                message,
+                color: 'red',
+            });
+        } finally {
+            setIsSubmitting(false);
         }
-        localStorage.setItem("token", token.token);
-        navigate("/")
     };
 
     const loginForm = () => {
@@ -101,12 +124,10 @@ export const LoginCard: React.FunctionComponent<IProps> = (props) => {
                 <TextInput
                     value={username}
                     label="Username"
-                    error="Invalid username"
                     placeholder="username"
                     width="75%"
                     required
                     onChange={setUsername}
-                    rightSection={<IconAlertTriangle stroke={1.5} size={18} className={classes.icon}/>}
                 />
                 <PasswordInput
                     value={password}
@@ -129,21 +150,17 @@ export const LoginCard: React.FunctionComponent<IProps> = (props) => {
                 <TextInput
                     value={username}
                     label="Username"
-                    error="Invalid username"
                     placeholder="username"
                     width="75%"
                     required
                     onChange={setUsername}
-                    rightSection={<IconAlertTriangle stroke={1.5} size={18} className={classes.icon}/>}
                 />
                 <TextInput
                     value={email}
                     label="Email"
-                    error="Invalid email"
                     placeholder="hello@gmail.com"
                     width="75%"
                     onChange={setEmail}
-                    rightSection={<IconAlertTriangle stroke={1.5} size={18} className={classes.icon}/>}
                 />
                 <PasswordInput
                     value={registrationPassword}
@@ -178,17 +195,24 @@ export const LoginCard: React.FunctionComponent<IProps> = (props) => {
                 </Anchor>
             </Text>
             <Paper withBorder shadow="md" p={30} mt={30} radius="md">
-                <SegmentedControl data={['Login', 'Register']} fullWidth value={segmentedValue} onChange={setSegmentedValue}/>
-                <Space h={20}/>
-                {segmentedValue === 'Login' ? loginForm() : registrationForm()}
-                <Group justify="space-between" mt="lg">
-                    <Anchor component="button" size="sm">
-                        Forgot password?
-                    </Anchor>
-                </Group>
-                <Button fullWidth mt="xl" onClick={() => handleSubmit()}>
-                    {segmentedValue}
-                </Button>
+                <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+                    <SegmentedControl data={['Login', 'Register']} fullWidth value={segmentedValue} onChange={setSegmentedValue}/>
+                    <Space h={20}/>
+                    {segmentedValue === 'Login' ? loginForm() : registrationForm()}
+                    <Group justify="space-between" mt="lg">
+                        <Anchor component="button" size="sm">
+                            Forgot password?
+                        </Anchor>
+                    </Group>
+                    {error && (
+                        <Text c="red" size="sm" ta="center" mt="sm">
+                            {error}
+                        </Text>
+                    )}
+                    <Button fullWidth mt="xl" type="submit" loading={isSubmitting} disabled={isSubmitting}>
+                        {segmentedValue}
+                    </Button>
+                </form>
             </Paper>
         </Container>
     );
