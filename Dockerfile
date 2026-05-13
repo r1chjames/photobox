@@ -1,43 +1,48 @@
-# # BASE API BUILD STAGE
-# FROM golang:alpine3.15 as api-build
-# LABEL maintainer="Richard James<richjames11@gmail.com>"
-# ENV GO111MODULE=on
+# Stage 1: Build Go API binary
+FROM golang:1.25-alpine AS api-builder
 
-# RUN apk add make git
+WORKDIR /app
 
-# WORKDIR /app
+COPY api/go.mod api/go.sum ./
+RUN go mod download
 
-# COPY api/go.mod api/go.sum api/Makefile ./
-# RUN go mod download
+COPY api/. ./
 
-# COPY api/. ./
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o api .
 
-# RUN GO111MODULE=on go build -o /app/bin/api
+# Stage 2: Build Webapp
+FROM node:22-alpine AS webapp-builder
 
+RUN apk add --no-cache python3 make g++
 
-# # BASE WEBAPP BUILD STAGE
-# FROM node:current-alpine3.15 as webapp-build
-# LABEL maintainer="Richard James<richjames11@gmail.com>"
+WORKDIR /app
 
-# RUN apk add make
+COPY webapp/package*.json ./
+RUN npm ci --legacy-peer-deps
 
-# WORKDIR /app
+COPY webapp/. ./
 
-# COPY webapp/. ./
+ENV VITE_API_URL=/api
+RUN npm run build
 
-# RUN make build_app
+# Stage 3: Runtime
+FROM nginx:alpine
 
+RUN apk add --no-cache ca-certificates tzdata
 
-# APP IMAGE BUILD STAGE
-FROM alpine:3.19
+# Copy API binary
+COPY --from=api-builder /app/api /app/api
 
-RUN apk add file git tzdata
+# Copy webapp build output
+COPY --from=webapp-builder /app/build /usr/share/nginx/html
 
-# COPY --from=api-build /app/bin/api /app
-# COPY --from=webapp-build /app/build/. /web
+# Copy nginx config (proxies /api/ to localhost:8080)
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-COPY api/bin/api /app/api
-# COPY app/build/ /app/web
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-EXPOSE 8080
-ENTRYPOINT ["/app/api"]
+EXPOSE 80
+
+ENTRYPOINT ["/entrypoint.sh"]
