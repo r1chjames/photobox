@@ -53,6 +53,12 @@ func InitDbConnection(appConfig *appconfig.AppConfig) *Env {
 }
 
 func (dbEnv *Env) PerformDbSetup() {
+	// Ensure the photobox schema exists before creating tables
+	if err := dbEnv.Db.Exec("CREATE SCHEMA IF NOT EXISTS photobox").Error; err != nil {
+		slog.Error("Failed to create database schema", "error", err)
+		os.Exit(1)
+	}
+
 	// Migrate the schema
 	err := dbEnv.Db.AutoMigrate(&domain.Album{}, &domain.Photo{}, &domain.PhotoTag{}, &domain.Setting{}, &domain.Job{}, &domain.User{}, &domain.SharedLink{})
 	if err != nil {
