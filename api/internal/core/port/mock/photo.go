@@ -909,3 +909,15 @@ func (mr *MockPhotoServiceMockRecorder) AnalyzeExistingPhotos() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnalyzeExistingPhotos", reflect.TypeOf((*MockPhotoService)(nil).AnalyzeExistingPhotos))
 }
+
+// RegenerateThumbnails mocks base method.
+func (m *MockPhotoService) RegenerateThumbnails() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "RegenerateThumbnails")
+}
+
+// RegenerateThumbnails indicates an expected call of RegenerateThumbnails.
+func (mr *MockPhotoServiceMockRecorder) RegenerateThumbnails() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegenerateThumbnails", reflect.TypeOf((*MockPhotoService)(nil).RegenerateThumbnails))
+}
