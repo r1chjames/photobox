@@ -215,6 +215,9 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 		slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
 
 		if ps.config.ThumbnailStorage == "valkey" && ps.config.CacheEnabled {
+			// Set a sentinel path so MigrateThumbnailsToFilesystem skips this photo
+			// (the photos mount is read-only in valkey deployments)
+			photoInfo.ThumbnailPath = "valkey"
 			// Skip if thumbnail already exists in valkey (from a previous index pass)
 			if existing, err := ps.getThumbnailFromValkey(photoHash, "m"); err == nil && len(existing) > 0 {
 				photoInfo.Thumbnail = existing
@@ -296,6 +299,8 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 	slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
 
 	if ps.config.ThumbnailStorage == "valkey" && ps.config.CacheEnabled {
+		// Set a sentinel path so MigrateThumbnailsToFilesystem skips this photo
+		photoInfo.ThumbnailPath = "valkey"
 		// Skip if thumbnail already exists in valkey
 		if existing, err := ps.getThumbnailFromValkey(photoHash, "m"); err == nil && len(existing) > 0 {
 			photoInfo.Thumbnail = existing
