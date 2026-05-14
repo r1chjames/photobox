@@ -215,14 +215,19 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 		slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
 
 		if ps.config.ThumbnailStorage == "valkey" && ps.config.CacheEnabled {
-			// Generate medium thumbnail during index for valkey persistence
-			// Use embedded EXIF thumbnail if available (avoids full image decode)
-			thumbnail := ps.filesystemSvc.GenerateThumbnail(photo.Path, photo.Exif, 600, 600)
-			if len(thumbnail) > 0 {
-				ps.storeThumbnailToValkey(photoHash, "m", thumbnail)
-				photoInfo.Thumbnail = thumbnail
+			// Skip if thumbnail already exists in valkey (from a previous index pass)
+			if existing, err := ps.getThumbnailFromValkey(photoHash, "m"); err == nil && len(existing) > 0 {
+				photoInfo.Thumbnail = existing
 			} else {
-				slog.Warn("Failed to generate thumbnail", "photo", photo.Name)
+				// Generate medium thumbnail during index for valkey persistence
+				// Use embedded EXIF thumbnail if available (avoids full image decode)
+				thumbnail := ps.filesystemSvc.GenerateThumbnail(photo.Path, photo.Exif, 600, 600)
+				if len(thumbnail) > 0 {
+					ps.storeThumbnailToValkey(photoHash, "m", thumbnail)
+					photoInfo.Thumbnail = thumbnail
+				} else {
+					slog.Warn("Failed to generate thumbnail", "photo", photo.Name)
+				}
 			}
 		} else if len(photo.Thumbnail) > 0 {
 			thumbPath, err := ps.writeThumbnailToDisk(photoHash, photo.Thumbnail, "m")
@@ -291,11 +296,15 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 	slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
 
 	if ps.config.ThumbnailStorage == "valkey" && ps.config.CacheEnabled {
-		// Use embedded EXIF thumbnail if available (avoids full image decode)
-		thumbnail := ps.filesystemSvc.GenerateThumbnail(photo.Path, photo.Exif, 600, 600)
-		if len(thumbnail) > 0 {
-			ps.storeThumbnailToValkey(photoHash, "m", thumbnail)
-			photoInfo.Thumbnail = thumbnail
+		// Skip if thumbnail already exists in valkey
+		if existing, err := ps.getThumbnailFromValkey(photoHash, "m"); err == nil && len(existing) > 0 {
+			photoInfo.Thumbnail = existing
+		} else {
+			thumbnail := ps.filesystemSvc.GenerateThumbnail(photo.Path, photo.Exif, 600, 600)
+			if len(thumbnail) > 0 {
+				ps.storeThumbnailToValkey(photoHash, "m", thumbnail)
+				photoInfo.Thumbnail = thumbnail
+			}
 		}
 	} else if len(photo.Thumbnail) > 0 {
 		thumbPath, err := ps.writeThumbnailToDisk(photoHash, photo.Thumbnail, "m")

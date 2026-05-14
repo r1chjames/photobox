@@ -177,7 +177,7 @@ func TestFilesystemService_GetMetaData_Integration(t *testing.T) {
 	}
 
 	fsRepo := repository.NewFilesystemRepository(config, nil)
-	fsService := service.NewFilesystemService(fsRepo, nil, nil, 1)
+	fsService := service.NewFilesystemService(fsRepo, nil, nil, 1, "filesystem")
 
 	// Get metadata
 	metadata := fsService.GetMetaData(testImagePath)

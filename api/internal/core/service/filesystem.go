@@ -24,19 +24,21 @@ import (
  * and provides an access to the utility repository
  */
 type FilesystemService struct {
-	fsRepo       port.FilesystemRepository
-	jobSvc       port.JobService
-	utilitySvc   port.UtilityService
-	indexWorkers int
+	fsRepo           port.FilesystemRepository
+	jobSvc           port.JobService
+	utilitySvc       port.UtilityService
+	indexWorkers     int
+	thumbnailStorage string
 }
 
 // NewFilesystemService creates a new filesystem service instance
-func NewFilesystemService(fsRepo port.FilesystemRepository, jobSvc port.JobService, utilitySvc port.UtilityService, indexWorkers int) *FilesystemService {
+func NewFilesystemService(fsRepo port.FilesystemRepository, jobSvc port.JobService, utilitySvc port.UtilityService, indexWorkers int, thumbnailStorage string) *FilesystemService {
 	return &FilesystemService{
 		fsRepo,
 		jobSvc,
 		utilitySvc,
 		indexWorkers,
+		thumbnailStorage,
 	}
 }
 
@@ -72,14 +74,17 @@ func (fss *FilesystemService) PerformPhotoIndex(save func([]domain.PhotoFile) er
 					continue
 				}
 
-				// Check index cache to skip unchanged files
-				photoId := b64.StdEncoding.EncodeToString([]byte(path))
+			// Check index cache to skip unchanged files (unless valkey mode —
+			// thumbnails may need generation even when file content is unchanged)
+			photoId := b64.StdEncoding.EncodeToString([]byte(path))
+			if fss.thumbnailStorage != "valkey" {
 				if cached, exists := indexCache[photoId]; exists {
 					if photoFileInfo.ModTime().Unix() == cached.FileModifiedTime {
 						slog.Debug("Skipping unchanged photo", "path", path)
 						continue
 					}
 				}
+			}
 
 				photo := fss.getMetaData(path, photoFileInfo.Name(), photoFileInfo)
 				batch = append(batch, photo)

@@ -26,15 +26,28 @@ func NewCacheService(config appconfig.AppConfig) *CacheService {
 		Password: config.CachePassword,
 		DB:       config.CacheDB,
 	})
-
 	ctx := context.Background()
-	if err := client.Ping(ctx).Err(); err != nil {
-		slog.Warn("Cache connection failed, running without cache", "error", err)
-		return &CacheService{enabled: false, ctx: ctx}
+
+	// Retry loop: the Valkey sidecar container starts simultaneously with the API
+	// container and may not be ready for the initial Ping. Retry for up to 30s.
+	const maxRetries = 15
+	const retryDelay = 2 * time.Second
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		if err := client.Ping(ctx).Err(); err != nil {
+			if attempt < maxRetries {
+				slog.Info("Waiting for cache to become available", "attempt", attempt, "error", err)
+				time.Sleep(retryDelay)
+				continue
+			}
+			slog.Warn("Cache connection failed after retries, running without cache", "error", err)
+			return &CacheService{enabled: false, ctx: ctx}
+		}
+		slog.Info("Cache connected", "addr", addr)
+		return &CacheService{client: client, enabled: true, ctx: ctx}
 	}
 
-	slog.Info("Cache connected", "addr", addr)
-	return &CacheService{client: client, enabled: true, ctx: ctx}
+	return &CacheService{enabled: false, ctx: ctx}
 }
 
 func (cs *CacheService) Get(key string) (string, error) {
