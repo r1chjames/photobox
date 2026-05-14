@@ -5,7 +5,8 @@ import {IconWifiOff, IconServerOff} from '@tabler/icons-react';
 const DISMISSED_STORAGE_KEY = 'network-banner-dismissed';
 const DISMISS_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
 const HEALTH_CHECK_INTERVAL_MS = 30_000; // 30 seconds
-const CONSECUTIVE_FAILURES_THRESHOLD = 2;
+const CONSECUTIVE_FAILURES_THRESHOLD = 3; // requires 3 consecutive failures (was 2)
+const HEALTH_CHECK_TIMEOUT_MS = 10_000; // 10s timeout (was 5s) to handle throttled background tabs
 
 type NetworkStatus = 'online' | 'offline' | 'backend-unreachable';
 
@@ -17,7 +18,8 @@ export const NetworkStatusBanner: React.FunctionComponent<IProps> = ({baseApiUrl
     const [status, setStatus] = useState<NetworkStatus>('online');
     const [dismissed, setDismissed] = useState(false);
     const consecutiveFailuresRef = useRef(0);
-    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const mountedRef = useRef(true);
     const hasCheckedRef = useRef(false);
 
     const isDismissedRecently = (): boolean => {
@@ -36,7 +38,7 @@ export const NetworkStatusBanner: React.FunctionComponent<IProps> = ({baseApiUrl
         try {
             // Use a lightweight HEAD request to the base API path
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            const timeoutId = setTimeout(() => controller.abort(), HEALTH_CHECK_TIMEOUT_MS);
 
             const response = await fetch(baseApiUrl, {
                 method: 'HEAD',
@@ -94,30 +96,51 @@ export const NetworkStatusBanner: React.FunctionComponent<IProps> = ({baseApiUrl
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
 
-        // Reset failure counter on each effect run (handles StrictMode double-mount)
-        consecutiveFailuresRef.current = 0;
-
-        // Delay the first health check to let service worker and network settle after hard refresh
-        const initialTimeoutId = setTimeout(() => {
-            if (navigator.onLine) {
-                checkBackendHealth(true);
-            }
-            hasCheckedRef.current = true;
-        }, 3000);
-
-        // Set up periodic health checks
-        intervalRef.current = setInterval(() => {
-            if (navigator.onLine) {
+        // When tab becomes visible (user returns), reset failures and check health immediately.
+        // Browsers throttle setInterval in background tabs, so visible check ensures
+        // any false failures from throttled checks are cleared when the user comes back.
+        const handleVisibility = () => {
+            if (document.visibilityState === 'visible' && navigator.onLine) {
+                consecutiveFailuresRef.current = 0;
                 checkBackendHealth();
             }
-        }, HEALTH_CHECK_INTERVAL_MS);
+        };
+        document.addEventListener('visibilitychange', handleVisibility);
+
+        // Reset failure counter on each effect run (handles StrictMode double-mount)
+        consecutiveFailuresRef.current = 0;
+        mountedRef.current = true;
+
+        // Schedule the next periodic check. Using setTimeout chaining instead of
+        // setInterval avoids aggressive browser throttling in background/idle tabs.
+        const scheduleNext = (delayMs: number) => {
+            if (!mountedRef.current) return;
+            timeoutRef.current = setTimeout(async () => {
+                if (!mountedRef.current) return;
+                if (navigator.onLine) {
+                    await checkBackendHealth();
+                }
+                scheduleNext(HEALTH_CHECK_INTERVAL_MS);
+            }, delayMs);
+        };
+
+        // Delay initial health check to let service worker and network settle
+        timeoutRef.current = setTimeout(async () => {
+            if (!mountedRef.current) return;
+            if (navigator.onLine) {
+                await checkBackendHealth(true);
+            }
+            hasCheckedRef.current = true;
+            scheduleNext(HEALTH_CHECK_INTERVAL_MS);
+        }, 3000);
 
         return () => {
+            mountedRef.current = false;
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
-            clearTimeout(initialTimeoutId);
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
+            document.removeEventListener('visibilitychange', handleVisibility);
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
             }
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -22,17 +22,24 @@ import (
 )
 
 type FilesystemRepository struct {
-	wg     sync.WaitGroup
-	jobSvc *service.JobService
-	config appconfig.AppConfig
-	dirSem chan struct{} // Semaphore to limit concurrent directory walking
+	wg          sync.WaitGroup
+	jobSvc      *service.JobService
+	config      appconfig.AppConfig
+	dirSem      chan struct{} // Semaphore to limit concurrent directory walking
+	ffmpegFound bool
 }
 
 func NewFilesystemRepository(config appconfig.AppConfig, jobService *service.JobService) *FilesystemRepository {
+	_, ffmpegErr := exec.LookPath("ffmpeg")
+	hasFfmpeg := ffmpegErr == nil
+	if !hasFfmpeg {
+		slog.Warn("ffmpeg not found in PATH, video thumbnails will be skipped")
+	}
 	return &FilesystemRepository{
-		wg:     sync.WaitGroup{},
-		jobSvc: jobService,
-		config: config,
+		wg:          sync.WaitGroup{},
+		jobSvc:      jobService,
+		config:      config,
+		ffmpegFound: hasFfmpeg,
 	}
 }
 
@@ -103,6 +110,9 @@ func (fs *FilesystemRepository) GenerateThumbnail(path string, width, height int
 }
 
 func (fs *FilesystemRepository) generateVideoThumbnail(path string, width, height int) []byte {
+	if !fs.ffmpegFound {
+		return nil
+	}
 	cmd := exec.Command("ffmpeg", "-i", path, "-ss", "00:00:01", "-vframes", "1", "-f", "image2pipe", "-vcodec", "png", "-")
 	var out bytes.Buffer
 	cmd.Stdout = &out
