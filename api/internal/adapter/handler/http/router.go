@@ -143,6 +143,7 @@ func defineResources(
 
 	// Photo indexing is admin-only as it's a system operation
 	router.POST(fmt.Sprintf("%s/photos/index", urlBasePath), authMiddleware(token), requireRole(domain.ADMINISTRATOR), photoHandler.IndexPhotos)
+	router.POST(fmt.Sprintf("%s/photos/regenerate-thumbnails", urlBasePath), authMiddleware(token), requireRole(domain.ADMINISTRATOR), photoHandler.RegenerateThumbnails)
 
 	// Search
 	search := router.Group(fmt.Sprintf("%s/search", urlBasePath)).Use(authMiddleware(token))

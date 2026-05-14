@@ -314,6 +314,8 @@ func (m *MockPhotoService) AnalyzeExistingPhotos() error {
 	return args.Error(0)
 }
 
+func (m *MockPhotoService) RegenerateThumbnails() {}
+
 // TestNewScheduler tests scheduler creation
 func TestNewScheduler(t *testing.T) {
 	mockUtil := new(MockUtilityService)

@@ -165,6 +165,11 @@ export class PhotosAdapter implements IPhotosAdapter {
     return this.restApiAdapter.postApiCall(indexPath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 
+  public regenerateThumbnails = async () => {
+    const regeneratePath = 'photos/regenerate-thumbnails';
+    return this.restApiAdapter.postApiCall(regeneratePath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
+
   public getPhotoThumbnails = async (photoIds: string[]): Promise<Map<string, string>> => {
     const thumbnailsPath = 'photos/thumbnails';
     const blob = await this.restApiAdapter.postBinaryApiCall(

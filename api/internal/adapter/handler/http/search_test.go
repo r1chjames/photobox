@@ -228,6 +228,8 @@ func (m *MockSearchPhotoService) AnalyzeExistingPhotos() error {
 	return args.Error(0)
 }
 
+func (m *MockSearchPhotoService) RegenerateThumbnails() {}
+
 // MockSearchAlbumService is a mock implementation of port.AlbumService for search tests
 type MockSearchAlbumService struct {
 	mock.Mock
