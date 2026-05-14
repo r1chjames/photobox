@@ -244,6 +244,22 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
         }
     }, [activeLink, id, albumsAdapter]);
 
+    // Global keyboard shortcut: ? opens help dialog
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Don't trigger when typing in inputs or textareas
+            const tag = (e.target as HTMLElement)?.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+            if (e.key === '?') {
+                e.preventDefault();
+                setShowHelp(true);
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
     const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && searchValue.trim()) {
             navigate(`/search?q=${encodeURIComponent(searchValue.trim())}`);
