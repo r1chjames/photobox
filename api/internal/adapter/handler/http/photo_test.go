@@ -228,6 +228,8 @@ func (m *MockPhotoService) AnalyzeExistingPhotos() error {
 	return args.Error(0)
 }
 
+func (m *MockPhotoService) RegenerateThumbnails() {}
+
 // MockJobService is a mock implementation of port.JobService
 type MockJobService struct {
 	mock.Mock

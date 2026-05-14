@@ -2,6 +2,7 @@ package http
 
 import (
 	"archive/zip"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -169,9 +170,10 @@ func (ph *PhotoHandler) GetPhotoThumbnail(ctx *gin.Context) {
 		return
 	}
 
-	// Generate on-demand if missing
-	generatedPath, err := ph.photoSvc.GenerateThumbnailForPhoto(photoId)
-	if err == nil && generatedPath != "" {
+	// Generate on-demand if missing (always retry retrieval even if path
+	// is empty — valkey-stored thumbnails don't have a filesystem path)
+	_, err = ph.photoSvc.GenerateThumbnailForPhoto(photoId)
+	if err == nil {
 		// After generation, try again
 		thumbnailBytes, err = ph.photoSvc.PhotoThumbnailBytesForSize(photoId, size)
 		if err == nil && len(thumbnailBytes) > 0 {
@@ -202,6 +204,10 @@ func (ph *PhotoHandler) IndexPhotos(c *gin.Context) {
 	// Atomically start the job - returns error if already running
 	err := ph.jobSvc.StartJobIfNotRunning("Photo_index")
 	if err != nil {
+		if errors.Is(err, domain.ErrJobAlreadyRunning) {
+			c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "Photo indexing is already in progress"})
+			return
+		}
 		handleError(c, err)
 		return
 	}
@@ -209,6 +215,23 @@ func (ph *PhotoHandler) IndexPhotos(c *gin.Context) {
 	c.Status(http.StatusAccepted)
 	go func() {
 		ph.photoSvc.PerformPhotoIndex()
+	}()
+}
+
+func (ph *PhotoHandler) RegenerateThumbnails(c *gin.Context) {
+	err := ph.jobSvc.StartJobIfNotRunning("Thumbnail_regenerate")
+	if err != nil {
+		if errors.Is(err, domain.ErrJobAlreadyRunning) {
+			c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "Thumbnail regeneration is already in progress"})
+			return
+		}
+		handleError(c, err)
+		return
+	}
+
+	c.Status(http.StatusAccepted)
+	go func() {
+		ph.photoSvc.RegenerateThumbnails()
 	}()
 }
 

@@ -130,4 +130,6 @@ type PhotoService interface {
 	PhotoThumbnailBytesForSize(photoId string, size string) ([]byte, error)
 	// AnalyzeExistingPhotos runs AI analysis on photos that haven't been analyzed yet
 	AnalyzeExistingPhotos() error
+	// RegenerateThumbnails regenerates thumbnails for all photos (skips photos with existing thumbnails)
+	RegenerateThumbnails()
 }

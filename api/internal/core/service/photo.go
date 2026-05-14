@@ -377,6 +377,55 @@ func (ps *PhotoService) AnalyzeExistingPhotos() error {
 	return nil
 }
 
+func (ps *PhotoService) RegenerateThumbnails() {
+	slog.Info("Starting thumbnail regeneration for all photos")
+
+	total := 0
+	skipped := 0
+	fromId := ""
+
+	for {
+		photos, err := ps.photoRepo.ListAllPhotos(fromId, 100, false, "", "", "")
+		if err != nil {
+			slog.Error("Failed to list photos for thumbnail regeneration", "error", err)
+			return
+		}
+		if len(photos) == 0 {
+			break
+		}
+
+		for _, photo := range photos {
+			if photo.FilesystemPath == "" {
+				continue
+			}
+
+			// In valkey mode, skip if all 3 sizes already exist
+			if ps.config.ThumbnailStorage == "valkey" && ps.config.CacheEnabled {
+				allExist := true
+				for _, size := range []string{"s", "m", "l"} {
+					if _, err := ps.getThumbnailFromValkey(photo.ID, size); err != nil {
+						allExist = false
+						break
+					}
+				}
+				if allExist {
+					skipped++
+					fromId = photo.ID
+					continue
+				}
+			}
+
+			if _, err := ps.GenerateThumbnailForPhoto(photo.ID); err != nil {
+				slog.Warn("Failed to regenerate thumbnail", "photo", photo.ID, "error", err)
+			}
+			total++
+			fromId = photo.ID
+		}
+	}
+
+	slog.Info("Thumbnail regeneration complete", "generated", total, "skipped", skipped)
+}
+
 func (ps *PhotoService) GenerateThumbnailForPhoto(photoId string) (string, error) {
 	photo, err := ps.photoRepo.GetPhotoById(photoId, false)
 	if err != nil {

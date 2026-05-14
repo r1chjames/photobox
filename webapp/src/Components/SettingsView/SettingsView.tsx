@@ -157,6 +157,31 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
     });
   }, [props.photosAdapter]);
 
+  const handleRegenerateThumbnails = useCallback(() => {
+    modals.openConfirmModal({
+      title: 'Regenerate all thumbnails?',
+      children: 'This will generate thumbnails for every photo that doesn\'t have one yet. This may take a while.',
+      labels: { confirm: 'Regenerate', cancel: 'Cancel' },
+      confirmProps: { color: 'blue' },
+      onConfirm: async () => {
+        try {
+          await props.photosAdapter.regenerateThumbnails();
+          notifications.show({
+            title: 'Regeneration started',
+            message: 'Thumbnail regeneration is running in the background',
+            color: 'blue',
+          });
+        } catch (e) {
+          notifications.show({
+            title: 'Regeneration failed',
+            message: e instanceof Error ? e.message : 'Failed to start thumbnail regeneration',
+            color: 'red',
+          });
+        }
+      },
+    });
+  }, [props.photosAdapter]);
+
   const handleModalSave = useCallback((key: string, value: string, friendlyName: string, category: string, description: string) => {
     const updatedSettings = settings.concat({ key, value, friendlyName, category, description });
     setSettings(updatedSettings);
@@ -228,9 +253,14 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
               {editing ? <IconDeviceFloppy size="1.5rem" /> : <IconLayoutGridAdd size="1.5rem"/>}
             </ActionIcon>
         </Flex>
-        <Button onClick={handleIndex}>
-            Index
-        </Button>
+        <Flex direction="row" gap="md" style={{ width: "100%", justifyContent: "right" }}>
+          <Button onClick={handleIndex} variant="outline">
+            Re-index Photos
+          </Button>
+          <Button onClick={handleRegenerateThumbnails}>
+            Regenerate Thumbnails
+          </Button>
+        </Flex>
     </div>
   );
 };
