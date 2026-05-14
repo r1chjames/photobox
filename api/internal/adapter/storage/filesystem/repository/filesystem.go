@@ -22,11 +22,12 @@ import (
 )
 
 type FilesystemRepository struct {
-	wg          sync.WaitGroup
-	jobSvc      *service.JobService
-	config      appconfig.AppConfig
-	dirSem      chan struct{} // Semaphore to limit concurrent directory walking
-	ffmpegFound bool
+	wg           sync.WaitGroup
+	jobSvc       *service.JobService
+	config       appconfig.AppConfig
+	dirSem       chan struct{} // Semaphore to limit concurrent directory walking
+	ffmpegFound  bool
+	dcrawFound   bool
 }
 
 func NewFilesystemRepository(config appconfig.AppConfig, jobService *service.JobService) *FilesystemRepository {
@@ -35,11 +36,17 @@ func NewFilesystemRepository(config appconfig.AppConfig, jobService *service.Job
 	if !hasFfmpeg {
 		slog.Warn("ffmpeg not found in PATH, video thumbnails will be skipped")
 	}
+	_, dcrawErr := exec.LookPath("dcraw")
+	hasDcraw := dcrawErr == nil
+	if !hasDcraw {
+		slog.Info("dcraw not found in PATH, RAW photo thumbnails will use EXIF preview only")
+	}
 	return &FilesystemRepository{
 		wg:          sync.WaitGroup{},
 		jobSvc:      jobService,
 		config:      config,
 		ffmpegFound: hasFfmpeg,
+		dcrawFound:  hasDcraw,
 	}
 }
 
@@ -98,8 +105,10 @@ func (fs *FilesystemRepository) GenerateThumbnail(path string, width, height int
 	extension := utils.GetFileExtension(path)
 	img, err := imaging.Open(path)
 	if err != nil {
-		slog.Error("Unable to open file for thumbnail", "path", path, "error", err)
-		return nil
+		// RAW/DNG files commonly fail here — the Go image library doesn't support
+		// all TIFF color models. Fall back to dcraw for RAW extraction.
+		slog.Warn("Unable to decode image for thumbnail (RAW format likely)", "path", path, "error", err)
+		return fs.generateRawThumbnail(path, width, height)
 	}
 	thumb := imaging.Thumbnail(img, width, height, imaging.CatmullRom)
 	var buffer bytes.Buffer
@@ -129,6 +138,47 @@ func (fs *FilesystemRepository) generateVideoThumbnail(path string, width, heigh
 	thumb := imaging.Thumbnail(img, width, height, imaging.CatmullRom)
 	var buffer bytes.Buffer
 	_ = imaging.Encode(&buffer, thumb, imaging.PNG)
+	return buffer.Bytes()
+}
+
+func (fs *FilesystemRepository) generateRawThumbnail(path string, width, height int) []byte {
+	if !fs.dcrawFound {
+		return nil
+	}
+
+	// dcraw -e extracts the camera-embedded JPEG preview from RAW/DNG files.
+	// Run in a temp dir so we can find and read the output file, then resize.
+	tmpDir, err := os.MkdirTemp("", "photobox-dcraw-")
+	if err != nil {
+		slog.Warn("Failed to create temp dir for RAW thumbnail", "path", path, "error", err)
+		return nil
+	}
+	defer os.RemoveAll(tmpDir)
+
+	cmd := exec.Command("dcraw", "-e", path)
+	cmd.Dir = tmpDir
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		slog.Warn("dcraw failed to extract RAW preview", "path", path, "error", err)
+		return nil
+	}
+
+	// dcraw -e produces a single .thumb.jpg or .jpg file in the temp dir
+	entries, err := os.ReadDir(tmpDir)
+	if err != nil || len(entries) == 0 {
+		return nil
+	}
+
+	thumbPath := filepath.Join(tmpDir, entries[0].Name())
+	img, err := imaging.Open(thumbPath)
+	if err != nil {
+		slog.Warn("Failed to open dcraw-extracted preview for resize", "path", path, "error", err)
+		return nil
+	}
+
+	thumb := imaging.Thumbnail(img, width, height, imaging.CatmullRom)
+	var buffer bytes.Buffer
+	_ = imaging.Encode(&buffer, thumb, imaging.JPEG)
 	return buffer.Bytes()
 }
 
