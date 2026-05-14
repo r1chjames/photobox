@@ -28,7 +28,7 @@ RUN npm run build
 # Stage 3: Runtime
 FROM nginx:alpine
 
-RUN apk add --no-cache ca-certificates tzdata ffmpeg
+RUN apk add --no-cache ca-certificates tzdata ffmpeg dcraw
 
 # Copy API binary
 COPY --from=api-builder /app/api /app/api
