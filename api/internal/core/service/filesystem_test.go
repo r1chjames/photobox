@@ -140,7 +140,7 @@ func TestNewFilesystemService(t *testing.T) {
 	mockJobSvc := new(MockJobServiceFS)
 	mockUtilSvc := new(MockUtilityServiceFS)
 
-	service := NewFilesystemService(mockFsRepo, mockJobSvc, mockUtilSvc, 1)
+	service := NewFilesystemService(mockFsRepo, mockJobSvc, mockUtilSvc, 1, "filesystem")
 
 	assert.NotNil(t, service)
 	assert.Equal(t, mockFsRepo, service.fsRepo)
@@ -154,7 +154,7 @@ func TestGenerateThumbnail_WithExifThumbnail(t *testing.T) {
 	mockJobSvc := new(MockJobServiceFS)
 	mockUtilSvc := new(MockUtilityServiceFS)
 
-	service := NewFilesystemService(mockFsRepo, mockJobSvc, mockUtilSvc, 1)
+	service := NewFilesystemService(mockFsRepo, mockJobSvc, mockUtilSvc, 1, "filesystem")
 
 	path := "/path/to/photo.jpg"
 	exifData := exif.Exif{} // Empty EXIF (no thumbnail)
@@ -175,7 +175,7 @@ func TestGenerateThumbnail_NoExifThumbnail(t *testing.T) {
 	mockJobSvc := new(MockJobServiceFS)
 	mockUtilSvc := new(MockUtilityServiceFS)
 
-	service := NewFilesystemService(mockFsRepo, mockJobSvc, mockUtilSvc, 1)
+	service := NewFilesystemService(mockFsRepo, mockJobSvc, mockUtilSvc, 1, "filesystem")
 
 	path := "/path/to/photo.jpg"
 	exifData := exif.Exif{}
@@ -195,7 +195,7 @@ func TestGenerateThumbnail_NilRepository(t *testing.T) {
 	mockJobSvc := new(MockJobServiceFS)
 	mockUtilSvc := new(MockUtilityServiceFS)
 
-	service := NewFilesystemService(mockFsRepo, mockJobSvc, mockUtilSvc, 1)
+	service := NewFilesystemService(mockFsRepo, mockJobSvc, mockUtilSvc, 1, "filesystem")
 
 	path := "/path/to/photo.jpg"
 	exifData := exif.Exif{}
@@ -239,7 +239,7 @@ func TestFilesystemService_DependencyInjection(t *testing.T) {
 	mockJobSvc := new(MockJobServiceFS)
 	mockUtilSvc := new(MockUtilityServiceFS)
 
-	service := NewFilesystemService(mockFsRepo, mockJobSvc, mockUtilSvc, 1)
+	service := NewFilesystemService(mockFsRepo, mockJobSvc, mockUtilSvc, 1, "filesystem")
 
 	// Verify all dependencies are accessible
 	assert.NotNil(t, service.fsRepo)
@@ -258,7 +258,7 @@ func TestFilesystemService_StructureValidation(t *testing.T) {
 	mockJobSvc := new(MockJobServiceFS)
 	mockUtilSvc := new(MockUtilityServiceFS)
 
-	service := NewFilesystemService(mockFsRepo, mockJobSvc, mockUtilSvc, 1)
+	service := NewFilesystemService(mockFsRepo, mockJobSvc, mockUtilSvc, 1, "filesystem")
 
 	// Test that the service struct has the expected fields
 	assert.NotNil(t, service)
