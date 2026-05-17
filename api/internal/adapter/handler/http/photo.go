@@ -2,6 +2,7 @@ package http
 
 import (
 	"archive/zip"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -203,6 +204,10 @@ func (ph *PhotoHandler) IndexPhotos(c *gin.Context) {
 	// Atomically start the job - returns error if already running
 	err := ph.jobSvc.StartJobIfNotRunning("Photo_index")
 	if err != nil {
+		if errors.Is(err, domain.ErrJobAlreadyRunning) {
+			c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "Photo indexing is already in progress"})
+			return
+		}
 		handleError(c, err)
 		return
 	}
@@ -216,6 +221,10 @@ func (ph *PhotoHandler) IndexPhotos(c *gin.Context) {
 func (ph *PhotoHandler) RegenerateThumbnails(c *gin.Context) {
 	err := ph.jobSvc.StartJobIfNotRunning("Thumbnail_regenerate")
 	if err != nil {
+		if errors.Is(err, domain.ErrJobAlreadyRunning) {
+			c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "Thumbnail regeneration is already in progress"})
+			return
+		}
 		handleError(c, err)
 		return
 	}
