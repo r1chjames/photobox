@@ -4,6 +4,8 @@ import (
 	db "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gorm.io/gorm/clause"
+	"os"
+	"strings"
 )
 
 type UtilityRepository struct {
@@ -63,6 +65,11 @@ func (ur *UtilityRepository) overwriteAllSettings(settings []*domain.Setting) er
 }
 
 func (ur *UtilityRepository) CreateBaseSettings(reset bool) error {
+	thumbStorage := strings.TrimSpace(os.Getenv("THUMBNAIL_STORAGE"))
+	if thumbStorage == "" {
+		thumbStorage = "filesystem"
+	}
+
 	var settings = []*domain.Setting{
 		{
 			Key:          "thumbnail_width",
@@ -97,6 +104,15 @@ func (ur *UtilityRepository) CreateBaseSettings(reset bool) error {
 			Type:         "Text",
 			Description:  "CRON expression used to initiate indexing",
 			Value:        "0 1 * * *",
+		},
+		{
+			Key:          "thumbnail_storage",
+			FriendlyName: "Thumbnail storage backend",
+			Category:     "Photo",
+			Type:         "Choice",
+			Options:      "filesystem,valkey",
+			Description:  "Where thumbnails are stored. Requires restart to take effect. 'filesystem' stores on disk, 'valkey' stores in the cache (persistent with PVC).",
+			Value:        thumbStorage,
 		},
 	}
 	if reset {
