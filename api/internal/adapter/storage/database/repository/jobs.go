@@ -41,6 +41,11 @@ func (jr *JobRepository) UpdateJobStatus(name string, status string) error {
 // StartJobIfNotRunning atomically starts a job only if it's not already running
 // Returns an error if the job is already running
 func (jr *JobRepository) StartJobIfNotRunning(name string) error {
+	// Ensure the job row exists first (INSERT or no-op if already present)
+	jr.dbEnv.Db.Clauses(clause.OnConflict{
+		DoNothing: true,
+	}).Create(&domain.Job{Name: name, Status: "NOT_RUNNING", LastRun: time.Now()})
+
 	// Atomic update: only set to RUNNING if current status is NOT_RUNNING
 	result := jr.dbEnv.Db.Model(&domain.Job{}).
 		Where("name = ? AND status != ?", name, "RUNNING").
@@ -64,8 +69,12 @@ func (jr *JobRepository) UpdateAllJobsStatus(status string) error {
 }
 
 func (jr *JobRepository) CreateBaseJobs() error {
+	baseJobs := []domain.Job{
+		{Name: "Photo_index", Status: "NOT_RUNNING", LastRun: time.Now()},
+		{Name: "Thumbnail_regenerate", Status: "NOT_RUNNING", LastRun: time.Now()},
+	}
 	result := jr.dbEnv.Db.Clauses(clause.OnConflict{
 		UpdateAll: true,
-	}).Create(&domain.Job{Name: "Photo_index", Status: "NOT_RUNNING", LastRun: time.Now()})
+	}).Create(&baseJobs)
 	return result.Error
 }
