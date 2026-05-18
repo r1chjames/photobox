@@ -27,7 +27,10 @@ func main() {
 	}
 
 	services := setupAppServices(dbEnv, appConfig)
-	services.utilityService.CreateBaseSettings(appConfig.ResetSettings)
+	if err := services.utilityService.CreateBaseSettings(appConfig.ResetSettings); err != nil {
+		slog.Error("Failed to create base settings", "error", err)
+		os.Exit(1)
+	}
 	services.jobService.CreateBaseJobs()
 	services.scheduler.StopAllRunningJobs()
 	services.scheduler.AddScheduledJobs()
