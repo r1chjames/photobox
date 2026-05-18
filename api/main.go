@@ -6,6 +6,8 @@ import (
 	"gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database/repository"
 	filesystemRepos "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/filesystem/repository"
+	thumbFs "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/thumbnail/filesystem"
+	thumbS3 "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/thumbnail/s3"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"gitlab.com/r1chjames/photobox/api/internal/components"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
@@ -20,7 +22,9 @@ func main() {
 
 	dbEnv := database.InitDbConnection(appConfig)
 	dbEnv.PerformDbSetup()
-	dbEnv.MigrateThumbnailsToFilesystem(appConfig.PhotoDir)
+	if appConfig.ThumbnailStorage != "s3" {
+		dbEnv.MigrateThumbnailsToFilesystem(appConfig.PhotoDir)
+	}
 
 	services := setupAppServices(dbEnv, appConfig)
 	services.utilityService.CreateBaseSettings(appConfig.ResetSettings)
@@ -109,7 +113,27 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 
 	// Photo
 	photoRepo := repository.NewPhotoRepository(dbEnv)
-	photoService := service.NewPhotoService(photoRepo, albumService, filesystemService, cacheService, aiService, *config)
+	// Thumbnail storage adapter
+	var thumbnailStorage port.ThumbnailStorage
+	switch config.ThumbnailStorage {
+	case "s3":
+		s3store, err := thumbS3.New(thumbS3.Config{
+			Endpoint:  config.S3Endpoint,
+			AccessKey: config.S3AccessKey,
+			SecretKey: config.S3SecretKey,
+			Bucket:    config.S3Bucket,
+			UseSSL:    config.S3UseSSL,
+		})
+		if err != nil {
+			slog.Error("Failed to create S3 thumbnail storage", "error", err)
+			os.Exit(1)
+		}
+		thumbnailStorage = s3store
+	default:
+		thumbnailStorage = thumbFs.New(config.ThumbnailDir)
+	}
+
+	photoService := service.NewPhotoService(photoRepo, albumService, filesystemService, cacheService, aiService, *config, thumbnailStorage)
 
 	// Share
 	shareRepo := repository.NewShareRepository(dbEnv)

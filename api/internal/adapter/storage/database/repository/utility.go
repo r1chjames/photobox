@@ -110,8 +110,8 @@ func (ur *UtilityRepository) CreateBaseSettings(reset bool) error {
 			FriendlyName: "Thumbnail storage backend",
 			Category:     "Photo",
 			Type:         "Choice",
-			Options:      "filesystem,valkey",
-			Description:  "Where thumbnails are stored. Requires restart to take effect. 'filesystem' stores on disk, 'valkey' stores in the cache (persistent with PVC).",
+			Options:      "filesystem,s3",
+			Description:  "Where thumbnails are stored. Requires restart to take effect. 'filesystem' stores on disk under THUMBNAIL_DIR, 's3' stores in an S3-compatible object store (MinIO or AWS S3).",
 			Value:        thumbStorage,
 		},
 	}
