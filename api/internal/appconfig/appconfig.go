@@ -32,6 +32,12 @@ type AppConfig struct {
 	OllamaHost         string
 	OllamaModel        string
 	ThumbnailStorage   string
+	ThumbnailDir       string
+	S3Endpoint         string
+	S3AccessKey        string
+	S3SecretKey        string
+	S3Bucket           string
+	S3UseSSL           bool
 	PhotoIndexWorkers  int
 }
 
@@ -74,6 +80,18 @@ func New() *AppConfig {
 	aiEnabled, _ := strconv.ParseBool(utils.GetEnv("AI_ENABLED", "false"))
 
 	thumbnailStorage := utils.GetEnv("THUMBNAIL_STORAGE", "filesystem")
+	thumbnailDir := utils.GetEnv("THUMBNAIL_DIR", "/thumbnails")
+
+	// S3/MinIO config — optional, only used when THUMBNAIL_STORAGE=s3.
+	// Use os.Getenv (not utils.GetEnv) so they don't panic when unset.
+	s3Endpoint := os.Getenv("S3_ENDPOINT")
+	s3AccessKey := os.Getenv("S3_ACCESS_KEY")
+	s3SecretKey := os.Getenv("S3_SECRET_KEY")
+	s3Bucket := os.Getenv("S3_BUCKET")
+	if s3Bucket == "" {
+		s3Bucket = "photobox-thumbnails"
+	}
+	s3UseSSL, _ := strconv.ParseBool(os.Getenv("S3_USE_SSL"))
 
 	indexWorkers, _ := strconv.Atoi(utils.GetEnv("PHOTO_INDEX_WORKERS", fmt.Sprintf("%d", runtime.NumCPU())))
 	if indexWorkers < 1 {
@@ -104,6 +122,12 @@ func New() *AppConfig {
 		OllamaHost:         utils.GetEnv("OLLAMA_HOST", "http://localhost:11434"),
 		OllamaModel:        utils.GetEnv("OLLAMA_MODEL", "moondream"),
 		ThumbnailStorage:   thumbnailStorage,
+		ThumbnailDir:       thumbnailDir,
+		S3Endpoint:         s3Endpoint,
+		S3AccessKey:        s3AccessKey,
+		S3SecretKey:        s3SecretKey,
+		S3Bucket:           s3Bucket,
+		S3UseSSL:           s3UseSSL,
 		PhotoIndexWorkers:  indexWorkers,
 	}
 }

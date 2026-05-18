@@ -3,6 +3,7 @@ package service
 import (
 	archivezip "archive/zip"
 	b64 "encoding/base64"
+	"context"
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
@@ -21,16 +22,17 @@ import (
 )
 
 type PhotoService struct {
-	photoRepo     port.PhotoRepository
-	albumSvc      port.AlbumService
-	filesystemSvc port.FilesystemService
-	cacheSvc      port.CacheService
-	aiSvc         port.AIService
-	config        appconfig.AppConfig
+	photoRepo        port.PhotoRepository
+	albumSvc         port.AlbumService
+	filesystemSvc    port.FilesystemService
+	cacheSvc         port.CacheService
+	aiSvc            port.AIService
+	config           appconfig.AppConfig
+	thumbnailStorage port.ThumbnailStorage
 }
 
 // NewPhotoService creates a new Photo service instance
-func NewPhotoService(photoRepo port.PhotoRepository, albumRepo port.AlbumService, filesystemSvc port.FilesystemService, cacheSvc port.CacheService, aiSvc port.AIService, config appconfig.AppConfig) *PhotoService {
+func NewPhotoService(photoRepo port.PhotoRepository, albumRepo port.AlbumService, filesystemSvc port.FilesystemService, cacheSvc port.CacheService, aiSvc port.AIService, config appconfig.AppConfig, thumbnailStorage port.ThumbnailStorage) *PhotoService {
 	return &PhotoService{
 		photoRepo,
 		albumRepo,
@@ -38,6 +40,7 @@ func NewPhotoService(photoRepo port.PhotoRepository, albumRepo port.AlbumService
 		cacheSvc,
 		aiSvc,
 		config,
+		thumbnailStorage,
 	}
 }
 
@@ -105,28 +108,6 @@ func (ps *PhotoService) PhotoThumbnailBytes(photoId string) ([]byte, error) {
 
 func (ps *PhotoService) PhotoThumbnailPath(photoId string) (string, error) {
 	return ps.photoRepo.GetThumbnailPath(photoId)
-}
-
-func (ps *PhotoService) thumbnailPathForSize(photoId string, size string) string {
-	safeId := strings.ReplaceAll(photoId, "/", "_")
-	safeId = strings.ReplaceAll(safeId, "+", "-")
-	safeId = strings.ReplaceAll(safeId, "=", "")
-	return filepath.Join(ps.config.PhotoDir, ".thumbnails", size, safeId+".jpg")
-}
-
-func (ps *PhotoService) writeThumbnailToDisk(photoId string, data []byte, size string) (string, error) {
-	if len(data) == 0 {
-		return "", nil
-	}
-	path := ps.thumbnailPathForSize(photoId, size)
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return "", err
-	}
-	if err := os.WriteFile(path, data, 0644); err != nil {
-		return "", err
-	}
-	return path, nil
 }
 
 func (ps *PhotoService) PhotoThumbnails(photoIds []string) (map[string][]byte, error) {
@@ -214,30 +195,9 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 
 		slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
 
-		if ps.config.ThumbnailStorage == "valkey" && ps.config.CacheEnabled {
-			// Set a sentinel path so MigrateThumbnailsToFilesystem skips this photo
-			// (the photos mount is read-only in valkey deployments)
-			photoInfo.ThumbnailPath = "valkey"
-			// Skip if thumbnail already exists in valkey (from a previous index pass)
-			if existing, err := ps.getThumbnailFromValkey(photoHash, "m"); err == nil && len(existing) > 0 {
-				photoInfo.Thumbnail = existing
-			} else {
-				// Generate medium thumbnail during index for valkey persistence
-				// Use embedded EXIF thumbnail if available (avoids full image decode)
-				thumbnail := ps.filesystemSvc.GenerateThumbnail(photo.Path, photo.Exif, 600, 600)
-				if len(thumbnail) > 0 {
-					ps.storeThumbnailToValkey(photoHash, "m", thumbnail)
-					photoInfo.Thumbnail = thumbnail
-				} else {
-					slog.Warn("Failed to generate thumbnail", "photo", photo.Name)
-				}
-			}
-		} else if len(photo.Thumbnail) > 0 {
-			thumbPath, err := ps.writeThumbnailToDisk(photoHash, photo.Thumbnail, "m")
-			if err == nil {
-				photoInfo.ThumbnailPath = thumbPath
-			} else {
-				slog.Error("Failed to write thumbnail to disk", "photo", photo.Name, "error", err)
+		if len(photo.Thumbnail) > 0 {
+			if err := ps.thumbnailStorage.Put(context.Background(), photoHash, "m", photo.Thumbnail); err != nil {
+				slog.Error("Failed to store thumbnail", "photo", photo.Name, "error", err)
 			}
 		}
 
@@ -298,25 +258,9 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 
 	slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
 
-	if ps.config.ThumbnailStorage == "valkey" && ps.config.CacheEnabled {
-		// Set a sentinel path so MigrateThumbnailsToFilesystem skips this photo
-		photoInfo.ThumbnailPath = "valkey"
-		// Skip if thumbnail already exists in valkey
-		if existing, err := ps.getThumbnailFromValkey(photoHash, "m"); err == nil && len(existing) > 0 {
-			photoInfo.Thumbnail = existing
-		} else {
-			thumbnail := ps.filesystemSvc.GenerateThumbnail(photo.Path, photo.Exif, 600, 600)
-			if len(thumbnail) > 0 {
-				ps.storeThumbnailToValkey(photoHash, "m", thumbnail)
-				photoInfo.Thumbnail = thumbnail
-			}
-		}
-	} else if len(photo.Thumbnail) > 0 {
-		thumbPath, err := ps.writeThumbnailToDisk(photoHash, photo.Thumbnail, "m")
-		if err == nil {
-			photoInfo.ThumbnailPath = thumbPath
-		} else {
-			slog.Error("Failed to write thumbnail to disk", "photo", photo.Name, "error", err)
+	if len(photo.Thumbnail) > 0 {
+		if err := ps.thumbnailStorage.Put(context.Background(), photoHash, "m", photo.Thumbnail); err != nil {
+			slog.Error("Failed to store thumbnail", "photo", photo.Name, "error", err)
 		}
 	}
 
@@ -399,20 +343,19 @@ func (ps *PhotoService) RegenerateThumbnails() {
 				continue
 			}
 
-			// In valkey mode, skip if all 3 sizes already exist
-			if ps.config.ThumbnailStorage == "valkey" && ps.config.CacheEnabled {
-				allExist := true
-				for _, size := range []string{"s", "m", "l"} {
-					if _, err := ps.getThumbnailFromValkey(photo.ID, size); err != nil {
-						allExist = false
-						break
-					}
+			// Skip if all 3 sizes already exist
+			allExist := true
+			for _, size := range []string{"s", "m", "l"} {
+				exists, err := ps.thumbnailStorage.Exists(context.Background(), photo.ID, size)
+				if err != nil || !exists {
+					allExist = false
+					break
 				}
-				if allExist {
-					skipped++
-					fromId = photo.ID
-					continue
-				}
+			}
+			if allExist {
+				skipped++
+				fromId = photo.ID
+				continue
 			}
 
 			if _, err := ps.GenerateThumbnailForPhoto(photo.ID); err != nil {
@@ -448,24 +391,14 @@ func (ps *PhotoService) GenerateThumbnailForPhoto(photoId string) (string, error
 			continue
 		}
 
-		if ps.config.ThumbnailStorage == "valkey" && ps.config.CacheEnabled {
-			ps.storeThumbnailToValkey(photoId, sizeCode, thumbnail)
-			if sizeCode == "m" {
-				mediumPath = fmt.Sprintf("valkey:thumbdata:%s:%s", photoId, sizeCode)
-			}
-		} else {
-			path, err := ps.writeThumbnailToDisk(photoId, thumbnail, sizeCode)
-			if err != nil {
-				slog.Error("Failed to write thumbnail", "size", sizeCode, "error", err)
-				continue
-			}
-			if sizeCode == "m" {
-				mediumPath = path
-			}
-
-			// Cache the path
-			cacheKey := fmt.Sprintf("thumbnail:%s:%s", photoId, sizeCode)
-			_ = ps.cacheSvc.Set(cacheKey, path, 24*time.Hour)
+		if err := ps.thumbnailStorage.Put(context.Background(), photoId, sizeCode, thumbnail); err != nil {
+			slog.Error("Failed to store thumbnail", "photo", photoId, "size", sizeCode, "error", err)
+		}
+		// Cache the path for filesystem access (used by response handlers that serve via file)
+		cacheKey := fmt.Sprintf("thumbnail:%s:%s", photoId, sizeCode)
+		_ = ps.cacheSvc.Set(cacheKey, "", 24*time.Hour)
+		if sizeCode == "m" {
+			mediumPath = ""
 		}
 	}
 
@@ -490,7 +423,10 @@ func (ps *PhotoService) PhotoThumbnailPathForSize(photoId string, size string) (
 	}
 
 	// Check filesystem
-	path := ps.thumbnailPathForSize(photoId, size)
+	safeId := strings.ReplaceAll(photoId, "/", "_")
+	safeId = strings.ReplaceAll(safeId, "+", "-")
+	safeId = strings.ReplaceAll(safeId, "=", "")
+	path := filepath.Join(ps.config.PhotoDir, ".thumbnails", size, safeId+".jpg")
 	if _, err := os.Stat(path); err == nil {
 		_ = ps.cacheSvc.Set(cacheKey, path, 24*time.Hour)
 		return path, nil
@@ -510,35 +446,17 @@ func (ps *PhotoService) PhotoThumbnailPathForSize(photoId string, size string) (
 	return "", domain.ErrDataNotFound
 }
 
-func (ps *PhotoService) getThumbnailFromValkey(photoId, size string) ([]byte, error) {
-	key := fmt.Sprintf("thumbdata:%s:%s", photoId, size)
-	return ps.cacheSvc.GetBytes(key)
-}
-
-func (ps *PhotoService) storeThumbnailToValkey(photoId, size string, data []byte) {
-	if len(data) == 0 {
-		return
-	}
-	key := fmt.Sprintf("thumbdata:%s:%s", photoId, size)
-	if err := ps.cacheSvc.SetBytes(key, data, 0); err != nil {
-		slog.Error("Failed to store thumbnail in cache", "photo", photoId, "size", size, "error", err)
-	}
-}
-
 func (ps *PhotoService) PhotoThumbnailBytesForSize(photoId string, size string) ([]byte, error) {
 	if size == "" {
 		size = "m"
 	}
 
-	// When valkey is configured, try Valkey first
-	if ps.config.ThumbnailStorage == "valkey" && ps.config.CacheEnabled {
-		data, err := ps.getThumbnailFromValkey(photoId, size)
-		if err == nil && len(data) > 0 {
-			return data, nil
-		}
+	// Try thumbnail storage adapter first
+	data, err := ps.thumbnailStorage.Get(context.Background(), photoId, size)
+	if err == nil && len(data) > 0 {
+		return data, nil
 	}
-
-	// Try filesystem
+	// Fallback: try filesystem path (legacy or direct file access)
 	path, err := ps.PhotoThumbnailPathForSize(photoId, size)
 	if err == nil && path != "" {
 		data, err := os.ReadFile(path)
