@@ -898,8 +898,9 @@ func TestSavePhoto(t *testing.T) {
 			mockRepo := new(MockPhotoRepository)
 			mockAlbumSvc := new(MockAlbumService)
 			mockFsSvc := new(MockFilesystemService)
+			mockFsSvc.On("GenerateThumbnail", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte("thumb")).Maybe()
 			mockThumbStorage := new(MockThumbnailStorage)
-			mockThumbStorage.On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+			mockThumbStorage.On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo, mockAlbumSvc)
@@ -982,8 +983,9 @@ func TestSavePhotos(t *testing.T) {
 			mockRepo := new(MockPhotoRepository)
 			mockAlbumSvc := new(MockAlbumService)
 			mockFsSvc := new(MockFilesystemService)
+			mockFsSvc.On("GenerateThumbnail", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte("thumb")).Maybe()
 			mockThumbStorage := new(MockThumbnailStorage)
-			mockThumbStorage.On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+			mockThumbStorage.On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo, mockAlbumSvc)

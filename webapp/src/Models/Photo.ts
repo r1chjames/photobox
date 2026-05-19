@@ -15,4 +15,6 @@ export interface Photo {
   duration?: number;
   width?: number;
   height?: number;
+  dominantColor?: string;
+  blurhash?: string;
 }

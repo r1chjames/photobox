@@ -210,11 +210,24 @@ const GridImageItem = React.memo(
                 )}
                 <div className="thumbnail" style={{ aspectRatio: '4 / 3' }}>
                     {(!effectiveThumbnailUrl || !isLoaded) && !hasError && (
-                        <Skeleton
-                            height="100%"
-                            width="100%"
-                            style={{position: 'absolute', top: 0, left: 0}}
-                        />
+                        photo.dominantColor ? (
+                            <div
+                                style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    backgroundColor: photo.dominantColor,
+                                }}
+                            />
+                        ) : (
+                            <Skeleton
+                                height="100%"
+                                width="100%"
+                                style={{position: 'absolute', top: 0, left: 0}}
+                            />
+                        )
                     )}
                     {effectiveThumbnailUrl && !hasError && (
                         <img
