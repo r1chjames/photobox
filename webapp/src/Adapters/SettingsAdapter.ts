@@ -24,10 +24,8 @@ export class SettingsAdapter implements ISettingsAdapter {
 
   public updateSettings = async (settings: Setting[]) => {
     const postAllSettingsPath = "settings";
-    const body = {
-      settings
-    };
-    return this.restApiAdapter.postApiCall(postAllSettingsPath, body, this.buildHeaders(this.restApiAdapter.authHeader()));
+    // Backend expects a bare JSON array, not wrapped in an object
+    return this.restApiAdapter.postApiCall(postAllSettingsPath, settings as unknown as Record<string, unknown>, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 
   public updateSetting = async (setting: Setting) => {
