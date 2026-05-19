@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/disintegration/imaging"
 	"github.com/rwcarlsen/goexif/exif"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
@@ -138,6 +139,20 @@ func computeFileHash(path string) string {
 	return fmt.Sprintf("%x", hash.Sum64())
 }
 
+// computeDominantColor resizes the image to 1x1 to extract the average color,
+// returning a hex string like "#aabbcc". Returns empty string on failure.
+func computeDominantColor(path string) string {
+	img, err := imaging.Open(path)
+	if err != nil {
+		return ""
+	}
+	// Resize to 1x1 to get the average color of the entire image
+	onePixel := imaging.Resize(img, 1, 1, imaging.Box)
+	r, g, b, _ := onePixel.At(0, 0).RGBA()
+	// RGBA() returns values in [0, 65535]; shift down to 8-bit
+	return fmt.Sprintf("#%02x%02x%02x", uint8(r>>8), uint8(g>>8), uint8(b>>8))
+}
+
 func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 	if len(photos) == 0 {
 		return nil
@@ -191,12 +206,18 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 			Height:         photo.Height,
 			Latitude:       photo.Latitude,
 			Longitude:      photo.Longitude,
+			DominantColor:  computeDominantColor(photo.Path),
 		}
 
 		slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
 
-		if len(photo.Thumbnail) > 0 {
-			if err := ps.thumbnailStorage.Put(context.Background(), photoHash, "m", photo.Thumbnail); err != nil {
+		// Generate and store medium thumbnail at index time so thumbnails
+		// are available immediately for both the batch endpoint (DB column)
+		// and the individual endpoint (thumbnail storage).
+		thumbnailBytes := ps.filesystemSvc.GenerateThumbnail(photo.Path, photo.Exif, 600, 600)
+		if len(thumbnailBytes) > 0 {
+			photoInfo.Thumbnail = thumbnailBytes
+			if err := ps.thumbnailStorage.Put(context.Background(), photoHash, "m", thumbnailBytes); err != nil {
 				slog.Error("Failed to store thumbnail", "photo", photo.Name, "error", err)
 			}
 		}
@@ -254,12 +275,18 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 		Height:         photo.Height,
 		Latitude:       photo.Latitude,
 		Longitude:      photo.Longitude,
+		DominantColor:  computeDominantColor(photo.Path),
 	}
 
 	slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
 
-	if len(photo.Thumbnail) > 0 {
-		if err := ps.thumbnailStorage.Put(context.Background(), photoHash, "m", photo.Thumbnail); err != nil {
+	// Generate and store medium thumbnail at index time so thumbnails
+	// are available immediately for both the batch endpoint (DB column)
+	// and the individual endpoint (thumbnail storage).
+	thumbnailBytes := ps.filesystemSvc.GenerateThumbnail(photo.Path, photo.Exif, 600, 600)
+	if len(thumbnailBytes) > 0 {
+		photoInfo.Thumbnail = thumbnailBytes
+		if err := ps.thumbnailStorage.Put(context.Background(), photoHash, "m", thumbnailBytes); err != nil {
 			slog.Error("Failed to store thumbnail", "photo", photo.Name, "error", err)
 		}
 	}
