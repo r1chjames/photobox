@@ -26,7 +26,8 @@ func NewRouter(
 	utilityHandler UtilityHandler,
 	userHandler UserHandler,
 	searchHandler SearchHandler,
-	shareHandler ShareHandler) (*Router, error) {
+	shareHandler ShareHandler,
+	wsHandler *WebSocketHandler) (*Router, error) {
 
 	router := gin.Default()
 
@@ -55,7 +56,7 @@ func NewRouter(
 	// Strict rate limiter for auth endpoints: 5 requests per second with burst of 10
 	authLimiter := NewIPRateLimiter(5, 10)
 
-	defineResources(appConfig, router, token, authHandler, photoHandler, albumHandler, utilityHandler, userHandler, searchHandler, shareHandler, authLimiter)
+	defineResources(appConfig, router, token, authHandler, photoHandler, albumHandler, utilityHandler, userHandler, searchHandler, shareHandler, authLimiter, wsHandler)
 
 	return &Router{
 		router,
@@ -73,9 +74,13 @@ func defineResources(
 	userHandler UserHandler,
 	searchHandler SearchHandler,
 	shareHandler ShareHandler,
-	authLimiter *IPRateLimiter) {
+	authLimiter *IPRateLimiter,
+	wsHandler *WebSocketHandler) {
 
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
+
+	// WebSocket endpoint — upgrades after auth
+	router.GET(fmt.Sprintf("%s/ws", urlBasePath), authMiddleware(token), wsHandler.HandleUpgrade)
 
 	// Apply strict rate limiting to login endpoint to prevent brute force attacks
 	router.POST(fmt.Sprintf("%s/login", urlBasePath), rateLimitMiddleware(authLimiter), authHandler.Login)

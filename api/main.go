@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"gitlab.com/r1chjames/photobox/api/internal/adapter/handler/auth"
 	"gitlab.com/r1chjames/photobox/api/internal/adapter/handler/http"
 	"gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
@@ -10,6 +11,7 @@ import (
 	thumbS3 "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/thumbnail/s3"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"gitlab.com/r1chjames/photobox/api/internal/components"
+	ws "gitlab.com/r1chjames/photobox/api/internal/components/websocket"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 	"gitlab.com/r1chjames/photobox/api/internal/core/service"
@@ -73,6 +75,7 @@ type AppServices struct {
 	filesystemService *service.FilesystemService
 	shareService      *service.ShareService
 	cacheService      *service.CacheService
+	wsHub             *ws.Hub
 }
 
 func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServices {
@@ -114,6 +117,9 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 		slog.Info("AI service enabled", "model", config.OllamaModel, "host", config.OllamaHost)
 	}
 
+	// WebSocket hub for real-time events
+	wsHub := ws.NewHub(context.Background())
+
 	// Photo
 	photoRepo := repository.NewPhotoRepository(dbEnv)
 	// Thumbnail storage adapter
@@ -136,7 +142,7 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 		thumbnailStorage = thumbFs.New(config.ThumbnailDir)
 	}
 
-	photoService := service.NewPhotoService(photoRepo, albumService, filesystemService, cacheService, aiService, *config, thumbnailStorage)
+	photoService := service.NewPhotoService(photoRepo, albumService, filesystemService, cacheService, aiService, *config, thumbnailStorage, wsHub)
 
 	// Share
 	shareRepo := repository.NewShareRepository(dbEnv)
@@ -155,6 +161,7 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 		filesystemService,
 		shareService,
 		cacheService,
+		wsHub,
 	}
 }
 
@@ -169,6 +176,7 @@ func setupHttpHandlers(
 	utilityHandler := http.NewUtilityHandler(appServices.utilityService)
 	searchHandler := http.NewSearchHandler(appServices.photoService, appServices.albumService)
 	shareHandler := http.NewShareHandler(appServices.shareService)
+	wsHandler := http.NewWebSocketHandler(appServices.wsHub)
 
 	return http.NewRouter(
 		*config,
@@ -180,5 +188,6 @@ func setupHttpHandlers(
 		*userHandler,
 		*searchHandler,
 		*shareHandler,
+		wsHandler,
 	)
 }
