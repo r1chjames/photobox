@@ -21,6 +21,7 @@ import { modals } from '@mantine/modals';
 import './PhotoGrid.css';
 import {Photo} from "../../Models/Photo";
 import {fetchThumbnailsBatch, getCachedThumbnail, fetchThumbnailWithAuth, revokeThumbnail} from "../../utils/ThumbnailUtils";
+import {useWebSocket} from "../../hooks/useWebSocket";
 
 const getPhotoDisplayDate = (photo: Photo): string => {
     // Try top-level dateTaken first
@@ -367,6 +368,34 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const [albumModalLoading, setAlbumModalLoading] = useState(false);
     const [thumbnailUrls, setThumbnailUrls] = useState<Map<string, string>>(new Map());
     const isMobile = useMediaQuery('(max-width: 50em)');
+
+    // WebSocket for real-time thumbnail notifications
+    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+    const wsToken = localStorage.getItem('token');
+    const ws = useWebSocket(apiBaseUrl, wsToken);
+
+    // Listen for thumbnail:ready events to load thumbnails as they become available
+    useEffect(() => {
+        return ws.addEventListener('thumbnail:ready', (event) => {
+            const payload = event.payload as { photoId: string; size: string } | undefined;
+            if (!payload?.photoId) return;
+
+            // Check if this photo is currently visible and needs a thumbnail
+            const needsThumbnail = photosRef.current.some(p => p.id === payload.photoId);
+            if (!needsThumbnail) return;
+
+            // Fetch the thumbnail blob and update state
+            fetchThumbnailWithAuth(props.photosAdapter, payload.photoId)
+                .then((url) => {
+                    setThumbnailUrls(prev => {
+                        const next = new Map(prev);
+                        next.set(payload.photoId, url);
+                        return next;
+                    });
+                })
+                .catch(() => { /* thumbnail fetch failed, will retry on next render */ });
+        });
+    }, [ws, props.photosAdapter]);
 
     useEffect(() => {
         try {

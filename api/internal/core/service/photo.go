@@ -17,6 +17,7 @@ import (
 	"github.com/disintegration/imaging"
 	"github.com/rwcarlsen/goexif/exif"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
+	ws "gitlab.com/r1chjames/photobox/api/internal/components/websocket"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 	"gitlab.com/r1chjames/photobox/api/internal/core/utils"
@@ -30,10 +31,11 @@ type PhotoService struct {
 	aiSvc            port.AIService
 	config           appconfig.AppConfig
 	thumbnailStorage port.ThumbnailStorage
+	wsHub            *ws.Hub
 }
 
 // NewPhotoService creates a new Photo service instance
-func NewPhotoService(photoRepo port.PhotoRepository, albumRepo port.AlbumService, filesystemSvc port.FilesystemService, cacheSvc port.CacheService, aiSvc port.AIService, config appconfig.AppConfig, thumbnailStorage port.ThumbnailStorage) *PhotoService {
+func NewPhotoService(photoRepo port.PhotoRepository, albumRepo port.AlbumService, filesystemSvc port.FilesystemService, cacheSvc port.CacheService, aiSvc port.AIService, config appconfig.AppConfig, thumbnailStorage port.ThumbnailStorage, wsHub *ws.Hub) *PhotoService {
 	return &PhotoService{
 		photoRepo,
 		albumRepo,
@@ -42,6 +44,7 @@ func NewPhotoService(photoRepo port.PhotoRepository, albumRepo port.AlbumService
 		aiSvc,
 		config,
 		thumbnailStorage,
+		wsHub,
 	}
 }
 
@@ -73,8 +76,26 @@ func (ps *PhotoService) GetPhoto(photoId string, includeThumbnail bool) (*domain
 }
 
 func (ps *PhotoService) PerformPhotoIndex() {
+	// Notify clients that indexing has started
+	if ps.wsHub != nil {
+		ps.wsHub.BroadcastEvent(ws.Event{
+			Type: ws.EventIndexProgress,
+			Payload: ws.IndexProgressPayload{
+				Phase: "started",
+			},
+		})
+	}
+
 	cache, _ := ps.photoRepo.GetPhotoIndexCache()
 	ps.filesystemSvc.PerformPhotoIndex(ps.SavePhotos, cache)
+
+	// Notify clients that indexing has completed
+	if ps.wsHub != nil {
+		ps.wsHub.BroadcastEvent(ws.Event{
+			Type: ws.EventIndexComplete,
+			Payload: ws.IndexCompletePayload{},
+		})
+	}
 }
 
 func (ps *PhotoService) PhotoCount(albumId string) (int64, error) {
@@ -220,6 +241,16 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 			if err := ps.thumbnailStorage.Put(context.Background(), photoHash, "m", thumbnailBytes); err != nil {
 				slog.Error("Failed to store thumbnail", "photo", photo.Name, "error", err)
 			}
+			// Notify connected clients that a thumbnail is ready
+			if ps.wsHub != nil {
+				ps.wsHub.BroadcastEvent(ws.Event{
+					Type: ws.EventThumbnailReady,
+					Payload: ws.ThumbnailReadyPayload{
+						PhotoID: photoHash,
+						Size:    "m",
+					},
+				})
+			}
 		}
 
 		photoRecords = append(photoRecords, photoInfo)
@@ -288,6 +319,16 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 		photoInfo.Thumbnail = thumbnailBytes
 		if err := ps.thumbnailStorage.Put(context.Background(), photoHash, "m", thumbnailBytes); err != nil {
 			slog.Error("Failed to store thumbnail", "photo", photo.Name, "error", err)
+		}
+		// Notify connected clients that a thumbnail is ready
+		if ps.wsHub != nil {
+			ps.wsHub.BroadcastEvent(ws.Event{
+				Type: ws.EventThumbnailReady,
+				Payload: ws.ThumbnailReadyPayload{
+					PhotoID: photoHash,
+					Size:    "m",
+				},
+			})
 		}
 	}
 
