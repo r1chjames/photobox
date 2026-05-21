@@ -44,7 +44,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const isSharingRef = useRef(false);
 
     const fetchImage = useCallback(async () => {
-        const imageUrl = await fetchPhotoBinWithAuth(props.photosAdapter, props.source.id);
+        const imageUrl = await fetchPhotoBinWithAuth(props.photosAdapter, props.source.id, props.source.mediaType);
         blobUrlRef.current = imageUrl;
         setFetchedImage(imageUrl);
     }, [props.photosAdapter, props.source.id]);

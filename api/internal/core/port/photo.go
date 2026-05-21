@@ -1,6 +1,7 @@
 package port
 
 import (
+	"context"
 	"io"
 
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
@@ -89,7 +90,7 @@ type PhotoService interface {
 	//SavePhotos saves photos to database
 	SavePhotos(photos []domain.PhotoFile) error
 	// PerformPhotoIndex initiates an index of image files on filesystem
-	PerformPhotoIndex()
+	PerformPhotoIndex(ctx context.Context)
 	// DeletePhoto soft-deletes a photo (moves to trash)
 	DeletePhoto(photoId string) error
 	// RestorePhoto restores a photo from trash
@@ -131,5 +132,5 @@ type PhotoService interface {
 	// AnalyzeExistingPhotos runs AI analysis on photos that haven't been analyzed yet
 	AnalyzeExistingPhotos() error
 	// RegenerateThumbnails regenerates thumbnails for all photos (skips photos with existing thumbnails)
-	RegenerateThumbnails()
+	RegenerateThumbnails(ctx context.Context)
 }

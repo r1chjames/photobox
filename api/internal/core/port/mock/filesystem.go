@@ -5,6 +5,7 @@
 package mock
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -169,15 +170,15 @@ func (mr *MockFilesystemServiceMockRecorder) MoveToTrash(path interface{}) *gomo
 }
 
 // PerformPhotoIndex mocks base method.
-func (m *MockFilesystemService) PerformPhotoIndex(save func([]domain.PhotoFile) error, indexCache map[string]struct{ FileHash string; FileModifiedTime int64 }) {
+func (m *MockFilesystemService) PerformPhotoIndex(ctx context.Context, save func([]domain.PhotoFile) error, indexCache map[string]struct{ FileHash string; FileModifiedTime int64 }) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "PerformPhotoIndex", save, indexCache)
+	m.ctrl.Call(m, "PerformPhotoIndex", ctx, save, indexCache)
 }
 
 // PerformPhotoIndex indicates an expected call of PerformPhotoIndex.
-func (mr *MockFilesystemServiceMockRecorder) PerformPhotoIndex(save, indexCache interface{}) *gomock.Call {
+func (mr *MockFilesystemServiceMockRecorder) PerformPhotoIndex(ctx, save, indexCache interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PerformPhotoIndex", reflect.TypeOf((*MockFilesystemService)(nil).PerformPhotoIndex), save, indexCache)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PerformPhotoIndex", reflect.TypeOf((*MockFilesystemService)(nil).PerformPhotoIndex), ctx, save, indexCache)
 }
 
 // RenameDirectory mocks base method.

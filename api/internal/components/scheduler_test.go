@@ -1,6 +1,7 @@
 package components
 
 import (
+	"context"
 	"io"
 	"testing"
 	"time"
@@ -129,8 +130,8 @@ func (m *MockPhotoService) GetPhoto(photoId string, includeThumbnail bool) (*dom
 	return args.Get(0).(*domain.Photo), args.Error(1)
 }
 
-func (m *MockPhotoService) PerformPhotoIndex() {
-	m.Called()
+func (m *MockPhotoService) PerformPhotoIndex(ctx context.Context) {
+	m.Called(ctx)
 }
 
 func (m *MockPhotoService) SavePhoto(photo domain.PhotoFile) error {
@@ -314,7 +315,7 @@ func (m *MockPhotoService) AnalyzeExistingPhotos() error {
 	return args.Error(0)
 }
 
-func (m *MockPhotoService) RegenerateThumbnails() {}
+func (m *MockPhotoService) RegenerateThumbnails(ctx context.Context) {}
 
 // TestNewScheduler tests scheduler creation
 func TestNewScheduler(t *testing.T) {

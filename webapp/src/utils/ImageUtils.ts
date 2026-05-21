@@ -1,6 +1,6 @@
 import {IPhotosAdapter} from "../Adapters/IPhotosAdapter";
 
-export const fetchPhotoBinWithAuth = async (photosAdapter: IPhotosAdapter, id: string) => {
+export const fetchPhotoBinWithAuth = async (photosAdapter: IPhotosAdapter, id: string, mediaType?: string) => {
     const data = await photosAdapter.getPhotoImage(id);
 
     // If the data is a string (like a URL from the mock adapter), return it directly.
@@ -10,7 +10,7 @@ export const fetchPhotoBinWithAuth = async (photosAdapter: IPhotosAdapter, id: s
 
     // Otherwise, assume it's binary data and create a blob URL.
     const blob = new Blob([data], {
-        type: 'image/jpeg',
+        type: mediaType || 'image/jpeg',
     });
     return URL.createObjectURL(blob);
 }

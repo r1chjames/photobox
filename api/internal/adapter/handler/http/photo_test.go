@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -92,8 +93,8 @@ func (m *MockPhotoService) SavePhotos(photos []domain.PhotoFile) error {
 	return args.Error(0)
 }
 
-func (m *MockPhotoService) PerformPhotoIndex() {
-	m.Called()
+func (m *MockPhotoService) PerformPhotoIndex(ctx context.Context) {
+	m.Called(ctx)
 }
 
 func (m *MockPhotoService) DeletePhoto(photoId string) error {
@@ -228,7 +229,7 @@ func (m *MockPhotoService) AnalyzeExistingPhotos() error {
 	return args.Error(0)
 }
 
-func (m *MockPhotoService) RegenerateThumbnails() {}
+func (m *MockPhotoService) RegenerateThumbnails(ctx context.Context) {}
 
 // MockJobService is a mock implementation of port.JobService
 type MockJobService struct {

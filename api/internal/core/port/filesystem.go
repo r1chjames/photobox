@@ -1,6 +1,8 @@
 package port
 
 import (
+	"context"
+
 	"github.com/rwcarlsen/goexif/exif"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 )
@@ -21,7 +23,7 @@ type FilesystemRepository interface {
 // FilesystemService is an interface for interacting with filesystem-related business logic
 type FilesystemService interface {
 	// PerformPhotoIndex initiates an index of image files on filesystem
-	PerformPhotoIndex(save func([]domain.PhotoFile) error, indexCache map[string]struct{FileHash string; FileModifiedTime int64})
+	PerformPhotoIndex(ctx context.Context, save func([]domain.PhotoFile) error, indexCache map[string]struct{FileHash string; FileModifiedTime int64})
 	// WriteFileToFilesystem writes a photo to the filesystem
 	WriteFileToFilesystem(photo domain.PhotoUpload) domain.PhotoFile
 	GenerateThumbnail(path string, exifData exif.Exif, width, height int) []byte

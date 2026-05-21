@@ -1,6 +1,7 @@
 package components
 
 import (
+	"context"
 	"log/slog"
 
 	"github.com/robfig/cron/v3"
@@ -37,7 +38,7 @@ func (s *Scheduler) AddScheduledJobs() {
 	}
 
 	_, err = s.cron.AddFunc(setting.Value, func() {
-		s.photoSvc.PerformPhotoIndex()
+		s.photoSvc.PerformPhotoIndex(context.Background())
 	})
 	if err != nil {
 		slog.Error("Unable to add job schedule, check CRON expression in settings", "key", setting.Key, "cron", setting.Value, "error", err)

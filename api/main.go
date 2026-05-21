@@ -182,7 +182,7 @@ func setupHttpHandlers(
 		*config,
 		appServices.tokenService,
 		*authHandler,
-		*photoHandler,
+		photoHandler,
 		*albumHandler,
 		*utilityHandler,
 		*userHandler,

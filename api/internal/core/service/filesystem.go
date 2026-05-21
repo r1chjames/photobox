@@ -2,6 +2,7 @@ package service
 
 import (
 	b64 "encoding/base64"
+	"context"
 	"fmt"
 	"image"
 	_ "image/jpeg"
@@ -42,7 +43,7 @@ func NewFilesystemService(fsRepo port.FilesystemRepository, jobSvc port.JobServi
 	}
 }
 
-func (fss *FilesystemService) PerformPhotoIndex(save func([]domain.PhotoFile) error, indexCache map[string]struct{ FileHash string; FileModifiedTime int64 }) {
+func (fss *FilesystemService) PerformPhotoIndex(ctx context.Context, save func([]domain.PhotoFile) error, indexCache map[string]struct{ FileHash string; FileModifiedTime int64 }) {
 	_ = fss.jobSvc.JobStart("Photo_index")
 	slog.Info("Starting photo index")
 
@@ -67,6 +68,15 @@ func (fss *FilesystemService) PerformPhotoIndex(save func([]domain.PhotoFile) er
 			slog.Info("Worker started", "workerID", workerID)
 			batch := make([]domain.PhotoFile, 0, 100)
 			for path := range photoChan {
+				select {
+				case <-ctx.Done():
+					slog.Info("Worker cancelled", "workerID", workerID)
+					// Drain remaining items without processing
+					for range photoChan {
+					}
+					return
+				default:
+				}
 				slog.Debug("Worker processing photo", "workerID", workerID, "path", path)
 				photoFileInfo, err := os.Lstat(path)
 				if err != nil {

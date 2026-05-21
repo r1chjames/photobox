@@ -2,11 +2,13 @@ package http
 
 import (
 	"archive/zip"
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
@@ -17,15 +19,18 @@ const maxPageLimit = 100
 
 // PhotoHandler represents the HTTP handler for photo-related requests
 type PhotoHandler struct {
-	photoSvc port.PhotoService
-	jobSvc   port.JobService
+	photoSvc        port.PhotoService
+	jobSvc          port.JobService
+	jobCancellers   map[string]context.CancelFunc
+	jobCancellersMu sync.Mutex
 }
 
 // NewPhotoHandler creates a new PhotoHandler instance
 func NewPhotoHandler(photoSvc port.PhotoService, jobSvc port.JobService) *PhotoHandler {
 	return &PhotoHandler{
-		photoSvc,
-		jobSvc,
+		photoSvc:      photoSvc,
+		jobSvc:        jobSvc,
+		jobCancellers: make(map[string]context.CancelFunc),
 	}
 }
 
@@ -212,9 +217,21 @@ func (ph *PhotoHandler) IndexPhotos(c *gin.Context) {
 		return
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
+	ph.jobCancellersMu.Lock()
+	ph.jobCancellers["Photo_index"] = cancel
+	ph.jobCancellersMu.Unlock()
+
 	c.Status(http.StatusAccepted)
 	go func() {
-		ph.photoSvc.PerformPhotoIndex()
+		defer func() {
+			ph.jobCancellersMu.Lock()
+			delete(ph.jobCancellers, "Photo_index")
+			ph.jobCancellersMu.Unlock()
+			cancel()
+		}()
+		ph.photoSvc.PerformPhotoIndex(ctx)
 	}()
 }
 
@@ -229,10 +246,42 @@ func (ph *PhotoHandler) RegenerateThumbnails(c *gin.Context) {
 		return
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
+	ph.jobCancellersMu.Lock()
+	ph.jobCancellers["Thumbnail_regenerate"] = cancel
+	ph.jobCancellersMu.Unlock()
+
 	c.Status(http.StatusAccepted)
 	go func() {
-		ph.photoSvc.RegenerateThumbnails()
+		defer func() {
+			ph.jobCancellersMu.Lock()
+			delete(ph.jobCancellers, "Thumbnail_regenerate")
+			ph.jobCancellersMu.Unlock()
+			cancel()
+		}()
+		ph.photoSvc.RegenerateThumbnails(ctx)
 	}()
+}
+
+func (ph *PhotoHandler) StopJob(c *gin.Context) {
+	jobType := c.Param("type")
+
+	ph.jobCancellersMu.Lock()
+	cancel, exists := ph.jobCancellers[jobType]
+	ph.jobCancellersMu.Unlock()
+
+	if !exists || cancel == nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "No running job of type: " + jobType})
+		return
+	}
+
+	cancel()
+
+	// Update job status in DB
+	_ = ph.jobSvc.JobComplete(jobType)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Job stop requested"})
 }
 
 func (ph *PhotoHandler) DeletePhoto(ctx *gin.Context) {

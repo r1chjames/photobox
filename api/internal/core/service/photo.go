@@ -75,7 +75,7 @@ func (ps *PhotoService) GetPhoto(photoId string, includeThumbnail bool) (*domain
 	return resp, nil
 }
 
-func (ps *PhotoService) PerformPhotoIndex() {
+func (ps *PhotoService) PerformPhotoIndex(ctx context.Context) {
 	// Notify clients that indexing has started
 	if ps.wsHub != nil {
 		ps.wsHub.BroadcastEvent(ws.Event{
@@ -87,7 +87,7 @@ func (ps *PhotoService) PerformPhotoIndex() {
 	}
 
 	cache, _ := ps.photoRepo.GetPhotoIndexCache()
-	ps.filesystemSvc.PerformPhotoIndex(ps.SavePhotos, cache)
+	ps.filesystemSvc.PerformPhotoIndex(ctx, ps.SavePhotos, cache)
 
 	// Notify clients that indexing has completed
 	if ps.wsHub != nil {
@@ -389,7 +389,7 @@ func (ps *PhotoService) AnalyzeExistingPhotos() error {
 	return nil
 }
 
-func (ps *PhotoService) RegenerateThumbnails() {
+func (ps *PhotoService) RegenerateThumbnails(ctx context.Context) {
 	slog.Info("Starting thumbnail regeneration for all photos")
 
 	total := 0
@@ -397,6 +397,13 @@ func (ps *PhotoService) RegenerateThumbnails() {
 	fromId := ""
 
 	for {
+		select {
+		case <-ctx.Done():
+			slog.Info("Thumbnail regeneration cancelled", "generated", total, "skipped", skipped)
+			return
+		default:
+		}
+
 		photos, err := ps.photoRepo.ListAllPhotos(fromId, 100, false, "", "", "")
 		if err != nil {
 			slog.Error("Failed to list photos for thumbnail regeneration", "error", err)

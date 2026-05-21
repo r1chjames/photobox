@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -92,8 +93,8 @@ func (m *MockSearchPhotoService) SavePhotos(photos []domain.PhotoFile) error {
 	return args.Error(0)
 }
 
-func (m *MockSearchPhotoService) PerformPhotoIndex() {
-	m.Called()
+func (m *MockSearchPhotoService) PerformPhotoIndex(ctx context.Context) {
+	m.Called(ctx)
 }
 
 func (m *MockSearchPhotoService) DeletePhoto(photoId string) error {
@@ -228,7 +229,7 @@ func (m *MockSearchPhotoService) AnalyzeExistingPhotos() error {
 	return args.Error(0)
 }
 
-func (m *MockSearchPhotoService) RegenerateThumbnails() {}
+func (m *MockSearchPhotoService) RegenerateThumbnails(ctx context.Context) {}
 
 // MockSearchAlbumService is a mock implementation of port.AlbumService for search tests
 type MockSearchAlbumService struct {

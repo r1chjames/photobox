@@ -60,20 +60,20 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
         return props.photosAdapter.getPhotoInfoById(id!);
     }
 
-    const fetchPhotoBin = async () => {
-        return fetchPhotoBinWithAuth(props.photosAdapter, id!);
-    }
-
     const {data: photo} = useQuery({
         queryKey: ['fetchPhoto', id],
         queryFn: fetchPhoto,
         enabled: !!id,
     });
 
+    const fetchPhotoBin = async () => {
+        return fetchPhotoBinWithAuth(props.photosAdapter, id!, photo?.mediaType);
+    }
+
     const {data: photoUrl} = useQuery({
-        queryKey: ['fetchPhotoBin', id],
+        queryKey: ['fetchPhotoBin', id, photo?.mediaType],
         queryFn: fetchPhotoBin,
-        enabled: !!id,
+        enabled: !!id && !!photo,
     });
 
     useEffect(() => {

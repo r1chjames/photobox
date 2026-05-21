@@ -5,6 +5,7 @@
 package mock
 
 import (
+	context "context"
 	io "io"
 	reflect "reflect"
 
@@ -648,15 +649,15 @@ func (mr *MockPhotoServiceMockRecorder) ListTrashPhotos(fromId, limit, includeTh
 }
 
 // PerformPhotoIndex mocks base method.
-func (m *MockPhotoService) PerformPhotoIndex() {
+func (m *MockPhotoService) PerformPhotoIndex(ctx context.Context) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "PerformPhotoIndex")
+	m.ctrl.Call(m, "PerformPhotoIndex", ctx)
 }
 
 // PerformPhotoIndex indicates an expected call of PerformPhotoIndex.
-func (mr *MockPhotoServiceMockRecorder) PerformPhotoIndex() *gomock.Call {
+func (mr *MockPhotoServiceMockRecorder) PerformPhotoIndex(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PerformPhotoIndex", reflect.TypeOf((*MockPhotoService)(nil).PerformPhotoIndex))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PerformPhotoIndex", reflect.TypeOf((*MockPhotoService)(nil).PerformPhotoIndex), ctx)
 }
 
 // PhotoBinary mocks base method.
@@ -911,13 +912,13 @@ func (mr *MockPhotoServiceMockRecorder) AnalyzeExistingPhotos() *gomock.Call {
 }
 
 // RegenerateThumbnails mocks base method.
-func (m *MockPhotoService) RegenerateThumbnails() {
+func (m *MockPhotoService) RegenerateThumbnails(ctx context.Context) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "RegenerateThumbnails")
+	m.ctrl.Call(m, "RegenerateThumbnails", ctx)
 }
 
 // RegenerateThumbnails indicates an expected call of RegenerateThumbnails.
-func (mr *MockPhotoServiceMockRecorder) RegenerateThumbnails() *gomock.Call {
+func (mr *MockPhotoServiceMockRecorder) RegenerateThumbnails(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegenerateThumbnails", reflect.TypeOf((*MockPhotoService)(nil).RegenerateThumbnails))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegenerateThumbnails", reflect.TypeOf((*MockPhotoService)(nil).RegenerateThumbnails), ctx)
 }
