@@ -14,9 +14,14 @@ const RECONNECT_MAX_MS = 30000;
 
 /**
  * Builds a WebSocket URL from the API base URL.
+ * Handles both absolute URLs (local dev: http://localhost:8080/api)
+ * and relative paths (production: /api behind a reverse proxy).
  */
 function wsUrl(apiBaseUrl: string): string {
-    const url = new URL(apiBaseUrl);
+    const base = apiBaseUrl.startsWith('http')
+        ? apiBaseUrl
+        : `${window.location.origin}${apiBaseUrl}`;
+    const url = new URL(base);
     url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
     url.pathname = url.pathname.replace(/\/?$/, '/ws');
     return url.toString();
