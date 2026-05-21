@@ -16,14 +16,17 @@ const RECONNECT_MAX_MS = 30000;
  * Builds a WebSocket URL from the API base URL.
  * Handles both absolute URLs (local dev: http://localhost:8080/api)
  * and relative paths (production: /api behind a reverse proxy).
+ * Appends the auth token as a query parameter since the browser
+ * WebSocket API does not support custom headers.
  */
-function wsUrl(apiBaseUrl: string): string {
+function wsUrl(apiBaseUrl: string, token: string): string {
     const base = apiBaseUrl.startsWith('http')
         ? apiBaseUrl
         : `${window.location.origin}${apiBaseUrl}`;
     const url = new URL(base);
     url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
     url.pathname = url.pathname.replace(/\/?$/, '/ws');
+    url.searchParams.set('token', token);
     return url.toString();
 }
 
@@ -62,16 +65,13 @@ export function useWebSocket(apiBaseUrl: string, token: string | null) {
 
         setStatus('connecting');
 
-        const socket = new WebSocket(wsUrl(apiBaseUrl));
-        socket.binaryType = 'blob';
+        const socket = new WebSocket(wsUrl(apiBaseUrl, token));
 
         socket.onopen = () => {
             if (!mountedRef.current) {
                 socket.close();
                 return;
             }
-            // Authenticate by sending the token as the first message
-            socket.send(JSON.stringify({ type: 'auth', payload: { token } }));
             setStatus('connected');
             reconnectAttemptRef.current = 0;
         };
