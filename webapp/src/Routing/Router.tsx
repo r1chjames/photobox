@@ -23,6 +23,7 @@ const TagsView = React.lazy(() => import('../Components/TagsView/TagsView').then
 const TagPhotosView = React.lazy(() => import('../Components/TagsView/TagPhotosView').then(m => ({default: m.TagPhotosView})));
 const SharedView = React.lazy(() => import('../Components/SharedView/SharedView').then(m => ({default: m.SharedView})));
 const DuplicatesView = React.lazy(() => import('../Components/DuplicatesView/DuplicatesView').then(m => ({default: m.DuplicatesView})));
+const AccountSettings = React.lazy(() => import('../Components/AccountSettings/AccountSettings').then(m => ({default: m.AccountSettings})));
 
 const PageLoader = () => (
     <Center h="100vh">
@@ -89,6 +90,7 @@ const Router: React.FunctionComponent = () => {
                 <Route path="/users" element={<UserManagement usersAdapter={usersAdapter} />} />
                 <Route path="/map" element={<MapView photosAdapter={photosAdapter} />} />
                 <Route path="/settings" element={<SettingsView settingsAdapter={settingsAdapter} photosAdapter={photosAdapter} />} />
+                <Route path="/account-settings" element={<AccountSettings usersAdapter={usersAdapter} />} />
                 <Route path="/tags" element={<TagsView photosAdapter={photosAdapter} />} />
                 <Route path="/tags/:tag" element={<TagPhotosView photosAdapter={photosAdapter} albumsAdapter={albumsAdapter} sharesAdapter={sharesAdapter} />} />
                 <Route path="/duplicates" element={<DuplicatesView photosAdapter={photosAdapter} />} />

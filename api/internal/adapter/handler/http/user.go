@@ -1,6 +1,8 @@
 package http
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
@@ -183,8 +185,19 @@ func (uh *UserHandler) UpdateUser(ctx *gin.Context) {
 		return
 	}
 
+	// Get user ID from URL param (admin route) or JWT payload (self-update)
+	userID := ctx.Param("id")
+	if userID == "" {
+		payload := GetAuthPayload(ctx)
+		if payload == nil {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+			return
+		}
+		userID = payload.UserID
+	}
+
 	user := domain.User{
-		ID:       ctx.Param("id"),
+		ID:       userID,
 		Username: req.Username,
 		Email:    req.Email,
 		Password: req.Password,

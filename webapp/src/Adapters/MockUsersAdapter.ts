@@ -22,6 +22,10 @@ export class MockUsersAdapter implements IUsersAdapter {
     return { username: 'mock', email: 'mock@example.com', ...updates };
   }
 
+  public updateSelf = async (updates: Partial<User>): Promise<User> => {
+    return { username: 'mock', email: 'mock@example.com', ...updates };
+  }
+
   public deleteUser = async (_userId: string): Promise<void> => {
     return;
   }

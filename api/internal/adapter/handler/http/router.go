@@ -166,16 +166,13 @@ func defineResources(
 	router.GET(fmt.Sprintf("%s/shared/:token", urlBasePath), shareHandler.GetShared)
 	router.GET(fmt.Sprintf("%s/shared/:token/resource", urlBasePath), shareHandler.GetSharedResourceData)
 
+	router.GET(fmt.Sprintf("%s/health", urlBasePath), utilityHandler.HealthCheck)
+
 	// Admin share management
 	shares := router.Group(fmt.Sprintf("%s/shares", urlBasePath)).Use(authMiddleware(token), requireRole(domain.ADMINISTRATOR))
 	{
 		shares.GET("", shareHandler.ListShares)
 		shares.DELETE("/:token", shareHandler.RevokeShare)
-	}
-
-	settings := router.Group(urlBasePath).Use(authMiddleware(token))
-	{
-		settings.GET("/health", utilityHandler.HealthCheck)
 	}
 
 	// Settings management is admin-only

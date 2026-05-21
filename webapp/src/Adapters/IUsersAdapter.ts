@@ -7,5 +7,6 @@ export interface IUsersAdapter {
   register(user: User): Promise<Token>;
   getAllUsers(): Promise<User[]>;
   updateUser(userId: string, updates: Partial<User>): Promise<User>;
+  updateSelf(updates: Partial<User>): Promise<User>;
   deleteUser(userId: string): Promise<void>;
 }
