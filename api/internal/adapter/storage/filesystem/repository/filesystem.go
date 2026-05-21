@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -102,12 +103,19 @@ func (fs *FilesystemRepository) GenerateThumbnail(path string, width, height int
 	if utils.IsVideoFile(path) {
 		return fs.generateVideoThumbnail(path, width, height)
 	}
+	// Check if source file still exists before attempting decode
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		slog.Error("Source file missing, cannot generate thumbnail", "path", path)
+		return nil
+	}
 	extension := utils.GetFileExtension(path)
 	img, err := imaging.Open(path)
 	if err != nil {
-		// RAW/DNG files commonly fail here — the Go image library doesn't support
-		// all TIFF color models. Fall back to exiftool for RAW preview extraction.
-		slog.Warn("Unable to decode image for thumbnail (RAW format likely)", "path", path, "error", err)
+		if strings.Contains(err.Error(), "unsupported feature") {
+			slog.Warn("TIFF color model not supported, falling back to RAW preview", "path", path, "error", err)
+		} else {
+			slog.Warn("Unable to decode image for thumbnail", "path", path, "error", err)
+		}
 		return fs.generateRawThumbnail(path, width, height)
 	}
 	thumb := imaging.Thumbnail(img, width, height, imaging.CatmullRom)
