@@ -2,14 +2,14 @@
 
 ## Priority Summary
 
-| Priority | Area | Impact | Effort |
-|----------|------|--------|--------|
-| **P0** | Thumbnail storage & serving | High perf gain, reduces DB load | Medium |
-| **P0** | Photo indexing batching & I/O | Dramatically faster re-index | Medium |
-| **P1** | Database query & index optimization | Faster list views, less memory | Low |
-| **P1** | Security hardening | Auth, path traversal, headers | Low-Medium |
-| **P2** | Serialization format | Marginal gain unless huge payloads | Medium-High |
-| **P2** | Thumbnail generation pipeline | Better video support, progressive JPEG | Medium |
+| Priority | Area | Impact | Effort | Status |
+|----------|------|--------|--------|--------|
+| **P0** | Thumbnail storage & serving | High perf gain, reduces DB load | Medium | ✅ Done |
+| **P0** | Photo indexing batching & I/O | Dramatically faster re-index | Medium | ✅ Done |
+| **P1** | Database query & index optimization | Faster list views, less memory | Low | ✅ Done |
+| **P1** | Security hardening | Auth, path traversal, headers | Low-Medium | ⚠️ Partial |
+| **P2** | Serialization format | Marginal gain unless huge payloads | Medium-High | ⚠️ Partial |
+| **P2** | Thumbnail generation pipeline | Better video support, progressive JPEG | Medium | ⚠️ Partial |
 
 ---
 
@@ -23,23 +23,23 @@
 
 ### Recommendations
 
-**a. Batch save during indexing**
-Change `PerformPhotoIndex` to collect photo metadata into chunks (e.g., 100-500) and call `SavePhotos` instead of `SavePhoto`. This requires changing the `save func(domain.PhotoFile) error` signature to accept batches or buffering in the service layer.
+**a. ✅ Batch save during indexing**
+`PerformPhotoIndex` now batches saves (100 per flush via `CreatePhotosInfo`).
 
-*Files:* `api/internal/core/service/filesystem.go:37-82`, `api/internal/core/service/photo.go:117-175`
+*Relevant files:* `api/internal/core/service/filesystem.go:37-82`, `api/internal/core/service/photo.go:117-175`
 
-**b. Single-pass file I/O**
-Refactor `getMetaData` to open the file once and reuse the handle for dimensions, hash, MIME, and EXIF extraction.
+**b. ✅ Single-pass file I/O**
+`getMetaData` opens the file once and reuses the handle for dimensions, MIME, MD5, and EXIF via `Seek(0,0)`.
 
-*Files:* `api/internal/core/service/filesystem.go:108-181`
+*Relevant files:* `api/internal/core/service/filesystem.go:108-181`
 
-**c. Skip unchanged files during re-index**
-Use `file_hash` + `filesystem_path` + `modified time` to detect unchanged files. Only process files that are new or have changed.
+**c. ✅ Skip unchanged files during re-index**
+Uses in-memory index cache (`file_hash` + `FileModifiedTime`) to skip unmodified files. New `FileModifiedTime` field on `Photo` and `PhotoFile` domain models.
 
-*Files:* `api/internal/core/service/filesystem.go:37-82`, `api/internal/core/domain/photo.go:8-30`
+*Relevant files:* `api/internal/core/service/filesystem.go:37-82`, `api/internal/core/domain/photo.go:8-30`
 
-**d. Parallelize thumbnail generation separately**
-Separate the thumbnail generation from metadata extraction. Thumbnails can be generated in a second pass or lazily, allowing the index to complete much faster.
+**d. ✅ Async thumbnail generation**
+Thumbnails removed from indexing pipeline — generated on-demand in handler via `GenerateThumbnailForPhoto`.
 
 ---
 
@@ -53,19 +53,19 @@ Separate the thumbnail generation from metadata extraction. Thumbnails can be ge
 
 ### Recommendations
 
-**a. Multiple thumbnail sizes**
-Generate `small` (200x200), `medium` (600x600), and `large` (1200x1200) variants. Store them in separate columns or migrate to a dedicated table.
+**a. ✅ Multiple thumbnail sizes**
+`GenerateThumbnail` now accepts `width, height`; generates small (200x200), medium (600x600), large (1200x1200); stored in `.thumbnails/{s,m,l}/`.
 
-*Files:* `api/internal/adapter/storage/filesystem/repository/filesystem.go:87-123`
+*Relevant files:* `api/internal/adapter/storage/filesystem/repository/filesystem.go:87-123`
 
-**b. WebP for thumbnails**
-WebP typically produces 25-35% smaller files than JPEG at equivalent quality. Go's `golang.org/x/image/webp` or `github.com/chai2010/webp` can encode.
+**b. ❌ WebP for thumbnails (deferred) — [#35](https://github.com/r1chjames/photobox/issues/35)**
+Deferred indefinitely — requires CGO/libwebp, limited pure-Go encoders available. JPEG thumbnails remain the default.
 
-**c. Streaming/sequential decode for large images**
-For very large photos (>20MP), `imaging.Open` allocates a huge RGBA buffer. Consider using `imaging.Decode` with `image.Config` to check dimensions first and use a downscaling decoder if available.
+**c. ❌ Streaming/sequential decode for large images — [#40](https://github.com/r1chjames/photobox/issues/40)**
+`imaging.Open` still decodes the full image. For photos >20MP this allocates a large RGBA buffer. Consider using a downscaling decoder.
 
-**d. Video thumbnail pooling**
-Reuse ffmpeg processes or use a thumbnail extraction library like `github.com/u2takey/ffmpeg-go` with better process management.
+**d. ❌ Video thumbnail pooling — [#41](https://github.com/r1chjames/photobox/issues/41)**
+ffmpeg is still spawned per-call. Consider `github.com/u2takey/ffmpeg-go` or a persistent ffmpeg process pool.
 
 ---
 
@@ -82,10 +82,11 @@ Reuse ffmpeg processes or use a thumbnail extraction library like `github.com/u2
 - ✅ **Startup migration** — `MigrateThumbnailsToFilesystem` extracts existing DB thumbnails to disk on boot
 
 ### Remaining Recommendations
-- **Add Redis/in-memory caching** — Cache hot thumbnails in an LRU cache. Thumbnails are immutable once generated, making them perfect for caching.
-- **Replace ZIP batch with individual URLs** — The frontend already fetches thumbnails individually with concurrency limiting (6 at a time). The ZIP batch endpoint adds complexity. Consider removing it and relying on HTTP/2 multiplexing.
+- ✅ **Redis/Valkey caching** — `CacheService` with `go-redis/v9` caches thumbnail paths with 24h TTL; graceful degradation when disabled or unreachable. Config via `CACHE_ENABLED`, `CACHE_HOST`, `CACHE_PORT`, `CACHE_PASSWORD`, `CACHE_DB`.
+- ❌ **Replace ZIP batch with individual URLs** — [#42](https://github.com/r1chjames/photobox/issues/42) — The ZIP batch endpoint (`/photo/thumbnail/zip`) still exists. Consider removing it and relying on HTTP/2 multiplexing.
+- ❌ **Separate rate limiter for thumbnail endpoints** — [#39](https://github.com/r1chjames/photobox/issues/39) — Only global (100 req/s) and auth (5 req/s) rate limiters exist. Thumbnails are bursty; consider a dedicated limiter.
 
-*Files:* `api/internal/adapter/handler/http/photo.go:243-279`, `webapp/src/utils/ThumbnailUtils.ts:32-64`
+*Relevant files:* `api/internal/adapter/handler/http/photo.go:243-279`, `webapp/src/utils/ThumbnailUtils.ts:32-64`
 
 ---
 
@@ -104,16 +105,18 @@ Reuse ffmpeg processes or use a thumbnail extraction library like `github.com/u2
 **Do not migrate to Protobuf.** The API is not a high-throughput microservices mesh. The overhead of maintaining `.proto` files, generating code, and adding a decoder to the React frontend outweighs the benefits for a photo gallery app.
 
 **Instead:**
-1. **Enable response compression** in Gin. Add `gzip` middleware:
+1. ✅ **Response compression enabled** — Gzip middleware added to Gin router:
    ```go
    import "github.com/gin-contrib/gzip"
    router.Use(gzip.Gzip(gzip.DefaultCompression))
    ```
    This reduces JSON payload size by 60-80% for list endpoints with no frontend changes.
 
-2. **Use `goccy/go-json` explicitly** for large marshal/unmarshal operations. It's already in your dependency tree (via Gin) and is ~2x faster than `encoding/json`.
+   *File:* `api/internal/adapter/handler/http/router.go:43`
 
-3. **If you still want binary:** Consider **MessagePack** with `github.com/vmihailenco/msgpack/v5`. It requires only a small frontend library and no schema definitions.
+2. ❌ **`goccy/go-json` not explicitly configured** — [#43](https://github.com/r1chjames/photobox/issues/43) — It's in the dependency tree via Gin but not explicitly imported for marshaling. Low priority unless profiling shows serialization as a bottleneck.
+
+3. ❌ **MessagePack not adopted** — Added complexity outweighs benefit for current payload sizes.
 
 *Files:* `api/internal/adapter/handler/http/router.go:30-61`
 
@@ -130,28 +133,24 @@ Reuse ffmpeg processes or use a thumbnail extraction library like `github.com/u2
 
 ### Recommendations
 
-**a. Extract key metadata fields to columns**
-Move frequently queried metadata (GPS lat/lng, camera model, orientation) into proper indexed columns. This eliminates JSON path queries.
+**a. ✅ Extract key metadata fields to columns**
+`latitude` and `longitude` columns added to `Photo` domain model with btree partial index. GPS extracted from EXIF during indexing (DMS → decimal degrees with hemisphere handling).
 
-*Files:* `api/internal/core/domain/photo.go:8-30`
+*Relevant files:* `api/internal/core/domain/photo.go:32-33`
 
-**b. Normalize tags**
-Move from comma-separated string to a `photo_tags` junction table. Enables proper indexing and efficient queries.
+**b. ✅ Normalize tags**
+`PhotoTag` junction table created with composite PK (`photo_id`, `tag`) and indexes. `ListPhotosByTags` uses JOINs instead of `string_to_array`. `GetAllTags` queries `PhotoTag` directly. `UpdatePhotoTags` syncs both legacy `tags` column and junction table.
 
-*Files:* `api/internal/core/domain/photo.go:14`, `api/internal/adapter/storage/database/repository/photos.go:284-299`
+*Relevant files:* `api/internal/core/domain/photo.go:36-40`, `api/internal/adapter/storage/database/repository/photos.go:280-332`
 
-**c. Add partial index for geodata**
-```sql
-CREATE INDEX idx_photos_gps ON photobox.photos (id) 
-WHERE metadata::jsonb -> 'Exif' ->> 'GPSLatitude' IS NOT NULL;
-```
-Or better, add `latitude`/`longitude` columns and a GiST index.
+**c. ✅ Add indexed columns for geodata (supersedes JSON path approach)**
+Instead of a SQL partial index on JSON, `latitude`/`longitude` columns were added with `idx_photos_lat_lng` partial index. `GetPhotosWithGeodata` now uses `lat/lng BETWEEN` instead of JSON path queries.
 
-**d. Query-only thumbnail access**
-As mentioned in section 3e, never fetch the thumbnail column when loading photo lists or metadata.
+**d. ✅ Query-only thumbnail access**
+`Omit("thumbnail")` used in all list queries. `GetThumbnailBytes` selects only the `thumbnail` column.
 
-**e. Add `pg_stat_statements`**
-Enable this PostgreSQL extension to identify slow queries in production.
+**e. ✅ Enable `pg_stat_statements`**
+Enabled in `database.go` at startup via `CREATE EXTENSION IF NOT EXISTS pg_stat_statements`.
 
 ---
 
@@ -167,56 +166,29 @@ Enable this PostgreSQL extension to identify slow queries in production.
 
 ### Recommendations
 
-**a. Remove insecure defaults**
-```go
-adminPassword := utils.GetEnv("DEFAULT_ADMIN_PASSWORD", "")
-if adminPassword == "" {
-    slog.Error("DEFAULT_ADMIN_PASSWORD must be set")
-    os.Exit(1)
-}
-```
+**a. ✅ Remove insecure defaults**
+Done. `DEFAULT_ADMIN_PASSWORD` defaults to `""` and causes a hard error (`os.Exit(1)`) if not set.
 
-*Files:* `api/internal/appconfig/appconfig.go:41`
+*File:* `api/internal/appconfig/appconfig.go:60-62`
 
-**b. Path traversal hardening**
-Validate that `photoInfo.FilesystemPath` is within `appConfig.PhotoDir` before serving:
+**b. ✅ Path traversal hardening**
+`PhotoService.PhotoBinary` validates `FilesystemPath` is within `PhotoDir` before serving. Returns `domain.ErrForbidden` on mismatch.
 
-```go
-func validatePhotoPath(baseDir, requestedPath string) error {
-    absBase, _ := filepath.Abs(baseDir)
-    absReq, _ := filepath.Abs(requestedPath)
-    if !strings.HasPrefix(absReq, absBase) {
-        return domain.ErrForbidden
-    }
-    return nil
-}
-```
+*File:* `api/internal/core/service/photo.go:85-91`
 
-*Files:* `api/internal/adapter/handler/http/photo.go:127-143`
+**c. ❌ Add request body limits — [#36](https://github.com/r1chjames/photobox/issues/36)**
+No `MaxBytesReader` or `MaxMultipartMemory` limit configured. Upload endpoints can receive unlimited payloads.
 
-**c. Add request body limits**
-```go
-router.MaxMultipartMemory = 32 << 20 // 32 MB
-// Or for general body size:
-router.Use(func(c *gin.Context) {
-    c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 50*1024*1024)
-})
-```
+**d. ❌ Database SSL — [#37](https://github.com/r1chjames/photobox/issues/37)**
+No `sslmode` env var in appconfig. Only test config has `sslmode=disable`. Production DSN may be transmitting credentials in plaintext.
 
-**d. Database SSL**
-Add `sslmode` to DSN based on env var:
-```go
-sslMode := utils.GetEnv("DB_SSL_MODE", "require")
-dbURL := fmt.Sprintf("host=%s ... sslmode=%s", ..., sslMode)
-```
+*File:* `api/internal/appconfig/appconfig.go:25-32`
 
-*Files:* `api/internal/appconfig/appconfig.go:25-32`
+**e. ❌ Security headers — [#38](https://github.com/r1chjames/photobox/issues/38)**
+No middleware for `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, or `Content-Security-Policy`.
 
-**e. Security headers**
-Add middleware for `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Content-Security-Policy`.
-
-**f. Rate limit thumbnail endpoints**
-The global 100 req/s limiter applies, but thumbnails are bursty. Consider a separate, stricter limiter for resource-heavy endpoints.
+**f. ❌ Rate limit thumbnail endpoints — [#39](https://github.com/r1chjames/photobox/issues/39)**
+Global 100 req/s and auth 5 req/s rate limiters exist, but no dedicated limiter for thumbnail/resource-heavy endpoints.
 
 ---
 
@@ -255,8 +227,8 @@ The global 100 req/s limiter applies, but thumbnails are bursty. Consider a sepa
 7. ✅ Update `GetAllTags` to query `PhotoTag` directly
 8. ✅ Update `UpdatePhotoTags` to sync both legacy `tags` column and junction table
 
-### Phase 5: Advanced ✅ COMPLETE (`f094907`)
-1. ❌ WebP thumbnail generation — deferred; requires CGO/libwebp, limited pure-Go encoders available
+### Phase 5: Advanced ⚠️ PARTIAL (`f094907`)
+1. ❌ WebP thumbnail generation — [#35](https://github.com/r1chjames/photobox/issues/35); deferred; requires CGO/libwebp, limited pure-Go encoders available
 2. ✅ Multiple thumbnail sizes — `GenerateThumbnail` now accepts `width, height`; generates small (200x200), medium (600x600), large (1200x1200); stored in `.thumbnails/{s,m,l}/`
 3. ✅ Valkey/Redis caching layer — `CacheService` with `go-redis/v9`; caches thumbnail paths with 24h TTL; graceful degradation when disabled or unreachable; config via `CACHE_ENABLED`, `CACHE_HOST`, `CACHE_PORT`, `CACHE_PASSWORD`, `CACHE_DB`
 4. ❌ HTTP/2 server push for thumbnail batches — deferred; modern browsers deprecating server push, HTTP/2 multiplexing + individual requests is sufficient
@@ -276,6 +248,25 @@ GET /photo/{id}/thumbnail?size=s   # 200x200
 GET /photo/{id}/thumbnail?size=m   # 600x600 (default)
 GET /photo/{id}/thumbnail?size=l   # 1200x1200
 ```
+
+---
+
+## 8. Remaining Work
+
+Items not yet implemented, ordered by practical impact:
+
+| Priority | Item | Section Ref | Issue | Effort | Notes |
+|----------|------|-------------|-------|--------|-------|
+| **P1** | Request body limits (upload size cap) | §6c | [#36](https://github.com/r1chjames/photobox/issues/36) | Low | 2 lines of middleware; prevents OOM from large uploads |
+| **P1** | Database SSL (`sslmode`) configuration | §6d | [#37](https://github.com/r1chjames/photobox/issues/37) | Low | Add `DB_SSL_MODE` env var to appconfig, append to DSN |
+| **P2** | Security headers middleware | §6e | [#38](https://github.com/r1chjames/photobox/issues/38) | Low | Add `X-Content-Type-Options`, `X-Frame-Options`, `CSP` to router |
+| **P2** | Separate rate limiter for thumbnail endpoints | §6f | [#39](https://github.com/r1chjames/photobox/issues/39) | Low | Dedicated limiter for resource-heavy endpoints |
+| **P2** | Streaming/sequential decode for large images | §2c | [#40](https://github.com/r1chjames/photobox/issues/40) | Medium | Use downscaling decoder for photos >20MP |
+| **P2** | Video thumbnail pooling | §2d | [#41](https://github.com/r1chjames/photobox/issues/41) | Medium | Reuse ffmpeg process or switch to lib-based extraction |
+| **P3** | Replace ZIP batch with individual URLs | §3 | [#42](https://github.com/r1chjames/photobox/issues/42) | Low | Remove `/photo/thumbnail/zip` endpoint |
+| **P3** | WebP thumbnail generation | §2b | [#35](https://github.com/r1chjames/photobox/issues/35) | High | Deferred until CGO/libwebp or viable pure-Go encoder |
+| **P3** | Configure `goccy/go-json` explicitly | §4 | [#43](https://github.com/r1chjames/photobox/issues/43) | Low | Marginal gain unless profiling shows bottleneck |
+| **P3** | Remove legacy `tags` column migration | §5b | [#44](https://github.com/r1chjames/photobox/issues/44) | Medium | Once `PhotoTag` junction table is sole source of truth |
 
 ---
 
