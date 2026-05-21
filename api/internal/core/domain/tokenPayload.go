@@ -8,6 +8,7 @@ import (
 
 type TokenPayload struct {
 	ID        uuid.UUID `json:"id"`
+	UserID    string    `json:"user_id"`
 	Username  string    `json:"username"`
 	Role      UserRole  `json:"role"`
 	CreatedAt time.Time `json:"created_at"`
@@ -22,6 +23,7 @@ func NewPayload(user User, duration time.Duration) (*TokenPayload, error) {
 
 	payload := &TokenPayload{
 		ID:        tokenId,
+		UserID:    user.ID,
 		Username:  user.Username,
 		Role:      user.Role,
 		CreatedAt: time.Now(),

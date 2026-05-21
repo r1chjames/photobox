@@ -37,7 +37,6 @@ import {
     IconLogout,
     IconMap,
     IconMenu2,
-    IconMessage,
     IconMoon,
     IconPhoto,
     IconSearch,
@@ -86,12 +85,6 @@ const navLinkData = [
         label: Labels.Albums,
         href: '/albums',
         description: 'All albums'
-    },
-    {
-        icon: IconHeart,
-        label: Labels.Favorites,
-        href: '/favorites',
-        description: 'Your favorite photos'
     },
     {
         icon: IconTrash,
@@ -371,14 +364,15 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
                                         </UnstyledButton>
                                     </Menu.Target>
                                     <Menu.Dropdown>
-                                        <Menu.Item
-                                            leftSection={<IconMessage size={16} color={"blue"} stroke={1.5}/>}
-                                        >
-                                            Your comments
-                                        </Menu.Item>
                                         <Menu.Label>Settings</Menu.Label>
-                                        <Menu.Item leftSection={<IconSettings size={16} stroke={1.5}/>}>
+                                        <Menu.Item leftSection={<IconSettings size={16} stroke={1.5}/>} onClick={() => navigate('/account-settings')}>
                                             Account settings
+                                        </Menu.Item>
+                                        <Menu.Item 
+                                            leftSection={<IconHeart size={16} stroke={1.5} />}
+                                            onClick={() => navigate('/favorites')}
+                                        >
+                                            Favorites
                                         </Menu.Item>
                                         <Menu.Divider/>
                                         <Menu.Item onClick={handleLogout} leftSection={<IconLogout size={16} stroke={1.5}/>}>Logout</Menu.Item>

@@ -46,6 +46,10 @@ export class UsersAdapter implements IUsersAdapter {
     return this.restApiAdapter.patchApiCall(`users/${userId}`, updates as Record<string, unknown>, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 
+  public updateSelf = async (updates: Partial<User>): Promise<User> => {
+    return this.restApiAdapter.postApiCall('user/update', updates as Record<string, unknown>, this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
+
   public deleteUser = async (userId: string): Promise<void> => {
     return this.restApiAdapter.deleteApiCall(`users/${userId}`, this.buildHeaders(this.restApiAdapter.authHeader()));
   }

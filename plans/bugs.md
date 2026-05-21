@@ -1,3 +1,6 @@
+### Outstanding
+
+### Fixed
 - Settings - error "Something went wrong - Cannot read properties of null (reading 'useState')"
 - Duplicates - error "Something went wrong - Cannot read properties of null (reading 'useState')"
 - Viewing a photo fullscreen (PhotoDetail) error "Something went wrong - Cannot read properties of null (reading 'useState')"
@@ -5,4 +8,5 @@
 - Clicking a section for the first time refreshes the appbar rather than the content within it
 - Adding a photo to favourites via the photocard causes it to flash
 - Icons (rotate, favourite, etc.) aren't aesthetically pleasing - alignment, styling, etc.
-- When in dark mode, the appbar goes dark but background of the content within has a white background 
+- When in dark mode, the appbar goes dark but background of the content within has a white background
+
