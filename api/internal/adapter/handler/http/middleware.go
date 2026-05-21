@@ -35,25 +35,27 @@ func GetAuthPayload(ctx *gin.Context) *domain.TokenPayload {
 
 func authMiddleware(token port.TokenService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		accessToken := ""
+
+		// Try Authorization header first (standard HTTP requests)
 		authHeader := GetAuthHeader(ctx)
-		if authHeader == "" {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "No header was passed"})
+		if authHeader != "" {
+			fields := strings.Fields(authHeader)
+			if len(fields) == 2 && strings.ToLower(fields[0]) == authorizationHeaderBearerType {
+				accessToken = fields[1]
+			}
+		}
+
+		// Fallback to query parameter (browser WebSocket API cannot set custom headers)
+		if accessToken == "" {
+			accessToken = ctx.Query("token")
+		}
+
+		if accessToken == "" {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "No authorization token provided"})
 			return
 		}
 
-		fields := strings.Fields(authHeader)
-		if len(fields) != 2 {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid or Missing Bearer Token"})
-			return
-		}
-
-		authType := fields[0]
-		if strings.ToLower(authType) != authorizationHeaderBearerType {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization Type Not Supported"})
-			return
-		}
-
-		accessToken := fields[1]
 		payload, err := token.VerifyToken(accessToken)
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Access Token Not Valid"})
