@@ -276,8 +276,12 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
             isSwipingRef.current = false;
             return;
         }
+        // Don't navigate to PhotoDetail for videos — they're playable in the grid
+        if (props.source.mediaType === 'video') {
+            return;
+        }
         navigate(`/photo/${props.source.id}`);
-    }, [navigate, props.source.id]);
+    }, [navigate, props.source.id, props.source.mediaType]);
 
     return (
         <>

@@ -204,16 +204,16 @@ func (pr *PhotoRepository) GetTimeline() ([]domain.TimelineEntry, error) {
 		SELECT 
 			EXTRACT(YEAR FROM COALESCE(
 				CASE 
-					WHEN metadata->'Exif'->>'DateTimeOriginal' ~ '^\d{4}:\d{2}:\d{2}'
-					THEN to_timestamp((metadata->'Exif'->>'DateTimeOriginal')::text, 'YYYY:MM:DD HH24:MI:SS')
+					WHEN metadata->'exif'->>'DateTimeOriginal' ~ '^\d{4}:\d{2}:\d{2}'
+					THEN to_timestamp((metadata->'exif'->>'DateTimeOriginal')::text, 'YYYY:MM:DD HH24:MI:SS')
 					ELSE NULL
 				END,
 				to_timestamp(created_epoch / 1000)
 			))::int AS year,
 			EXTRACT(MONTH FROM COALESCE(
 				CASE 
-					WHEN metadata->'Exif'->>'DateTimeOriginal' ~ '^\d{4}:\d{2}:\d{2}'
-					THEN to_timestamp((metadata->'Exif'->>'DateTimeOriginal')::text, 'YYYY:MM:DD HH24:MI:SS')
+					WHEN metadata->'exif'->>'DateTimeOriginal' ~ '^\d{4}:\d{2}:\d{2}'
+					THEN to_timestamp((metadata->'exif'->>'DateTimeOriginal')::text, 'YYYY:MM:DD HH24:MI:SS')
 					ELSE NULL
 				END,
 				to_timestamp(created_epoch / 1000)
@@ -238,6 +238,7 @@ func (pr *PhotoRepository) GetPhotosWithGeodata(north, south, east, west float64
 		Where("latitude BETWEEN ? AND ?", south, north).
 		Where("longitude BETWEEN ? AND ?", west, east).
 		Omit("thumbnail").
+		Limit(1000).
 		Find(&photos)
 	if result.Error != nil {
 		return nil, result.Error
