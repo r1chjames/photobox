@@ -21,7 +21,7 @@ func NewRouter(
 	appConfig appconfig.AppConfig,
 	token port.TokenService,
 	authHandler AuthHandler,
-	photoHandler PhotoHandler,
+	photoHandler *PhotoHandler,
 	albumHandler AlbumHandler,
 	utilityHandler UtilityHandler,
 	userHandler UserHandler,
@@ -68,7 +68,7 @@ func defineResources(
 	router *gin.Engine,
 	token port.TokenService,
 	authHandler AuthHandler,
-	photoHandler PhotoHandler,
+	photoHandler *PhotoHandler,
 	albumHandler AlbumHandler,
 	utilityHandler UtilityHandler,
 	userHandler UserHandler,
@@ -149,6 +149,7 @@ func defineResources(
 	// Photo indexing is admin-only as it's a system operation
 	router.POST(fmt.Sprintf("%s/photos/index", urlBasePath), authMiddleware(token), requireRole(domain.ADMINISTRATOR), photoHandler.IndexPhotos)
 	router.POST(fmt.Sprintf("%s/photos/regenerate-thumbnails", urlBasePath), authMiddleware(token), requireRole(domain.ADMINISTRATOR), photoHandler.RegenerateThumbnails)
+	router.POST(fmt.Sprintf("%s/photos/jobs/:type/stop", urlBasePath), authMiddleware(token), requireRole(domain.ADMINISTRATOR), photoHandler.StopJob)
 
 	// Search
 	search := router.Group(fmt.Sprintf("%s/search", urlBasePath)).Use(authMiddleware(token))

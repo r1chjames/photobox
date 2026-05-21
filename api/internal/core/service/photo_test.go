@@ -277,8 +277,8 @@ type MockFilesystemService struct {
 	mock.Mock
 }
 
-func (m *MockFilesystemService) PerformPhotoIndex(callback func([]domain.PhotoFile) error, indexCache map[string]struct{ FileHash string; FileModifiedTime int64 }) {
-	m.Called(callback, indexCache)
+func (m *MockFilesystemService) PerformPhotoIndex(ctx context.Context, callback func([]domain.PhotoFile) error, indexCache map[string]struct{ FileHash string; FileModifiedTime int64 }) {
+	m.Called(ctx, callback, indexCache)
 }
 
 func (m *MockFilesystemService) GenerateThumbnail(path string, exifData exif.Exif, width, height int) []byte {
@@ -1010,11 +1010,11 @@ func TestPerformPhotoIndex(t *testing.T) {
 
 		// Mock GetPhotoIndexCache to return empty cache
 		mockRepo.On("GetPhotoIndexCache").Return(map[string]struct{ FileHash string; FileModifiedTime int64 }{}, nil)
-		// Mock expects the callback function and indexCache to be passed
-		mockFsSvc.On("PerformPhotoIndex", mock.AnythingOfType("func([]domain.PhotoFile) error"), mock.Anything).Return()
+		// Mock expects the context, callback function and indexCache to be passed
+		mockFsSvc.On("PerformPhotoIndex", mock.Anything, mock.AnythingOfType("func([]domain.PhotoFile) error"), mock.Anything).Return()
 
 		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil)
-		service.PerformPhotoIndex()
+		service.PerformPhotoIndex(context.Background())
 
 		mockRepo.AssertExpectations(t)
 		mockFsSvc.AssertExpectations(t)

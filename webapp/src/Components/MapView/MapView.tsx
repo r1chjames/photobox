@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { LatLngBounds } from 'leaflet';
 import { IPhotosAdapter, PhotoGeoData } from '../../Adapters/IPhotosAdapter';
 import { EmptyState } from '../EmptyState/EmptyState';
-import { Loader, Center, Title, Skeleton } from '@mantine/core';
+import { Title, Skeleton } from '@mantine/core';
 import { IconMap } from '@tabler/icons-react';
 import 'leaflet/dist/leaflet.css';
 import { fetchThumbnailWithAuth, getCachedThumbnail, revokeThumbnail } from '../../utils/ThumbnailUtils';
@@ -33,16 +33,36 @@ export const MapView: React.FC<MapViewProps> = ({ photosAdapter }) => {
       const data = await photosAdapter.getGeodata(90, -90, 180, -180);
       setPhotos(data || []);
 
+      if (!data || data.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      // Fetch thumbnails in parallel with concurrency limit
       const urls = new Map<string, string>();
-      for (const photo of data || []) {
+      const CONCURRENCY = 6;
+      const uncached = data.filter(p => !getCachedThumbnail(p.id));
+
+      // First, add cached thumbnails immediately
+      for (const photo of data) {
         const cached = getCachedThumbnail(photo.id);
-        if (cached) {
-          urls.set(photo.id, cached);
-        } else {
-          const url = await fetchThumbnailWithAuth(photosAdapter, photo.id);
-          urls.set(photo.id, url);
+        if (cached) urls.set(photo.id, cached);
+      }
+
+      // Then fetch uncached in batches
+      for (let i = 0; i < uncached.length; i += CONCURRENCY) {
+        const batch = uncached.slice(i, i + CONCURRENCY);
+        const results = await Promise.all(
+          batch.map(p => fetchThumbnailWithAuth(photosAdapter, p.id)
+            .then(url => ({ id: p.id, url }))
+            .catch(() => ({ id: p.id, url: '' }))
+          )
+        );
+        for (const { id, url } of results) {
+          if (url) urls.set(id, url);
         }
       }
+
       setThumbnailUrls(urls);
     } catch (e) {
       setPhotos([]);

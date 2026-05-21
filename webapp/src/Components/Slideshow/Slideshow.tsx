@@ -24,7 +24,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({ photos, startIndex, photos
 
     const loadImage = useCallback(async () => {
         if (!photos[currentIndex]) return;
-        const url = await fetchPhotoBinWithAuth(photosAdapter, photos[currentIndex].id);
+        const url = await fetchPhotoBinWithAuth(photosAdapter, photos[currentIndex].id, photos[currentIndex].mediaType);
         setImageUrl(prev => {
             if (prev && prev.startsWith('blob:')) revokeBlobUrl(prev);
             return url;
