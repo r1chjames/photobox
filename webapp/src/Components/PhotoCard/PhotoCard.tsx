@@ -321,8 +321,10 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                             style={{ filter: 'blur(10px) brightness(0.8)', transition: 'filter 0.3s ease' }}
                         />
                     }
-                    <Overlay color="#000" backgroundOpacity={0} opacity={0.5}>
-                        <Group justify="flex-end" gap="xs" p="sm">
+                    <Overlay color="#000" backgroundOpacity={0} opacity={0.5}
+                             style={props.source.mediaType === 'video' ? { pointerEvents: 'none' } : undefined}>
+                        <Group justify="flex-end" gap="xs" p="sm"
+                               style={props.source.mediaType === 'video' ? { pointerEvents: 'auto' } : undefined}>
                             {props.onSlideshow && (
                                 <Tooltip label="Slideshow">
                                     <ActionIcon variant="subtle" color="gray.3" size="lg" onClick={(e) => { e.stopPropagation(); props.onSlideshow!(); }} aria-label="Slideshow">
