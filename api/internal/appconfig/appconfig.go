@@ -47,8 +47,9 @@ func New() *AppConfig {
 	dbUser := utils.GetEnv("DB_USER", "photobox")
 	dbPassword := utils.GetEnv("DB_PASSWORD", "photobox")
 	dbName := utils.GetEnv("DB_NAME", "photobox")
+	dbSSLMode := utils.GetEnv("DB_SSL_MODE", "require")
 
-	dbURL := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s", dbHost, dbUser, dbPassword, dbName, dbPort)
+	dbURL := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s", dbHost, dbUser, dbPassword, dbName, dbPort, dbSSLMode)
 	resetSettings, _ := strconv.ParseBool(utils.GetEnv("RESET_SETTINGS", "false"))
 	debugMode, _ := strconv.ParseBool(utils.GetEnv("DEBUG_MODE", "false"))
 	timezone, _ := time.LoadLocation(utils.GetEnv("TIMEZONE", "Europe/London"))

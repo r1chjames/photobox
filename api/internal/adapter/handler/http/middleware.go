@@ -248,3 +248,30 @@ func timeoutMiddleware(timeout time.Duration) gin.HandlerFunc {
 		}
 	}
 }
+
+// securityHeadersMiddleware adds security-related HTTP headers to all responses
+func securityHeadersMiddleware() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		ctx.Header("X-Content-Type-Options", "nosniff")
+		ctx.Header("X-Frame-Options", "DENY")
+		ctx.Header("X-XSS-Protection", "1; mode=block")
+		ctx.Header("Referrer-Policy", "strict-origin-when-cross-origin")
+		ctx.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		ctx.Next()
+	}
+}
+
+// maxBodySizeMiddleware limits the request body size to prevent OOM attacks
+func maxBodySizeMiddleware(maxSize int64) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		// Check Content-Length header early before reading the body
+		if ctx.Request.ContentLength > maxSize {
+			ctx.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, gin.H{
+				"error": "Request body too large",
+			})
+			return
+		}
+		ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, maxSize)
+		ctx.Next()
+	}
+}

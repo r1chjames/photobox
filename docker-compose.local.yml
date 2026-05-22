@@ -62,6 +62,7 @@ services:
       TOKEN: ${TOKEN:-photobox-local-secret}
       TOKEN_DURATION: 24h
       CACHE_ENABLED: false
+      DB_SSL_MODE: disable
     volumes:
       - ./photos:/photos
     ports:

@@ -163,7 +163,7 @@ func TestNew_DbUrlFormat(t *testing.T) {
 
 	config := New()
 
-	expectedDbUrl := "host=testhost user=testuser password=testpass dbname=testdb port=5433"
+	expectedDbUrl := "host=testhost user=testuser password=testpass dbname=testdb port=5433 sslmode=require"
 	assert.Equal(t, expectedDbUrl, config.DbUrl)
 }
 
