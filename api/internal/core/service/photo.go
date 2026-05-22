@@ -23,6 +23,27 @@ import (
 	"gitlab.com/r1chjames/photobox/api/internal/core/utils"
 )
 
+// getPhotoEpoch extracts the photo's date from EXIF DateTimeOriginal and returns
+// it as epoch milliseconds. Falls back to the Unix timestamp (seconds) if EXIF
+// date is unavailable, and to time.Now() as a last resort.
+func getPhotoEpoch(exifData exif.Exif, unixFallback int64) int64 {
+	tag, err := exifData.Get(exif.DateTimeOriginal)
+	if err == nil {
+		dateStr, err := tag.StringVal()
+		if err == nil {
+			// EXIF DateTimeOriginal format: "2024:05:15 14:30:00"
+			t, err := time.Parse("2006:01:02 15:04:05", dateStr)
+			if err == nil {
+				return t.UnixMilli()
+			}
+		}
+	}
+	if unixFallback > 0 {
+		return unixFallback * 1000
+	}
+	return time.Now().UnixMilli()
+}
+
 type PhotoService struct {
 	photoRepo        port.PhotoRepository
 	albumSvc         port.AlbumService
@@ -218,7 +239,7 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 			Tags:           "",
 			Metadata:       photoMetadata,
 			Thumbnail:      photo.Thumbnail,
-			CreatedEpoch:   time.Now().UnixMilli(),
+			CreatedEpoch:   getPhotoEpoch(photo.Exif, photo.ModifiedTime),
 			FileHash:       computeFileHash(photo.Path),
 			FileModifiedTime: photo.ModifiedTime,
 			MediaType:      photo.MediaType,
@@ -297,7 +318,7 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 		Tags:           "",
 		Metadata:       photoMetadata,
 		Thumbnail:      photo.Thumbnail,
-		CreatedEpoch:   time.Now().UnixMilli(),
+		CreatedEpoch:   getPhotoEpoch(photo.Exif, photo.ModifiedTime),
 		FileHash:       computeFileHash(photo.Path),
 		FileModifiedTime: photo.ModifiedTime,
 		MediaType:      photo.MediaType,
