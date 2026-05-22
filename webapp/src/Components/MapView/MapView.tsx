@@ -1,12 +1,11 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { LatLngBounds } from 'leaflet';
 import { IPhotosAdapter, PhotoGeoData } from '../../Adapters/IPhotosAdapter';
 import { EmptyState } from '../EmptyState/EmptyState';
-import { Title, Skeleton } from '@mantine/core';
+import { Title, Skeleton, Text } from '@mantine/core';
 import { IconMap } from '@tabler/icons-react';
 import 'leaflet/dist/leaflet.css';
-import { fetchThumbnailWithAuth, getCachedThumbnail, revokeThumbnail } from '../../utils/ThumbnailUtils';
 
 interface MapViewProps {
   photosAdapter: IPhotosAdapter;
@@ -24,46 +23,12 @@ const BoundsSetter: React.FC<{ bounds: LatLngBounds | null }> = ({ bounds }) => 
 
 export const MapView: React.FC<MapViewProps> = ({ photosAdapter }) => {
   const [photos, setPhotos] = useState<PhotoGeoData[]>([]);
-  const [thumbnailUrls, setThumbnailUrls] = useState<Map<string, string>>(new Map());
-  const thumbnailUrlsRef = useRef(thumbnailUrls);
   const [loading, setLoading] = useState(true);
 
   const loadGeodata = useCallback(async () => {
     try {
       const data = await photosAdapter.getGeodata(90, -90, 180, -180);
       setPhotos(data || []);
-
-      if (!data || data.length === 0) {
-        setLoading(false);
-        return;
-      }
-
-      // Fetch thumbnails in parallel with concurrency limit
-      const urls = new Map<string, string>();
-      const CONCURRENCY = 6;
-      const uncached = data.filter(p => !getCachedThumbnail(p.id));
-
-      // First, add cached thumbnails immediately
-      for (const photo of data) {
-        const cached = getCachedThumbnail(photo.id);
-        if (cached) urls.set(photo.id, cached);
-      }
-
-      // Then fetch uncached in batches
-      for (let i = 0; i < uncached.length; i += CONCURRENCY) {
-        const batch = uncached.slice(i, i + CONCURRENCY);
-        const results = await Promise.all(
-          batch.map(p => fetchThumbnailWithAuth(photosAdapter, p.id)
-            .then(url => ({ id: p.id, url }))
-            .catch(() => ({ id: p.id, url: '' }))
-          )
-        );
-        for (const { id, url } of results) {
-          if (url) urls.set(id, url);
-        }
-      }
-
-      setThumbnailUrls(urls);
     } catch (e) {
       setPhotos([]);
     } finally {
@@ -72,14 +37,7 @@ export const MapView: React.FC<MapViewProps> = ({ photosAdapter }) => {
   }, [photosAdapter]);
 
   useEffect(() => {
-    thumbnailUrlsRef.current = thumbnailUrls;
-  }, [thumbnailUrls]);
-
-  useEffect(() => {
     loadGeodata();
-    return () => {
-      thumbnailUrlsRef.current.forEach((_, id) => revokeThumbnail(id));
-    };
   }, [loadGeodata]);
 
   if (loading) {
@@ -125,18 +83,9 @@ export const MapView: React.FC<MapViewProps> = ({ photosAdapter }) => {
         {photos.map(photo => (
           <Marker key={photo.id} position={[photo.lat, photo.lng]}>
             <Popup>
-              <div style={{ textAlign: 'center' }}>
-                {thumbnailUrls.get(photo.id) && (
-                  <img
-                    src={thumbnailUrls.get(photo.id)}
-                    alt=""
-                    style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 4 }}
-                  />
-                )}
-                <div style={{ fontSize: 12, marginTop: 4 }}>
-                  {photo.dateTaken ? new Date(photo.dateTaken).toLocaleDateString() : ''}
-                </div>
-              </div>
+              <Text size="sm" fw={500}>
+                {photo.dateTaken ? new Date(photo.dateTaken).toLocaleDateString() : 'No date'}
+              </Text>
             </Popup>
           </Marker>
         ))}
