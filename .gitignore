@@ -49,3 +49,7 @@ requirements.lock
 charts/
 
 *storybook.log
+
+*.png
+*.jpg
+*.gif

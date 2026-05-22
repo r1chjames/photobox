@@ -72,6 +72,9 @@ func (dbEnv *Env) PerformDbSetup() {
 	// Create GiST index for geospatial queries
 	dbEnv.createGeoIndexes()
 
+	// Migrate created_epoch from EXIF dates for photos indexed before the fix
+	dbEnv.migratePhotoEpochs()
+
 	// Enable query performance tracking
 	if err := dbEnv.Db.Exec("CREATE EXTENSION IF NOT EXISTS pg_stat_statements").Error; err != nil {
 		slog.Warn("Failed to enable pg_stat_statements", "error", err)
@@ -129,6 +132,28 @@ func (dbEnv *Env) MigrateThumbnailsToFilesystem(photoDir string) {
 		dbEnv.Db.Model(&domain.Photo{}).Where("id = ?", p.ID).Update("thumbnail_path", path)
 	}
 	slog.Info("Thumbnail migration complete")
+}
+
+// migratePhotoEpochs updates created_epoch for existing photos from EXIF
+// DateTimeOriginal where available. This fixes photos indexed before the
+// getPhotoEpoch helper was introduced, which stored the index timestamp
+// instead of the actual photo date.
+func (dbEnv *Env) migratePhotoEpochs() {
+	slog.Info("Starting photo epoch migration")
+	result := dbEnv.Db.Exec(`
+		UPDATE photobox.photos
+		SET created_epoch = CASE
+			WHEN metadata->'exif'->>'DateTimeOriginal' ~ '^\d{4}:\d{2}:\d{2}'
+			THEN (EXTRACT(EPOCH FROM to_timestamp((metadata->'exif'->>'DateTimeOriginal')::text, 'YYYY:MM:DD HH24:MI:SS'))::bigint * 1000)
+			ELSE created_epoch
+		END
+		WHERE deleted_at IS NULL
+	`)
+	if result.Error != nil {
+		slog.Error("Failed to migrate photo epochs", "error", result.Error)
+	} else {
+		slog.Info("Photo epoch migration complete", "rows", result.RowsAffected)
+	}
 }
 
 // Ping checks the database connection is alive
