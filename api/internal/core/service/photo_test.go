@@ -1495,3 +1495,19 @@ func TestDownloadPhotos(t *testing.T) {
 		mockRepo.AssertExpectations(t)
 	})
 }
+
+func TestGetPhotoEpoch(t *testing.T) {
+	// Empty EXIF should fall back to unixFallback (seconds -> ms)
+	emptyExif := exif.Exif{}
+	fallback := int64(1700000000) // 2023-11-14
+	epoch := getPhotoEpoch(emptyExif, fallback)
+	assert.Equal(t, fallback*1000, epoch)
+
+	// Empty EXIF with zero fallback should return approximately time.Now()
+	emptyExif2 := exif.Exif{}
+	before := time.Now().UnixMilli()
+	epoch2 := getPhotoEpoch(emptyExif2, 0)
+	after := time.Now().UnixMilli()
+	assert.GreaterOrEqual(t, epoch2, before)
+	assert.LessOrEqual(t, epoch2, after)
+}
