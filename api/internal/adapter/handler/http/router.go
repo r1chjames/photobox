@@ -30,6 +30,7 @@ func NewRouter(
 	wsHandler *WebSocketHandler) (*Router, error) {
 
 	router := gin.Default()
+	router.MaxMultipartMemory = 32 << 20 // 32 MB
 
 	// Configure CORS with environment-based allowed origins
 	config := cors.DefaultConfig()
@@ -52,6 +53,12 @@ func NewRouter(
 	// Global rate limiter: 100 requests per second with burst of 200
 	globalLimiter := NewIPRateLimiter(100, 200)
 	router.Use(rateLimitMiddleware(globalLimiter))
+
+	// Add security headers to all responses
+	router.Use(securityHeadersMiddleware())
+
+	// Limit request body size to 50 MB to prevent OOM attacks
+	router.Use(maxBodySizeMiddleware(50 * 1024 * 1024))
 
 	// Strict rate limiter for auth endpoints: 5 requests per second with burst of 10
 	authLimiter := NewIPRateLimiter(5, 10)

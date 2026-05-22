@@ -46,11 +46,24 @@ func (pr *PhotoRepository) ListAllPhotos(fromId string, limit int, includeThumbn
 		}
 		result = result.Where("created_epoch > ?", fromPhoto.CreatedEpoch)
 	}
+	var startEpoch, endEpoch int64
 	if startDate != "" {
-		result = result.Where("created_at >= ?", startDate)
+		t, err := time.Parse("2006-01-02T15:04:05", startDate)
+		if err == nil {
+			startEpoch = t.UnixMilli()
+		}
 	}
 	if endDate != "" {
-		result = result.Where("created_at <= ?", endDate)
+		t, err := time.Parse("2006-01-02T15:04:05", endDate)
+		if err == nil {
+			endEpoch = t.UnixMilli()
+		}
+	}
+	if startDate != "" {
+		result = result.Where("created_epoch >= ?", startEpoch)
+	}
+	if endDate != "" {
+		result = result.Where("created_epoch <= ?", endEpoch)
 	}
 	if mediaType != "" {
 		result = result.Where("media_type = ?", mediaType)
@@ -67,11 +80,24 @@ func (pr *PhotoRepository) ListAllPhotosInAlbum(albumId string, fromId string, l
 		fromEpoch, _ := b64.StdEncoding.DecodeString(fromId)
 		result = result.Where("created_epoch > ?", fromEpoch)
 	}
+	var startEpoch, endEpoch int64
 	if startDate != "" {
-		result = result.Where("created_at >= ?", startDate)
+		t, err := time.Parse("2006-01-02T15:04:05", startDate)
+		if err == nil {
+			startEpoch = t.UnixMilli()
+		}
 	}
 	if endDate != "" {
-		result = result.Where("created_at <= ?", endDate)
+		t, err := time.Parse("2006-01-02T15:04:05", endDate)
+		if err == nil {
+			endEpoch = t.UnixMilli()
+		}
+	}
+	if startDate != "" {
+		result = result.Where("created_epoch >= ?", startEpoch)
+	}
+	if endDate != "" {
+		result = result.Where("created_epoch <= ?", endEpoch)
 	}
 	if mediaType != "" {
 		result = result.Where("media_type = ?", mediaType)
@@ -176,11 +202,24 @@ func (pr *PhotoRepository) ListFavoritePhotos(fromId string, limit int, includeT
 		}
 		result = result.Where("created_epoch > ?", fromPhoto.CreatedEpoch)
 	}
+	var startEpoch, endEpoch int64
 	if startDate != "" {
-		result = result.Where("created_at >= ?", startDate)
+		t, err := time.Parse("2006-01-02T15:04:05", startDate)
+		if err == nil {
+			startEpoch = t.UnixMilli()
+		}
 	}
 	if endDate != "" {
-		result = result.Where("created_at <= ?", endDate)
+		t, err := time.Parse("2006-01-02T15:04:05", endDate)
+		if err == nil {
+			endEpoch = t.UnixMilli()
+		}
+	}
+	if startDate != "" {
+		result = result.Where("created_epoch >= ?", startEpoch)
+	}
+	if endDate != "" {
+		result = result.Where("created_epoch <= ?", endEpoch)
 	}
 	result = result.Limit(limit)
 	result = result.Find(&photos)
