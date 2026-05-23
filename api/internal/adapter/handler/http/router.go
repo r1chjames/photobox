@@ -73,7 +73,10 @@ func NewRouter(
 	// Strict rate limiter for auth endpoints: 5 requests per second with burst of 10
 	authLimiter := NewIPRateLimiter(5, 10)
 
-	defineResources(appConfig, router, token, authHandler, photoHandler, albumHandler, utilityHandler, userHandler, searchHandler, shareHandler, authLimiter, wsHandler)
+	// Dedicated rate limiter for thumbnail endpoints: 30 req/s with burst of 60
+	thumbnailLimiter := NewIPRateLimiter(30, 60)
+
+	defineResources(appConfig, router, token, authHandler, photoHandler, albumHandler, utilityHandler, userHandler, searchHandler, shareHandler, authLimiter, thumbnailLimiter, wsHandler)
 
 	return &Router{
 		router,
@@ -92,6 +95,7 @@ func defineResources(
 	searchHandler SearchHandler,
 	shareHandler ShareHandler,
 	authLimiter *IPRateLimiter,
+	thumbnailLimiter *IPRateLimiter,
 	wsHandler *WebSocketHandler) {
 
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
@@ -137,9 +141,11 @@ func defineResources(
 	photo := router.Group(fmt.Sprintf("%s/photo", urlBasePath)).Use(authMiddleware(token))
 	{
 		photo.GET("/info/*id", photoHandler.GetPhoto)
-		photo.GET("/thumbnail/*id", photoHandler.GetPhotoThumbnail)
 		photo.GET("/bin/*id", photoHandler.GetPhotoBin)
 	}
+
+	// Thumbnail endpoint with dedicated stricter rate limiter
+	router.GET(fmt.Sprintf("%s/photo/thumbnail/*id", urlBasePath), authMiddleware(token), rateLimitMiddleware(thumbnailLimiter), photoHandler.GetPhotoThumbnail)
 
 	photos := router.Group(fmt.Sprintf("%s/photos", urlBasePath)).Use(authMiddleware(token))
 	{
