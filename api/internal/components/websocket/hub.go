@@ -2,8 +2,9 @@ package websocket
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
+
+	json "github.com/goccy/go-json"
 )
 
 // Hub maintains the set of active clients and broadcasts messages to them.

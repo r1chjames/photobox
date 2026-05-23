@@ -36,7 +36,6 @@ export interface IPhotosAdapter {
   getPhotosByTag(tag: string, fromId: string, limit: number, includeThumbnails: boolean): Promise<Photo[]>;
   getDuplicatePhotos(): Promise<Photo[]>;
   getPhotoThumbnailBlob(photoId: string): Promise<Blob | string>;
-  getPhotoThumbnails(photoIds: string[]): Promise<Map<string, string>>;
   uploadPhoto(body: Record<string, unknown>): Promise<any>;
   index(): Promise<any>;
   regenerateThumbnails(): Promise<any>;

@@ -8,20 +8,16 @@ export async function fetchThumbnailWithAuth(
 ): Promise<string> {
   const cached = getCachedBlobUrl(photoId);
   if (cached) {
-    console.log('[ThumbnailUtils] Cache hit for', photoId);
     return cached;
   }
 
-  console.log('[ThumbnailUtils] Fetching thumbnail for', photoId);
   try {
     const blob = await photosAdapter.getPhotoThumbnailBlob(photoId);
-    console.log('[ThumbnailUtils] Got response for', photoId, typeof blob, blob instanceof Blob ? blob.size : 'N/A');
 
     return cacheBlobUrl(photoId, blob);
   } catch (error) {
     if (retries > 0) {
       const delay = Math.pow(2, (2 - retries)) * 1000;
-      console.warn('[ThumbnailUtils] Retry fetching thumbnail for', photoId, 'retries left:', retries, 'delay:', delay, 'ms');
       await new Promise(r => setTimeout(r, delay));
       return fetchThumbnailWithAuth(photosAdapter, photoId, retries - 1);
     }

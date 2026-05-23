@@ -75,6 +75,9 @@ func (dbEnv *Env) PerformDbSetup() {
 	// Migrate created_epoch from EXIF dates for photos indexed before the fix
 	dbEnv.migratePhotoEpochs()
 
+	// Drop legacy tags column now that PhotoTag junction table is the sole source of truth
+	dbEnv.migrateDropLegacyTagsColumn()
+
 	// Enable query performance tracking
 	if err := dbEnv.Db.Exec("CREATE EXTENSION IF NOT EXISTS pg_stat_statements").Error; err != nil {
 		slog.Warn("Failed to enable pg_stat_statements", "error", err)
@@ -83,7 +86,7 @@ func (dbEnv *Env) PerformDbSetup() {
 
 func (dbEnv *Env) createSearchIndexes() {
 	indexes := []string{
-		`CREATE INDEX IF NOT EXISTS idx_photo_search ON photobox.photos USING GIN (to_tsvector('english', coalesce(name, '') || ' ' || coalesce(tags, '')))`,
+		`CREATE INDEX IF NOT EXISTS idx_photo_search ON photobox.photos USING GIN (to_tsvector('english', coalesce(name, '')))`,
 		`CREATE INDEX IF NOT EXISTS idx_album_search ON photobox.albums USING GIN (to_tsvector('english', coalesce(name, '')))`,
 	}
 	for _, idx := range indexes {
@@ -153,6 +156,31 @@ func (dbEnv *Env) migratePhotoEpochs() {
 		slog.Error("Failed to migrate photo epochs", "error", result.Error)
 	} else {
 		slog.Info("Photo epoch migration complete", "rows", result.RowsAffected)
+	}
+}
+
+// migrateDropLegacyTagsColumn drops the legacy comma-separated tags column
+// from the photos table. Tags are now stored exclusively in the PhotoTag
+// junction table.
+func (dbEnv *Env) migrateDropLegacyTagsColumn() {
+	slog.Info("Checking for legacy tags column")
+	var count int64
+	result := dbEnv.Db.Raw(`
+		SELECT COUNT(*) FROM information_schema.columns
+		WHERE table_schema = 'photobox' AND table_name = 'photos' AND column_name = 'tags'
+	`).Scan(&count)
+	if result.Error != nil {
+		slog.Error("Failed to check for legacy tags column", "error", result.Error)
+		return
+	}
+	if count == 0 {
+		return
+	}
+	result = dbEnv.Db.Exec(`ALTER TABLE photobox.photos DROP COLUMN IF EXISTS tags`)
+	if result.Error != nil {
+		slog.Error("Failed to drop legacy tags column", "error", result.Error)
+	} else {
+		slog.Info("Legacy tags column dropped successfully")
 	}
 }
 

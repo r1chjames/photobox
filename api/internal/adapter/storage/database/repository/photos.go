@@ -371,15 +371,20 @@ func (pr *PhotoRepository) ListPhotosByTags(tags []string, fromId string, limit 
 	return photos, result.Error
 }
 
-func (pr *PhotoRepository) UpdatePhotoTags(photoId string, tags string) error {
-	// Update legacy tags column
-	result := pr.dbEnv.Db.Model(&domain.Photo{}).
-		Where("id = ?", photoId).
-		Update("tags", tags)
+func (pr *PhotoRepository) GetPhotoTags(photoId string) ([]string, error) {
+	var tags []string
+	result := pr.dbEnv.Db.Model(&domain.PhotoTag{}).
+		Where("photo_id = ?", photoId).
+		Where("tag <> ''").
+		Order("tag ASC").
+		Pluck("tag", &tags)
 	if result.Error != nil {
-		return result.Error
+		return nil, result.Error
 	}
+	return tags, nil
+}
 
+func (pr *PhotoRepository) UpdatePhotoTags(photoId string, tags string) error {
 	// Sync junction table: remove only non-AI tags
 	pr.dbEnv.Db.Where("photo_id = ? AND (source = '' OR source IS NULL)", photoId).Delete(&domain.PhotoTag{})
 
@@ -413,27 +418,6 @@ func (pr *PhotoRepository) AddAITags(photoId string, tags []string) error {
 	}
 	if len(tagList) == 0 {
 		return nil
-	}
-
-	// Also update the legacy tags column by appending AI tags
-	var photo domain.Photo
-	if err := pr.dbEnv.Db.First(&photo, "id = ?", photoId).Error; err == nil {
-		existingTags := make(map[string]struct{})
-		for _, t := range strings.Split(photo.Tags, ",") {
-			t = strings.TrimSpace(t)
-			if t != "" {
-				existingTags[t] = struct{}{}
-			}
-		}
-		for _, t := range tags {
-			existingTags[strings.TrimSpace(t)] = struct{}{}
-		}
-		newTags := make([]string, 0, len(existingTags))
-		for t := range existingTags {
-			newTags = append(newTags, t)
-		}
-		photo.Tags = strings.Join(newTags, ",")
-		pr.dbEnv.Db.Save(&photo)
 	}
 
 	return pr.dbEnv.Db.Create(&tagList).Error

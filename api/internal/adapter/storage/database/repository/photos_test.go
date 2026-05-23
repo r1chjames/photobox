@@ -15,8 +15,8 @@ func TestGetPhotoById_Success(t *testing.T) {
 	defer dbConn.Close()
 
 	photoID := "photo123"
-	expectedPhoto := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "tags", "metadata", "thumbnail", "created_epoch"}).
-		AddRow(photoID, "test.jpg", "/path/to/test.jpg", "album1", "", []byte("{}"), []byte("thumbnail-data"), time.Now().UnixMilli())
+	expectedPhoto := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "metadata", "thumbnail", "created_epoch"}).
+		AddRow(photoID, "test.jpg", "/path/to/test.jpg", "album1", []byte("{}"), []byte("thumbnail-data"), time.Now().UnixMilli())
 
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE "photos"\."id" = \$1 ORDER BY "photos"\."id" LIMIT \$2`, expectedPhoto)
 
@@ -46,8 +46,8 @@ func TestGetPhotoById_WithoutThumbnail(t *testing.T) {
 	defer dbConn.Close()
 
 	photoID := "photo456"
-	expectedPhoto := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "source_path", "album_id", "tags", "metadata", "created_at", "created_epoch", "updated_at"}).
-		AddRow(photoID, "test2.jpg", "/path/to/test2.jpg", "", "album2", "", []byte("{}"), time.Now(), time.Now().UnixMilli(), time.Now())
+	expectedPhoto := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "source_path", "album_id", "metadata", "created_at", "created_epoch", "updated_at"}).
+		AddRow(photoID, "test2.jpg", "/path/to/test2.jpg", "", "album2", []byte("{}"), time.Now(), time.Now().UnixMilli(), time.Now())
 
 	// When includeThumbnail is false, GORM selects specific columns (omits thumbnail)
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE "photos"\."id" = \$1 ORDER BY "photos"\."id" LIMIT \$2`, expectedPhoto)
@@ -101,10 +101,10 @@ func TestListAllPhotos_Success(t *testing.T) {
 	env, mock, dbConn := database.MockDB(t)
 	defer dbConn.Close()
 
-	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "tags", "metadata", "thumbnail", "created_epoch"}).
-		AddRow("photo1", "test1.jpg", "/path/to/test1.jpg", "album1", "", []byte("{}"), []byte("thumb1"), time.Now().UnixMilli()).
-		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", "album1", "", []byte("{}"), []byte("thumb2"), time.Now().UnixMilli()).
-		AddRow("photo3", "test3.jpg", "/path/to/test3.jpg", "album2", "", []byte("{}"), []byte("thumb3"), time.Now().UnixMilli())
+	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "metadata", "thumbnail", "created_epoch"}).
+		AddRow("photo1", "test1.jpg", "/path/to/test1.jpg", "album1", []byte("{}"), []byte("thumb1"), time.Now().UnixMilli()).
+		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", "album1", []byte("{}"), []byte("thumb2"), time.Now().UnixMilli()).
+		AddRow("photo3", "test3.jpg", "/path/to/test3.jpg", "album2", []byte("{}"), []byte("thumb3"), time.Now().UnixMilli())
 
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL ORDER BY created_epoch ASC LIMIT \$1`, expectedPhotos)
 
@@ -134,14 +134,14 @@ func TestListAllPhotos_WithFromId(t *testing.T) {
 	fromEpoch := time.Now().UnixMilli()
 
 	// First query to get the fromPhoto - uses Omit("thumbnail") so specific columns are selected
-	fromPhotoRow := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "source_path", "album_id", "tags", "metadata", "created_at", "created_epoch", "updated_at"}).
-		AddRow(fromID, "test1.jpg", "/path/to/test1.jpg", "", "album1", "", []byte("{}"), time.Now(), fromEpoch, time.Now())
+	fromPhotoRow := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "source_path", "album_id", "metadata", "created_at", "created_epoch", "updated_at"}).
+		AddRow(fromID, "test1.jpg", "/path/to/test1.jpg", "", "album1", []byte("{}"), time.Now(), fromEpoch, time.Now())
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE "photos"\."id" = \$1 ORDER BY "photos"\."id" LIMIT \$2`, fromPhotoRow)
 
 	// Second query to get photos after fromEpoch - also uses Omit("thumbnail")
-	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "source_path", "album_id", "tags", "metadata", "created_at", "created_epoch", "updated_at"}).
-		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", "", "album1", "", []byte("{}"), time.Now(), fromEpoch+1000, time.Now()).
-		AddRow("photo3", "test3.jpg", "/path/to/test3.jpg", "", "album2", "", []byte("{}"), time.Now(), fromEpoch+2000, time.Now())
+	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "source_path", "album_id", "metadata", "created_at", "created_epoch", "updated_at"}).
+		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", "", "album1", []byte("{}"), time.Now(), fromEpoch+1000, time.Now()).
+		AddRow("photo3", "test3.jpg", "/path/to/test3.jpg", "", "album2", []byte("{}"), time.Now(), fromEpoch+2000, time.Now())
 
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND created_epoch > \$1 ORDER BY created_epoch ASC LIMIT \$2`, expectedPhotos)
 
@@ -167,7 +167,7 @@ func TestListAllPhotos_Empty(t *testing.T) {
 	env, mock, dbConn := database.MockDB(t)
 	defer dbConn.Close()
 
-	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "tags", "metadata", "thumbnail", "created_epoch"})
+	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "metadata", "thumbnail", "created_epoch"})
 
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL ORDER BY created_epoch ASC LIMIT \$1`, expectedPhotos)
 
@@ -193,9 +193,9 @@ func TestListAllPhotosInAlbum_Success(t *testing.T) {
 	defer dbConn.Close()
 
 	albumID := "album123"
-	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "tags", "metadata", "thumbnail", "created_epoch"}).
-		AddRow("photo1", "test1.jpg", "/path/to/test1.jpg", albumID, "", []byte("{}"), []byte("thumb1"), time.Now().UnixMilli()).
-		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", albumID, "", []byte("{}"), []byte("thumb2"), time.Now().UnixMilli())
+	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "metadata", "thumbnail", "created_epoch"}).
+		AddRow("photo1", "test1.jpg", "/path/to/test1.jpg", albumID, []byte("{}"), []byte("thumb1"), time.Now().UnixMilli()).
+		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", albumID, []byte("{}"), []byte("thumb2"), time.Now().UnixMilli())
 
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND album_id = \$1 ORDER BY created_epoch ASC LIMIT \$2`, expectedPhotos)
 
@@ -231,8 +231,8 @@ func TestListAllPhotosInAlbum_WithFromId(t *testing.T) {
 	albumID := "album123"
 	fromID := "cGhvdG8x" // base64 encoded epoch
 
-	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "tags", "metadata", "thumbnail", "created_epoch"}).
-		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", albumID, "", []byte("{}"), []byte("thumb2"), time.Now().UnixMilli())
+	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "metadata", "thumbnail", "created_epoch"}).
+		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", albumID, []byte("{}"), []byte("thumb2"), time.Now().UnixMilli())
 
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE \(deleted_at IS NULL AND album_id = \$1\) AND created_epoch > \$2 ORDER BY created_epoch ASC LIMIT \$3`, expectedPhotos)
 
@@ -258,7 +258,7 @@ func TestListAllPhotosInAlbum_Empty(t *testing.T) {
 	defer dbConn.Close()
 
 	albumID := "emptyAlbum"
-	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "tags", "metadata", "thumbnail", "created_epoch"})
+	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "metadata", "thumbnail", "created_epoch"})
 
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND album_id = \$1 ORDER BY created_epoch ASC LIMIT \$2`, expectedPhotos)
 
@@ -342,7 +342,6 @@ func TestCreatePhotoInfo_Success(t *testing.T) {
 		Name:           "test.jpg",
 		FilesystemPath: "/path/to/test.jpg",
 		AlbumId:        "album1",
-		Tags:           "",
 		Metadata:       []byte("{}"),
 		Thumbnail:      []byte("thumbnail-data"),
 		CreatedEpoch:   time.Now().UnixMilli(),
@@ -376,7 +375,6 @@ func TestCreatePhotoInfo_Upsert(t *testing.T) {
 		Name:           "updated.jpg",
 		FilesystemPath: "/path/to/updated.jpg",
 		AlbumId:        "album1",
-		Tags:           "updated",
 		Metadata:       []byte("{}"),
 		Thumbnail:      []byte("new-thumbnail"),
 		CreatedEpoch:   time.Now().UnixMilli(),
@@ -408,8 +406,8 @@ func TestSoftDeletePhoto_Success(t *testing.T) {
 	photoID := "photo123"
 	now := time.Now()
 
-	expectedPhoto := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "source_path", "album_id", "tags", "metadata", "created_at", "created_epoch", "updated_at", "favorite", "deleted_at", "blurhash", "dominant_color"}).
-		AddRow(photoID, "test.jpg", "/path/to/test.jpg", "", "album1", "", []byte("{}"), now, now.UnixMilli(), now, false, nil, "", "")
+	expectedPhoto := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "source_path", "album_id", "metadata", "created_at", "created_epoch", "updated_at", "favorite", "deleted_at", "blurhash", "dominant_color"}).
+		AddRow(photoID, "test.jpg", "/path/to/test.jpg", "", "album1", []byte("{}"), now, now.UnixMilli(), now, false, nil, "", "")
 
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE "photos"\."id" = \$1 ORDER BY "photos"\."id" LIMIT \$2`, expectedPhoto)
 
@@ -474,8 +472,8 @@ func TestRestorePhoto_Success(t *testing.T) {
 	now := time.Now()
 	deletedAt := now.Add(-time.Hour)
 
-	expectedPhoto := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "source_path", "album_id", "tags", "metadata", "created_at", "created_epoch", "updated_at", "favorite", "deleted_at", "blurhash", "dominant_color"}).
-		AddRow(photoID, "test.jpg", "/path/to/test.jpg", "", "album1", "", []byte("{}"), now, now.UnixMilli(), now, false, deletedAt, "", "")
+	expectedPhoto := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "source_path", "album_id", "metadata", "created_at", "created_epoch", "updated_at", "favorite", "deleted_at", "blurhash", "dominant_color"}).
+		AddRow(photoID, "test.jpg", "/path/to/test.jpg", "", "album1", []byte("{}"), now, now.UnixMilli(), now, false, deletedAt, "", "")
 
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE "photos"\."id" = \$1 ORDER BY "photos"\."id" LIMIT \$2`, expectedPhoto)
 
@@ -536,9 +534,9 @@ func TestListTrashPhotos_Success(t *testing.T) {
 	env, mock, dbConn := database.MockDB(t)
 	defer dbConn.Close()
 
-	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "tags", "metadata", "thumbnail", "created_epoch"}).
-		AddRow("photo1", "test1.jpg", "/path/to/test1.jpg", "album1", "", []byte("{}"), []byte("thumb1"), time.Now().UnixMilli()).
-		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", "album1", "", []byte("{}"), []byte("thumb2"), time.Now().UnixMilli())
+	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "metadata", "thumbnail", "created_epoch"}).
+		AddRow("photo1", "test1.jpg", "/path/to/test1.jpg", "album1", []byte("{}"), []byte("thumb1"), time.Now().UnixMilli()).
+		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", "album1", []byte("{}"), []byte("thumb2"), time.Now().UnixMilli())
 
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NOT NULL ORDER BY created_epoch ASC LIMIT \$1`, expectedPhotos)
 
@@ -567,13 +565,13 @@ func TestListTrashPhotos_WithFromId(t *testing.T) {
 	fromID := "photo1"
 	fromEpoch := time.Now().UnixMilli()
 
-	fromPhotoRow := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "source_path", "album_id", "tags", "metadata", "created_at", "created_epoch", "updated_at", "favorite", "deleted_at", "blurhash", "dominant_color"}).
-		AddRow(fromID, "test1.jpg", "/path/to/test1.jpg", "", "album1", "", []byte("{}"), time.Now(), fromEpoch, time.Now(), false, nil, "", "")
+	fromPhotoRow := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "source_path", "album_id", "metadata", "created_at", "created_epoch", "updated_at", "favorite", "deleted_at", "blurhash", "dominant_color"}).
+		AddRow(fromID, "test1.jpg", "/path/to/test1.jpg", "", "album1", []byte("{}"), time.Now(), fromEpoch, time.Now(), false, nil, "", "")
 
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE "photos"\."id" = \$1 ORDER BY "photos"\."id" LIMIT \$2`, fromPhotoRow)
 
-	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "tags", "metadata", "thumbnail", "created_epoch"}).
-		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", "album1", "", []byte("{}"), []byte("thumb2"), fromEpoch+1000)
+	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "metadata", "thumbnail", "created_epoch"}).
+		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", "album1", []byte("{}"), []byte("thumb2"), fromEpoch+1000)
 
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NOT NULL AND created_epoch > \$1 ORDER BY created_epoch ASC LIMIT \$2`, expectedPhotos)
 
@@ -598,7 +596,7 @@ func TestListTrashPhotos_Empty(t *testing.T) {
 	env, mock, dbConn := database.MockDB(t)
 	defer dbConn.Close()
 
-	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "tags", "metadata", "thumbnail", "created_epoch"})
+	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "metadata", "thumbnail", "created_epoch"})
 
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NOT NULL ORDER BY created_epoch ASC LIMIT \$1`, expectedPhotos)
 
@@ -672,9 +670,9 @@ func TestListFavoritePhotos_Success(t *testing.T) {
 	env, mock, dbConn := database.MockDB(t)
 	defer dbConn.Close()
 
-	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "tags", "metadata", "thumbnail", "created_epoch"}).
-		AddRow("photo1", "test1.jpg", "/path/to/test1.jpg", "album1", "", []byte("{}"), []byte("thumb1"), time.Now().UnixMilli()).
-		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", "album2", "", []byte("{}"), []byte("thumb2"), time.Now().UnixMilli())
+	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "metadata", "thumbnail", "created_epoch"}).
+		AddRow("photo1", "test1.jpg", "/path/to/test1.jpg", "album1", []byte("{}"), []byte("thumb1"), time.Now().UnixMilli()).
+		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", "album2", []byte("{}"), []byte("thumb2"), time.Now().UnixMilli())
 
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE favorite = \$1 AND deleted_at IS NULL ORDER BY created_epoch ASC LIMIT \$2`, expectedPhotos)
 
@@ -700,7 +698,7 @@ func TestListFavoritePhotos_Empty(t *testing.T) {
 	env, mock, dbConn := database.MockDB(t)
 	defer dbConn.Close()
 
-	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "tags", "metadata", "thumbnail", "created_epoch"})
+	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "metadata", "thumbnail", "created_epoch"})
 
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE favorite = \$1 AND deleted_at IS NULL ORDER BY created_epoch ASC LIMIT \$2`, expectedPhotos)
 
@@ -726,9 +724,9 @@ func TestSearchPhotos_Success(t *testing.T) {
 	defer dbConn.Close()
 
 	query := "vacation"
-	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "tags", "metadata", "thumbnail", "created_epoch"}).
-		AddRow("photo1", "vacation1.jpg", "/path/to/vacation1.jpg", "album1", "", []byte("{}"), []byte("thumb1"), time.Now().UnixMilli()).
-		AddRow("photo2", "vacation2.jpg", "/path/to/vacation2.jpg", "album1", "", []byte("{}"), []byte("thumb2"), time.Now().UnixMilli())
+	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "metadata", "thumbnail", "created_epoch"}).
+		AddRow("photo1", "vacation1.jpg", "/path/to/vacation1.jpg", "album1", []byte("{}"), []byte("thumb1"), time.Now().UnixMilli()).
+		AddRow("photo2", "vacation2.jpg", "/path/to/vacation2.jpg", "album1", []byte("{}"), []byte("thumb2"), time.Now().UnixMilli())
 
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND to_tsvector\('english', coalesce\(name, ''\) \|\| ' ' \|\| coalesce\(tags, ''\)\) @@ plainto_tsquery\('english', \$1\) ORDER BY created_epoch DESC LIMIT \$2`, expectedPhotos)
 
@@ -755,7 +753,7 @@ func TestSearchPhotos_Empty(t *testing.T) {
 	defer dbConn.Close()
 
 	query := "nonexistent"
-	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "tags", "metadata", "thumbnail", "created_epoch"})
+	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "metadata", "thumbnail", "created_epoch"})
 
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND to_tsvector\('english', coalesce\(name, ''\) \|\| ' ' \|\| coalesce\(tags, ''\)\) @@ plainto_tsquery\('english', \$1\) ORDER BY created_epoch DESC LIMIT \$2`, expectedPhotos)
 
@@ -809,9 +807,9 @@ func TestGetPhotosWithGeodata_Success(t *testing.T) {
 	env, mock, dbConn := database.MockDB(t)
 	defer dbConn.Close()
 
-	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "source_path", "album_id", "tags", "metadata", "created_at", "created_epoch", "updated_at", "favorite", "deleted_at", "blurhash", "dominant_color", "latitude", "longitude"}).
-		AddRow("photo1", "test1.jpg", "/path/to/test1.jpg", "source1", "album1", "", []byte("{}"), time.Now(), time.Now().UnixMilli(), time.Now(), false, nil, "", "", 51.5, -0.1).
-		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", "source2", "album1", "", []byte("{}"), time.Now(), time.Now().UnixMilli(), time.Now(), false, nil, "", "", 40.7, -74.0)
+	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "source_path", "album_id", "metadata", "created_at", "created_epoch", "updated_at", "favorite", "deleted_at", "blurhash", "dominant_color", "latitude", "longitude"}).
+		AddRow("photo1", "test1.jpg", "/path/to/test1.jpg", "source1", "album1", []byte("{}"), time.Now(), time.Now().UnixMilli(), time.Now(), false, nil, "", "", 51.5, -0.1).
+		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", "source2", "album1", []byte("{}"), time.Now(), time.Now().UnixMilli(), time.Now(), false, nil, "", "", 40.7, -74.0)
 
 	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND \(latitude IS NOT NULL AND longitude IS NOT NULL\) AND \(latitude BETWEEN \$1 AND \$2\) AND \(longitude BETWEEN \$3 AND \$4\)`, expectedPhotos)
 

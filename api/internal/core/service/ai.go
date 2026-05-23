@@ -3,8 +3,8 @@ package service
 import (
 	"bytes"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
+	json "github.com/goccy/go-json"
 	"io"
 	"log/slog"
 	"net/http"

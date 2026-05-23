@@ -170,30 +170,6 @@ export class PhotosAdapter implements IPhotosAdapter {
     return this.restApiAdapter.postApiCall(regeneratePath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 
-  public getPhotoThumbnails = async (photoIds: string[]): Promise<Map<string, string>> => {
-    const thumbnailsPath = 'photos/thumbnails';
-    const blob = await this.restApiAdapter.postBinaryApiCall(
-      thumbnailsPath,
-      { photoIds },
-      this.buildHeaders(this.restApiAdapter.authHeader())
-    );
-
-    const JSZip = (await import('jszip')).default;
-    const zip = await JSZip.loadAsync(blob);
-    const thumbnailMap = new Map<string, string>();
-
-    for (const photoId of photoIds) {
-      const file = zip.file(photoId);
-      if (file) {
-        const thumbnailBlob = await file.async('blob');
-        const url = URL.createObjectURL(thumbnailBlob);
-        thumbnailMap.set(photoId, url);
-      }
-    }
-
-    return thumbnailMap;
-  }
-
   public getThumbnailUrl = (photoId: string): string => {
     return `${this.restApiAdapter.getBaseApiPath()}/photo/thumbnail/${photoId}`;
   }

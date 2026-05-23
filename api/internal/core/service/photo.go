@@ -4,8 +4,8 @@ import (
 	archivezip "archive/zip"
 	b64 "encoding/base64"
 	"context"
-	"encoding/json"
 	"fmt"
+	json "github.com/goccy/go-json"
 	"hash/fnv"
 	"io"
 	"log/slog"
@@ -236,7 +236,6 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 			Name:           utils.EscapeInvalidCharacters(photo.Name),
 			FilesystemPath: utils.EscapeInvalidCharacters(photo.Path),
 			AlbumId:        albumId,
-			Tags:           "",
 			Metadata:       photoMetadata,
 			Thumbnail:      photo.Thumbnail,
 			CreatedEpoch:   getPhotoEpoch(photo.Exif, photo.ModifiedTime),
@@ -315,7 +314,6 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 		Name:           utils.EscapeInvalidCharacters(photo.Name),
 		FilesystemPath: utils.EscapeInvalidCharacters(photo.Path),
 		AlbumId:        albumId,
-		Tags:           "",
 		Metadata:       photoMetadata,
 		Thumbnail:      photo.Thumbnail,
 		CreatedEpoch:   getPhotoEpoch(photo.Exif, photo.ModifiedTime),
@@ -704,19 +702,22 @@ func (ps *PhotoService) UpdatePhotoTags(photoId string, tags []string) (*domain.
 	if err != nil {
 		return nil, err
 	}
-	photo.Tags = tagsStr
 	ps.setPhotoSourcePath(photo)
 	return photo, nil
 }
 
 func (ps *PhotoService) BatchUpdatePhotoTags(photoIds []string, tags []string, operation string) error {
 	for _, photoId := range photoIds {
-		photo, err := ps.photoRepo.GetPhotoById(photoId, false)
+		_, err := ps.photoRepo.GetPhotoById(photoId, false)
+		if err != nil {
+			continue
+		}
+		existingTagsList, err := ps.photoRepo.GetPhotoTags(photoId)
 		if err != nil {
 			continue
 		}
 		existingTags := make(map[string]struct{})
-		for _, t := range strings.Split(photo.Tags, ",") {
+		for _, t := range existingTagsList {
 			t = strings.TrimSpace(t)
 			if t != "" {
 				existingTags[t] = struct{}{}
