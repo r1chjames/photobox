@@ -118,6 +118,10 @@ export class MockPhotosAdapter implements IPhotosAdapter {
     return null;
   }
 
+  public stopJob = async (_jobType: string) => {
+    return null;
+  }
+
   public getAllTags = async (): Promise<string[]> => {
     const tagSet = new Set<string>();
     this._photos.forEach(p => {

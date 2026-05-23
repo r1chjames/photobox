@@ -9,7 +9,8 @@ import {
     IconLayoutGridAdd,
     IconPencil,
     IconPencilCancel,
-    IconSettings
+    IconSettings,
+    IconPlayerStop
 } from "@tabler/icons-react";
 import {ISettingsAdapter} from "../../Adapters/ISettingsAdapter";
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
@@ -84,6 +85,8 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [indexingRunning, setIndexingRunning] = useState(false);
+  const [regenerateRunning, setRegenerateRunning] = useState(false);
 
   const loadSettings = useCallback(async () => {
     setLoading(true);
@@ -141,6 +144,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
       onConfirm: async () => {
         try {
           await props.photosAdapter.index();
+          setIndexingRunning(true);
           notifications.show({
             title: 'Indexing started',
             message: 'Photo indexing is running in the background',
@@ -157,6 +161,24 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
     });
   }, [props.photosAdapter]);
 
+  const handleStopIndex = useCallback(async () => {
+    try {
+      await props.photosAdapter.stopJob('Photo_index');
+      setIndexingRunning(false);
+      notifications.show({
+        title: 'Indexing stopped',
+        message: 'Photo indexing has been stopped',
+        color: 'orange',
+      });
+    } catch (e) {
+      notifications.show({
+        title: 'Stop failed',
+        message: e instanceof Error ? e.message : 'Failed to stop indexing',
+        color: 'red',
+      });
+    }
+  }, [props.photosAdapter]);
+
   const handleRegenerateThumbnails = useCallback(() => {
     modals.openConfirmModal({
       title: 'Regenerate all thumbnails?',
@@ -166,6 +188,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
       onConfirm: async () => {
         try {
           await props.photosAdapter.regenerateThumbnails();
+          setRegenerateRunning(true);
           notifications.show({
             title: 'Regeneration started',
             message: 'Thumbnail regeneration is running in the background',
@@ -180,6 +203,24 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
         }
       },
     });
+  }, [props.photosAdapter]);
+
+  const handleStopRegenerate = useCallback(async () => {
+    try {
+      await props.photosAdapter.stopJob('Thumbnail_regenerate');
+      setRegenerateRunning(false);
+      notifications.show({
+        title: 'Regeneration stopped',
+        message: 'Thumbnail regeneration has been stopped',
+        color: 'orange',
+      });
+    } catch (e) {
+      notifications.show({
+        title: 'Stop failed',
+        message: e instanceof Error ? e.message : 'Failed to stop thumbnail regeneration',
+        color: 'red',
+      });
+    }
   }, [props.photosAdapter]);
 
   const handleModalSave = useCallback((key: string, value: string, friendlyName: string, category: string, description: string) => {
@@ -254,12 +295,24 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
             </ActionIcon>
         </Flex>
         <Flex direction="row" gap="md" style={{ width: "100%", justifyContent: "right" }}>
-          <Button onClick={handleIndex} variant="outline">
-            Re-index Photos
-          </Button>
-          <Button onClick={handleRegenerateThumbnails}>
-            Regenerate Thumbnails
-          </Button>
+          {indexingRunning ? (
+            <Button onClick={handleStopIndex} variant="outline" color="red" leftSection={<IconPlayerStop size={16} />}>
+              Stop Indexing
+            </Button>
+          ) : (
+            <Button onClick={handleIndex} variant="outline">
+              Re-index Photos
+            </Button>
+          )}
+          {regenerateRunning ? (
+            <Button onClick={handleStopRegenerate} color="red" leftSection={<IconPlayerStop size={16} />}>
+              Stop Regeneration
+            </Button>
+          ) : (
+            <Button onClick={handleRegenerateThumbnails}>
+              Regenerate Thumbnails
+            </Button>
+          )}
         </Flex>
     </div>
   );
