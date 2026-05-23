@@ -3,10 +3,14 @@ package service
 import (
 	archivezip "archive/zip"
 	b64 "encoding/base64"
+	"bytes"
 	"context"
 	"fmt"
 	json "github.com/goccy/go-json"
 	"hash/fnv"
+	"image"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"log/slog"
 	"os"
@@ -14,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/buckket/go-blurhash"
 	"github.com/disintegration/imaging"
 	"github.com/rwcarlsen/goexif/exif"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
@@ -260,6 +265,16 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 			photoInfo.Thumbnail = thumbnailBytes
 			if err := ps.thumbnailStorage.Put(context.Background(), photoHash, "m", thumbnailBytes); err != nil {
 				slog.Error("Failed to store thumbnail", "photo", photo.Name, "error", err)
+			}
+			// Encode blurhash placeholder from thumbnail for instant grid rendering
+			if img, _, err := image.Decode(bytes.NewReader(thumbnailBytes)); err == nil {
+				if blurhashStr, err := blurhash.Encode(4, 3, img); err == nil {
+					photoInfo.Blurhash = blurhashStr
+				} else {
+					slog.Warn("Failed to encode blurhash", "photo", photo.Name, "error", err)
+				}
+			} else {
+				slog.Warn("Failed to decode thumbnail for blurhash", "photo", photo.Name, "error", err)
 			}
 			// Notify connected clients that a thumbnail is ready
 			if ps.wsHub != nil {

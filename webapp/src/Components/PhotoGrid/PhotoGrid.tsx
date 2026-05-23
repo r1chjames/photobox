@@ -21,6 +21,7 @@ import { modals } from '@mantine/modals';
 import './PhotoGrid.css';
 import {Photo} from "../../Models/Photo";
 import {fetchThumbnailsBatch, getCachedThumbnail, fetchThumbnailWithAuth, revokeThumbnail} from "../../utils/ThumbnailUtils";
+import {BlurhashCanvas} from "../BlurhashCanvas/BlurhashCanvas";
 import {useWebSocket} from "../../hooks/useWebSocket";
 
 const getPhotoDisplayDate = (photo: Photo): string => {
@@ -211,7 +212,12 @@ const GridImageItem = React.memo(
                 )}
                 <div className="thumbnail" style={{ aspectRatio: '4 / 3' }}>
                     {(!effectiveThumbnailUrl || !isLoaded) && !hasError && (
-                        photo.dominantColor ? (
+                        photo.blurhash ? (
+                            <BlurhashCanvas
+                                hash={photo.blurhash}
+                                style={{ position: 'absolute', top: 0, left: 0 }}
+                            />
+                        ) : photo.dominantColor ? (
                             <div
                                 style={{
                                     position: 'absolute',
