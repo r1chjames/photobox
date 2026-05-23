@@ -14,7 +14,6 @@ interface TimelineScrubberProps {
 
 const THROTTLE_MS = 100;
 const TRACK_WIDTH = 2;
-const CONTAINER_WIDTH = 24;
 const HANDLE_SIZE = 12;
 
 export const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
@@ -216,7 +215,12 @@ export const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
   const renderTrackLabels = () => {
     if (!isDragging && !isHovering) return null;
 
+    // Limit to ~12 labels to avoid crowding
+    const maxLabels = 12;
+    const skip = Math.max(1, Math.ceil(entries.length / maxLabels));
+
     return entries.map((entry, idx) => {
+      if (idx % skip !== 0 && idx !== entries.length - 1) return null;
       const percent = getPercentForIndex(idx);
       const isActive = activeYear === entry.year && activeMonth === entry.month;
       const isHovered = hoveredMonth?.year === entry.year && hoveredMonth?.month === entry.month;
@@ -233,7 +237,7 @@ export const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
           style={{
             position: 'absolute',
             top: `${percent}%`,
-            right: CONTAINER_WIDTH + 4,
+            right: 'calc(50% + 8px)',
             transform: 'translateY(-50%)',
             display: 'flex',
             alignItems: 'center',
@@ -318,7 +322,8 @@ export const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
         <div
           style={{
             position: 'absolute',
-            right: Math.floor(CONTAINER_WIDTH / 2),
+            left: '50%',
+            transform: 'translateX(-50%)',
             top: 0,
             bottom: 0,
             width: TRACK_WIDTH,
@@ -335,9 +340,9 @@ export const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
         <div
           style={{
             position: 'absolute',
-            right: Math.floor(CONTAINER_WIDTH / 2) - Math.floor(HANDLE_SIZE / 2),
+            left: '50%',
             top: `${scrubberPercent}%`,
-            transform: 'translateY(-50%)',
+            transform: 'translate(-50%, -50%)',
             width: HANDLE_SIZE,
             height: HANDLE_SIZE,
             background: isDragging ? 'var(--mantine-primary-color-filled)' : (isHovering ? 'var(--mantine-primary-color-filled-hover)' : 'var(--mantine-color-default-border)'),
@@ -406,24 +411,18 @@ export const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
 
   const isInteracting = isDragging || isHovering;
 
-  // Desktop: slim permanent line at the far right edge
+  // Desktop: fixed-width panel to the right of the grid
   return (
     <div
       style={{
-        position: 'absolute',
-        top: 60,
-        right: 8,
-        width: isInteracting ? 200 : CONTAINER_WIDTH,
-        maxHeight: 'calc(100% - 80px)',
-        height: 'calc(100% - 80px)',
-        zIndex: 5,
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        paddingTop: 8,
+        paddingBottom: 8,
         background: isInteracting ? 'var(--mantine-color-body)' : 'transparent',
-        border: isInteracting ? '1px solid var(--mantine-color-default-border)' : 'none',
-        borderRadius: isInteracting ? 8 : 0,
-        padding: isInteracting ? '8px' : 0,
-        boxShadow: isInteracting ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
-        boxSizing: 'content-box',
-        transition: 'width 0.15s, background 0.15s, border 0.15s, padding 0.15s, box-shadow 0.15s',
+        borderLeft: isInteracting ? '1px solid var(--mantine-color-default-border)' : '1px solid transparent',
+        transition: 'background 0.15s, border-color 0.15s',
       }}
     >
       {scrubberContent}
