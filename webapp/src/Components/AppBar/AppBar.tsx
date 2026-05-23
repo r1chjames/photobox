@@ -9,6 +9,7 @@ import {
     Drawer,
     Group,
     Menu,
+    Modal,
     NavLink,
     Text,
     TextInput,
@@ -32,6 +33,7 @@ import {
     IconHeart,
     IconHelp,
     IconHome,
+    IconInfoCircle,
     IconLibraryPhoto,
     IconLink,
     IconLogout,
@@ -213,6 +215,8 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
     const [active, setActive] = useState(activeLinkIndex(activeLink));
     const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
     const [showHelp, setShowHelp] = useState(false);
+    const [showAbout, setShowAbout] = useState(false);
+    const [appVersion, setAppVersion] = useState<string>('');
     const [searchValue, setSearchValue] = useState('');
     const [albumName, setAlbumName] = useState<string | undefined>();
     const {colorScheme, setColorScheme} = useMantineColorScheme();
@@ -222,6 +226,18 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
     const {logout} = useAuth();
     const {albumsAdapter} = useAdapters();
     const breadcrumbItems = buildBreadcrumbs(location.pathname, activeLink, id, albumName);
+
+    useEffect(() => {
+        // Fetch app version from health endpoint
+        fetch('/api/health')
+            .then(r => r.json())
+            .then(data => {
+                if (data.data?.version) {
+                    setAppVersion(data.data.version);
+                }
+            })
+            .catch(() => {});
+    }, []);
 
     useEffect(() => {
         setActive(activeLinkIndex(activeLink));
@@ -375,6 +391,9 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
                                             Favorites
                                         </Menu.Item>
                                         <Menu.Divider/>
+                                        <Menu.Item leftSection={<IconInfoCircle size={16} stroke={1.5}/>} onClick={() => setShowAbout(true)}>
+                                            About
+                                        </Menu.Item>
                                         <Menu.Item onClick={handleLogout} leftSection={<IconLogout size={16} stroke={1.5}/>}>Logout</Menu.Item>
                                     </Menu.Dropdown>
                                 </Menu>
@@ -484,6 +503,15 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
             </Drawer>
 
             <KeyboardShortcutsHelp opened={showHelp} onClose={() => setShowHelp(false)} />
+
+            <Modal opened={showAbout} onClose={() => setShowAbout(false)} title="About Photobox" centered>
+                <Group justify="center" gap="xs">
+                    <Text size="lg" fw={600}>Photobox</Text>
+                </Group>
+                <Text c="dimmed" size="sm" ta="center" mt="xs">
+                    Version {appVersion || 'unknown'}
+                </Text>
+            </Modal>
         </AppShell>
     );
 };

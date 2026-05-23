@@ -9,13 +9,15 @@ import (
 )
 
 type UtilityHandler struct {
-	svc port.UtilityService
+	svc     port.UtilityService
+	version string
 }
 
 // NewUtilityHandler creates a new UtilityHandler instance
-func NewUtilityHandler(svc port.UtilityService) *UtilityHandler {
+func NewUtilityHandler(svc port.UtilityService, version string) *UtilityHandler {
 	return &UtilityHandler{
-		svc,
+		svc:     svc,
+		version: version,
 	}
 }
 
@@ -31,6 +33,7 @@ func (uh *UtilityHandler) HealthCheck(ctx *gin.Context) {
 		"status":   "up",
 		"database": dbStatus,
 		"settings": settings,
+		"version":  uh.version,
 	})
 }
 

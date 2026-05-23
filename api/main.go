@@ -19,6 +19,9 @@ import (
 	"os"
 )
 
+// version is set at build time via -ldflags "-X main.version=..."
+var version = "dev"
+
 func main() {
 	appConfig := appconfig.New()
 
@@ -173,7 +176,7 @@ func setupHttpHandlers(
 	authHandler := http.NewAuthHandler(appServices.authService)
 	photoHandler := http.NewPhotoHandler(appServices.photoService, appServices.jobService)
 	albumHandler := http.NewAlbumHandler(appServices.albumService)
-	utilityHandler := http.NewUtilityHandler(appServices.utilityService)
+	utilityHandler := http.NewUtilityHandler(appServices.utilityService, version)
 	searchHandler := http.NewSearchHandler(appServices.photoService, appServices.albumService)
 	shareHandler := http.NewShareHandler(appServices.shareService)
 	wsHandler := http.NewWebSocketHandler(appServices.wsHub)

@@ -67,7 +67,7 @@ func TestUtilityHandler_HealthCheck_Success(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	mockService := new(MockUtilityService)
-	handler := NewUtilityHandler(mockService)
+	handler := NewUtilityHandler(mockService, "test-version")
 
 	expectedHealth := []*domain.Setting{
 		{
@@ -123,7 +123,7 @@ func TestUtilityHandler_ListAllSettings_Success(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	mockService := new(MockUtilityService)
-	handler := NewUtilityHandler(mockService)
+	handler := NewUtilityHandler(mockService, "test-version")
 
 	expectedSettings := []*domain.Setting{
 		{
@@ -176,7 +176,7 @@ func TestUtilityHandler_ListAllSettings_Empty(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	mockService := new(MockUtilityService)
-	handler := NewUtilityHandler(mockService)
+	handler := NewUtilityHandler(mockService, "test-version")
 
 	mockService.On("ListAllSettings").Return([]*domain.Setting{}, nil)
 
@@ -228,7 +228,7 @@ func TestUtilityHandler_ListAllSettings_Empty(t *testing.T) {
 // TestNewUtilityHandler tests handler creation
 func TestNewUtilityHandler(t *testing.T) {
 	mockService := new(MockUtilityService)
-	handler := NewUtilityHandler(mockService)
+	handler := NewUtilityHandler(mockService, "test-version")
 
 	assert.NotNil(t, handler)
 	assert.Equal(t, mockService, handler.svc)
@@ -239,7 +239,7 @@ func TestUtilityHandler_HealthCheck_WithDBError(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	mockService := new(MockUtilityService)
-	handler := NewUtilityHandler(mockService)
+	handler := NewUtilityHandler(mockService, "test-version")
 
 	mockService.On("Ping").Return(errors.New("connection refused"))
 	mockService.On("Healthcheck").Return([]*domain.Setting{}, nil)
