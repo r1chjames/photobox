@@ -121,7 +121,10 @@ func (fs *FilesystemRepository) GenerateThumbnail(path string, width, height int
 	}
 	thumb := imaging.Thumbnail(img, width, height, imaging.CatmullRom)
 	var buffer bytes.Buffer
-	_ = webp.Encode(&buffer, thumb, webp.OptionsForPreset(webp.PresetPhoto, 75))
+	if err := webp.Encode(&buffer, thumb, webp.OptionsForPreset(webp.PresetPhoto, 75)); err != nil {
+		slog.Error("WebP thumbnail encode failed", "path", path, "error", err)
+		return nil
+	}
 	return buffer.Bytes()
 }
 
@@ -190,7 +193,10 @@ func (fs *FilesystemRepository) generateVideoThumbnail(path string, width, heigh
 	}
 	thumb := imaging.Thumbnail(img, width, height, imaging.CatmullRom)
 	var buffer bytes.Buffer
-	_ = webp.Encode(&buffer, thumb, webp.OptionsForPreset(webp.PresetPhoto, 75))
+	if err := webp.Encode(&buffer, thumb, webp.OptionsForPreset(webp.PresetPhoto, 75)); err != nil {
+		slog.Error("WebP video thumbnail encode failed", "path", path, "error", err)
+		return nil
+	}
 	return buffer.Bytes()
 }
 
@@ -218,7 +224,10 @@ func (fs *FilesystemRepository) generateRawThumbnail(path string, width, height 
 
 		thumb := imaging.Thumbnail(img, width, height, imaging.CatmullRom)
 		var buf bytes.Buffer
-		_ = webp.Encode(&buf, thumb, webp.OptionsForPreset(webp.PresetPhoto, 75))
+		if err := webp.Encode(&buf, thumb, webp.OptionsForPreset(webp.PresetPhoto, 75)); err != nil {
+			slog.Error("WebP RAW thumbnail encode failed", "path", path, "error", err)
+			continue
+		}
 		return buf.Bytes()
 	}
 
