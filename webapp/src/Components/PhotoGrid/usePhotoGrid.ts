@@ -3,7 +3,7 @@ import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 
 const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapter, albumIdentifier: string | undefined, startDate?: string, endDate?: string, tags?: string, mediaType?: string, searchQuery?: string, favoritesOnly?: boolean) => {
-    const limit = 30;
+    const limit = 60;
 
     // When an albumIdentifier is present, it's used to fetch album details.
     // This hook assumes the identifier could be a name (in Storybook) or an ID.

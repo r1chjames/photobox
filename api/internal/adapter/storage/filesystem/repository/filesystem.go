@@ -6,7 +6,6 @@ import (
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
-	"io"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -16,7 +15,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/deepteams/webp"
 	"github.com/disintegration/imaging"
+	jpegscaled "github.com/m8rge/go-scaled-jpeg"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"gitlab.com/r1chjames/photobox/api/internal/core/service"
 	"gitlab.com/r1chjames/photobox/api/internal/core/utils"
@@ -108,8 +109,8 @@ func (fs *FilesystemRepository) GenerateThumbnail(path string, width, height int
 		slog.Error("Source file missing, cannot generate thumbnail", "path", path)
 		return nil
 	}
-	extension := utils.GetFileExtension(path)
-	img, err := imaging.Open(path)
+
+	img, err := fs.decodeImage(path, width, height)
 	if err != nil {
 		if strings.Contains(err.Error(), "unsupported feature") {
 			slog.Warn("TIFF color model not supported, falling back to RAW preview", "path", path, "error", err)
@@ -120,10 +121,54 @@ func (fs *FilesystemRepository) GenerateThumbnail(path string, width, height int
 	}
 	thumb := imaging.Thumbnail(img, width, height, imaging.CatmullRom)
 	var buffer bytes.Buffer
-	writer := io.MultiWriter(&buffer)
-	format, _ := imaging.FormatFromExtension(extension)
-	_ = imaging.Encode(writer, thumb, format)
+	_ = webp.Encode(&buffer, thumb, webp.OptionsForPreset(webp.PresetPhoto, 75))
 	return buffer.Bytes()
+}
+
+// decodeImage opens and decodes an image, using a memory-efficient path for
+// large JPEGs (>20MP) via scaled DCT decoding.
+func (fs *FilesystemRepository) decodeImage(path string, targetWidth, targetHeight int) (image.Image, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	cfg, format, err := image.DecodeConfig(f)
+	if err != nil {
+		return nil, err
+	}
+
+	const largeImageThreshold = 20_000_000 // 20 megapixels
+	isLargeJPEG := format == "jpeg" && cfg.Width*cfg.Height > largeImageThreshold
+
+	if isLargeJPEG {
+		// Calculate DCT scale: 8=full, 4=1/2, 2=1/4, 1=1/8.
+		// Pick the smallest scale where decoded size >= target * 2 to avoid upscaling.
+		scale := 8
+		for _, s := range []int{1, 2, 4, 8} {
+			decodedW := cfg.Width * s / 8
+			if decodedW >= targetWidth*2 {
+				scale = s
+				break
+			}
+		}
+		if _, err := f.Seek(0, 0); err != nil {
+			return nil, err
+		}
+		img, err := jpegscaled.Decode(f, jpegscaled.DecodeOptions{DCTSizeScaled: scale})
+		if err == nil {
+			slog.Debug("Using scaled JPEG decode", "path", path, "scale", scale, "dims", fmt.Sprintf("%dx%d", cfg.Width, cfg.Height))
+			return img, nil
+		}
+		slog.Warn("Scaled JPEG decode failed, falling back to full decode", "path", path, "error", err)
+	}
+
+	if _, err := f.Seek(0, 0); err != nil {
+		return nil, err
+	}
+	img, _, err := image.Decode(f)
+	return img, err
 }
 
 func (fs *FilesystemRepository) generateVideoThumbnail(path string, width, height int) []byte {
@@ -145,7 +190,7 @@ func (fs *FilesystemRepository) generateVideoThumbnail(path string, width, heigh
 	}
 	thumb := imaging.Thumbnail(img, width, height, imaging.CatmullRom)
 	var buffer bytes.Buffer
-	_ = imaging.Encode(&buffer, thumb, imaging.PNG)
+	_ = webp.Encode(&buffer, thumb, webp.OptionsForPreset(webp.PresetPhoto, 75))
 	return buffer.Bytes()
 }
 
@@ -173,7 +218,7 @@ func (fs *FilesystemRepository) generateRawThumbnail(path string, width, height 
 
 		thumb := imaging.Thumbnail(img, width, height, imaging.CatmullRom)
 		var buf bytes.Buffer
-		_ = imaging.Encode(&buf, thumb, imaging.JPEG)
+		_ = webp.Encode(&buf, thumb, webp.OptionsForPreset(webp.PresetPhoto, 75))
 		return buf.Bytes()
 	}
 

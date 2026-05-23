@@ -26,7 +26,7 @@ type Config struct {
 // Storage stores thumbnails in an S3-compatible object store using the
 // MinIO Go SDK.  Object keys follow the pattern:
 //
-//	thumbnails/{safeId}/{size}.jpg
+//	thumbnails/{safeId}/{size}.webp
 type Storage struct {
 	client *minio.Client
 	bucket string
@@ -86,7 +86,7 @@ func (s *Storage) Put(ctx context.Context, photoId, size string, data []byte) er
 	}
 	reader := bytes.NewReader(data)
 	_, err := s.client.PutObject(ctx, s.bucket, s.key(photoId, size), reader, int64(len(data)), minio.PutObjectOptions{
-		ContentType: "image/jpeg",
+		ContentType: "image/webp",
 	})
 	return err
 }
@@ -128,5 +128,5 @@ func (s *Storage) key(photoId, size string) string {
 	safeId := strings.ReplaceAll(photoId, "/", "_")
 	safeId = strings.ReplaceAll(safeId, "+", "-")
 	safeId = strings.ReplaceAll(safeId, "=", "")
-	return fmt.Sprintf("thumbnails/%s/%s.jpg", safeId, size)
+	return fmt.Sprintf("thumbnails/%s/%s.webp", safeId, size)
 }

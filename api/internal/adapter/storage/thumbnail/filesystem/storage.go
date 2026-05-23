@@ -10,7 +10,7 @@ import (
 )
 
 // Storage stores thumbnails on the local filesystem under a configurable
-// base directory, organised as baseDir/{size}/{safeId}.jpg.
+// base directory, organised as baseDir/{size}/{safeId}.webp.
 type Storage struct {
 	baseDir string
 }
@@ -75,5 +75,5 @@ func (s *Storage) path(photoId, size string) string {
 	safeId := strings.ReplaceAll(photoId, "/", "_")
 	safeId = strings.ReplaceAll(safeId, "+", "-")
 	safeId = strings.ReplaceAll(safeId, "=", "")
-	return filepath.Join(s.baseDir, size, safeId+".jpg")
+	return filepath.Join(s.baseDir, size, safeId+".webp")
 }
