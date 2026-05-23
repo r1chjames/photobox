@@ -860,14 +860,15 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const showPullIndicator = pullDistance > 10;
 
     return (
-        <div
+        <div style={{ display: 'flex', height: '100%' }}>
+          <div
             ref={containerRef}
             className={`density-${density}`}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            style={{ overflowY: 'auto', height: '100%', position: 'relative' }}
-        >
+            style={{ flex: 1, overflowY: 'auto', position: 'relative' }}
+          >
             {showPullIndicator && (
                 <div style={{
                     position: 'absolute',
@@ -1000,7 +1001,19 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                     </div>
                 )}
             </div>
-            {isImageModalOpen && (
+          </div>
+          {!id && (
+            <div style={{ width: 200, flexShrink: 0, position: 'relative' }}>
+              <TimelineScrubber
+                photosAdapter={props.photosAdapter}
+                onSelectMonth={(year, month) => setDateFilter({ year, month })}
+                onClear={() => setDateFilter(null)}
+                activeYear={dateFilter?.year}
+                activeMonth={dateFilter?.month}
+              />
+            </div>
+          )}
+          {isImageModalOpen && (
                 <Modal
                     opened={isImageModalOpen}
                     withCloseButton={false}
@@ -1025,15 +1038,6 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                         onSlideshow={() => { setImageModalOpen(false); setIsSlideshowOpen(true); }}
                     />
                 </Modal>
-            )}
-            {!id && (
-                <TimelineScrubber
-                    photosAdapter={props.photosAdapter}
-                    onSelectMonth={(year, month) => setDateFilter({ year, month })}
-                    onClear={() => setDateFilter(null)}
-                    activeYear={dateFilter?.year}
-                    activeMonth={dateFilter?.month}
-                />
             )}
             <KeyboardShortcutsHelp opened={showShortcutsHelp} onClose={() => setShowShortcutsHelp(false)} />
             {isSlideshowOpen && (
