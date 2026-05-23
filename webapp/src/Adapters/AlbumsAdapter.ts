@@ -18,7 +18,7 @@ export class AlbumsAdapter implements IAlbumsAdapter {
 
   public getAllAlbumsInfo = async () => {
     const getAllAlbumsPath = "albums";
-    return this.restApiAdapter.getPaginatedApiCall(getAllAlbumsPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
+    return this.restApiAdapter.getPaginatedApiCall(getAllAlbumsPath, this.buildHeaders(this.restApiAdapter.authHeader()), { limit: 1000 });
   }
 
   public getCountOfPhotosInAlbum = async () => {
