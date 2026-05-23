@@ -142,7 +142,7 @@ func (pr *PhotoRepository) SoftDeletePhoto(photoId string) (*domain.Photo, error
 	}
 	now := time.Now()
 	photo.DeletedAt = &now
-	result := pr.dbEnv.Db.Save(photo)
+	result := pr.dbEnv.Db.Model(&domain.Photo{}).Where("id = ?", photoId).Update("deleted_at", now)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -155,7 +155,7 @@ func (pr *PhotoRepository) RestorePhoto(photoId string) (*domain.Photo, error) {
 		return nil, err
 	}
 	photo.DeletedAt = nil
-	result := pr.dbEnv.Db.Save(photo)
+	result := pr.dbEnv.Db.Model(&domain.Photo{}).Where("id = ?", photoId).Update("deleted_at", nil)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -183,7 +183,11 @@ func (pr *PhotoRepository) EmptyTrash() error {
 }
 
 func (pr *PhotoRepository) UpdatePhoto(photo domain.Photo) error {
-	result := pr.dbEnv.Db.Save(&photo)
+	result := pr.dbEnv.Db.Model(&domain.Photo{}).Where("id = ?", photo.ID).Updates(map[string]interface{}{
+		"thumbnail_path": photo.ThumbnailPath,
+		"blurhash":       photo.Blurhash,
+		"updated_at":     time.Now(),
+	})
 	return result.Error
 }
 

@@ -40,3 +40,7 @@ func Exists(slice []string, val string) bool {
 func EscapeInvalidCharacters(field string) string {
 	return strings.ReplaceAll(field, "'", "\\'")
 }
+
+func UnescapeInvalidCharacters(field string) string {
+	return strings.ReplaceAll(field, "\\'", "'")
+}

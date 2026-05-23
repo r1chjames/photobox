@@ -259,3 +259,55 @@ func TestEscapeInvalidCharacters(t *testing.T) {
 		})
 	}
 }
+
+// TestUnescapeInvalidCharacters tests unescaping single quotes in strings
+func TestUnescapeInvalidCharacters(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "escaped single quote",
+			input:    "O\\'Brien",
+			expected: "O'Brien",
+		},
+		{
+			name:     "multiple escaped single quotes",
+			input:    "It\\'s a beautiful day\\'s work",
+			expected: "It's a beautiful day's work",
+		},
+		{
+			name:     "no escaped quotes",
+			input:    "Hello World",
+			expected: "Hello World",
+		},
+		{
+			name:     "empty string",
+			input:    "",
+			expected: "",
+		},
+		{
+			name:     "only escaped single quote",
+			input:    "\\'",
+			expected: "'",
+		},
+		{
+			name:     "directory with apostrophe",
+			input:    "Krazy House Jan \\'07",
+			expected: "Krazy House Jan '07",
+		},
+		{
+			name:     "unicode with escaped quote",
+			input:    "世界\\'s best",
+			expected: "世界's best",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := UnescapeInvalidCharacters(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
