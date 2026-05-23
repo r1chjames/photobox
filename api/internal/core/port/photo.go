@@ -65,6 +65,8 @@ type PhotoRepository interface {
 	GetDuplicatePhotos() ([]*domain.Photo, error)
 	// GetPhotoIndexCache returns a map of photo ID to file hash and modified time for skip-unchanged optimization
 	GetPhotoIndexCache() (map[string]struct{FileHash string; FileModifiedTime int64}, error)
+	// HidePhoto marks a photo as hidden (corrupted/unusable)
+	HidePhoto(photoId string) error
 }
 
 // PhotoService is an interface for interacting with photo-related business logic

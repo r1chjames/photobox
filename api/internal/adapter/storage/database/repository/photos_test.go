@@ -106,7 +106,7 @@ func TestListAllPhotos_Success(t *testing.T) {
 		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", "album1", []byte("{}"), []byte("thumb2"), time.Now().UnixMilli()).
 		AddRow("photo3", "test3.jpg", "/path/to/test3.jpg", "album2", []byte("{}"), []byte("thumb3"), time.Now().UnixMilli())
 
-	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL ORDER BY created_epoch ASC LIMIT \$1`, expectedPhotos)
+	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND hidden = \$1 ORDER BY created_epoch ASC LIMIT \$2`, expectedPhotos)
 
 	repo := NewPhotoRepository(env)
 	photos, err := repo.ListAllPhotos("", 10, true, "", "", "")
@@ -143,7 +143,7 @@ func TestListAllPhotos_WithFromId(t *testing.T) {
 		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", "", "album1", []byte("{}"), time.Now(), fromEpoch+1000, time.Now()).
 		AddRow("photo3", "test3.jpg", "/path/to/test3.jpg", "", "album2", []byte("{}"), time.Now(), fromEpoch+2000, time.Now())
 
-	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND created_epoch > \$1 ORDER BY created_epoch ASC LIMIT \$2`, expectedPhotos)
+	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND hidden = \$1 AND created_epoch > \$2 ORDER BY created_epoch ASC LIMIT \$3`, expectedPhotos)
 
 	repo := NewPhotoRepository(env)
 	photos, err := repo.ListAllPhotos(fromID, 5, false, "", "", "")
@@ -169,7 +169,7 @@ func TestListAllPhotos_Empty(t *testing.T) {
 
 	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "metadata", "thumbnail", "created_epoch"})
 
-	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL ORDER BY created_epoch ASC LIMIT \$1`, expectedPhotos)
+	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND hidden = \$1 ORDER BY created_epoch ASC LIMIT \$2`, expectedPhotos)
 
 	repo := NewPhotoRepository(env)
 	photos, err := repo.ListAllPhotos("", 10, true, "", "", "")
@@ -197,7 +197,7 @@ func TestListAllPhotosInAlbum_Success(t *testing.T) {
 		AddRow("photo1", "test1.jpg", "/path/to/test1.jpg", albumID, []byte("{}"), []byte("thumb1"), time.Now().UnixMilli()).
 		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", albumID, []byte("{}"), []byte("thumb2"), time.Now().UnixMilli())
 
-	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND album_id = \$1 ORDER BY created_epoch ASC LIMIT \$2`, expectedPhotos)
+	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE \(deleted_at IS NULL AND album_id = \$1\) AND hidden = \$2 ORDER BY created_epoch ASC LIMIT \$3`, expectedPhotos)
 
 	repo := NewPhotoRepository(env)
 	photos, err := repo.ListAllPhotosInAlbum(albumID, "", 10, true, "", "", "")
@@ -234,7 +234,7 @@ func TestListAllPhotosInAlbum_WithFromId(t *testing.T) {
 	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "metadata", "thumbnail", "created_epoch"}).
 		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", albumID, []byte("{}"), []byte("thumb2"), time.Now().UnixMilli())
 
-	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE \(deleted_at IS NULL AND album_id = \$1\) AND created_epoch > \$2 ORDER BY created_epoch ASC LIMIT \$3`, expectedPhotos)
+	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE \(deleted_at IS NULL AND album_id = \$1\) AND hidden = \$2 AND created_epoch > \$3 ORDER BY created_epoch ASC LIMIT \$4`, expectedPhotos)
 
 	repo := NewPhotoRepository(env)
 	photos, err := repo.ListAllPhotosInAlbum(albumID, fromID, 5, true, "", "", "")
@@ -260,7 +260,7 @@ func TestListAllPhotosInAlbum_Empty(t *testing.T) {
 	albumID := "emptyAlbum"
 	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "metadata", "thumbnail", "created_epoch"})
 
-	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND album_id = \$1 ORDER BY created_epoch ASC LIMIT \$2`, expectedPhotos)
+	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE \(deleted_at IS NULL AND album_id = \$1\) AND hidden = \$2 ORDER BY created_epoch ASC LIMIT \$3`, expectedPhotos)
 
 	repo := NewPhotoRepository(env)
 	photos, err := repo.ListAllPhotosInAlbum(albumID, "", 10, true, "", "", "")
@@ -674,7 +674,7 @@ func TestListFavoritePhotos_Success(t *testing.T) {
 		AddRow("photo1", "test1.jpg", "/path/to/test1.jpg", "album1", []byte("{}"), []byte("thumb1"), time.Now().UnixMilli()).
 		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", "album2", []byte("{}"), []byte("thumb2"), time.Now().UnixMilli())
 
-	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE favorite = \$1 AND deleted_at IS NULL ORDER BY created_epoch ASC LIMIT \$2`, expectedPhotos)
+	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE \(favorite = \$1 AND deleted_at IS NULL\) AND hidden = \$2 ORDER BY created_epoch ASC LIMIT \$3`, expectedPhotos)
 
 	repo := NewPhotoRepository(env)
 	photos, err := repo.ListFavoritePhotos("", 10, true, "", "")
@@ -700,7 +700,7 @@ func TestListFavoritePhotos_Empty(t *testing.T) {
 
 	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "metadata", "thumbnail", "created_epoch"})
 
-	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE favorite = \$1 AND deleted_at IS NULL ORDER BY created_epoch ASC LIMIT \$2`, expectedPhotos)
+	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE \(favorite = \$1 AND deleted_at IS NULL\) AND hidden = \$2 ORDER BY created_epoch ASC LIMIT \$3`, expectedPhotos)
 
 	repo := NewPhotoRepository(env)
 	photos, err := repo.ListFavoritePhotos("", 10, true, "", "")
@@ -728,7 +728,7 @@ func TestSearchPhotos_Success(t *testing.T) {
 		AddRow("photo1", "vacation1.jpg", "/path/to/vacation1.jpg", "album1", []byte("{}"), []byte("thumb1"), time.Now().UnixMilli()).
 		AddRow("photo2", "vacation2.jpg", "/path/to/vacation2.jpg", "album1", []byte("{}"), []byte("thumb2"), time.Now().UnixMilli())
 
-	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND to_tsvector\('english', coalesce\(name, ''\) \|\| ' ' \|\| coalesce\(tags, ''\)\) @@ plainto_tsquery\('english', \$1\) ORDER BY created_epoch DESC LIMIT \$2`, expectedPhotos)
+	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND hidden = \$1 AND to_tsvector\('english', coalesce\(name, ''\) \|\| ' ' \|\| coalesce\(tags, ''\)\) @@ plainto_tsquery\('english', \$2\) ORDER BY created_epoch DESC LIMIT \$3`, expectedPhotos)
 
 	repo := NewPhotoRepository(env)
 	photos, err := repo.SearchPhotos(query, 10)
@@ -755,7 +755,7 @@ func TestSearchPhotos_Empty(t *testing.T) {
 	query := "nonexistent"
 	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "metadata", "thumbnail", "created_epoch"})
 
-	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND to_tsvector\('english', coalesce\(name, ''\) \|\| ' ' \|\| coalesce\(tags, ''\)\) @@ plainto_tsquery\('english', \$1\) ORDER BY created_epoch DESC LIMIT \$2`, expectedPhotos)
+	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND hidden = \$1 AND to_tsvector\('english', coalesce\(name, ''\) \|\| ' ' \|\| coalesce\(tags, ''\)\) @@ plainto_tsquery\('english', \$2\) ORDER BY created_epoch DESC LIMIT \$3`, expectedPhotos)
 
 	repo := NewPhotoRepository(env)
 	photos, err := repo.SearchPhotos(query, 10)
@@ -783,7 +783,7 @@ func TestGetTimeline_Success(t *testing.T) {
 		AddRow(2024, 2, 15).
 		AddRow(2023, 12, 5)
 
-	database.ShouldReturnRowsForQuery(mock, `SELECT\s+EXTRACT\(YEAR FROM to_timestamp\(created_epoch / 1000\)\)::int AS year,\s+EXTRACT\(MONTH FROM to_timestamp\(created_epoch / 1000\)\)::int AS month,\s+COUNT\(\*\) AS count\s+FROM photobox\.photos\s+WHERE deleted_at IS NULL\s+GROUP BY year, month\s+ORDER BY year DESC, month DESC`, expectedEntries)
+	database.ShouldReturnRowsForQuery(mock, `SELECT "year","month",COUNT\(\*\) as count FROM "photos" WHERE deleted_at IS NULL AND year > 0 AND month > 0 GROUP BY year, month ORDER BY year DESC, month DESC`, expectedEntries)
 
 	repo := NewPhotoRepository(env)
 	entries, err := repo.GetTimeline()
@@ -811,7 +811,7 @@ func TestGetPhotosWithGeodata_Success(t *testing.T) {
 		AddRow("photo1", "test1.jpg", "/path/to/test1.jpg", "source1", "album1", []byte("{}"), time.Now(), time.Now().UnixMilli(), time.Now(), false, nil, "", "", 51.5, -0.1).
 		AddRow("photo2", "test2.jpg", "/path/to/test2.jpg", "source2", "album1", []byte("{}"), time.Now(), time.Now().UnixMilli(), time.Now(), false, nil, "", "", 40.7, -74.0)
 
-	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND \(latitude IS NOT NULL AND longitude IS NOT NULL\) AND \(latitude BETWEEN \$1 AND \$2\) AND \(longitude BETWEEN \$3 AND \$4\)`, expectedPhotos)
+	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND hidden = \$1 AND \(latitude IS NOT NULL AND longitude IS NOT NULL\) AND \(latitude BETWEEN \$2 AND \$3\) AND \(longitude BETWEEN \$4 AND \$5\) LIMIT \$6`, expectedPhotos)
 
 	repo := NewPhotoRepository(env)
 	photos, err := repo.GetPhotosWithGeodata(52.0, 50.0, 1.0, -1.0)
