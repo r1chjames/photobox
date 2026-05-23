@@ -452,7 +452,7 @@ func (ps *PhotoService) RegenerateThumbnails(ctx context.Context) {
 				continue
 			}
 
-			// Skip if all 3 sizes already exist
+			// Skip if all 3 sizes already exist AND blurhash is present
 			allExist := true
 			for _, size := range []string{"s", "m", "l"} {
 				exists, err := ps.thumbnailStorage.Exists(context.Background(), photo.ID, size)
@@ -461,7 +461,7 @@ func (ps *PhotoService) RegenerateThumbnails(ctx context.Context) {
 					break
 				}
 			}
-			if allExist {
+			if allExist && photo.Blurhash != "" {
 				skipped++
 				fromId = photo.ID
 				continue
@@ -508,6 +508,16 @@ func (ps *PhotoService) GenerateThumbnailForPhoto(photoId string) (string, error
 		_ = ps.cacheSvc.Set(cacheKey, "", 24*time.Hour)
 		if sizeCode == "m" {
 			mediumPath = ""
+			// Encode blurhash from medium thumbnail for grid placeholders
+			if img, _, err := image.Decode(bytes.NewReader(thumbnail)); err == nil {
+				if blurhashStr, err := blurhash.Encode(4, 3, img); err == nil {
+					photo.Blurhash = blurhashStr
+				} else {
+					slog.Warn("Failed to encode blurhash", "photo", photoId, "error", err)
+				}
+			} else {
+				slog.Warn("Failed to decode thumbnail for blurhash", "photo", photoId, "error", err)
+			}
 		}
 	}
 

@@ -20,7 +20,7 @@ import (
 )
 
 // version is set at build time via -ldflags "-X main.version=..."
-var version = "dev"
+var version = "0.0.0-dev"
 
 func main() {
 	appConfig := appconfig.New()

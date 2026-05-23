@@ -1,8 +1,6 @@
 # Stage 1: Build Go API binary
 FROM golang:1.25-alpine AS api-builder
 
-ARG VERSION=dev
-
 WORKDIR /app
 
 COPY api/go.mod api/go.sum ./
@@ -10,6 +8,8 @@ RUN go mod download
 
 COPY api/. ./
 
+# VERSION can be overridden at build time: --build-arg VERSION=$(git describe --tags --always --dirty)
+ARG VERSION=0.0.0-dev
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags "-X main.version=${VERSION}" -o api .
 
 # Stage 2: Build Webapp
