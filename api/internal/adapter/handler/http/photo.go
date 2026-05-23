@@ -37,7 +37,7 @@ func photosPaginationParams(resp []*domain.Photo) (string, string, string) {
 	if len(resp) > 0 {
 		fromId := strconv.FormatInt(resp[0].CreatedEpoch, 10)
 		toId := strconv.FormatInt(resp[len(resp)-1].CreatedEpoch, 10)
-		return fromId, toId, "/api/photos?limit=10&fromId=%s"
+		return fromId, toId, "/api/photos?limit=60&fromId=%s"
 	}
 	return "", "", ""
 }
@@ -161,7 +161,7 @@ func (ph *PhotoHandler) GetPhotoThumbnail(ctx *gin.Context) {
 	}
 
 	setThumbnailHeaders := func() {
-		ctx.Header("Content-Type", "image/jpeg")
+		ctx.Header("Content-Type", "image/webp")
 		ctx.Header("Cache-Control", "public, max-age=31536000, immutable")
 		ctx.Header("ETag", fmt.Sprintf(`"%s:%s"`, photoId, size))
 	}
@@ -170,7 +170,7 @@ func (ph *PhotoHandler) GetPhotoThumbnail(ctx *gin.Context) {
 	thumbnailBytes, err := ph.photoSvc.PhotoThumbnailBytesForSize(photoId, size)
 	if err == nil && len(thumbnailBytes) > 0 {
 		setThumbnailHeaders()
-		ctx.Data(http.StatusOK, "image/jpeg", thumbnailBytes)
+		ctx.Data(http.StatusOK, "image/webp", thumbnailBytes)
 		return
 	}
 
@@ -182,7 +182,7 @@ func (ph *PhotoHandler) GetPhotoThumbnail(ctx *gin.Context) {
 		thumbnailBytes, err = ph.photoSvc.PhotoThumbnailBytesForSize(photoId, size)
 		if err == nil && len(thumbnailBytes) > 0 {
 			setThumbnailHeaders()
-			ctx.Data(http.StatusOK, "image/jpeg", thumbnailBytes)
+			ctx.Data(http.StatusOK, "image/webp", thumbnailBytes)
 			return
 		}
 	}
@@ -194,10 +194,10 @@ func (ph *PhotoHandler) GetPhotoThumbnail(ctx *gin.Context) {
 			handleError(ctx, err)
 			return
 		}
-		ctx.Header("Content-Type", "image/jpeg")
+		ctx.Header("Content-Type", "image/webp")
 		ctx.Header("Cache-Control", "public, max-age=31536000, immutable")
 		ctx.Header("ETag", fmt.Sprintf(`"%s:%s"`, photoId, size))
-		ctx.Data(http.StatusOK, "image/jpeg", photoBinary)
+		ctx.Data(http.StatusOK, "image/webp", photoBinary)
 		return
 	}
 

@@ -123,7 +123,7 @@ func (dbEnv *Env) MigrateThumbnailsToFilesystem(photoDir string) {
 		safeId := strings.ReplaceAll(p.ID, "/", "_")
 		safeId = strings.ReplaceAll(safeId, "+", "-")
 		safeId = strings.ReplaceAll(safeId, "=", "")
-		path := filepath.Join(thumbsDir, safeId+".jpg")
+		path := filepath.Join(thumbsDir, safeId+".webp")
 		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 			slog.Warn("Failed to create thumbnail directory", "error", err)
 			continue

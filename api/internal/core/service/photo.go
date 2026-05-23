@@ -545,7 +545,7 @@ func (ps *PhotoService) PhotoThumbnailPathForSize(photoId string, size string) (
 	safeId := strings.ReplaceAll(photoId, "/", "_")
 	safeId = strings.ReplaceAll(safeId, "+", "-")
 	safeId = strings.ReplaceAll(safeId, "=", "")
-	path := filepath.Join(ps.config.PhotoDir, ".thumbnails", size, safeId+".jpg")
+	path := filepath.Join(ps.config.PhotoDir, ".thumbnails", size, safeId+".webp")
 	if _, err := os.Stat(path); err == nil {
 		_ = ps.cacheSvc.Set(cacheKey, path, 24*time.Hour)
 		return path, nil
