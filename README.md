@@ -25,22 +25,16 @@ The app version is embedded into the Go binary at build time via `-ldflags` and 
 
 **Default:** `0.0.0-dev` (local builds without tags)
 
+**CI automatically derives the version on every build** using `git describe --tags --always --dirty`:
+- Push to `develop` → version reflects commits since last tag (e.g. `v1.0.0-5-gabc123`)
+- Push tag `v1.2.3` → version is the clean tag (e.g. `v1.2.3`)
+
 **Bumping the version:**
 
 ```bash
 # Create an annotated semver tag (recommended)
 git tag -a v1.2.3 -m "Release v1.2.3"
 git push origin v1.2.3
-```
-
-The CI workflow passes the tag to the Docker build:
-
-```yaml
-# .github/workflows/docker-build.yml
-- name: Build image
-  run: |
-    VERSION=$(git describe --tags --always --dirty)
-    docker build --build-arg VERSION="${VERSION}" -t photobox .
 ```
 
 This produces versions like:
