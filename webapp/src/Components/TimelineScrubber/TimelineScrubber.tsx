@@ -404,23 +404,26 @@ export const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
     );
   }
 
+  const isInteracting = isDragging || isHovering;
+
   // Desktop: slim permanent line at the far right edge
   return (
     <div
       style={{
         position: 'absolute',
         top: 60,
-        right: 0,
-        width: CONTAINER_WIDTH,
+        right: 8,
+        width: isInteracting ? 200 : CONTAINER_WIDTH,
         maxHeight: 'calc(100% - 80px)',
         height: 'calc(100% - 80px)',
         zIndex: 5,
-        background: isDragging || isHovering ? 'var(--mantine-color-body)' : 'transparent',
-        border: isDragging || isHovering ? '1px solid var(--mantine-color-default-border)' : 'none',
-        borderRadius: isDragging || isHovering ? 8 : 0,
-        padding: isDragging || isHovering ? '8px' : 0,
-        boxShadow: isDragging || isHovering ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
-        transition: 'background 0.15s, border 0.15s, padding 0.15s, box-shadow 0.15s',
+        background: isInteracting ? 'var(--mantine-color-body)' : 'transparent',
+        border: isInteracting ? '1px solid var(--mantine-color-default-border)' : 'none',
+        borderRadius: isInteracting ? 8 : 0,
+        padding: isInteracting ? '8px' : 0,
+        boxShadow: isInteracting ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
+        boxSizing: 'content-box',
+        transition: 'width 0.15s, background 0.15s, border 0.15s, padding 0.15s, box-shadow 0.15s',
       }}
     >
       {scrubberContent}
