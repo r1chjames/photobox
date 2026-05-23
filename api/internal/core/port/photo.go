@@ -51,6 +51,8 @@ type PhotoRepository interface {
 	GetThumbnailPath(photoId string) (string, error)
 	// GetAllTags returns all distinct tags across photos
 	GetAllTags() ([]string, error)
+	// GetPhotoTags returns all tags for a specific photo
+	GetPhotoTags(photoId string) ([]string, error)
 	// ListPhotosByTags returns photos matching all specified tags
 	ListPhotosByTags(tags []string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
 	// UpdatePhotoTags updates the tags for a single photo (preserves AI tags)

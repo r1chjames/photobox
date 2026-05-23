@@ -93,6 +93,21 @@ func (mr *MockPhotoRepositoryMockRecorder) GetAllTags() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllTags", reflect.TypeOf((*MockPhotoRepository)(nil).GetAllTags))
 }
 
+// GetPhotoTags mocks base method.
+func (m *MockPhotoRepository) GetPhotoTags(photoId string) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPhotoTags", photoId)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPhotoTags indicates an expected call of GetPhotoTags.
+func (mr *MockPhotoRepositoryMockRecorder) GetPhotoTags(photoId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPhotoTags", reflect.TypeOf((*MockPhotoRepository)(nil).GetPhotoTags), photoId)
+}
+
 // GetDuplicatePhotos mocks base method.
 func (m *MockPhotoRepository) GetDuplicatePhotos() ([]*domain.Photo, error) {
 	m.ctrl.T.Helper()

@@ -146,6 +146,14 @@ func (m *MockPhotoRepository) GetAllTags() ([]string, error) {
 	return args.Get(0).([]string), args.Error(1)
 }
 
+func (m *MockPhotoRepository) GetPhotoTags(photoId string) ([]string, error) {
+	args := m.Called(photoId)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]string), args.Error(1)
+}
+
 func (m *MockPhotoRepository) ListPhotosByTags(tags []string, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
 	args := m.Called(tags, fromId, limit, includeThumbnail)
 	if args.Get(0) == nil {

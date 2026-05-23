@@ -2,6 +2,7 @@ package http
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -29,8 +30,17 @@ func NewRouter(
 	shareHandler ShareHandler,
 	wsHandler *WebSocketHandler) (*Router, error) {
 
-	router := gin.Default()
+	router := gin.New()
 	router.MaxMultipartMemory = 32 << 20 // 32 MB
+
+	// Custom panic recovery with structured logging and JSON error response
+	router.Use(gin.CustomRecovery(func(c *gin.Context, err any) {
+		slog.Error("panic recovered", "error", err, "path", c.Request.URL.Path)
+		c.AbortWithStatusJSON(500, gin.H{"error": "internal server error"})
+	}))
+
+	// Gin's default logger
+	router.Use(gin.Logger())
 
 	// Configure CORS with environment-based allowed origins
 	config := cors.DefaultConfig()
@@ -139,8 +149,7 @@ func defineResources(
 		photos.DELETE("/trash/empty", photoHandler.EmptyTrash)
 		photos.POST("/trash/restore/:id", photoHandler.RestorePhoto)
 		photos.POST("/download", photoHandler.DownloadPhotos)
-		photos.POST("/thumbnails", photoHandler.GetBatchThumbnails)
-	photos.GET("/timeline", photoHandler.GetTimeline)
+		photos.GET("/timeline", photoHandler.GetTimeline)
 	photos.GET("/geodata", photoHandler.GetGeodata)
 	photos.GET("/tags", photoHandler.GetAllTags)
 	photos.POST("/tags/batch", photoHandler.BatchUpdatePhotoTags)

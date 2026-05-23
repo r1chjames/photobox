@@ -11,7 +11,6 @@ type Photo struct {
 	FilesystemPath string         `json:"filesystemPath"`
 	SourcePath     string         `json:"sourcePath"`
 	AlbumId        string         `json:"albumId" gorm:"index:idx_album_deleted_epoch,priority:1"`
-	Tags           string         `json:"tags"`
 	Metadata       datatypes.JSON `json:"metadata"`
 	CreatedAt      time.Time      `json:"createdAt"`
 	CreatedEpoch   int64          `json:"createdEpoch" gorm:"index;index:idx_album_deleted_epoch,priority:3;index:idx_deleted_epoch,priority:2"`
