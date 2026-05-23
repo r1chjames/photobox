@@ -525,6 +525,16 @@ func (ps *PhotoService) GenerateThumbnailForPhoto(photoId string) (string, error
 	photo.ThumbnailPath = mediumPath
 	_ = ps.photoRepo.UpdatePhoto(*photo)
 
+	if mediumPath == "" {
+		// Check if at least one size was stored successfully
+		for _, sizeCode := range []string{"s", "m", "l"} {
+			if data, err := ps.thumbnailStorage.Get(context.Background(), photoId, sizeCode); err == nil && len(data) > 0 {
+				return "", nil // at least one thumbnail exists
+			}
+		}
+		return "", domain.ErrDataNotFound
+	}
+
 	return mediumPath, nil
 }
 
