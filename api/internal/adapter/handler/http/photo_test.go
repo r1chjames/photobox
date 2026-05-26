@@ -229,6 +229,11 @@ func (m *MockPhotoService) AnalyzeExistingPhotos() error {
 	return args.Error(0)
 }
 
+func (m *MockPhotoService) TriggerAIAnalysis() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
 func (m *MockPhotoService) RegenerateThumbnails(ctx context.Context) {}
 
 // MockJobService is a mock implementation of port.JobService

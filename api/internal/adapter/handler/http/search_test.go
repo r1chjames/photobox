@@ -229,6 +229,11 @@ func (m *MockSearchPhotoService) AnalyzeExistingPhotos() error {
 	return args.Error(0)
 }
 
+func (m *MockSearchPhotoService) TriggerAIAnalysis() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
 func (m *MockSearchPhotoService) RegenerateThumbnails(ctx context.Context) {}
 
 // MockSearchAlbumService is a mock implementation of port.AlbumService for search tests

@@ -57,3 +57,18 @@ type PhotoUpload struct {
 	AlbumName     string `json:"albumName"`
 	BinaryContent string `json:"binaryContent"`
 }
+
+type PhotoAnalysis struct {
+	PhotoID       string         `gorm:"primaryKey" json:"photoId"`
+	Model         string         `json:"model"`
+	Caption       string         `json:"caption"`
+	Tags          datatypes.JSON `json:"tags"`
+	Objects       datatypes.JSON `json:"objects"`
+	IsNSFW        bool           `json:"isNsfw"`
+	IsPortrait    bool           `json:"isPortrait"`
+	Status        string         `json:"status" gorm:"default:'pending'"`
+	Attempts      int            `json:"attempts" gorm:"default:0"`
+	LastAttemptAt *time.Time     `json:"lastAttemptAt"`
+	CreatedAt     time.Time      `json:"createdAt"`
+	UpdatedAt     time.Time      `json:"updatedAt"`
+}

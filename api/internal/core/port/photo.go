@@ -61,6 +61,12 @@ type PhotoRepository interface {
 	AddAITags(photoId string, tags []string) error
 	// ListPhotosWithoutAITags returns photos that have no AI-generated tags
 	ListPhotosWithoutAITags(limit int) ([]*domain.Photo, error)
+	// ListPhotosPendingAnalysis returns photos that need AI analysis (not completed, not failed-with-backoff)
+	ListPhotosPendingAnalysis(limit int) ([]*domain.Photo, error)
+	// SavePhotoAnalysis saves or updates the AI analysis result for a photo
+	SavePhotoAnalysis(analysis domain.PhotoAnalysis) error
+	// GetPhotoAnalysis retrieves the AI analysis for a photo
+	GetPhotoAnalysis(photoId string) (*domain.PhotoAnalysis, error)
 	// GetDuplicatePhotos returns photos that have duplicate file hashes
 	GetDuplicatePhotos() ([]*domain.Photo, error)
 	// GetPhotoIndexCache returns a map of photo ID to file hash and modified time for skip-unchanged optimization
@@ -133,6 +139,8 @@ type PhotoService interface {
 	PhotoThumbnailBytesForSize(photoId string, size string) ([]byte, error)
 	// AnalyzeExistingPhotos runs AI analysis on photos that haven't been analyzed yet
 	AnalyzeExistingPhotos() error
+	// TriggerAIAnalysis starts AI analysis manually (returns immediately, runs in background)
+	TriggerAIAnalysis() error
 	// RegenerateThumbnails regenerates thumbnails for all photos (skips photos with existing thumbnails)
 	RegenerateThumbnails(ctx context.Context)
 }
