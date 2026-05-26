@@ -145,7 +145,7 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 		thumbnailStorage = thumbFs.New(config.ThumbnailDir)
 	}
 
-	photoService := service.NewPhotoService(photoRepo, albumService, filesystemService, cacheService, aiService, *config, thumbnailStorage, wsHub)
+	photoService := service.NewPhotoService(photoRepo, albumService, filesystemService, cacheService, aiService, *config, thumbnailStorage, wsHub, jobService)
 
 	// Share
 	shareRepo := repository.NewShareRepository(dbEnv)

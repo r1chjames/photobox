@@ -55,7 +55,14 @@ func (o *OllamaClient) AnalyzeImage(imagePath string) (*port.ImageAnalysis, erro
 	base64Image := base64.StdEncoding.EncodeToString(imageData)
 
 	prompt := `Analyze this image. Return ONLY valid JSON in this format:
-{"caption": "...", "tags": ["..."], "objects": ["..."], "is_nsfw": false, "is_portrait": false}`
+{"caption": "...", "tags": ["..."], "objects": ["..."], "is_nsfw": false, "is_portrait": false}
+
+Guidelines:
+- Caption: a concise 1-sentence description of what's in the image.
+- Tags: specific, useful keywords for search. Avoid generic tags like "image", "photo", or "picture".
+- Objects: distinct physical objects visible in the image.
+- is_nsfw: true only if the image contains nudity or sexual content.
+- is_portrait: true if the main subject is a person's face.`
 
 	reqBody := ollamaGenerateRequest{
 		Model:  o.model,

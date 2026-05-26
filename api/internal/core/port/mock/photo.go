@@ -419,6 +419,50 @@ func (mr *MockPhotoRepositoryMockRecorder) ListPhotosWithoutAITags(limit interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPhotosWithoutAITags", reflect.TypeOf((*MockPhotoRepository)(nil).ListPhotosWithoutAITags), limit)
 }
 
+// ListPhotosPendingAnalysis mocks base method.
+func (m *MockPhotoRepository) ListPhotosPendingAnalysis(limit int) ([]*domain.Photo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListPhotosPendingAnalysis", limit)
+	ret0, _ := ret[0].([]*domain.Photo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListPhotosPendingAnalysis indicates an expected call of ListPhotosPendingAnalysis.
+func (mr *MockPhotoRepositoryMockRecorder) ListPhotosPendingAnalysis(limit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPhotosPendingAnalysis", reflect.TypeOf((*MockPhotoRepository)(nil).ListPhotosPendingAnalysis), limit)
+}
+
+// SavePhotoAnalysis mocks base method.
+func (m *MockPhotoRepository) SavePhotoAnalysis(analysis domain.PhotoAnalysis) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SavePhotoAnalysis", analysis)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SavePhotoAnalysis indicates an expected call of SavePhotoAnalysis.
+func (mr *MockPhotoRepositoryMockRecorder) SavePhotoAnalysis(analysis interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SavePhotoAnalysis", reflect.TypeOf((*MockPhotoRepository)(nil).SavePhotoAnalysis), analysis)
+}
+
+// GetPhotoAnalysis mocks base method.
+func (m *MockPhotoRepository) GetPhotoAnalysis(photoId string) (*domain.PhotoAnalysis, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPhotoAnalysis", photoId)
+	ret0, _ := ret[0].(*domain.PhotoAnalysis)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPhotoAnalysis indicates an expected call of GetPhotoAnalysis.
+func (mr *MockPhotoRepositoryMockRecorder) GetPhotoAnalysis(photoId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPhotoAnalysis", reflect.TypeOf((*MockPhotoRepository)(nil).GetPhotoAnalysis), photoId)
+}
+
 // GetPhotoIndexCache mocks base method.
 func (m *MockPhotoRepository) GetPhotoIndexCache() (map[string]struct{ FileHash string; FileModifiedTime int64 }, error) {
 	m.ctrl.T.Helper()
@@ -938,6 +982,20 @@ func (m *MockPhotoService) AnalyzeExistingPhotos() error {
 func (mr *MockPhotoServiceMockRecorder) AnalyzeExistingPhotos() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnalyzeExistingPhotos", reflect.TypeOf((*MockPhotoService)(nil).AnalyzeExistingPhotos))
+}
+
+// TriggerAIAnalysis mocks base method.
+func (m *MockPhotoService) TriggerAIAnalysis() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TriggerAIAnalysis")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// TriggerAIAnalysis indicates an expected call of TriggerAIAnalysis.
+func (mr *MockPhotoServiceMockRecorder) TriggerAIAnalysis() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TriggerAIAnalysis", reflect.TypeOf((*MockPhotoService)(nil).TriggerAIAnalysis))
 }
 
 // RegenerateThumbnails mocks base method.

@@ -263,6 +263,19 @@ func (ph *PhotoHandler) RegenerateThumbnails(c *gin.Context) {
 	}()
 }
 
+func (ph *PhotoHandler) AnalyzePhotos(c *gin.Context) {
+	err := ph.photoSvc.TriggerAIAnalysis()
+	if err != nil {
+		if errors.Is(err, domain.ErrJobAlreadyRunning) {
+			c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "AI analysis is already in progress"})
+			return
+		}
+		handleError(c, err)
+		return
+	}
+	c.JSON(http.StatusAccepted, gin.H{"message": "AI analysis started"})
+}
+
 func (ph *PhotoHandler) StopJob(c *gin.Context) {
 	jobType := c.Param("type")
 

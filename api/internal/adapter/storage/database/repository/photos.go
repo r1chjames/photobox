@@ -424,6 +424,33 @@ func (pr *PhotoRepository) ListPhotosWithoutAITags(limit int) ([]*domain.Photo, 
 	return photos, result.Error
 }
 
+func (pr *PhotoRepository) ListPhotosPendingAnalysis(limit int) ([]*domain.Photo, error) {
+	var photos []*domain.Photo
+	result := pr.dbEnv.Db.Model(&domain.Photo{}).
+		Where("deleted_at IS NULL").
+		Where("NOT EXISTS (SELECT 1 FROM photobox.photo_analysis WHERE photobox.photo_analysis.photo_id = photobox.photos.id AND photobox.photo_analysis.status = 'completed')").
+		Where("NOT EXISTS (SELECT 1 FROM photobox.photo_analysis WHERE photobox.photo_analysis.photo_id = photobox.photos.id AND photobox.photo_analysis.status = 'failed' AND photobox.photo_analysis.last_attempt_at > NOW() - INTERVAL '1 hour' * LEAST(photobox.photo_analysis.attempts, 24))").
+		Limit(limit).
+		Omit("thumbnail").
+		Find(&photos)
+	return photos, result.Error
+}
+
+func (pr *PhotoRepository) SavePhotoAnalysis(analysis domain.PhotoAnalysis) error {
+	return pr.dbEnv.Db.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&analysis).Error
+}
+
+func (pr *PhotoRepository) GetPhotoAnalysis(photoId string) (*domain.PhotoAnalysis, error) {
+	var analysis domain.PhotoAnalysis
+	result := pr.dbEnv.Db.Where("photo_id = ?", photoId).First(&analysis)
+	if result.Error != nil {
+		return nil, db.HandleError(result)
+	}
+	return &analysis, nil
+}
+
 func (pr *PhotoRepository) GetDuplicatePhotos() ([]*domain.Photo, error) {
 	var photos []*domain.Photo
 	result := pr.dbEnv.Db.Raw(`

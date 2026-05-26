@@ -209,11 +209,31 @@ func (m *MockPhotoRepository) ListPhotosWithoutAITags(limit int) ([]*domain.Phot
 	return args.Get(0).([]*domain.Photo), args.Error(1)
 }
 
+func (m *MockPhotoRepository) ListPhotosPendingAnalysis(limit int) ([]*domain.Photo, error) {
+	args := m.Called(limit)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoRepository) SavePhotoAnalysis(analysis domain.PhotoAnalysis) error {
+	args := m.Called(analysis)
+	return args.Error(0)
+}
+
+func (m *MockPhotoRepository) GetPhotoAnalysis(photoId string) (*domain.PhotoAnalysis, error) {
+	args := m.Called(photoId)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.PhotoAnalysis), args.Error(1)
+}
+
 func (m *MockPhotoRepository) HidePhoto(photoId string) error {
 	args := m.Called(photoId)
 	return args.Error(0)
 }
-
 // MockAlbumService is a mock implementation of port.AlbumService
 type MockAlbumService struct {
 	mock.Mock
@@ -454,7 +474,7 @@ func TestGetPhoto(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 
 			result, err := service.GetPhoto(tt.photoId, tt.includeThumbnail)
 
@@ -551,7 +571,7 @@ func TestListPhotos(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 
 			result, err := service.ListPhotos(tt.fromId, tt.limit, tt.includeThumbnail, "", "", "")
 
@@ -631,7 +651,7 @@ func TestListPhotosInAlbum(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 
 			result, err := service.ListPhotosInAlbum(tt.albumId, tt.fromId, tt.limit, tt.includeThumbnail, "", "", "")
 
@@ -692,7 +712,7 @@ func TestPhotoCount(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 
 			result, err := service.PhotoCount(tt.albumId)
 
@@ -759,7 +779,7 @@ func TestPhotoBinary(t *testing.T) {
 			config := appconfig.AppConfig{PhotoDir: "/storage/photos"}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 
 			result, err := service.PhotoBinary(tt.photoId)
 
@@ -812,7 +832,7 @@ func TestPhotoThumbnail(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 
 			result, err := service.PhotoThumbnail(tt.photoId)
 
@@ -917,7 +937,7 @@ func TestSavePhoto(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo, mockAlbumSvc)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, mockThumbStorage, nil)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, mockThumbStorage, nil, nil)
 
 			err := service.SavePhoto(tt.photoFile)
 
@@ -1002,7 +1022,7 @@ func TestSavePhotos(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo, mockAlbumSvc)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, mockThumbStorage, nil)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, mockThumbStorage, nil, nil)
 
 			err := service.SavePhotos(tt.photoFiles)
 
@@ -1026,7 +1046,7 @@ func TestPerformPhotoIndex(t *testing.T) {
 		// Mock expects the context, callback function and indexCache to be passed
 		mockFsSvc.On("PerformPhotoIndex", mock.Anything, mock.AnythingOfType("func([]domain.PhotoFile) error"), mock.Anything).Return()
 
-		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil)
+		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 		service.PerformPhotoIndex(context.Background())
 
 		mockRepo.AssertExpectations(t)
@@ -1076,7 +1096,7 @@ func TestDeletePhoto(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo, mockFsSvc)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 
 			err := service.DeletePhoto(tt.photoId)
 
@@ -1128,7 +1148,7 @@ func TestRestorePhoto(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 
 			err := service.RestorePhoto(tt.photoId)
 
@@ -1176,7 +1196,7 @@ func TestListTrashPhotos(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 
 			result, err := service.ListTrashPhotos(tt.fromId, tt.limit, tt.includeThumbnail)
 
@@ -1196,7 +1216,7 @@ func TestEmptyTrash(t *testing.T) {
 
 		mockRepo.On("EmptyTrash").Return(nil)
 
-		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil)
+		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 		err := service.EmptyTrash()
 
 		assert.NoError(t, err)
@@ -1254,7 +1274,7 @@ func TestSetFavorite(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 
 			result, err := service.SetFavorite(tt.photoId, tt.favorite)
 
@@ -1302,7 +1322,7 @@ func TestListFavoritePhotos(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 
 			result, err := service.ListFavoritePhotos(tt.fromId, tt.limit, tt.includeThumbnail, "", "")
 
@@ -1359,7 +1379,7 @@ func TestSearch(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 
 			result, err := service.Search(tt.query, tt.limit)
 
@@ -1383,7 +1403,7 @@ func TestGetTimeline(t *testing.T) {
 		}
 		mockRepo.On("GetTimeline").Return(entries, nil)
 
-		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil)
+		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 		result, err := service.GetTimeline()
 
 		assert.NoError(t, err)
@@ -1407,7 +1427,7 @@ func TestGetGeodata(t *testing.T) {
 		}
 		mockRepo.On("GetPhotosWithGeodata", 52.0, 50.0, 1.0, -1.0).Return(geoData, nil)
 
-		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil)
+		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 		result, err := service.GetGeodata(52.0, 50.0, 1.0, -1.0)
 
 		assert.NoError(t, err)
@@ -1464,7 +1484,7 @@ func TestRotatePhoto(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
-			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil)
+			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 
 			result, err := service.RotatePhoto(tt.photoId, tt.direction)
 
@@ -1498,7 +1518,7 @@ func TestDownloadPhotos(t *testing.T) {
 			FilesystemPath: tmpFile.Name(),
 		}, nil)
 
-		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil)
+		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 
 		var buf bytes.Buffer
 		err = service.DownloadPhotos([]string{"photo-123"}, &buf)

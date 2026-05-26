@@ -5,6 +5,7 @@ import (
 	b64 "encoding/base64"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	json "github.com/goccy/go-json"
 	"hash/fnv"
@@ -76,19 +77,21 @@ type PhotoService struct {
 	filesystemSvc    port.FilesystemService
 	cacheSvc         port.CacheService
 	aiSvc            port.AIService
+	jobSvc           port.JobService
 	config           appconfig.AppConfig
 	thumbnailStorage port.ThumbnailStorage
 	wsHub            *ws.Hub
 }
 
 // NewPhotoService creates a new Photo service instance
-func NewPhotoService(photoRepo port.PhotoRepository, albumRepo port.AlbumService, filesystemSvc port.FilesystemService, cacheSvc port.CacheService, aiSvc port.AIService, config appconfig.AppConfig, thumbnailStorage port.ThumbnailStorage, wsHub *ws.Hub) *PhotoService {
+func NewPhotoService(photoRepo port.PhotoRepository, albumRepo port.AlbumService, filesystemSvc port.FilesystemService, cacheSvc port.CacheService, aiSvc port.AIService, config appconfig.AppConfig, thumbnailStorage port.ThumbnailStorage, wsHub *ws.Hub, jobSvc port.JobService) *PhotoService {
 	return &PhotoService{
 		photoRepo,
 		albumRepo,
 		filesystemSvc,
 		cacheSvc,
 		aiSvc,
+		jobSvc,
 		config,
 		thumbnailStorage,
 		wsHub,
@@ -407,9 +410,12 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 }
 
 func (ps *PhotoService) analyzeAndTagPhoto(photoId string, imagePath string) {
+	now := time.Now()
+
 	analysis, err := ps.aiSvc.AnalyzeImage(imagePath)
 	if err != nil {
 		slog.Warn("AI analysis failed", "photo", photoId, "error", err)
+		ps.recordAnalysisFailure(photoId, now)
 		return
 	}
 
@@ -422,11 +428,54 @@ func (ps *PhotoService) analyzeAndTagPhoto(photoId string, imagePath string) {
 		return
 	}
 
+	// Store tags in photo_tags for search
 	if err := ps.photoRepo.AddAITags(photoId, allTags); err != nil {
 		slog.Warn("Failed to store AI tags", "photo", photoId, "error", err)
 	}
 
+	// Store full analysis in photo_analysis
+	tagsJSON, _ := json.Marshal(analysis.Tags)
+	objectsJSON, _ := json.Marshal(analysis.Objects)
+	photoAnalysis := domain.PhotoAnalysis{
+		PhotoID:       photoId,
+		Model:         ps.config.OllamaModel,
+		Caption:       analysis.Caption,
+		Tags:          tagsJSON,
+		Objects:       objectsJSON,
+		IsNSFW:        analysis.IsNSFW,
+		IsPortrait:    analysis.IsPortrait,
+		Status:        "completed",
+		Attempts:      1,
+		LastAttemptAt: &now,
+		CreatedAt:     now,
+		UpdatedAt:     now,
+	}
+	if err := ps.photoRepo.SavePhotoAnalysis(photoAnalysis); err != nil {
+		slog.Warn("Failed to store photo analysis", "photo", photoId, "error", err)
+	}
+
 	slog.Info("AI analysis complete", "photo", photoId, "tags", len(allTags), "caption", analysis.Caption)
+}
+
+func (ps *PhotoService) recordAnalysisFailure(photoId string, attemptTime time.Time) {
+	existing, _ := ps.photoRepo.GetPhotoAnalysis(photoId)
+	attempts := 1
+	if existing != nil {
+		attempts = existing.Attempts + 1
+	}
+	analysis := domain.PhotoAnalysis{
+		PhotoID:       photoId,
+		Status:        "failed",
+		Attempts:      attempts,
+		LastAttemptAt: &attemptTime,
+		UpdatedAt:     attemptTime,
+	}
+	if existing == nil {
+		analysis.CreatedAt = attemptTime
+	}
+	if err := ps.photoRepo.SavePhotoAnalysis(analysis); err != nil {
+		slog.Warn("Failed to record analysis failure", "photo", photoId, "error", err)
+	}
 }
 
 func (ps *PhotoService) AnalyzeExistingPhotos() error {
@@ -434,7 +483,18 @@ func (ps *PhotoService) AnalyzeExistingPhotos() error {
 		return nil
 	}
 
-	photos, err := ps.photoRepo.ListPhotosWithoutAITags(50)
+	if ps.jobSvc != nil {
+		if err := ps.jobSvc.StartJobIfNotRunning("AI_analysis"); err != nil {
+			if errors.Is(err, domain.ErrJobAlreadyRunning) {
+				slog.Info("AI analysis already running, skipping")
+				return nil
+			}
+			return err
+		}
+		defer ps.jobSvc.JobComplete("AI_analysis")
+	}
+
+	photos, err := ps.photoRepo.ListPhotosPendingAnalysis(50)
 	if err != nil {
 		return err
 	}
@@ -448,6 +508,18 @@ func (ps *PhotoService) AnalyzeExistingPhotos() error {
 		ps.analyzeAndTagPhoto(photo.ID, utils.UnescapeInvalidCharacters(photo.FilesystemPath))
 	}
 
+	return nil
+}
+
+func (ps *PhotoService) TriggerAIAnalysis() error {
+	if !ps.config.AIEnabled || ps.aiSvc == nil {
+		return fmt.Errorf("AI is not enabled")
+	}
+	go func() {
+		if err := ps.AnalyzeExistingPhotos(); err != nil {
+			slog.Error("Manual AI analysis trigger failed", "error", err)
+		}
+	}()
 	return nil
 }
 

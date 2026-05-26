@@ -72,6 +72,7 @@ func (jr *JobRepository) CreateBaseJobs() error {
 	baseJobs := []domain.Job{
 		{Name: "Photo_index", Status: "NOT_RUNNING", LastRun: time.Now()},
 		{Name: "Thumbnail_regenerate", Status: "NOT_RUNNING", LastRun: time.Now()},
+		{Name: "AI_analysis", Status: "NOT_RUNNING", LastRun: time.Now()},
 	}
 	result := jr.dbEnv.Db.Clauses(clause.OnConflict{
 		UpdateAll: true,
