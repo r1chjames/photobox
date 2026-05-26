@@ -34,7 +34,7 @@ describe('AlbumsAdapter', () => {
                     'Content-Type': 'application/json',
                     Authorization: 'Bearer test-token',
                 },
-                {}
+                { limit: 1000 }
             );
             expect(result).toBe(mockAlbums);
         });

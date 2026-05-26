@@ -14,6 +14,8 @@ type Photo struct {
 	Metadata       datatypes.JSON `json:"metadata"`
 	CreatedAt      time.Time      `json:"createdAt"`
 	CreatedEpoch   int64          `json:"createdEpoch" gorm:"index;index:idx_album_deleted_epoch,priority:3;index:idx_deleted_epoch,priority:2"`
+	Year           int            `json:"year" gorm:"index"`
+	Month          int            `json:"month" gorm:"index"`
 	UpdatedAt      time.Time      `json:"updatedAt"`
 	Thumbnail      []byte         `json:"-"`
 	ThumbnailPath  string         `json:"-"`
@@ -30,6 +32,7 @@ type Photo struct {
 	Height         int            `json:"height"`
 	Latitude       float64        `json:"latitude" gorm:"index"`
 	Longitude      float64        `json:"longitude" gorm:"index"`
+	Hidden         bool           `json:"hidden" gorm:"default:false;index"`
 }
 
 type PhotoTag struct {

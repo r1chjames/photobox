@@ -50,6 +50,27 @@ func getPhotoEpoch(exifData exif.Exif, unixFallback int64) int64 {
 	return time.Now().UnixMilli()
 }
 
+// getPhotoYearMonth extracts the year and month from EXIF DateTimeOriginal,
+// falling back to the Unix timestamp (seconds). Returns (0, 0) if no valid
+// date can be determined.
+func getPhotoYearMonth(exifData exif.Exif, unixFallback int64) (int, int) {
+	tag, err := exifData.Get(exif.DateTimeOriginal)
+	if err == nil {
+		dateStr, err := tag.StringVal()
+		if err == nil {
+			t, err := time.Parse("2006:01:02 15:04:05", dateStr)
+			if err == nil {
+				return t.Year(), int(t.Month())
+			}
+		}
+	}
+	if unixFallback > 0 {
+		t := time.Unix(unixFallback, 0)
+		return t.Year(), int(t.Month())
+	}
+	return 0, 0
+}
+
 type PhotoService struct {
 	photoRepo        port.PhotoRepository
 	albumSvc         port.AlbumService
@@ -138,11 +159,12 @@ func (ps *PhotoService) PhotoBinary(photoId string) (string, error) {
 	}
 	// Validate path is within photo directory
 	absBase, _ := filepath.Abs(ps.config.PhotoDir)
-	absReq, _ := filepath.Abs(photoInfo.FilesystemPath)
+	unescapedPath := utils.UnescapeInvalidCharacters(photoInfo.FilesystemPath)
+	absReq, _ := filepath.Abs(unescapedPath)
 	if !strings.HasPrefix(absReq, absBase) {
 		return "", domain.ErrForbidden
 	}
-	return photoInfo.FilesystemPath, nil
+	return unescapedPath, nil
 }
 
 func (ps *PhotoService) PhotoThumbnail(photoId string) ([]byte, error) {
@@ -242,11 +264,13 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 		photoInfo := domain.Photo{
 			ID:             photoHash,
 			Name:           utils.EscapeInvalidCharacters(photo.Name),
-			FilesystemPath: utils.EscapeInvalidCharacters(photo.Path),
+			FilesystemPath: photo.Path,
 			AlbumId:        albumId,
 			Metadata:       photoMetadata,
 			Thumbnail:      photo.Thumbnail,
 			CreatedEpoch:   getPhotoEpoch(photo.Exif, photo.ModifiedTime),
+			Year:           0,
+			Month:          0,
 			FileHash:       computeFileHash(photo.Path),
 			FileModifiedTime: photo.ModifiedTime,
 			MediaType:      photo.MediaType,
@@ -257,6 +281,7 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 			Longitude:      photo.Longitude,
 			DominantColor:  computeDominantColor(photo.Path),
 		}
+		photoInfo.Year, photoInfo.Month = getPhotoYearMonth(photo.Exif, photo.ModifiedTime)
 
 		slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
 
@@ -303,7 +328,7 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 	// Run AI analysis asynchronously for each photo if enabled
 	if ps.config.AIEnabled && ps.aiSvc != nil {
 		for _, photo := range photoRecords {
-			go ps.analyzeAndTagPhoto(photo.ID, photo.FilesystemPath)
+			go ps.analyzeAndTagPhoto(photo.ID, utils.UnescapeInvalidCharacters(photo.FilesystemPath))
 		}
 	}
 
@@ -330,11 +355,13 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 	photoInfo := domain.Photo{
 		ID:             photoHash,
 		Name:           utils.EscapeInvalidCharacters(photo.Name),
-		FilesystemPath: utils.EscapeInvalidCharacters(photo.Path),
+		FilesystemPath: photo.Path,
 		AlbumId:        albumId,
 		Metadata:       photoMetadata,
 		Thumbnail:      photo.Thumbnail,
 		CreatedEpoch:   getPhotoEpoch(photo.Exif, photo.ModifiedTime),
+		Year:           0,
+		Month:          0,
 		FileHash:       computeFileHash(photo.Path),
 		FileModifiedTime: photo.ModifiedTime,
 		MediaType:      photo.MediaType,
@@ -345,6 +372,7 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 		Longitude:      photo.Longitude,
 		DominantColor:  computeDominantColor(photo.Path),
 	}
+	photoInfo.Year, photoInfo.Month = getPhotoYearMonth(photo.Exif, photo.ModifiedTime)
 
 	slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
 
@@ -375,7 +403,7 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 	}
 
 	if ps.config.AIEnabled && ps.aiSvc != nil {
-		go ps.analyzeAndTagPhoto(photoInfo.ID, photoInfo.FilesystemPath)
+		go ps.analyzeAndTagPhoto(photoInfo.ID, utils.UnescapeInvalidCharacters(photoInfo.FilesystemPath))
 	}
 
 	return nil
@@ -477,7 +505,7 @@ func (ps *PhotoService) AnalyzeExistingPhotos() error {
 
 	slog.Info("Analyzing existing photos with AI", "count", len(photos))
 	for _, photo := range photos {
-		ps.analyzeAndTagPhoto(photo.ID, photo.FilesystemPath)
+		ps.analyzeAndTagPhoto(photo.ID, utils.UnescapeInvalidCharacters(photo.FilesystemPath))
 	}
 
 	return nil
@@ -559,19 +587,28 @@ func (ps *PhotoService) GenerateThumbnailForPhoto(photoId string) (string, error
 		return "", domain.ErrDataNotFound
 	}
 
+	unescapedPath := utils.UnescapeInvalidCharacters(photo.FilesystemPath)
+	if _, statErr := os.Stat(unescapedPath); os.IsNotExist(statErr) {
+		return "", domain.ErrDataNotFound
+	}
+
 	sizes := map[string][2]int{
 		"s": {200, 200},
 		"m": {600, 600},
 		"l": {1200, 1200},
 	}
 
-	var mediumPath string
+	anyGenerated := false
 	for sizeCode, dims := range sizes {
-		thumbnail := ps.filesystemSvc.GenerateThumbnail(photo.FilesystemPath, exif.Exif{}, dims[0], dims[1])
+		thumbnail := ps.filesystemSvc.GenerateThumbnail(unescapedPath, exif.Exif{}, dims[0], dims[1])
 		if len(thumbnail) == 0 {
-			continue
+			if !utils.IsVideoFile(unescapedPath) {
+				_ = ps.photoRepo.HidePhoto(photoId)
+			}
+			break
 		}
 
+		anyGenerated = true
 		if err := ps.thumbnailStorage.Put(context.Background(), photoId, sizeCode, thumbnail); err != nil {
 			slog.Error("Failed to store thumbnail", "photo", photoId, "size", sizeCode, "error", err)
 		}
@@ -579,7 +616,6 @@ func (ps *PhotoService) GenerateThumbnailForPhoto(photoId string) (string, error
 		cacheKey := fmt.Sprintf("thumbnail:%s:%s", photoId, sizeCode)
 		_ = ps.cacheSvc.Set(cacheKey, "", 24*time.Hour)
 		if sizeCode == "m" {
-			mediumPath = ""
 			// Encode blurhash from medium thumbnail for grid placeholders
 			if img, _, err := image.Decode(bytes.NewReader(thumbnail)); err == nil {
 				if blurhashStr, err := blurhash.Encode(4, 3, img); err == nil {
@@ -593,21 +629,14 @@ func (ps *PhotoService) GenerateThumbnailForPhoto(photoId string) (string, error
 		}
 	}
 
-	// Update DB
-	photo.ThumbnailPath = mediumPath
-	_ = ps.photoRepo.UpdatePhoto(*photo)
-
-	if mediumPath == "" {
-		// Check if at least one size was stored successfully
-		for _, sizeCode := range []string{"s", "m", "l"} {
-			if data, err := ps.thumbnailStorage.Get(context.Background(), photoId, sizeCode); err == nil && len(data) > 0 {
-				return "", nil // at least one thumbnail exists
-			}
-		}
+	if !anyGenerated {
 		return "", domain.ErrDataNotFound
 	}
 
-	return mediumPath, nil
+	// Update DB
+	_ = ps.photoRepo.UpdatePhoto(*photo)
+
+	return "", nil
 }
 
 func (ps *PhotoService) PhotoThumbnailPathForSize(photoId string, size string) (string, error) {
@@ -677,7 +706,7 @@ func (ps *PhotoService) DeletePhoto(photoId string) error {
 	if photo.FilesystemPath == "" {
 		return nil
 	}
-	unescapedPath := utils.EscapeInvalidCharacters(photo.FilesystemPath)
+	unescapedPath := utils.UnescapeInvalidCharacters(photo.FilesystemPath)
 	_, err = ps.filesystemSvc.MoveToTrash(unescapedPath)
 	return err
 }
@@ -690,7 +719,7 @@ func (ps *PhotoService) RestorePhoto(photoId string) error {
 	if photo.FilesystemPath == "" {
 		return nil
 	}
-	trashPath := utils.EscapeInvalidCharacters(photo.FilesystemPath)
+	trashPath := utils.UnescapeInvalidCharacters(photo.FilesystemPath)
 	// The original path is the same as the stored path before trash
 	// The filesystem repo will move it back
 	// For now, we assume the path in DB is the original path
@@ -767,7 +796,7 @@ func (ps *PhotoService) DownloadPhotos(photoIds []string, writer io.Writer) erro
 			slog.Warn("Skipping missing photo in download", "id", id, "error", err)
 			continue
 		}
-		file, err := os.Open(photo.FilesystemPath)
+		file, err := os.Open(utils.UnescapeInvalidCharacters(photo.FilesystemPath))
 		if err != nil {
 			slog.Warn("Unable to open photo for download", "path", photo.FilesystemPath, "error", err)
 			continue

@@ -478,6 +478,20 @@ func (mr *MockPhotoRepositoryMockRecorder) GetPhotoIndexCache() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPhotoIndexCache", reflect.TypeOf((*MockPhotoRepository)(nil).GetPhotoIndexCache))
 }
 
+// HidePhoto mocks base method.
+func (m *MockPhotoRepository) HidePhoto(photoId string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HidePhoto", photoId)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// HidePhoto indicates an expected call of HidePhoto.
+func (mr *MockPhotoRepositoryMockRecorder) HidePhoto(photoId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HidePhoto", reflect.TypeOf((*MockPhotoRepository)(nil).HidePhoto), photoId)
+}
+
 // MockPhotoService is a mock of PhotoService interface.
 type MockPhotoService struct {
 	ctrl     *gomock.Controller

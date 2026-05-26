@@ -38,7 +38,7 @@ func (pr *PhotoRepository) GetPhotoById(photoId string, includeThumbnail bool) (
 
 func (pr *PhotoRepository) ListAllPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
-	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("deleted_at IS NULL").Order("created_epoch ASC").Omit("thumbnail")
+	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("deleted_at IS NULL").Where("hidden = ?", false).Order("created_epoch ASC").Omit("thumbnail")
 	if fromId != "" {
 		fromPhoto, err := pr.GetPhotoById(fromId, false)
 		if err != nil {
@@ -75,7 +75,7 @@ func (pr *PhotoRepository) ListAllPhotos(fromId string, limit int, includeThumbn
 
 func (pr *PhotoRepository) ListAllPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
-	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("deleted_at IS NULL AND album_id = ?", albumId).Order("created_epoch ASC").Omit("thumbnail")
+	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("deleted_at IS NULL AND album_id = ?", albumId).Where("hidden = ?", false).Order("created_epoch ASC").Omit("thumbnail")
 	if fromId != "" {
 		fromEpoch, _ := b64.StdEncoding.DecodeString(fromId)
 		result = result.Where("created_epoch > ?", fromEpoch)
@@ -142,7 +142,7 @@ func (pr *PhotoRepository) SoftDeletePhoto(photoId string) (*domain.Photo, error
 	}
 	now := time.Now()
 	photo.DeletedAt = &now
-	result := pr.dbEnv.Db.Save(photo)
+	result := pr.dbEnv.Db.Model(&domain.Photo{}).Where("id = ?", photoId).Update("deleted_at", now)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -155,7 +155,7 @@ func (pr *PhotoRepository) RestorePhoto(photoId string) (*domain.Photo, error) {
 		return nil, err
 	}
 	photo.DeletedAt = nil
-	result := pr.dbEnv.Db.Save(photo)
+	result := pr.dbEnv.Db.Model(&domain.Photo{}).Where("id = ?", photoId).Update("deleted_at", nil)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -183,7 +183,11 @@ func (pr *PhotoRepository) EmptyTrash() error {
 }
 
 func (pr *PhotoRepository) UpdatePhoto(photo domain.Photo) error {
-	result := pr.dbEnv.Db.Save(&photo)
+	result := pr.dbEnv.Db.Model(&domain.Photo{}).Where("id = ?", photo.ID).Updates(map[string]interface{}{
+		"thumbnail_path": photo.ThumbnailPath,
+		"blurhash":       photo.Blurhash,
+		"updated_at":     time.Now(),
+	})
 	return result.Error
 }
 
@@ -194,7 +198,7 @@ func (pr *PhotoRepository) SetFavorite(photoId string, favorite bool) error {
 
 func (pr *PhotoRepository) ListFavoritePhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
-	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("favorite = ? AND deleted_at IS NULL", true).Order("created_epoch ASC").Omit("thumbnail")
+	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("favorite = ? AND deleted_at IS NULL", true).Where("hidden = ?", false).Order("created_epoch ASC").Omit("thumbnail")
 	if fromId != "" {
 		fromPhoto, err := pr.GetPhotoById(fromId, false)
 		if err != nil {
@@ -231,6 +235,7 @@ func (pr *PhotoRepository) SearchPhotos(query string, limit int) ([]*domain.Phot
 	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).
 		Limit(limit).
 		Where("deleted_at IS NULL").
+		Where("hidden = ?", false).
 		Where("to_tsvector('english', coalesce(name, '') || ' ' || coalesce(tags, '')) @@ plainto_tsquery('english', ?)", query).
 		Order("created_epoch DESC").
 		Find(&photos)
@@ -239,30 +244,12 @@ func (pr *PhotoRepository) SearchPhotos(query string, limit int) ([]*domain.Phot
 
 func (pr *PhotoRepository) GetTimeline() ([]domain.TimelineEntry, error) {
 	var entries []domain.TimelineEntry
-	result := pr.dbEnv.Db.Raw(`
-		SELECT 
-			EXTRACT(YEAR FROM COALESCE(
-				CASE 
-					WHEN metadata->'exif'->>'DateTimeOriginal' ~ '^\d{4}:\d{2}:\d{2}'
-					THEN to_timestamp((metadata->'exif'->>'DateTimeOriginal')::text, 'YYYY:MM:DD HH24:MI:SS')
-					ELSE NULL
-				END,
-				to_timestamp(created_epoch / 1000)
-			))::int AS year,
-			EXTRACT(MONTH FROM COALESCE(
-				CASE 
-					WHEN metadata->'exif'->>'DateTimeOriginal' ~ '^\d{4}:\d{2}:\d{2}'
-					THEN to_timestamp((metadata->'exif'->>'DateTimeOriginal')::text, 'YYYY:MM:DD HH24:MI:SS')
-					ELSE NULL
-				END,
-				to_timestamp(created_epoch / 1000)
-			))::int AS month,
-			COUNT(*) AS count
-		FROM photobox.photos
-		WHERE deleted_at IS NULL
-		GROUP BY year, month
-		ORDER BY year DESC, month DESC
-	`).Scan(&entries)
+	result := pr.dbEnv.Db.Model(&domain.Photo{}).
+		Select("year", "month", "COUNT(*) as count").
+		Where("deleted_at IS NULL AND year > 0 AND month > 0").
+		Group("year, month").
+		Order("year DESC, month DESC").
+		Scan(&entries)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -273,6 +260,7 @@ func (pr *PhotoRepository) GetPhotosWithGeodata(north, south, east, west float64
 	var photos []domain.Photo
 	result := pr.dbEnv.Db.Model(&domain.Photo{}).
 		Where("deleted_at IS NULL").
+		Where("hidden = ?", false).
 		Where("latitude IS NOT NULL AND longitude IS NOT NULL").
 		Where("latitude BETWEEN ? AND ?", south, north).
 		Where("longitude BETWEEN ? AND ?", west, east).
@@ -350,6 +338,7 @@ func (pr *PhotoRepository) ListPhotosByTags(tags []string, fromId string, limit 
 	// Build subquery for photos matching ALL tags
 	result := pr.dbEnv.Db.Model(&domain.Photo{}).
 		Where("deleted_at IS NULL").
+		Where("hidden = ?", false).
 		Order("created_epoch ASC").
 		Omit("thumbnail")
 
@@ -427,6 +416,7 @@ func (pr *PhotoRepository) ListPhotosWithoutAITags(limit int) ([]*domain.Photo, 
 	var photos []*domain.Photo
 	result := pr.dbEnv.Db.Model(&domain.Photo{}).
 		Where("deleted_at IS NULL").
+		Where("hidden = ?", false).
 		Where("NOT EXISTS (SELECT 1 FROM photobox.photo_tags WHERE photobox.photo_tags.photo_id = photobox.photos.id AND photobox.photo_tags.source = 'ai')").
 		Limit(limit).
 		Omit("thumbnail").
@@ -467,11 +457,11 @@ func (pr *PhotoRepository) GetDuplicatePhotos() ([]*domain.Photo, error) {
 		SELECT p.* FROM photobox.photos p
 		INNER JOIN (
 			SELECT file_hash FROM photobox.photos
-			WHERE deleted_at IS NULL AND file_hash <> ''
+			WHERE deleted_at IS NULL AND hidden = false AND file_hash <> ''
 			GROUP BY file_hash
 			HAVING COUNT(*) > 1
 		) dup ON p.file_hash = dup.file_hash
-		WHERE p.deleted_at IS NULL
+		WHERE p.deleted_at IS NULL AND p.hidden = false
 		ORDER BY p.file_hash, p.created_epoch ASC
 	`).Scan(&photos)
 	return photos, result.Error
@@ -493,4 +483,9 @@ func (pr *PhotoRepository) GetPhotoIndexCache() (map[string]struct{ FileHash str
 		cache[e.ID] = struct{ FileHash string; FileModifiedTime int64 }{FileHash: e.FileHash, FileModifiedTime: e.FileModifiedTime}
 	}
 	return cache, nil
+}
+
+func (pr *PhotoRepository) HidePhoto(photoId string) error {
+	result := pr.dbEnv.Db.Model(&domain.Photo{}).Where("id = ?", photoId).Update("hidden", true)
+	return result.Error
 }

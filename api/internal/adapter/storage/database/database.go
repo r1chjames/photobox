@@ -75,6 +75,9 @@ func (dbEnv *Env) PerformDbSetup() {
 	// Migrate created_epoch from EXIF dates for photos indexed before the fix
 	dbEnv.migratePhotoEpochs()
 
+	// Backfill year and month columns for existing photos
+	dbEnv.migratePhotoYearMonth()
+
 	// Drop legacy tags column now that PhotoTag junction table is the sole source of truth
 	dbEnv.migrateDropLegacyTagsColumn()
 
@@ -156,6 +159,38 @@ func (dbEnv *Env) migratePhotoEpochs() {
 		slog.Error("Failed to migrate photo epochs", "error", result.Error)
 	} else {
 		slog.Info("Photo epoch migration complete", "rows", result.RowsAffected)
+	}
+}
+
+// migratePhotoYearMonth backfills the year and month columns for existing photos
+// using the same EXIF parsing logic as the timeline query. Photos without valid
+// EXIF dates fall back to created_epoch.
+func (dbEnv *Env) migratePhotoYearMonth() {
+	slog.Info("Starting photo year/month migration")
+	result := dbEnv.Db.Exec(`
+		UPDATE photobox.photos
+		SET year = EXTRACT(YEAR FROM COALESCE(
+				CASE
+					WHEN metadata->'exif'->>'DateTimeOriginal' ~ '^\d{4}:\d{2}:\d{2}'
+					THEN to_timestamp((metadata->'exif'->>'DateTimeOriginal')::text, 'YYYY:MM:DD HH24:MI:SS')
+					ELSE NULL
+				END,
+				to_timestamp(created_epoch / 1000)
+			))::int,
+			month = EXTRACT(MONTH FROM COALESCE(
+				CASE
+					WHEN metadata->'exif'->>'DateTimeOriginal' ~ '^\d{4}:\d{2}:\d{2}'
+					THEN to_timestamp((metadata->'exif'->>'DateTimeOriginal')::text, 'YYYY:MM:DD HH24:MI:SS')
+					ELSE NULL
+				END,
+				to_timestamp(created_epoch / 1000)
+			))::int
+		WHERE deleted_at IS NULL AND (year IS NULL OR year = 0)
+	`)
+	if result.Error != nil {
+		slog.Error("Failed to migrate photo year/month", "error", result.Error)
+	} else {
+		slog.Info("Photo year/month migration complete", "rows", result.RowsAffected)
 	}
 }
 

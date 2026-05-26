@@ -230,6 +230,10 @@ func (m *MockPhotoRepository) GetPhotoAnalysis(photoId string) (*domain.PhotoAna
 	return args.Get(0).(*domain.PhotoAnalysis), args.Error(1)
 }
 
+func (m *MockPhotoRepository) HidePhoto(photoId string) error {
+	args := m.Called(photoId)
+	return args.Error(0)
+}
 // MockAlbumService is a mock implementation of port.AlbumService
 type MockAlbumService struct {
 	mock.Mock
