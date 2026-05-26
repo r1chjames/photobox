@@ -3,7 +3,7 @@ import { Album } from '../../Models/Album';
 import { AlbumCard } from '../AlbumCard/AlbumCard';
 import { EmptyState } from '../EmptyState/EmptyState';
 import { InputModal } from '../InputModal/InputModal';
-import {Flex, TextInput} from '@mantine/core';
+import {Button, Flex, TextInput} from '@mantine/core';
 import {useNavigate} from "react-router-dom";
 import useAlbumGrid from "./useAlbumGrid";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
@@ -14,11 +14,13 @@ import { notifications } from '@mantine/notifications';
 interface IProps {
   albumsAdapter: IAlbumsAdapter;
   photosAdapter: IPhotosAdapter;
-  maxDisplayed? : number;
+  initialDisplayCount?: number;
+  loadMoreIncrement?: number;
 }
 
 const defaultProps = {
-    maxDisplayed: 20000000,
+    initialDisplayCount: undefined,
+    loadMoreIncrement: 30,
 }
 
 export const AlbumGrid: React.FunctionComponent<IProps> = (propsIn) => {
@@ -27,6 +29,7 @@ export const AlbumGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const [showNewAlbumModal, setShowNewAlbumModal] = useState(false);
     const [albumKey, setAlbumKey] = useState(0);
     const [{albums, createAlbumModalAlbumNameErrorText, newAlbumName, handleNewAlbumNameValueChange}] = useAlbumGrid(props.albumsAdapter);
+    const [displayCount, setDisplayCount] = useState(props.initialDisplayCount ?? albums?.length ?? 0);
 
   const newAlbumModalSaveClick = useCallback(async () => {
     try {
@@ -77,7 +80,7 @@ export const AlbumGrid: React.FunctionComponent<IProps> = (propsIn) => {
               align="flex-start"
               wrap="wrap"
           >
-          {albums && albums.length > 0 ? albums.slice(0, props.maxDisplayed).map((album: Album) => {
+          {albums && albums.length > 0 ? albums.slice(0, displayCount).map((album: Album) => {
             return(
               <article key={album.id}>
                 <AlbumCard
@@ -101,6 +104,16 @@ export const AlbumGrid: React.FunctionComponent<IProps> = (propsIn) => {
               />
           )}
           </Flex>
+          {albums && albums.length > displayCount && (
+              <Button
+                  variant="light"
+                  fullWidth
+                  mt="md"
+                  onClick={() => setDisplayCount(prev => Math.min(prev + props.loadMoreIncrement, albums.length))}
+              >
+                  Load More
+              </Button>
+          )}
         </section>
     </div>
   );
