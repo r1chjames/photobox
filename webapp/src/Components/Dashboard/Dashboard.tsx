@@ -119,7 +119,8 @@ export const Dashboard: React.FunctionComponent<IProps> = (props) => {
                 <AlbumGrid
                     albumsAdapter={props.albumsAdapter}
                     photosAdapter={props.photosAdapter}
-                    maxDisplayed={20}
+                    initialDisplayCount={30}
+                    loadMoreIncrement={30}
                 />
             </div>
             <div>

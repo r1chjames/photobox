@@ -120,12 +120,12 @@ describe('AlbumGrid', () => {
         expect(mockNavigate).toHaveBeenCalledWith('../album/album-1');
     });
 
-    it('should limit displayed albums with maxDisplayed prop', async () => {
+    it('should limit displayed albums with initialDisplayCount prop', async () => {
         render(
             <AlbumGrid
                 albumsAdapter={mockAlbumsAdapter}
                 photosAdapter={mockPhotosAdapter}
-                maxDisplayed={2}
+                initialDisplayCount={2}
             />
         );
 
@@ -257,7 +257,7 @@ describe('AlbumGrid', () => {
         });
     });
 
-    it('should apply maxDisplayed default value', async () => {
+    it('should render all albums when initialDisplayCount is not provided', async () => {
         const manyAlbums = Array.from({ length: 25 }, (_, i) =>
             ({ id: `album-${i}`, name: `Album ${i}`, description: '', tags: '', metadata: '{}' })
         );
@@ -277,9 +277,108 @@ describe('AlbumGrid', () => {
         );
 
         await waitFor(() => {
-            // All 25 should be rendered with default maxDisplayed (20000000)
+            // All 25 should be rendered with no initialDisplayCount limit
             expect(screen.getByText('Album 0')).toBeInTheDocument();
             expect(screen.getByText('Album 24')).toBeInTheDocument();
+        });
+    });
+
+    it('should show Load More button when albums exceed initialDisplayCount', async () => {
+        const manyAlbums = Array.from({ length: 50 }, (_, i) =>
+            ({ id: `album-${i}`, name: `Album ${i}`, description: '', tags: '', metadata: '{}' })
+        );
+
+        (useAlbumGrid as ReturnType<typeof vi.fn>).mockReturnValue([{
+            albums: manyAlbums,
+            createAlbumModalAlbumNameErrorText: '',
+            newAlbumName: '',
+            handleNewAlbumNameValueChange: vi.fn()
+        }]);
+
+        render(
+            <AlbumGrid
+                albumsAdapter={mockAlbumsAdapter}
+                photosAdapter={mockPhotosAdapter}
+                initialDisplayCount={20}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText('Load More')).toBeInTheDocument();
+        });
+
+        // Only 20 albums should be initially visible
+        const articles = screen.getAllByRole('article');
+        expect(articles.length).toBe(20);
+    });
+
+    it('should load more albums when Load More button is clicked', async () => {
+        const user = userEvent.setup();
+        const manyAlbums = Array.from({ length: 50 }, (_, i) =>
+            ({ id: `album-${i}`, name: `Album ${i}`, description: '', tags: '', metadata: '{}' })
+        );
+
+        (useAlbumGrid as ReturnType<typeof vi.fn>).mockReturnValue([{
+            albums: manyAlbums,
+            createAlbumModalAlbumNameErrorText: '',
+            newAlbumName: '',
+            handleNewAlbumNameValueChange: vi.fn()
+        }]);
+
+        render(
+            <AlbumGrid
+                albumsAdapter={mockAlbumsAdapter}
+                photosAdapter={mockPhotosAdapter}
+                initialDisplayCount={20}
+                loadMoreIncrement={10}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText('Load More')).toBeInTheDocument();
+        });
+
+        // Initially 20 albums
+        let articles = screen.getAllByRole('article');
+        expect(articles.length).toBe(20);
+
+        // Click Load More
+        await user.click(screen.getByText('Load More'));
+
+        // Now 30 albums should be visible
+        articles = screen.getAllByRole('article');
+        expect(articles.length).toBe(30);
+
+        // Click Load More again
+        await user.click(screen.getByText('Load More'));
+
+        // Now 40 albums should be visible
+        articles = screen.getAllByRole('article');
+        expect(articles.length).toBe(40);
+    });
+
+    it('should hide Load More button when all albums are displayed', async () => {
+        const manyAlbums = Array.from({ length: 50 }, (_, i) =>
+            ({ id: `album-${i}`, name: `Album ${i}`, description: '', tags: '', metadata: '{}' })
+        );
+
+        (useAlbumGrid as ReturnType<typeof vi.fn>).mockReturnValue([{
+            albums: manyAlbums,
+            createAlbumModalAlbumNameErrorText: '',
+            newAlbumName: '',
+            handleNewAlbumNameValueChange: vi.fn()
+        }]);
+
+        render(
+            <AlbumGrid
+                albumsAdapter={mockAlbumsAdapter}
+                photosAdapter={mockPhotosAdapter}
+                initialDisplayCount={50}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.queryByText('Load More')).not.toBeInTheDocument();
         });
     });
 });
