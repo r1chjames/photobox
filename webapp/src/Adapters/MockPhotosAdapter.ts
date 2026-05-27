@@ -1,4 +1,5 @@
 import {Photo} from "../Models/Photo";
+import {JobType} from "../Models/Job";
 import {IPhotosAdapter, PhotoGeoData, TimelineEntry} from "./IPhotosAdapter";
 
 export class MockPhotosAdapter implements IPhotosAdapter {
@@ -110,15 +111,11 @@ export class MockPhotosAdapter implements IPhotosAdapter {
     return null;
   }
 
-  public index = async () => {
+  public startJob = async (_jobType: JobType) => {
     return null;
   }
 
-  public regenerateThumbnails = async () => {
-    return null;
-  }
-
-  public stopJob = async (_jobType: string) => {
+  public stopJob = async (_jobType: JobType) => {
     return null;
   }
 

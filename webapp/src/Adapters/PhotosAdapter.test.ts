@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PhotosAdapter } from './PhotosAdapter';
 import { IRestApiAdapter } from './RestApiAdapter';
 import { Photo } from '../Models/Photo';
+import { JobType } from '../Models/Job';
 
 describe('PhotosAdapter', () => {
     let mockRestApiAdapter: IRestApiAdapter;
@@ -147,15 +148,15 @@ describe('PhotosAdapter', () => {
         });
     });
 
-    describe('index', () => {
-        it('should call postApiCall with empty body', async () => {
-            const mockResponse = { indexed: 100 };
+    describe('startJob', () => {
+        it('should call postApiCall with job type', async () => {
+            const mockResponse = { started: true };
             vi.mocked(mockRestApiAdapter.postApiCall).mockResolvedValue(mockResponse);
 
-            const result = await photosAdapter.index();
+            const result = await photosAdapter.startJob(JobType.PhotoIndex);
 
             expect(mockRestApiAdapter.postApiCall).toHaveBeenCalledWith(
-                'photos/index',
+                'photos/jobs/Photo_index/start',
                 {},
                 {
                     'Content-Type': 'application/json',

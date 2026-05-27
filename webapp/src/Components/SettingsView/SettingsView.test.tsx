@@ -49,7 +49,8 @@ describe('SettingsView', () => {
         } as unknown as ISettingsAdapter;
 
         mockPhotosAdapter = {
-            index: vi.fn().mockResolvedValue(undefined),
+            startJob: vi.fn().mockResolvedValue(undefined),
+            stopJob: vi.fn().mockResolvedValue(undefined),
         } as unknown as IPhotosAdapter;
     });
 
@@ -87,7 +88,7 @@ describe('SettingsView', () => {
         expect(mockSettingsAdapter.getAllSettings).toHaveBeenCalled();
     });
 
-    it('should render Index button', async () => {
+    it('should render Re-index Photos button', async () => {
         render(
             <SettingsView
                 settingsAdapter={mockSettingsAdapter}
@@ -96,11 +97,11 @@ describe('SettingsView', () => {
         );
 
         await waitFor(() => {
-            expect(screen.getByText('Index')).toBeInTheDocument();
+            expect(screen.getByText('Re-index Photos')).toBeInTheDocument();
         });
     });
 
-    it('should call photosAdapter.index when Index button is clicked', async () => {
+    it('should call photosAdapter.startJob when Re-index Photos button is clicked', async () => {
         const user = userEvent.setup();
 
         render(
@@ -111,13 +112,13 @@ describe('SettingsView', () => {
         );
 
         await waitFor(() => {
-            expect(screen.getByText('Index')).toBeInTheDocument();
+            expect(screen.getByText('Re-index Photos')).toBeInTheDocument();
         });
 
-        const indexButton = screen.getByText('Index');
+        const indexButton = screen.getByText('Re-index Photos');
         await user.click(indexButton);
 
-        expect(mockPhotosAdapter.index).toHaveBeenCalled();
+        expect(mockPhotosAdapter.startJob).toHaveBeenCalled();
     });
 
     it('should render edit and add buttons', async () => {
