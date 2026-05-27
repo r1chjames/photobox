@@ -428,8 +428,8 @@ func (pr *PhotoRepository) ListPhotosPendingAnalysis(limit int) ([]*domain.Photo
 	var photos []*domain.Photo
 	result := pr.dbEnv.Db.Model(&domain.Photo{}).
 		Where("deleted_at IS NULL").
-		Where("NOT EXISTS (SELECT 1 FROM photobox.photo_analysis WHERE photobox.photo_analysis.photo_id = photobox.photos.id AND photobox.photo_analysis.status = 'completed')").
-		Where("NOT EXISTS (SELECT 1 FROM photobox.photo_analysis WHERE photobox.photo_analysis.photo_id = photobox.photos.id AND photobox.photo_analysis.status = 'failed' AND photobox.photo_analysis.last_attempt_at > NOW() - INTERVAL '1 hour' * LEAST(photobox.photo_analysis.attempts, 24))").
+		Where("NOT EXISTS (SELECT 1 FROM photobox.photo_analyses WHERE photobox.photo_analyses.photo_id = photobox.photos.id AND photobox.photo_analyses.status = 'completed')").
+		Where("NOT EXISTS (SELECT 1 FROM photobox.photo_analyses WHERE photobox.photo_analyses.photo_id = photobox.photos.id AND photobox.photo_analyses.status = 'failed' AND photobox.photo_analyses.last_attempt_at > NOW() - INTERVAL '1 hour' * LEAST(photobox.photo_analyses.attempts, 24))").
 		Limit(limit).
 		Omit("thumbnail").
 		Find(&photos)
