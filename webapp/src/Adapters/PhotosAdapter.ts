@@ -1,6 +1,7 @@
 import {IRestApiAdapter} from "./RestApiAdapter";
 import {IPhotosAdapter, PhotoGeoData, TimelineEntry} from "./IPhotosAdapter";
 import {Photo} from "../Models/Photo";
+import {JobType} from "../Models/Job";
 
 export class PhotosAdapter implements IPhotosAdapter {
 
@@ -160,30 +161,14 @@ export class PhotosAdapter implements IPhotosAdapter {
     return this.restApiAdapter.postApiCall(uploadPhotoPath, body, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 
-  public startJob = async (jobType: string) => {
+  public startJob = async (jobType: JobType) => {
     const startPath = `photos/jobs/${jobType}/start`;
     return this.restApiAdapter.postApiCall(startPath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 
-  public stopJob = async (jobType: string) => {
+  public stopJob = async (jobType: JobType) => {
     const stopPath = `photos/jobs/${jobType}/stop`;
     return this.restApiAdapter.postApiCall(stopPath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
-  }
-
-  // Legacy endpoints — maintained for backward compatibility
-  public index = async () => {
-    const indexPath = 'photos/index';
-    return this.restApiAdapter.postApiCall(indexPath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
-  }
-
-  public regenerateThumbnails = async () => {
-    const regeneratePath = 'photos/regenerate-thumbnails';
-    return this.restApiAdapter.postApiCall(regeneratePath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
-  }
-
-  public analyze = async () => {
-    const analyzePath = 'photos/analyze';
-    return this.restApiAdapter.postApiCall(analyzePath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 
   public getThumbnailUrl = (photoId: string): string => {

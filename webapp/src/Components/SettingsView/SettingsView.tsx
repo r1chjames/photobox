@@ -3,6 +3,7 @@ import { Setting } from '../../Models/Setting';
 import { SettingModal } from '../SettingModal/SettingModal';
 import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
+import {JobType} from "../../Models/Job";
 import {ActionIcon, Button, Flex, Skeleton, Table, TextInput} from '@mantine/core';
 import {
     IconDeviceFloppy,
@@ -144,7 +145,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
       confirmProps: { color: 'blue' },
       onConfirm: async () => {
         try {
-          await props.photosAdapter.startJob('Photo_index');
+          await props.photosAdapter.startJob(JobType.PhotoIndex);
           setIndexingRunning(true);
           notifications.show({
             title: 'Indexing started',
@@ -164,7 +165,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
 
   const handleStopIndex = useCallback(async () => {
     try {
-      await props.photosAdapter.stopJob('Photo_index');
+      await props.photosAdapter.stopJob(JobType.PhotoIndex);
       setIndexingRunning(false);
       notifications.show({
         title: 'Indexing stopped',
@@ -188,7 +189,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
       confirmProps: { color: 'blue' },
       onConfirm: async () => {
         try {
-          await props.photosAdapter.startJob('Thumbnail_regenerate');
+          await props.photosAdapter.startJob(JobType.ThumbnailRegenerate);
           setRegenerateRunning(true);
           notifications.show({
             title: 'Regeneration started',
@@ -208,7 +209,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
 
   const handleStopRegenerate = useCallback(async () => {
     try {
-      await props.photosAdapter.stopJob('Thumbnail_regenerate');
+      await props.photosAdapter.stopJob(JobType.ThumbnailRegenerate);
       setRegenerateRunning(false);
       notifications.show({
         title: 'Regeneration stopped',
@@ -232,7 +233,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
       confirmProps: { color: 'blue' },
       onConfirm: async () => {
         try {
-          await props.photosAdapter.startJob('AI_analysis');
+          await props.photosAdapter.startJob(JobType.AIAnalysis);
           setAnalysisRunning(true);
           notifications.show({
             title: 'Analysis started',
@@ -252,7 +253,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
 
   const handleStopAnalysis = useCallback(async () => {
     try {
-      await props.photosAdapter.stopJob('AI_analysis');
+      await props.photosAdapter.stopJob(JobType.AIAnalysis);
       setAnalysisRunning(false);
       notifications.show({
         title: 'Analysis stopped',

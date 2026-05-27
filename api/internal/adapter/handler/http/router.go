@@ -171,10 +171,6 @@ func defineResources(
 	// Photo system jobs (admin-only)
 	router.POST(fmt.Sprintf("%s/photos/jobs/:type/start", urlBasePath), authMiddleware(token), requireRole(domain.ADMINISTRATOR), photoHandler.StartJob)
 	router.POST(fmt.Sprintf("%s/photos/jobs/:type/stop", urlBasePath), authMiddleware(token), requireRole(domain.ADMINISTRATOR), photoHandler.StopJob)
-	// Legacy job endpoints — maintained for backward compatibility
-	router.POST(fmt.Sprintf("%s/photos/index", urlBasePath), authMiddleware(token), requireRole(domain.ADMINISTRATOR), photoHandler.IndexPhotos)
-	router.POST(fmt.Sprintf("%s/photos/regenerate-thumbnails", urlBasePath), authMiddleware(token), requireRole(domain.ADMINISTRATOR), photoHandler.RegenerateThumbnails)
-	router.POST(fmt.Sprintf("%s/photos/analyze", urlBasePath), authMiddleware(token), requireRole(domain.ADMINISTRATOR), photoHandler.AnalyzePhotos)
 
 	// Search
 	search := router.Group(fmt.Sprintf("%s/search", urlBasePath)).Use(authMiddleware(token))
