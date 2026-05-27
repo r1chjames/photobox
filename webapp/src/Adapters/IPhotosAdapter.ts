@@ -39,6 +39,7 @@ export interface IPhotosAdapter {
   uploadPhoto(body: Record<string, unknown>): Promise<any>;
   index(): Promise<any>;
   regenerateThumbnails(): Promise<any>;
+  analyze(): Promise<any>;
   stopJob(jobType: string): Promise<any>;
   getVideos(fromId: string, limit: number): Promise<Photo[]>;
 }

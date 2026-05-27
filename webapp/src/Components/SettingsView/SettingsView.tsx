@@ -87,6 +87,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
   const [error, setError] = useState<string | null>(null);
   const [indexingRunning, setIndexingRunning] = useState(false);
   const [regenerateRunning, setRegenerateRunning] = useState(false);
+  const [analysisRunning, setAnalysisRunning] = useState(false);
 
   const loadSettings = useCallback(async () => {
     setLoading(true);
@@ -223,6 +224,50 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
     }
   }, [props.photosAdapter]);
 
+  const handleAnalyze = useCallback(() => {
+    modals.openConfirmModal({
+      title: 'Start AI photo analysis?',
+      children: 'This will analyze photos without AI tags using the configured LLM. It may take a while.',
+      labels: { confirm: 'Start analysis', cancel: 'Cancel' },
+      confirmProps: { color: 'blue' },
+      onConfirm: async () => {
+        try {
+          await props.photosAdapter.analyze();
+          setAnalysisRunning(true);
+          notifications.show({
+            title: 'Analysis started',
+            message: 'AI photo analysis is running in the background',
+            color: 'blue',
+          });
+        } catch (e) {
+          notifications.show({
+            title: 'Analysis failed',
+            message: e instanceof Error ? e.message : 'Failed to start AI analysis',
+            color: 'red',
+          });
+        }
+      },
+    });
+  }, [props.photosAdapter]);
+
+  const handleStopAnalysis = useCallback(async () => {
+    try {
+      await props.photosAdapter.stopJob('AI_analysis');
+      setAnalysisRunning(false);
+      notifications.show({
+        title: 'Analysis stopped',
+        message: 'AI photo analysis has been stopped',
+        color: 'orange',
+      });
+    } catch (e) {
+      notifications.show({
+        title: 'Stop failed',
+        message: e instanceof Error ? e.message : 'Failed to stop AI analysis',
+        color: 'red',
+      });
+    }
+  }, [props.photosAdapter]);
+
   const handleModalSave = useCallback((key: string, value: string, friendlyName: string, category: string, description: string) => {
     const updatedSettings = settings.concat({ key, value, friendlyName, category, description });
     setSettings(updatedSettings);
@@ -311,6 +356,15 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
           ) : (
             <Button onClick={handleRegenerateThumbnails}>
               Regenerate Thumbnails
+            </Button>
+          )}
+          {analysisRunning ? (
+            <Button onClick={handleStopAnalysis} color="red" leftSection={<IconPlayerStop size={16} />}>
+              Stop Analysis
+            </Button>
+          ) : (
+            <Button onClick={handleAnalyze} variant="outline" color="teal">
+              Analyze Photos
             </Button>
           )}
         </Flex>

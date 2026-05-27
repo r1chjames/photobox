@@ -170,6 +170,11 @@ export class PhotosAdapter implements IPhotosAdapter {
     return this.restApiAdapter.postApiCall(regeneratePath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 
+  public analyze = async () => {
+    const analyzePath = 'photos/analyze';
+    return this.restApiAdapter.postApiCall(analyzePath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
+
   public stopJob = async (jobType: string) => {
     const stopPath = `photos/jobs/${jobType}/stop`;
     return this.restApiAdapter.postApiCall(stopPath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
