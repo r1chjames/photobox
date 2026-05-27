@@ -244,6 +244,7 @@ func (ph *PhotoHandler) StartJob(c *gin.Context) {
 	case "AI_analysis":
 		friendlyName = "AI photo analysis"
 		runFunc = func() {
+			defer ph.jobSvc.JobComplete(jobType)
 			_ = ph.photoSvc.AnalyzeExistingPhotos()
 		}
 	default:

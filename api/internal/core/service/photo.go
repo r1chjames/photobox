@@ -5,7 +5,6 @@ import (
 	b64 "encoding/base64"
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	json "github.com/goccy/go-json"
 	"hash/fnv"
@@ -481,17 +480,6 @@ func (ps *PhotoService) recordAnalysisFailure(photoId string, attemptTime time.T
 func (ps *PhotoService) AnalyzeExistingPhotos() error {
 	if !ps.config.AIEnabled || ps.aiSvc == nil {
 		return nil
-	}
-
-	if ps.jobSvc != nil {
-		if err := ps.jobSvc.StartJobIfNotRunning("AI_analysis"); err != nil {
-			if errors.Is(err, domain.ErrJobAlreadyRunning) {
-				slog.Info("AI analysis already running, skipping")
-				return nil
-			}
-			return err
-		}
-		defer ps.jobSvc.JobComplete("AI_analysis")
 	}
 
 	photos, err := ps.photoRepo.ListPhotosPendingAnalysis(50)

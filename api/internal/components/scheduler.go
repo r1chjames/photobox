@@ -2,10 +2,12 @@ package components
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
 	"github.com/robfig/cron/v3"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
+	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 )
 
@@ -46,6 +48,14 @@ func (s *Scheduler) AddScheduledJobs() {
 
 	// Schedule AI analysis job to run every hour
 	_, err = s.cron.AddFunc("0 * * * *", func() {
+		if err := s.jobSvc.StartJobIfNotRunning("AI_analysis"); err != nil {
+			if errors.Is(err, domain.ErrJobAlreadyRunning) {
+				return
+			}
+			slog.Error("Failed to start AI analysis job", "error", err)
+			return
+		}
+		defer s.jobSvc.JobComplete("AI_analysis")
 		if err := s.photoSvc.AnalyzeExistingPhotos(); err != nil {
 			slog.Error("AI analysis job failed", "error", err)
 		}
