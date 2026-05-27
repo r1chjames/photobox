@@ -60,7 +60,7 @@ func (dbEnv *Env) PerformDbSetup() {
 	}
 
 	// Migrate the schema
-	err := dbEnv.Db.AutoMigrate(&domain.Album{}, &domain.Photo{}, &domain.PhotoTag{}, &domain.Setting{}, &domain.Job{}, &domain.User{}, &domain.SharedLink{})
+	err := dbEnv.Db.AutoMigrate(&domain.Album{}, &domain.Photo{}, &domain.PhotoTag{}, &domain.PhotoAnalysis{}, &domain.Setting{}, &domain.Job{}, &domain.User{}, &domain.SharedLink{})
 	if err != nil {
 		slog.Error("Failed to perform database migration", "error", err)
 		os.Exit(1)
