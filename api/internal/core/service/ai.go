@@ -8,10 +8,10 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
+	"github.com/disintegration/imaging"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 )
@@ -41,18 +41,27 @@ func NewOllamaClient(config appconfig.AppConfig) port.AIService {
 		host:  strings.TrimRight(config.OllamaHost, "/"),
 		model: config.OllamaModel,
 		client: &http.Client{
-			Timeout: 120 * time.Second,
+			Timeout: 600 * time.Second,
 		},
 	}
 }
 
 func (o *OllamaClient) AnalyzeImage(imagePath string) (*port.ImageAnalysis, error) {
-	imageData, err := os.ReadFile(imagePath)
+	// Open and resize image to reduce payload size and inference time
+	src, err := imaging.Open(imagePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read image: %w", err)
+		return nil, fmt.Errorf("failed to open image: %w", err)
 	}
 
-	base64Image := base64.StdEncoding.EncodeToString(imageData)
+	// Resize to max 512px on longest side for faster inference
+	resized := imaging.Fit(src, 512, 512, imaging.Lanczos)
+
+	var buf bytes.Buffer
+	if err := imaging.Encode(&buf, resized, imaging.JPEG); err != nil {
+		return nil, fmt.Errorf("failed to encode resized image: %w", err)
+	}
+
+	base64Image := base64.StdEncoding.EncodeToString(buf.Bytes())
 
 	prompt := `Analyze this image. Return ONLY valid JSON in this format:
 {"caption": "...", "tags": ["..."], "objects": ["..."], "is_nsfw": false, "is_portrait": false}
