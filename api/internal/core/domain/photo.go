@@ -75,3 +75,7 @@ type PhotoAnalysis struct {
 	CreatedAt     time.Time      `json:"createdAt"`
 	UpdatedAt     time.Time      `json:"updatedAt"`
 }
+
+func (PhotoAnalysis) TableName() string {
+	return "photo_analysis"
+}
