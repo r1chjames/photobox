@@ -37,9 +37,11 @@ export interface IPhotosAdapter {
   getDuplicatePhotos(): Promise<Photo[]>;
   getPhotoThumbnailBlob(photoId: string): Promise<Blob | string>;
   uploadPhoto(body: Record<string, unknown>): Promise<any>;
+  startJob(jobType: string): Promise<any>;
+  stopJob(jobType: string): Promise<any>;
+  // Legacy endpoints — maintained for backward compatibility
   index(): Promise<any>;
   regenerateThumbnails(): Promise<any>;
   analyze(): Promise<any>;
-  stopJob(jobType: string): Promise<any>;
   getVideos(fromId: string, limit: number): Promise<Photo[]>;
 }

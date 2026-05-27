@@ -160,6 +160,17 @@ export class PhotosAdapter implements IPhotosAdapter {
     return this.restApiAdapter.postApiCall(uploadPhotoPath, body, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 
+  public startJob = async (jobType: string) => {
+    const startPath = `photos/jobs/${jobType}/start`;
+    return this.restApiAdapter.postApiCall(startPath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
+
+  public stopJob = async (jobType: string) => {
+    const stopPath = `photos/jobs/${jobType}/stop`;
+    return this.restApiAdapter.postApiCall(stopPath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
+
+  // Legacy endpoints — maintained for backward compatibility
   public index = async () => {
     const indexPath = 'photos/index';
     return this.restApiAdapter.postApiCall(indexPath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
@@ -173,11 +184,6 @@ export class PhotosAdapter implements IPhotosAdapter {
   public analyze = async () => {
     const analyzePath = 'photos/analyze';
     return this.restApiAdapter.postApiCall(analyzePath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
-  }
-
-  public stopJob = async (jobType: string) => {
-    const stopPath = `photos/jobs/${jobType}/stop`;
-    return this.restApiAdapter.postApiCall(stopPath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 
   public getThumbnailUrl = (photoId: string): string => {

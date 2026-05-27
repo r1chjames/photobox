@@ -144,7 +144,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
       confirmProps: { color: 'blue' },
       onConfirm: async () => {
         try {
-          await props.photosAdapter.index();
+          await props.photosAdapter.startJob('Photo_index');
           setIndexingRunning(true);
           notifications.show({
             title: 'Indexing started',
@@ -188,7 +188,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
       confirmProps: { color: 'blue' },
       onConfirm: async () => {
         try {
-          await props.photosAdapter.regenerateThumbnails();
+          await props.photosAdapter.startJob('Thumbnail_regenerate');
           setRegenerateRunning(true);
           notifications.show({
             title: 'Regeneration started',
@@ -232,7 +232,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
       confirmProps: { color: 'blue' },
       onConfirm: async () => {
         try {
-          await props.photosAdapter.analyze();
+          await props.photosAdapter.startJob('AI_analysis');
           setAnalysisRunning(true);
           notifications.show({
             title: 'Analysis started',

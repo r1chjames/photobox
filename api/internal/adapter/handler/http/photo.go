@@ -276,6 +276,68 @@ func (ph *PhotoHandler) AnalyzePhotos(c *gin.Context) {
 	c.JSON(http.StatusAccepted, gin.H{"message": "AI analysis started"})
 }
 
+func (ph *PhotoHandler) StartJob(c *gin.Context) {
+	jobType := c.Param("type")
+	
+	var friendlyName string
+	var runFunc func()
+	
+	switch jobType {
+	case "Photo_index":
+		friendlyName = "Photo indexing"
+		runFunc = func() {
+			ctx, cancel := context.WithCancel(context.Background())
+			ph.jobCancellersMu.Lock()
+			ph.jobCancellers[jobType] = cancel
+			ph.jobCancellersMu.Unlock()
+			defer func() {
+				ph.jobCancellersMu.Lock()
+				delete(ph.jobCancellers, jobType)
+				ph.jobCancellersMu.Unlock()
+				cancel()
+			}()
+			ph.photoSvc.PerformPhotoIndex(ctx)
+		}
+	case "Thumbnail_regenerate":
+		friendlyName = "Thumbnail regeneration"
+		runFunc = func() {
+			ctx, cancel := context.WithCancel(context.Background())
+			ph.jobCancellersMu.Lock()
+			ph.jobCancellers[jobType] = cancel
+			ph.jobCancellersMu.Unlock()
+			defer func() {
+				ph.jobCancellersMu.Lock()
+				delete(ph.jobCancellers, jobType)
+				ph.jobCancellersMu.Unlock()
+				cancel()
+			}()
+			ph.photoSvc.RegenerateThumbnails(ctx)
+		}
+	case "AI_analysis":
+		friendlyName = "AI photo analysis"
+		runFunc = func() {
+			_ = ph.photoSvc.AnalyzeExistingPhotos()
+		}
+	default:
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Unknown job type: " + jobType})
+		return
+	}
+	
+	// Atomically start the job - returns error if already running
+	err := ph.jobSvc.StartJobIfNotRunning(jobType)
+	if err != nil {
+		if errors.Is(err, domain.ErrJobAlreadyRunning) {
+			c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": friendlyName + " is already in progress"})
+			return
+		}
+		handleError(c, err)
+		return
+	}
+	
+	c.Status(http.StatusAccepted)
+	go runFunc()
+}
+
 func (ph *PhotoHandler) StopJob(c *gin.Context) {
 	jobType := c.Param("type")
 
