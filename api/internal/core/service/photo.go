@@ -478,16 +478,23 @@ func (ps *PhotoService) recordAnalysisFailure(photoId string, attemptTime time.T
 }
 
 func (ps *PhotoService) AnalyzeExistingPhotos() error {
-	if !ps.config.AIEnabled || ps.aiSvc == nil {
+	if !ps.config.AIEnabled {
+		slog.Info("AI analysis skipped: AI_ENABLED is false")
+		return nil
+	}
+	if ps.aiSvc == nil {
+		slog.Warn("AI analysis skipped: aiSvc is nil")
 		return nil
 	}
 
 	photos, err := ps.photoRepo.ListPhotosPendingAnalysis(50)
 	if err != nil {
+		slog.Error("Failed to list photos pending analysis", "error", err)
 		return err
 	}
 
 	if len(photos) == 0 {
+		slog.Info("AI analysis: no photos pending analysis")
 		return nil
 	}
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -244,8 +245,15 @@ func (ph *PhotoHandler) StartJob(c *gin.Context) {
 	case "AI_analysis":
 		friendlyName = "AI photo analysis"
 		runFunc = func() {
-			defer ph.jobSvc.JobComplete(jobType)
-			_ = ph.photoSvc.AnalyzeExistingPhotos()
+			defer func() {
+				if r := recover(); r != nil {
+					slog.Error("AI analysis job panicked", "recover", r)
+				}
+				ph.jobSvc.JobComplete(jobType)
+			}()
+			if err := ph.photoSvc.AnalyzeExistingPhotos(); err != nil {
+				slog.Error("AI analysis job failed", "error", err)
+			}
 		}
 	default:
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Unknown job type: " + jobType})
