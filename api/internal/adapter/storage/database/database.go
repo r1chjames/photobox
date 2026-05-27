@@ -66,6 +66,25 @@ func (dbEnv *Env) PerformDbSetup() {
 		os.Exit(1)
 	}
 
+	// Ensure photo_analysis table exists (AutoMigrate sometimes misses custom TableName models)
+	if err := dbEnv.Db.Exec(`CREATE TABLE IF NOT EXISTS photobox.photo_analysis (
+		photo_id TEXT PRIMARY KEY,
+		model TEXT,
+		caption TEXT,
+		tags JSONB,
+		objects JSONB,
+		is_nsfw BOOLEAN DEFAULT FALSE,
+		is_portrait BOOLEAN DEFAULT FALSE,
+		status TEXT DEFAULT 'pending',
+		attempts INTEGER DEFAULT 0,
+		last_attempt_at TIMESTAMP,
+		created_at TIMESTAMP,
+		updated_at TIMESTAMP
+	)`).Error; err != nil {
+		slog.Error("Failed to create photo_analysis table", "error", err)
+		os.Exit(1)
+	}
+
 	// Create GIN indexes for full-text search
 	dbEnv.createSearchIndexes()
 
