@@ -86,11 +86,18 @@ Guidelines:
 	}
 
 	url := fmt.Sprintf("%s/api/generate", o.host)
+	slog.Info("Calling Ollama for image analysis", "model", o.model, "imageSize", len(base64Image))
+
+	startTime := time.Now()
 	resp, err := o.client.Post(url, "application/json", bytes.NewBuffer(jsonBody))
+	elapsed := time.Since(startTime)
 	if err != nil {
+		slog.Error("Ollama request failed", "elapsed", elapsed, "error", err)
 		return nil, fmt.Errorf("failed to call ollama: %w", err)
 	}
 	defer resp.Body.Close()
+
+	slog.Info("Ollama response received", "status", resp.StatusCode, "elapsed", elapsed)
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -102,10 +109,14 @@ Guidelines:
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
+	slog.Info("Ollama raw response", "body", string(body))
+
 	var ollamaResp ollamaGenerateResponse
 	if err := json.Unmarshal(body, &ollamaResp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal ollama response: %w", err)
 	}
+
+	slog.Info("Ollama extracted response text", "text", ollamaResp.Response)
 
 	// Clean up the response: extract JSON if it's wrapped in markdown code blocks
 	cleanResponse := strings.TrimSpace(ollamaResp.Response)
