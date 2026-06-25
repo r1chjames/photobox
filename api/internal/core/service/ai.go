@@ -115,14 +115,10 @@ func (o *OllamaClient) AnalyzeImage(imagePath string) (*port.ImageAnalysis, erro
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
-	slog.Info("Ollama raw response", "body", string(body))
-
 	var ollamaResp ollamaGenerateResponse
 	if err := json.Unmarshal(body, &ollamaResp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal ollama response: %w", err)
 	}
-
-	slog.Info("Ollama extracted response text", "text", ollamaResp.Response)
 
 	// Clean up the response: extract JSON if it's wrapped in markdown code blocks
 	cleanResponse := strings.TrimSpace(ollamaResp.Response)
