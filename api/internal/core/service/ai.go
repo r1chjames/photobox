@@ -17,11 +17,12 @@ import (
 )
 
 type ollamaGenerateRequest struct {
-	Model  string `json:"model"`
-	Prompt string `json:"prompt"`
-	Images []string `json:"images,omitempty"`
-	Stream bool   `json:"stream"`
-	Format string `json:"format,omitempty"`
+	Model   string         `json:"model"`
+	Prompt  string         `json:"prompt"`
+	Images  []string       `json:"images,omitempty"`
+	Stream  bool           `json:"stream"`
+	Format  string         `json:"format,omitempty"`
+	Options map[string]any `json:"options,omitempty"`
 }
 
 type ollamaGenerateResponse struct {
@@ -53,8 +54,8 @@ func (o *OllamaClient) AnalyzeImage(imagePath string) (*port.ImageAnalysis, erro
 		return nil, fmt.Errorf("failed to open image: %w", err)
 	}
 
-	// Resize to max 512px on longest side for faster inference
-	resized := imaging.Fit(src, 512, 512, imaging.Lanczos)
+	// Resize to max 320px — fewer image tokens (400 vs 729 at 512px) = faster inference
+	resized := imaging.Fit(src, 320, 320, imaging.Lanczos)
 
 	var buf bytes.Buffer
 	if err := imaging.Encode(&buf, resized, imaging.JPEG); err != nil {
@@ -63,12 +64,7 @@ func (o *OllamaClient) AnalyzeImage(imagePath string) (*port.ImageAnalysis, erro
 
 	base64Image := base64.StdEncoding.EncodeToString(buf.Bytes())
 
-	prompt := `Look at this image carefully. What do you see? Write a JSON object with:
-- "caption": describe what is shown in one sentence
-- "tags": list relevant search keywords (specific, not generic)
-- "objects": list visible things by name (text strings, not numbers)
-- "is_nsfw": true if inappropriate, false otherwise
-- "is_portrait": true if a face is the main subject, false otherwise`
+	prompt := `Describe this image. Output JSON: {"caption":"brief description","tags":["keyword"],"objects":["item"],"is_nsfw":false,"is_portrait":false}`
 
 	reqBody := ollamaGenerateRequest{
 		Model:  o.model,
@@ -76,6 +72,10 @@ func (o *OllamaClient) AnalyzeImage(imagePath string) (*port.ImageAnalysis, erro
 		Images: []string{base64Image},
 		Stream: false,
 		Format: "json",
+		Options: map[string]any{
+			"num_ctx":    2048, // conservative context window for CPU
+			"num_predict": 128, // limit output to ~128 tokens (JSON response is small)
+		},
 	}
 
 	jsonBody, err := json.Marshal(reqBody)
