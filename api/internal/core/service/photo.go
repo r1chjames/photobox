@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/buckket/go-blurhash"
@@ -502,10 +503,25 @@ func (ps *PhotoService) AnalyzeExistingPhotos() error {
 	}
 
 	slog.Info("Analyzing existing photos with AI", "count", len(photos))
+
+	// Process photos concurrently — matches OLLAMA_NUM_PARALLEL
+	const workers = 2
+	sem := make(chan struct{}, workers)
+	var wg sync.WaitGroup
+
 	for _, photo := range photos {
-		ps.analyzeAndTagPhoto(photo.ID, utils.UnescapeInvalidCharacters(photo.FilesystemPath))
+		wg.Add(1)
+		sem <- struct{}{} // acquire
+		go func(p *domain.Photo) {
+			defer func() {
+				<-sem // release
+				wg.Done()
+			}()
+			ps.analyzeAndTagPhoto(p.ID, utils.UnescapeInvalidCharacters(p.FilesystemPath))
+		}(photo)
 	}
 
+	wg.Wait()
 	return nil
 }
 
