@@ -409,12 +409,13 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 }
 
 func (ps *PhotoService) analyzeAndTagPhoto(photoId string, imagePath string) {
+	startedAt := time.Now()
 	analysis, err := ps.aiSvc.AnalyzeImage(imagePath)
 	now := time.Now() // after LLM call — reflects actual completion time
 
 	if err != nil {
 		slog.Warn("AI analysis failed", "photo", photoId, "error", err)
-		ps.recordAnalysisFailure(photoId, now)
+		ps.recordAnalysisFailure(photoId, &startedAt, now)
 		return
 	}
 
@@ -445,6 +446,7 @@ func (ps *PhotoService) analyzeAndTagPhoto(photoId string, imagePath string) {
 		IsPortrait:    analysis.IsPortrait,
 		Status:        "completed",
 		Attempts:      1,
+		StartedAt:     &startedAt,
 		LastAttemptAt: &now,
 		CreatedAt:     now,
 		UpdatedAt:     now,
@@ -456,7 +458,7 @@ func (ps *PhotoService) analyzeAndTagPhoto(photoId string, imagePath string) {
 	slog.Info("AI analysis complete", "photo", photoId, "tags", len(allTags), "caption", analysis.Caption)
 }
 
-func (ps *PhotoService) recordAnalysisFailure(photoId string, attemptTime time.Time) {
+func (ps *PhotoService) recordAnalysisFailure(photoId string, startedAt *time.Time, attemptTime time.Time) {
 	existing, _ := ps.photoRepo.GetPhotoAnalysis(photoId)
 	attempts := 1
 	if existing != nil {
@@ -466,6 +468,7 @@ func (ps *PhotoService) recordAnalysisFailure(photoId string, attemptTime time.T
 		PhotoID:       photoId,
 		Status:        "failed",
 		Attempts:      attempts,
+		StartedAt:     startedAt,
 		LastAttemptAt: &attemptTime,
 		UpdatedAt:     attemptTime,
 	}

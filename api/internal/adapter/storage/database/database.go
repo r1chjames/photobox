@@ -77,11 +77,18 @@ func (dbEnv *Env) PerformDbSetup() {
 		is_portrait BOOLEAN DEFAULT FALSE,
 		status TEXT DEFAULT 'pending',
 		attempts INTEGER DEFAULT 0,
+		started_at TIMESTAMP,
 		last_attempt_at TIMESTAMP,
 		created_at TIMESTAMP,
 		updated_at TIMESTAMP
 	)`).Error; err != nil {
 		slog.Error("Failed to create photo_analysis table", "error", err)
+		os.Exit(1)
+	}
+
+	// Add started_at column if missing on existing tables
+	if err := dbEnv.Db.Exec(`ALTER TABLE photobox.photo_analysis ADD COLUMN IF NOT EXISTS started_at TIMESTAMP`).Error; err != nil {
+		slog.Error("Failed to add started_at column", "error", err)
 		os.Exit(1)
 	}
 

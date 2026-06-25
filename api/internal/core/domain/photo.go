@@ -71,6 +71,7 @@ type PhotoAnalysis struct {
 	IsPortrait    bool           `json:"isPortrait"`
 	Status        string         `json:"status" gorm:"default:'pending'"`
 	Attempts      int            `json:"attempts" gorm:"default:0"`
+	StartedAt     *time.Time     `json:"startedAt"`
 	LastAttemptAt *time.Time     `json:"lastAttemptAt"`
 	CreatedAt     time.Time      `json:"createdAt"`
 	UpdatedAt     time.Time      `json:"updatedAt"`
