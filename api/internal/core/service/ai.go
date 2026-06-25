@@ -117,12 +117,7 @@ Guidelines:
 	var analysis port.ImageAnalysis
 	if err := json.Unmarshal([]byte(cleanResponse), &analysis); err != nil {
 		slog.Warn("Failed to parse AI analysis JSON", "response", cleanResponse, "error", err)
-		// Return a best-effort result with empty fields
-		return &port.ImageAnalysis{
-			Caption: "",
-			Tags:    []string{},
-			Objects: []string{},
-		}, nil
+		return nil, fmt.Errorf("failed to parse AI response as JSON: %w", err)
 	}
 
 	return &analysis, nil
