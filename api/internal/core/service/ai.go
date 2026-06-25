@@ -64,17 +64,17 @@ func (o *OllamaClient) AnalyzeImage(imagePath string) (*port.ImageAnalysis, erro
 
 	base64Image := base64.StdEncoding.EncodeToString(buf.Bytes())
 
-	prompt := `Describe this image. Output JSON: {"caption":"brief description","tags":["keyword"],"objects":["item"],"is_nsfw":false,"is_portrait":false}`
+	// Simple natural-language prompt — moondream2 works best with Q&A, not JSON
+	prompt := `Describe this image in one sentence.`
 
 	reqBody := ollamaGenerateRequest{
 		Model:  o.model,
 		Prompt: prompt,
 		Images: []string{base64Image},
 		Stream: false,
-		Format: "json",
 		Options: map[string]any{
-			"num_ctx":    2048, // conservative context window for CPU
-			"num_predict": 128, // limit output to ~128 tokens (JSON response is small)
+			"num_ctx":    2048,
+			"num_predict": 64, // one sentence is ~20 tokens
 		},
 	}
 
@@ -127,60 +127,12 @@ func (o *OllamaClient) AnalyzeImage(imagePath string) (*port.ImageAnalysis, erro
 	cleanResponse = strings.TrimSuffix(cleanResponse, "```")
 	cleanResponse = strings.TrimSpace(cleanResponse)
 
-	// Use a flexible intermediate struct to handle moondream2 quirks:
-	// - objects may be bounding box coords (float arrays) or string lists
-	// - is_nsfw / is_portrait may be 0/1 (int) instead of false/true (bool)
-	// - tags may be missing entirely
-	type rawAnalysis struct {
-		Caption    string        `json:"caption"`
-		Tags       []string      `json:"tags"`
-		Objects    []interface{} `json:"objects"`
-		IsNSFW     interface{}   `json:"is_nsfw"`
-		IsPortrait interface{}   `json:"is_portrait"`
-	}
-	var raw rawAnalysis
-	if err := json.Unmarshal([]byte(cleanResponse), &raw); err != nil {
-		slog.Warn("Failed to parse AI analysis JSON", "response", cleanResponse, "error", err)
-		return nil, fmt.Errorf("failed to parse AI response as JSON: %w", err)
-	}
-
-	// Convert objects to strings from various formats moondream2 outputs:
-	// - plain strings: "car", "tree"
-	// - bounding boxes: [0.39, 0.48, 0.6, 0.61] (dropped)
-	// - structured objects: {"id":0,"type":"building"} (extract "type")
-	objects := make([]string, 0, len(raw.Objects))
-	for _, obj := range raw.Objects {
-		switch v := obj.(type) {
-		case string:
-			objects = append(objects, v)
-		case map[string]interface{}:
-			if t, ok := v["type"]; ok {
-				if s, ok := t.(string); ok {
-					objects = append(objects, s)
-				}
-			}
-		}
-	}
-
-	// Convert bool-ish values to actual booleans (handles 0/1, false/true, strings)
-	toBool := func(v interface{}) bool {
-		switch val := v.(type) {
-		case bool:
-			return val
-		case float64:
-			return val != 0
-		case string:
-			return val == "true" || val == "1"
-		default:
-			return false
-		}
-	}
-
+	// Use the raw text directly as the caption (moondream2 returns natural language)
 	return &port.ImageAnalysis{
-		Caption:    raw.Caption,
-		Tags:       raw.Tags,
-		Objects:    objects,
-		IsNSFW:     toBool(raw.IsNSFW),
-		IsPortrait: toBool(raw.IsPortrait),
+		Caption:    cleanResponse,
+		Tags:       nil,
+		Objects:    nil,
+		IsNSFW:     false,
+		IsPortrait: false,
 	}, nil
 }
