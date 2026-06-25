@@ -437,14 +437,15 @@ func (pr *PhotoRepository) ListPhotosPendingAnalysis(limit int) ([]*domain.Photo
 }
 
 func (pr *PhotoRepository) SavePhotoAnalysis(analysis domain.PhotoAnalysis) error {
-	return pr.dbEnv.Db.Clauses(clause.OnConflict{
+	// Use explicit schema-qualified table to bypass GORM's TablePrefix quoting issue
+	return pr.dbEnv.Db.Table("photobox.photo_analysis").Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&analysis).Error
 }
 
 func (pr *PhotoRepository) GetPhotoAnalysis(photoId string) (*domain.PhotoAnalysis, error) {
 	var analysis domain.PhotoAnalysis
-	result := pr.dbEnv.Db.Where("photo_id = ?", photoId).First(&analysis)
+	result := pr.dbEnv.Db.Table("photobox.photo_analysis").Where("photo_id = ?", photoId).First(&analysis)
 	if result.Error != nil {
 		return nil, db.HandleError(result)
 	}
