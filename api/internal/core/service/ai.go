@@ -63,12 +63,12 @@ func (o *OllamaClient) AnalyzeImage(imagePath string) (*port.ImageAnalysis, erro
 
 	base64Image := base64.StdEncoding.EncodeToString(buf.Bytes())
 
-	prompt := `Describe this image. Output a JSON object with these fields: 
-{"caption": "concise 1-sentence description", "tags": ["keyword1", "keyword2"], "objects": ["visible", "physical", "objects"], "is_nsfw": false, "is_portrait": false}
-- tags: searchable keywords, avoid generic words like "image" or "photo"
-- objects: distinct physical items visible
-- is_nsfw: true only for nudity/sexual content
-- is_portrait: true if a person's face is the main subject`
+	prompt := `Look at this image carefully. What do you see? Write a JSON object with:
+- "caption": describe what is shown in one sentence
+- "tags": list relevant search keywords (specific, not generic)
+- "objects": list visible things by name (text strings, not numbers)
+- "is_nsfw": true if inappropriate, false otherwise
+- "is_portrait": true if a face is the main subject, false otherwise`
 
 	reqBody := ollamaGenerateRequest{
 		Model:  o.model,
@@ -123,11 +123,34 @@ func (o *OllamaClient) AnalyzeImage(imagePath string) (*port.ImageAnalysis, erro
 	cleanResponse = strings.TrimSuffix(cleanResponse, "```")
 	cleanResponse = strings.TrimSpace(cleanResponse)
 
-	var analysis port.ImageAnalysis
-	if err := json.Unmarshal([]byte(cleanResponse), &analysis); err != nil {
+	// Use a flexible intermediate struct to handle models that return
+	// numbers for "objects" (moondream2 outputs bounding box coordinates)
+	type rawAnalysis struct {
+		Caption    string        `json:"caption"`
+		Tags       []string      `json:"tags"`
+		Objects    []interface{} `json:"objects"`
+		IsNSFW     bool          `json:"is_nsfw"`
+		IsPortrait bool          `json:"is_portrait"`
+	}
+	var raw rawAnalysis
+	if err := json.Unmarshal([]byte(cleanResponse), &raw); err != nil {
 		slog.Warn("Failed to parse AI analysis JSON", "response", cleanResponse, "error", err)
 		return nil, fmt.Errorf("failed to parse AI response as JSON: %w", err)
 	}
 
-	return &analysis, nil
+	// Convert objects to strings, dropping any non-string values
+	objects := make([]string, 0, len(raw.Objects))
+	for _, obj := range raw.Objects {
+		if s, ok := obj.(string); ok {
+			objects = append(objects, s)
+		}
+	}
+
+	return &port.ImageAnalysis{
+		Caption:    raw.Caption,
+		Tags:       raw.Tags,
+		Objects:    objects,
+		IsNSFW:     raw.IsNSFW,
+		IsPortrait: raw.IsPortrait,
+	}, nil
 }
