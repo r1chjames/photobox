@@ -131,14 +131,16 @@ func (o *OllamaClient) AnalyzeImage(imagePath string) (*port.ImageAnalysis, erro
 	cleanResponse = strings.TrimSuffix(cleanResponse, "```")
 	cleanResponse = strings.TrimSpace(cleanResponse)
 
-	// Use a flexible intermediate struct to handle models that return
-	// numbers for "objects" (moondream2 outputs bounding box coordinates)
+	// Use a flexible intermediate struct to handle moondream2 quirks:
+	// - objects may be bounding box coords (float arrays) or string lists
+	// - is_nsfw / is_portrait may be 0/1 (int) instead of false/true (bool)
+	// - tags may be missing entirely
 	type rawAnalysis struct {
 		Caption    string        `json:"caption"`
 		Tags       []string      `json:"tags"`
 		Objects    []interface{} `json:"objects"`
-		IsNSFW     bool          `json:"is_nsfw"`
-		IsPortrait bool          `json:"is_portrait"`
+		IsNSFW     interface{}   `json:"is_nsfw"`
+		IsPortrait interface{}   `json:"is_portrait"`
 	}
 	var raw rawAnalysis
 	if err := json.Unmarshal([]byte(cleanResponse), &raw); err != nil {
@@ -154,11 +156,25 @@ func (o *OllamaClient) AnalyzeImage(imagePath string) (*port.ImageAnalysis, erro
 		}
 	}
 
+	// Convert bool-ish values to actual booleans (handles 0/1, false/true, strings)
+	toBool := func(v interface{}) bool {
+		switch val := v.(type) {
+		case bool:
+			return val
+		case float64:
+			return val != 0
+		case string:
+			return val == "true" || val == "1"
+		default:
+			return false
+		}
+	}
+
 	return &port.ImageAnalysis{
 		Caption:    raw.Caption,
 		Tags:       raw.Tags,
 		Objects:    objects,
-		IsNSFW:     raw.IsNSFW,
-		IsPortrait: raw.IsPortrait,
+		IsNSFW:     toBool(raw.IsNSFW),
+		IsPortrait: toBool(raw.IsPortrait),
 	}, nil
 }
