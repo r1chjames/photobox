@@ -409,9 +409,9 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 }
 
 func (ps *PhotoService) analyzeAndTagPhoto(photoId string, imagePath string) {
-	now := time.Now()
-
 	analysis, err := ps.aiSvc.AnalyzeImage(imagePath)
+	now := time.Now() // after LLM call — reflects actual completion time
+
 	if err != nil {
 		slog.Warn("AI analysis failed", "photo", photoId, "error", err)
 		ps.recordAnalysisFailure(photoId, now)
