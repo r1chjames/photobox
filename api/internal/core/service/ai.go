@@ -86,16 +86,24 @@ func (o *OllamaClient) AnalyzeImage(imagePath string) (*port.ImageAnalysis, erro
 	url := fmt.Sprintf("%s/api/generate", o.host)
 	slog.Info("Calling Ollama for image analysis", "model", o.model, "imageSize", len(base64Image))
 
-	startTime := time.Now()
-	resp, err := o.client.Post(url, "application/json", bytes.NewBuffer(jsonBody))
-	elapsed := time.Since(startTime)
-	if err != nil {
-		slog.Error("Ollama request failed", "elapsed", elapsed, "error", err)
-		return nil, fmt.Errorf("failed to call ollama: %w", err)
+	var resp *http.Response
+	var lastErr error
+	for attempt := 1; attempt <= 2; attempt++ {
+		startTime := time.Now()
+		resp, lastErr = o.client.Post(url, "application/json", bytes.NewBuffer(jsonBody))
+		elapsed := time.Since(startTime)
+		if lastErr == nil {
+			slog.Info("Ollama response received", "status", resp.StatusCode, "elapsed", elapsed, "attempt", attempt)
+			break
+		}
+		slog.Warn("Ollama request failed, retrying", "elapsed", elapsed, "error", lastErr, "attempt", attempt)
+		time.Sleep(5 * time.Second)
+	}
+	if lastErr != nil {
+		slog.Error("Ollama request failed after retries", "error", lastErr)
+		return nil, fmt.Errorf("failed to call ollama: %w", lastErr)
 	}
 	defer resp.Body.Close()
-
-	slog.Info("Ollama response received", "status", resp.StatusCode, "elapsed", elapsed)
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
