@@ -144,11 +144,21 @@ func (o *OllamaClient) AnalyzeImage(imagePath string) (*port.ImageAnalysis, erro
 		return nil, fmt.Errorf("failed to parse AI response as JSON: %w", err)
 	}
 
-	// Convert objects to strings, dropping any non-string values
+	// Convert objects to strings from various formats moondream2 outputs:
+	// - plain strings: "car", "tree"
+	// - bounding boxes: [0.39, 0.48, 0.6, 0.61] (dropped)
+	// - structured objects: {"id":0,"type":"building"} (extract "type")
 	objects := make([]string, 0, len(raw.Objects))
 	for _, obj := range raw.Objects {
-		if s, ok := obj.(string); ok {
-			objects = append(objects, s)
+		switch v := obj.(type) {
+		case string:
+			objects = append(objects, v)
+		case map[string]interface{}:
+			if t, ok := v["type"]; ok {
+				if s, ok := t.(string); ok {
+					objects = append(objects, s)
+				}
+			}
 		}
 	}
 
