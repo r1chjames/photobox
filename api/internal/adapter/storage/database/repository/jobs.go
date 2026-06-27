@@ -31,6 +31,12 @@ func (jr *JobRepository) IsJobRunning(name string) (bool, error) {
 	return false, nil
 }
 
+func (jr *JobRepository) GetAllJobs() ([]domain.Job, error) {
+	var jobs []domain.Job
+	result := jr.dbEnv.Db.Find(&jobs)
+	return jobs, result.Error
+}
+
 func (jr *JobRepository) UpdateJobStatus(name string, status string) error {
 	var job domain.Job
 	job.Name = name

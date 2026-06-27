@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Setting } from '../../Models/Setting';
 import { SettingModal } from '../SettingModal/SettingModal';
 import { notifications } from '@mantine/notifications';
@@ -89,6 +89,9 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
   const [indexingRunning, setIndexingRunning] = useState(false);
   const [regenerateRunning, setRegenerateRunning] = useState(false);
   const [analysisRunning, setAnalysisRunning] = useState(false);
+  const prevIndexingRunning = useRef(false);
+  const prevRegenerateRunning = useRef(false);
+  const prevAnalysisRunning = useRef(false);
 
   const loadSettings = useCallback(async () => {
     setLoading(true);
@@ -107,6 +110,62 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
   useEffect(() => {
     loadSettings();
   }, [loadSettings]);
+
+  // Fetch job statuses on mount and poll while any job is running
+  useEffect(() => {
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const fetchJobStatuses = async () => {
+      try {
+        const response = await props.photosAdapter.getAllJobStatuses();
+        const jobs: Array<{ name: string; status: string }> = response?.jobs ?? [];
+
+        let anyRunning = false;
+        for (const job of jobs) {
+          const isRunning = job.status === 'RUNNING';
+          if (isRunning) anyRunning = true;
+
+          switch (job.name) {
+            case 'Photo_index':
+              if (prevIndexingRunning.current && !isRunning) {
+                notifications.show({ title: 'Indexing complete', message: 'Photo indexing has finished', color: 'green' });
+              }
+              prevIndexingRunning.current = isRunning;
+              setIndexingRunning(isRunning);
+              break;
+            case 'Thumbnail_regenerate':
+              if (prevRegenerateRunning.current && !isRunning) {
+                notifications.show({ title: 'Regeneration complete', message: 'Thumbnail regeneration has finished', color: 'green' });
+              }
+              prevRegenerateRunning.current = isRunning;
+              setRegenerateRunning(isRunning);
+              break;
+            case 'AI_analysis':
+              if (prevAnalysisRunning.current && !isRunning) {
+                notifications.show({ title: 'Analysis complete', message: 'AI photo analysis has finished', color: 'green' });
+              }
+              prevAnalysisRunning.current = isRunning;
+              setAnalysisRunning(isRunning);
+              break;
+          }
+        }
+
+        if (!anyRunning && intervalId) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+      } catch {
+        // Silently ignore polling errors
+      }
+    };
+
+    fetchJobStatuses();
+    intervalId = setInterval(fetchJobStatuses, 10000);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [props.photosAdapter]);
 
   const handleValueChange = useCallback((setting: Setting, field: keyof Setting, value: string) => {
     setSettings(prev => prev.map(s =>
@@ -269,6 +328,26 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
     }
   }, [props.photosAdapter]);
 
+  const handleStopAllJobs = useCallback(async () => {
+    try {
+      await props.photosAdapter.stopAllJobs();
+      setIndexingRunning(false);
+      setRegenerateRunning(false);
+      setAnalysisRunning(false);
+      notifications.show({
+        title: 'All jobs stopped',
+        message: 'All running jobs have been stopped',
+        color: 'orange',
+      });
+    } catch (e) {
+      notifications.show({
+        title: 'Stop failed',
+        message: e instanceof Error ? e.message : 'Failed to stop all jobs',
+        color: 'red',
+      });
+    }
+  }, [props.photosAdapter]);
+
   const handleModalSave = useCallback((key: string, value: string, friendlyName: string, category: string, description: string) => {
     const updatedSettings = settings.concat({ key, value, friendlyName, category, description });
     setSettings(updatedSettings);
@@ -341,6 +420,11 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
             </ActionIcon>
         </Flex>
         <Flex direction="row" gap="md" style={{ width: "100%", justifyContent: "right" }}>
+          {(indexingRunning || regenerateRunning || analysisRunning) && (
+            <Button onClick={handleStopAllJobs} color="red" variant="filled" leftSection={<IconPlayerStop size={16} />}>
+              Stop All Jobs
+            </Button>
+          )}
           {indexingRunning ? (
             <Button onClick={handleStopIndex} variant="outline" color="red" leftSection={<IconPlayerStop size={16} />}>
               Stop Indexing

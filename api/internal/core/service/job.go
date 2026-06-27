@@ -1,6 +1,7 @@
 package service
 
 import (
+	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 )
 
@@ -21,6 +22,10 @@ func NewJobService(repo port.JobRepository) *JobService {
 
 func (js *JobService) IsJobRunning(name string) (bool, error) {
 	return js.repo.IsJobRunning(name)
+}
+
+func (js *JobService) GetAllJobs() ([]domain.Job, error) {
+	return js.repo.GetAllJobs()
 }
 
 func (js *JobService) UpdateAllJobsStatus(status string) error {

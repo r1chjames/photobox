@@ -8,6 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	domain "gitlab.com/r1chjames/photobox/api/internal/core/domain"
 )
 
 // MockJobRepository is a mock of JobRepository interface.
@@ -45,6 +46,21 @@ func (m *MockJobRepository) CreateBaseJobs() error {
 func (mr *MockJobRepositoryMockRecorder) CreateBaseJobs() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBaseJobs", reflect.TypeOf((*MockJobRepository)(nil).CreateBaseJobs))
+}
+
+// GetAllJobs mocks base method.
+func (m *MockJobRepository) GetAllJobs() ([]domain.Job, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllJobs")
+	ret0, _ := ret[0].([]domain.Job)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllJobs indicates an expected call of GetAllJobs.
+func (mr *MockJobRepositoryMockRecorder) GetAllJobs() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllJobs", reflect.TypeOf((*MockJobRepository)(nil).GetAllJobs))
 }
 
 // IsJobRunning mocks base method.
@@ -139,6 +155,21 @@ func (m *MockJobService) CreateBaseJobs() error {
 func (mr *MockJobServiceMockRecorder) CreateBaseJobs() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBaseJobs", reflect.TypeOf((*MockJobService)(nil).CreateBaseJobs))
+}
+
+// GetAllJobs mocks base method.
+func (m *MockJobService) GetAllJobs() ([]domain.Job, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllJobs")
+	ret0, _ := ret[0].([]domain.Job)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllJobs indicates an expected call of GetAllJobs.
+func (mr *MockJobServiceMockRecorder) GetAllJobs() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllJobs", reflect.TypeOf((*MockJobService)(nil).GetAllJobs))
 }
 
 // IsJobRunning mocks base method.

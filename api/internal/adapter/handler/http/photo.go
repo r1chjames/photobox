@@ -295,6 +295,31 @@ func (ph *PhotoHandler) StopJob(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Job stop requested"})
 }
 
+func (ph *PhotoHandler) GetJobStatuses(c *gin.Context) {
+	jobs, err := ph.jobSvc.GetAllJobs()
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"jobs": jobs})
+}
+
+func (ph *PhotoHandler) StopAllJobs(c *gin.Context) {
+	ph.jobCancellersMu.Lock()
+	for jobType, cancel := range ph.jobCancellers {
+		cancel()
+		delete(ph.jobCancellers, jobType)
+	}
+	ph.jobCancellersMu.Unlock()
+
+	err := ph.jobSvc.UpdateAllJobsStatus("NOT_RUNNING")
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "All jobs stopped"})
+}
+
 func (ph *PhotoHandler) DeletePhoto(ctx *gin.Context) {
 	photoId := ctx.Param("id")
 	if photoId == "" {
