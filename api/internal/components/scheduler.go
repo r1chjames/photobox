@@ -33,6 +33,29 @@ func NewScheduler(utilityService port.UtilityService, jobService port.JobService
 }
 
 func (s *Scheduler) AddScheduledJobs() {
+	// Schedule AI analysis job to run every hour (independent of photo index setting)
+	_, err := s.cron.AddFunc("0 * * * *", func() {
+		if err := s.jobSvc.StartJobIfNotRunning("AI_analysis"); err != nil {
+			if errors.Is(err, domain.ErrJobAlreadyRunning) {
+				return
+			}
+			slog.Error("Failed to start AI analysis job", "error", err)
+			return
+		}
+		defer func() {
+			if r := recover(); r != nil {
+				slog.Error("AI analysis job panicked", "recover", r)
+			}
+			s.jobSvc.JobComplete("AI_analysis")
+		}()
+		if err := s.photoSvc.AnalyzeExistingPhotos(); err != nil {
+			slog.Error("AI analysis job failed", "error", err)
+		}
+	})
+	if err != nil {
+		slog.Error("Unable to add AI analysis job schedule", "error", err)
+	}
+
 	setting, err := s.utilSvc.GetSetting("index_frequency_cron")
 	if err != nil {
 		slog.Warn("Unable to get photo index cron expression from database, index scheduling will not be enabled")
@@ -44,24 +67,6 @@ func (s *Scheduler) AddScheduledJobs() {
 	})
 	if err != nil {
 		slog.Error("Unable to add job schedule, check CRON expression in settings", "key", setting.Key, "cron", setting.Value, "error", err)
-	}
-
-	// Schedule AI analysis job to run every hour
-	_, err = s.cron.AddFunc("0 * * * *", func() {
-		if err := s.jobSvc.StartJobIfNotRunning("AI_analysis"); err != nil {
-			if errors.Is(err, domain.ErrJobAlreadyRunning) {
-				return
-			}
-			slog.Error("Failed to start AI analysis job", "error", err)
-			return
-		}
-		defer s.jobSvc.JobComplete("AI_analysis")
-		if err := s.photoSvc.AnalyzeExistingPhotos(); err != nil {
-			slog.Error("AI analysis job failed", "error", err)
-		}
-	})
-	if err != nil {
-		slog.Error("Unable to add AI analysis job schedule", "error", err)
 	}
 
 	slog.Info("Scheduled jobs loaded", "entries", len(s.cron.Entries()))
