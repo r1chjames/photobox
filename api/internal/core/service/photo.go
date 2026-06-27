@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/buckket/go-blurhash"
@@ -416,7 +417,7 @@ func (ps *PhotoService) analyzeAndTagPhoto(photoId string, imagePath string) {
 
 	if err != nil {
 		slog.Warn("AI analysis failed", "photo", photoId, "error", err)
-		ps.recordAnalysisFailure(photoId, &startedAt, now)
+		ps.recordAnalysisFailure(photoId, &startedAt, now, err)
 		return
 	}
 
@@ -459,16 +460,26 @@ func (ps *PhotoService) analyzeAndTagPhoto(photoId string, imagePath string) {
 	slog.Info("AI analysis complete", "photo", photoId, "tags", len(allTags), "caption", analysis.Caption)
 }
 
-func (ps *PhotoService) recordAnalysisFailure(photoId string, startedAt *time.Time, attemptTime time.Time) {
+func (ps *PhotoService) recordAnalysisFailure(photoId string, startedAt *time.Time, attemptTime time.Time, err error) {
 	existing, _ := ps.photoRepo.GetPhotoAnalysis(photoId)
 	attempts := 1
 	if existing != nil {
 		attempts = existing.Attempts + 1
 	}
+	errMsg := err.Error()
+
+	// Permanent failures — not worth retrying
+	retryable := true
+	if strings.Contains(errMsg, "unknown format") {
+		retryable = false
+	}
+
 	analysis := domain.PhotoAnalysis{
 		PhotoID:       photoId,
 		Status:        "failed",
 		Attempts:      attempts,
+		ErrorMessage:  errMsg,
+		Retryable:     retryable,
 		StartedAt:     startedAt,
 		LastAttemptAt: &attemptTime,
 		UpdatedAt:     attemptTime,
@@ -502,12 +513,14 @@ func (ps *PhotoService) AnalyzeExistingPhotos() error {
 		return nil
 	}
 
-	slog.Info("Analyzing existing photos with AI", "count", len(photos))
+	slog.Info("AI analysis job started", "batch", len(photos))
 
 	// Process photos concurrently — matches OLLAMA_NUM_PARALLEL
 	const workers = 2
 	sem := make(chan struct{}, workers)
 	var wg sync.WaitGroup
+	var processed int32
+	total := int32(len(photos))
 
 	for _, photo := range photos {
 		wg.Add(1)
@@ -515,6 +528,10 @@ func (ps *PhotoService) AnalyzeExistingPhotos() error {
 		go func(p *domain.Photo) {
 			defer func() {
 				<-sem // release
+				n := atomic.AddInt32(&processed, 1)
+				if n%10 == 0 || n == total {
+					slog.Info("AI analysis progress", "done", n, "total", total)
+				}
 				wg.Done()
 			}()
 			ps.analyzeAndTagPhoto(p.ID, utils.UnescapeInvalidCharacters(p.FilesystemPath))
@@ -522,6 +539,7 @@ func (ps *PhotoService) AnalyzeExistingPhotos() error {
 	}
 
 	wg.Wait()
+	slog.Info("AI analysis job finished", "total", total)
 	return nil
 }
 

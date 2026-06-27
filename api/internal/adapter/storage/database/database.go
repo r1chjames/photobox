@@ -76,6 +76,8 @@ func (dbEnv *Env) PerformDbSetup() {
 		is_portrait BOOLEAN DEFAULT FALSE,
 		status TEXT DEFAULT 'pending',
 		attempts INTEGER DEFAULT 0,
+		error_message TEXT,
+		retryable BOOLEAN DEFAULT TRUE,
 		started_at TIMESTAMP,
 		last_attempt_at TIMESTAMP,
 		created_at TIMESTAMP,
@@ -85,10 +87,16 @@ func (dbEnv *Env) PerformDbSetup() {
 		os.Exit(1)
 	}
 
-	// Add started_at column if missing on existing tables
-	if err := dbEnv.Db.Exec(`ALTER TABLE photobox.photo_analysis ADD COLUMN IF NOT EXISTS started_at TIMESTAMP`).Error; err != nil {
-		slog.Error("Failed to add started_at column", "error", err)
-		os.Exit(1)
+	// Add columns missing on existing tables (safe to run on new tables too)
+	for _, stmt := range []string{
+		`ALTER TABLE photobox.photo_analysis ADD COLUMN IF NOT EXISTS started_at TIMESTAMP`,
+		`ALTER TABLE photobox.photo_analysis ADD COLUMN IF NOT EXISTS error_message TEXT`,
+		`ALTER TABLE photobox.photo_analysis ADD COLUMN IF NOT EXISTS retryable BOOLEAN DEFAULT TRUE`,
+	} {
+		if err := dbEnv.Db.Exec(stmt).Error; err != nil {
+			slog.Error("Failed to add column to photo_analysis", "error", err)
+			os.Exit(1)
+		}
 	}
 
 	// Create GIN indexes for full-text search
