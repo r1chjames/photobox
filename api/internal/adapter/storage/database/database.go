@@ -22,11 +22,10 @@ type Env struct {
 func InitDbConnection(appConfig *appconfig.AppConfig) *Env {
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN: appConfig.DbUrl,
-	}), &gorm.Config{
-		NamingStrategy: schema.NamingStrategy{
-			TablePrefix:   "photobox.",
-			SingularTable: false,
-		}})
+		}), &gorm.Config{
+			NamingStrategy: schema.NamingStrategy{
+				SingularTable: false,
+			}})
 
 	if err != nil {
 		slog.Error("Failed to connect database", "error", err)
