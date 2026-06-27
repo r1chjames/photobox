@@ -301,7 +301,7 @@ func (ph *PhotoHandler) GetJobStatuses(c *gin.Context) {
 		handleError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"jobs": jobs})
+	handleSuccess(c, gin.H{"jobs": jobs})
 }
 
 func (ph *PhotoHandler) StopAllJobs(c *gin.Context) {
