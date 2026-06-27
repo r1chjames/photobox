@@ -171,6 +171,16 @@ export class PhotosAdapter implements IPhotosAdapter {
     return this.restApiAdapter.postApiCall(stopPath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 
+  public getAllJobStatuses = async () => {
+    return this.restApiAdapter.getApiCall('photos/jobs',
+      this.buildHeaders(this.restApiAdapter.authHeader()), {});
+  }
+
+  public stopAllJobs = async () => {
+    return this.restApiAdapter.postApiCall('photos/jobs/stop', {},
+      this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
+
   public getThumbnailUrl = (photoId: string): string => {
     return `${this.restApiAdapter.getBaseApiPath()}/photo/thumbnail/${photoId}`;
   }

@@ -1,11 +1,15 @@
 package port
 
+import "gitlab.com/r1chjames/photobox/api/internal/core/domain"
+
 //go:generate mockgen -source=job.go -destination=mock/job.go -package=mock
 
 // JobRepository is an interface for interacting with utility-related business logic
 type JobRepository interface {
 	// IsJobRunning returns information about whether a job is currently running
 	IsJobRunning(name string) (bool, error)
+	// GetAllJobs returns all jobs
+	GetAllJobs() ([]domain.Job, error)
 	// UpdateJobStatus updates a single job
 	UpdateJobStatus(name string, status string) error
 	// UpdateAllJobsStatus sets status of all running jobs
@@ -20,6 +24,8 @@ type JobRepository interface {
 type JobService interface {
 	// IsJobRunning returns information about whether a job is currently running
 	IsJobRunning(name string) (bool, error)
+	// GetAllJobs returns all jobs
+	GetAllJobs() ([]domain.Job, error)
 	// UpdateAllJobsStatus sets status of all running jobs
 	UpdateAllJobsStatus(status string) error
 	// JobStart updates a job to RUNNING
