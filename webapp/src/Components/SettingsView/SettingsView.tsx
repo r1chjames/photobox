@@ -89,6 +89,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
   const [indexingRunning, setIndexingRunning] = useState(false);
   const [regenerateRunning, setRegenerateRunning] = useState(false);
   const [analysisRunning, setAnalysisRunning] = useState(false);
+  const [jobsLoading, setJobsLoading] = useState(true);
   const prevIndexingRunning = useRef(false);
   const prevRegenerateRunning = useRef(false);
   const prevAnalysisRunning = useRef(false);
@@ -156,6 +157,8 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
         }
       } catch (err) {
         console.error('Failed to fetch job statuses:', err);
+      } finally {
+        setJobsLoading(false);
       }
     };
 
@@ -420,37 +423,47 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
             </ActionIcon>
         </Flex>
         <Flex direction="row" gap="md" style={{ width: "100%", justifyContent: "right" }}>
-          {(indexingRunning || regenerateRunning || analysisRunning) && (
-            <Button onClick={handleStopAllJobs} color="red" variant="filled" leftSection={<IconPlayerStop size={16} />}>
-              Stop All Jobs
-            </Button>
-          )}
-          {indexingRunning ? (
-            <Button onClick={handleStopIndex} variant="outline" color="red" leftSection={<IconPlayerStop size={16} />}>
-              Stop Indexing
-            </Button>
+          {jobsLoading ? (
+            <>
+              <Skeleton height={36} width={130} radius="sm" />
+              <Skeleton height={36} width={160} radius="sm" />
+              <Skeleton height={36} width={150} radius="sm" />
+            </>
           ) : (
-            <Button onClick={handleIndex} variant="outline">
-              Re-index Photos
-            </Button>
-          )}
-          {regenerateRunning ? (
-            <Button onClick={handleStopRegenerate} color="red" leftSection={<IconPlayerStop size={16} />}>
-              Stop Regeneration
-            </Button>
-          ) : (
-            <Button onClick={handleRegenerateThumbnails}>
-              Regenerate Thumbnails
-            </Button>
-          )}
-          {analysisRunning ? (
-            <Button onClick={handleStopAnalysis} color="red" leftSection={<IconPlayerStop size={16} />}>
-              Stop Analysis
-            </Button>
-          ) : (
-            <Button onClick={handleAnalyze} variant="outline" color="teal">
-              Analyze Photos
-            </Button>
+            <>
+              {(indexingRunning || regenerateRunning || analysisRunning) && (
+                <Button onClick={handleStopAllJobs} color="red" variant="filled" leftSection={<IconPlayerStop size={16} />}>
+                  Stop All Jobs
+                </Button>
+              )}
+              {indexingRunning ? (
+                <Button onClick={handleStopIndex} variant="outline" color="red" leftSection={<IconPlayerStop size={16} />}>
+                  Stop Indexing
+                </Button>
+              ) : (
+                <Button onClick={handleIndex} variant="outline">
+                  Re-index Photos
+                </Button>
+              )}
+              {regenerateRunning ? (
+                <Button onClick={handleStopRegenerate} color="red" leftSection={<IconPlayerStop size={16} />}>
+                  Stop Regeneration
+                </Button>
+              ) : (
+                <Button onClick={handleRegenerateThumbnails}>
+                  Regenerate Thumbnails
+                </Button>
+              )}
+              {analysisRunning ? (
+                <Button onClick={handleStopAnalysis} color="red" leftSection={<IconPlayerStop size={16} />}>
+                  Stop Analysis
+                </Button>
+              ) : (
+                <Button onClick={handleAnalyze} variant="outline" color="teal">
+                  Analyze Photos
+                </Button>
+              )}
+            </>
           )}
         </Flex>
     </div>
