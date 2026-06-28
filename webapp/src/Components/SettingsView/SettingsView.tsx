@@ -154,8 +154,8 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
           clearInterval(intervalId);
           intervalId = null;
         }
-      } catch {
-        // Silently ignore polling errors
+      } catch (err) {
+        console.error('Failed to fetch job statuses:', err);
       }
     };
 
