@@ -229,3 +229,68 @@ func TestCreateBaseJobs_AlreadyExists(t *testing.T) {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 }
+
+// TestGetAllJobs_Success tests retrieving all jobs
+func TestGetAllJobs_Success(t *testing.T) {
+	env, mock, dbConn := database.MockDB(t)
+	defer dbConn.Close()
+
+	rows := sqlmock.NewRows([]string{"name", "status", "last_run"}).
+		AddRow("Photo_index", "RUNNING", time.Now()).
+		AddRow("Thumbnail_regenerate", "NOT_RUNNING", time.Now()).
+		AddRow("AI_analysis", "NOT_RUNNING", time.Now())
+
+	database.ShouldReturnRowsForQuery(mock, `SELECT \* FROM "jobs"`, rows)
+
+	repo := NewJobRepository(env)
+	jobs, err := repo.GetAllJobs()
+
+	if err != nil {
+		t.Errorf("error was not expected while getting all jobs: %s", err)
+	}
+
+	if len(jobs) != 3 {
+		t.Errorf("expected 3 jobs, got %d", len(jobs))
+	}
+
+	if jobs[0].Name != "Photo_index" || jobs[0].Status != "RUNNING" {
+		t.Errorf("expected Photo_index/RUNNING, got %s/%s", jobs[0].Name, jobs[0].Status)
+	}
+
+	if jobs[1].Name != "Thumbnail_regenerate" || jobs[1].Status != "NOT_RUNNING" {
+		t.Errorf("expected Thumbnail_regenerate/NOT_RUNNING, got %s/%s", jobs[1].Name, jobs[1].Status)
+	}
+
+	if jobs[2].Name != "AI_analysis" || jobs[2].Status != "NOT_RUNNING" {
+		t.Errorf("expected AI_analysis/NOT_RUNNING, got %s/%s", jobs[2].Name, jobs[2].Status)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
+
+// TestGetAllJobs_Empty tests retrieving all jobs when none exist
+func TestGetAllJobs_Empty(t *testing.T) {
+	env, mock, dbConn := database.MockDB(t)
+	defer dbConn.Close()
+
+	rows := sqlmock.NewRows([]string{"name", "status", "last_run"})
+
+	database.ShouldReturnRowsForQuery(mock, `SELECT \* FROM "jobs"`, rows)
+
+	repo := NewJobRepository(env)
+	jobs, err := repo.GetAllJobs()
+
+	if err != nil {
+		t.Errorf("error was not expected while getting all jobs: %s", err)
+	}
+
+	if len(jobs) != 0 {
+		t.Errorf("expected 0 jobs, got %d", len(jobs))
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}

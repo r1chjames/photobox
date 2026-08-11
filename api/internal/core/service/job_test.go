@@ -18,6 +18,14 @@ func (m *MockJobRepository) IsJobRunning(name string) (bool, error) {
 	return args.Bool(0), args.Error(1)
 }
 
+func (m *MockJobRepository) GetAllJobs() ([]domain.Job, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.Job), args.Error(1)
+}
+
 func (m *MockJobRepository) UpdateAllJobsStatus(status string) error {
 	args := m.Called(status)
 	return args.Error(0)
@@ -295,6 +303,67 @@ func TestCreateBaseJobs(t *testing.T) {
 			err := service.CreateBaseJobs()
 
 			tt.validate(t, err)
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
+// TestGetAllJobs tests retrieving all jobs
+func TestGetAllJobs(t *testing.T) {
+	tests := []struct {
+		name          string
+		mockSetup     func(*MockJobRepository)
+		expectedJobs  []domain.Job
+		expectedError error
+		validate      func(*testing.T, []domain.Job, error)
+	}{
+		{
+			name: "success returning jobs",
+			mockSetup: func(m *MockJobRepository) {
+				jobs := []domain.Job{
+					{Name: "Photo_index", Status: "RUNNING"},
+					{Name: "Thumbnail_regenerate", Status: "NOT_RUNNING"},
+				}
+				m.On("GetAllJobs").Return(jobs, nil)
+			},
+			expectedJobs: []domain.Job{
+				{Name: "Photo_index", Status: "RUNNING"},
+				{Name: "Thumbnail_regenerate", Status: "NOT_RUNNING"},
+			},
+			expectedError: nil,
+			validate: func(t *testing.T, jobs []domain.Job, err error) {
+				assert.NoError(t, err)
+				assert.Len(t, jobs, 2)
+				assert.Equal(t, "Photo_index", jobs[0].Name)
+				assert.Equal(t, "RUNNING", jobs[0].Status)
+				assert.Equal(t, "Thumbnail_regenerate", jobs[1].Name)
+				assert.Equal(t, "NOT_RUNNING", jobs[1].Status)
+			},
+		},
+		{
+			name: "error returning nil jobs",
+			mockSetup: func(m *MockJobRepository) {
+				m.On("GetAllJobs").Return(nil, domain.ErrInternal)
+			},
+			expectedJobs:  nil,
+			expectedError: domain.ErrInternal,
+			validate: func(t *testing.T, jobs []domain.Job, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, domain.ErrInternal, err)
+				assert.Nil(t, jobs)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := new(MockJobRepository)
+			tt.mockSetup(mockRepo)
+
+			service := NewJobService(mockRepo)
+			jobs, err := service.GetAllJobs()
+
+			tt.validate(t, jobs, err)
 			mockRepo.AssertExpectations(t)
 		})
 	}

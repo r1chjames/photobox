@@ -246,6 +246,14 @@ func (m *MockJobService) IsJobRunning(name string) (bool, error) {
 	return args.Bool(0), args.Error(1)
 }
 
+func (m *MockJobService) GetAllJobs() ([]domain.Job, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.Job), args.Error(1)
+}
+
 func (m *MockJobService) UpdateAllJobsStatus(status string) error {
 	args := m.Called(status)
 	return args.Error(0)
@@ -668,4 +676,110 @@ func TestPhotoHandler_GetGeodata_Success(t *testing.T) {
 	assert.Equal(t, "photo1", response.Data[0].ID)
 
 	mockPhotoSvc.AssertExpectations(t)
+}
+
+// TestGetJobStatuses_Success tests successful retrieval of all job statuses
+func TestGetJobStatuses_Success(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockPhotoSvc := new(MockPhotoService)
+	mockJobSvc := new(MockJobService)
+	handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+	mockJobSvc.On("GetAllJobs").Return([]domain.Job{{Name: "Photo_index", Status: "RUNNING"}}, nil)
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/jobs/statuses", nil)
+
+	handler.GetJobStatuses(ctx)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response struct {
+		Success bool `json:"success"`
+		Data    struct {
+			Jobs []domain.Job `json:"jobs"`
+		} `json:"data"`
+	}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.True(t, response.Success)
+	assert.Len(t, response.Data.Jobs, 1)
+	assert.Equal(t, "Photo_index", response.Data.Jobs[0].Name)
+	assert.Equal(t, "RUNNING", response.Data.Jobs[0].Status)
+
+	mockJobSvc.AssertExpectations(t)
+}
+
+// TestGetJobStatuses_Error tests error when GetAllJobs fails
+func TestGetJobStatuses_Error(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockPhotoSvc := new(MockPhotoService)
+	mockJobSvc := new(MockJobService)
+	handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+	mockJobSvc.On("GetAllJobs").Return(nil, domain.ErrInternal)
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/jobs/statuses", nil)
+
+	handler.GetJobStatuses(ctx)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+
+	mockJobSvc.AssertExpectations(t)
+}
+
+// TestStopAllJobs_Success tests successfully stopping all jobs
+func TestStopAllJobs_Success(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockPhotoSvc := new(MockPhotoService)
+	mockJobSvc := new(MockJobService)
+	handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+	mockJobSvc.On("UpdateAllJobsStatus", "NOT_RUNNING").Return(nil)
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+
+	ctx.Request = httptest.NewRequest(http.MethodPost, "/jobs/stop", nil)
+
+	handler.StopAllJobs(ctx)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, "All jobs stopped", response["message"])
+
+	mockJobSvc.AssertExpectations(t)
+}
+
+// TestStopAllJobs_Error tests error when stopping all jobs fails
+func TestStopAllJobs_Error(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockPhotoSvc := new(MockPhotoService)
+	mockJobSvc := new(MockJobService)
+	handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+	mockJobSvc.On("UpdateAllJobsStatus", "NOT_RUNNING").Return(domain.ErrInternal)
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+
+	ctx.Request = httptest.NewRequest(http.MethodPost, "/jobs/stop", nil)
+
+	handler.StopAllJobs(ctx)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+
+	mockJobSvc.AssertExpectations(t)
 }

@@ -55,6 +55,14 @@ func (m *MockJobServiceFS) IsJobRunning(jobName string) (bool, error) {
 	return args.Bool(0), args.Error(1)
 }
 
+func (m *MockJobServiceFS) GetAllJobs() ([]domain.Job, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.Job), args.Error(1)
+}
+
 func (m *MockJobServiceFS) UpdateJobStatus(jobName, status string) error {
 	args := m.Called(jobName, status)
 	return args.Error(0)
