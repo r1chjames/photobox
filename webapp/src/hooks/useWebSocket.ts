@@ -2,6 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
 
+export interface WSCloseInfo {
+    code: number;
+    reason: string;
+    wasClean: boolean;
+}
+
 interface WSEvent {
     type: string;
     payload: unknown;
@@ -36,6 +42,7 @@ function wsUrl(apiBaseUrl: string, token: string): string {
  */
 export function useWebSocket(apiBaseUrl: string, token: string | null) {
     const [status, setStatus] = useState<ConnectionStatus>('disconnected');
+    const [lastClose, setLastClose] = useState<WSCloseInfo | null>(null);
     const listenersRef = useRef<Map<string, Set<EventListener>>>(new Map());
     const wsRef = useRef<WebSocket | null>(null);
     const reconnectAttemptRef = useRef(0);
@@ -88,9 +95,15 @@ export function useWebSocket(apiBaseUrl: string, token: string | null) {
             }
         };
 
-        socket.onclose = () => {
+        socket.onclose = (event: CloseEvent) => {
             if (!mountedRef.current) return;
             setStatus('disconnected');
+            setLastClose({code: event.code, reason: event.reason, wasClean: event.wasClean});
+            // Surface close diagnostics so transient drops vs. server-side
+            // issues can be distinguished (1006 = abnormal closure, no frame).
+            console.warn(
+                `[useWebSocket] disconnected (code=${event.code}, reason="${event.reason}", wasClean=${event.wasClean})`
+            );
             wsRef.current = null;
 
             // Auto-reconnect with exponential backoff
@@ -102,8 +115,9 @@ export function useWebSocket(apiBaseUrl: string, token: string | null) {
             reconnectTimerRef.current = setTimeout(connect, delay);
         };
 
-        socket.onerror = () => {
+        socket.onerror = (event: Event) => {
             // onclose will fire after onerror, so reconnect is handled there
+            console.warn('[useWebSocket] websocket error', event);
         };
 
         wsRef.current = socket;
@@ -127,5 +141,5 @@ export function useWebSocket(apiBaseUrl: string, token: string | null) {
         };
     }, [connect, token]);
 
-    return { status, addEventListener };
+    return { status, lastClose, addEventListener };
 }
