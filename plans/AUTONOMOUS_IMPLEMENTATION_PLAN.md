@@ -17,6 +17,7 @@ This document defines how Hermes (the AI agent) autonomously implements Photobox
 | GitLab API | `r1chjames/kubernetes-helm-charts` | Update Helm chart when deployment changes needed |
 | Terminal | Full Linux environment | Build, test, run docker-compose, run CI locally |
 | Docker | Available (or installable) | Run local dev environment for validation |
+| OpenCode harness | oh-my-opencode-slim + chrome-devtools MCP (project config) | Multi-agent orchestration + browser-based UI verification (see AGENTS.md) |
 | Obsidian notes | `/opt/data/obsidian-code/` | Reference project docs and decisions |
 
 ### What Hermes Needs From Rich

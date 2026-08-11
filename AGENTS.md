@@ -26,6 +26,19 @@ feature/*  ──PR──▶  develop  ──(Rich)──▶  main
 - **K3s**: cluster credentials are in scope — use for Layer 4 deployment validation.
 - **Secrets**: never commit tokens, kubeconfigs, or credentials; never echo secrets into logs, issues, or PRs.
 
+## Development Harness (opencode + oh-my-opencode-slim + chrome-devtools MCP)
+
+This repo ships a project-level opencode harness in `opencode.json` and `.opencode/oh-my-opencode-slim.json`. Opening the repo with opencode auto-loads it:
+
+- **oh-my-opencode-slim** — multi-agent orchestration: `orchestrator` (default agent) delegates to `explorer`, `librarian`, `oracle`, `designer`, `fixer`, and `council` subagents.
+- **chrome-devtools MCP** — browser automation for UI verification (see Testing Changes). Granted to `orchestrator`, `designer`, and `fixer`.
+
+To run:
+1. `opencode` from the repo root — the plugin and chrome-devtools MCP are declared in project config and resolved automatically.
+2. Verify the MCP is live: `opencode mcp list` → `chrome-devtools`.
+3. Fresh environment only: `bunx oh-my-opencode-slim@latest install --no-tui --skills=yes` registers the global preset file and bundled skills, then restart opencode.
+4. Switch agents with `Tab`; switch model presets with `/preset` (active preset: `opencode-go`).
+
 ## Implementing an Issue
 
 1. Read the full plan docs (above) and the relevant per-issue validation recipe.
