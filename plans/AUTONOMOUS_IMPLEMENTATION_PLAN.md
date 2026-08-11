@@ -104,8 +104,13 @@ docker compose -f docker-compose.local.yml up --build -d
 # Wait for health
 docker compose -f docker-compose.local.yml ps  # All containers healthy
 
-# Run E2E validation (see §3)
-# ... curl commands, Playwright tests, manual verification ...
+# Storybook: new/changed React components need co-located stories
+cd webapp && npm run build-storybook  # Must pass
+
+# Browser verification via chrome-devtools MCP:
+# - navigate to the feature and exercise the user flow end-to-end
+# - list_console_messages -> no errors
+# - take_screenshot -> attach to PR as evidence
 
 # Cleanup
 docker compose -f docker-compose.local.yml down -v
@@ -114,8 +119,10 @@ docker compose -f docker-compose.local.yml down -v
 **Pass criteria**:
 - All containers start and pass health checks
 - Feature works end-to-end (upload → process → view)
-- No console errors in browser
+- New/changed React components have Storybook stories; `npm run build-storybook` passes
+- Browser-verified via chrome-devtools MCP with no console errors
 - API returns expected responses
+- Screenshot of the feature working attached to the PR
 
 ### Layer 4: K3s Deployment Validation (Required for infra/deployment changes)
 **When**: Any issue that touches Helm chart, Dockerfile, or deployment config
@@ -334,7 +341,7 @@ $ curl -s http://localhost:8080/api/health | jq
   "version": "1.2.3"
 }
 
-# UI validation (screenshot or video)
+# UI validation (chrome-devtools MCP + Storybook)
 # [Attach screenshot showing the feature working]
 ```
 

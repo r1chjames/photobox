@@ -273,7 +273,8 @@ $ curl -s http://localhost:8080/api/health | jq
 [output]
 
 # UI validation
-[Screenshot or description of manual verification]
+$ npm run build-storybook   # Storybook stories for new/changed components
+[Screenshot of the feature working — required for UI PRs]
 ```
 
 **Result**: ✅ PASS / ❌ FAIL / ⏭️ SKIPPED (not applicable)
