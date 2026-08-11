@@ -22,15 +22,14 @@ This document defines how Hermes (the AI agent) autonomously implements Photobox
 ### What Hermes Needs From Rich
 | Resource | Status | Notes |
 |----------|--------|-------|
-| K3s cluster access | ❓ Unknown | Needed for deployment validation (Helm/ArgoCD) |
+| K3s cluster access | ✅ Available | K3s credentials are in scope — Layer 4 validation can run against the real cluster |
 | ArgoCD sync trigger | ❓ Unknown | How to trigger a sync after Helm chart changes |
 | Test photo library | ❓ Unknown | Sample photos for integration testing |
-| Approval workflow | ❓ Proposed | See §5 below |
+| Approval workflow | ✅ Confirmed | See §5 below |
 
 ### Action Items for Rich
-1. **Confirm K3s access**: Can Hermes SSH/kubectl into the cluster, or should deployment validation be limited to `helm template` + `helm lint`?
-2. **ArgoCD sync**: Does pushing to `main` on `kubernetes-helm-charts` auto-sync via ArgoCD, or is a manual sync needed?
-3. **Test data**: Should Hermes generate test photos, or is there an existing test library?
+1. **ArgoCD sync**: Does pushing to `main` on `kubernetes-helm-charts` auto-sync via ArgoCD, or is a manual sync needed?
+2. **Test data**: Should Hermes generate test photos, or is there an existing test library?
 
 ---
 
@@ -220,22 +219,31 @@ Each issue type has a specific validation recipe. Below are the patterns for the
    - helm lint + helm template
    - Push to kubernetes-helm-charts if needed
    ↓
-8. Hermes opens PR
+8. Hermes opens PR against `develop`
    - Links to issue
    - Describes changes
    - Includes validation evidence (test output, screenshots)
    ↓
-9. Rich reviews PR
-   - Approve / request changes
+9. Hermes merges PR into `develop`
+   - Rich may review / request changes first if a checkpoint is wanted
+   - Direct pushes to `develop` are blocked by the `Protect develop` ruleset
    ↓
-10. Hermes addresses feedback
-    ↓
-11. Rich merges PR
-    ↓
-12. Hermes updates issue status
+10. Hermes updates issue status
     - Closes issue or moves to "Done"
     - Updates Obsidian notes if needed
 ```
+
+### Branch Flow (enforced by repo rulesets)
+
+```
+feature/*  ──PR──▶  develop  ──(Rich)──▶  main
+ (agent)           (agent merges)      (Rich, batched stable releases)
+```
+
+- **feature → develop**: Agent-owned. All changes land via pull requests; the `Protect develop` ruleset blocks direct pushes to `develop`.
+- **develop → main**: Rich-owned. The `Protect main` ruleset grants Rich the sole bypass — only Rich can update `main`.
+- **No agent ever pushes to `main`** — enforced at the GitHub ruleset level, not by convention.
+- `develop → main` merges happen in batches when a stable release is wanted.
 
 ### Branch Naming Convention
 ```
@@ -266,18 +274,18 @@ Closes #92
 - Rich reviews and merges at convenience
 - Hermes can merge their own PRs if Rich grants permission
 
-### Option B: Checkpoint Approval (Recommended)
+### Option B: Checkpoint Approval (Confirmed)
 - Hermes implements and validates locally
-- Hermes opens PR with validation evidence
-- Rich reviews before merge
-- Hermes cannot merge their own PRs
+- Hermes opens PR to `develop` with validation evidence
+- Hermes merges their own PR into `develop` after validation passes
+- Rich reviews at the release boundary and merges `develop` → `main` in batches
 
 ### Option C: Issue-by-Issue Approval
 - Rich selects which issues to implement each session
 - Hermes implements selected issues only
 - Rich reviews each PR before merge
 
-**Recommendation**: Start with **Option B**. Rich maintains control over what ships, but Hermes does the heavy lifting.
+**Recommendation**: **Option B is confirmed.** Hermes owns `feature → develop` (via PRs); Rich owns `develop → main` and reviews at release time. See the Branch Flow in §4.
 
 ---
 
@@ -409,11 +417,10 @@ At the end of each autonomous session, Hermes reports:
 3. ✅ Hermes sets up local dev environment (docker-compose)
 4. ✅ Hermes implements first issue
 5. ✅ Hermes validates (Layers 1-3)
-6. ✅ Hermes opens PR
-7. ✅ Rich reviews and provides feedback
-8. ✅ Hermes iterates based on feedback
-9. ✅ Rich merges
-10. ✅ Hermes moves to next issue
+6. ✅ Hermes opens PR against `develop`
+7. ✅ Hermes merges PR into `develop`
+8. ✅ Rich reviews at release time and merges `develop` → `main`
+9. ✅ Hermes moves to next issue
 
 ### Recommended First Issues (Quick Wins)
 | Issue | Why Start Here |
@@ -427,13 +434,11 @@ At the end of each autonomous session, Hermes reports:
 
 ## 10. Open Questions for Rich
 
-1. **K3s access**: Can Hermes SSH/kubectl into the cluster for Layer 4 validation?
-2. **ArgoCD sync**: Does pushing to `kubernetes-helm-charts` auto-sync, or manual?
-3. **Test data**: Should Hermes generate test photos, or use existing library?
-4. **Approval workflow**: Option A, B, or C?
-5. **First issues**: Which 2-3 issues should Hermes tackle first?
-6. **Session length**: How long should each autonomous session run? (1 hour? 4 hours? Until done?)
-7. **Communication**: Should Hermes report progress mid-session, or only at the end?
+1. **ArgoCD sync**: Does pushing to `kubernetes-helm-charts` auto-sync, or manual?
+2. **Test data**: Should Hermes generate test photos, or use existing library?
+3. **First issues**: Which 2-3 issues should Hermes tackle first?
+4. **Session length**: How long should each autonomous session run? (1 hour? 4 hours? Until done?)
+5. **Communication**: Should Hermes report progress mid-session, or only at the end?
 
 ---
 

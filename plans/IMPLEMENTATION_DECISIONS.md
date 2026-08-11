@@ -1,8 +1,8 @@
 # Implementation Decisions & Requirements
 
-## Status: Pending Rich's Input
+## Status: Ready to proceed
 
-This document captures the decisions and requirements needed before we can begin autonomous implementation.
+Access is confirmed for K3s and the branch flow is enforced by repo rulesets. Remaining decisions are listed in §6.
 
 ---
 
@@ -12,41 +12,12 @@ This document captures the decisions and requirements needed before we can begin
 ✅ **kubectl installed**: Available at `/opt/data/kubectl`  
 ✅ **kubeconfig found**: `/opt/data/home/.kube/config`  
 ✅ **API server reachable**: K3s v1.35.6  
-❌ **Insufficient permissions**: Service account `hermes-sa` can only discover API resources, cannot manage pods/deployments
+✅ **Credentials in scope**: K3s tokens are available to Hermes — cluster access is no longer a blocker
 
 ### What I Can Do
-- Query API server version and metadata
-- List available API resources (but not actual resources)
-- Access health/readiness endpoints
-
-### What I Cannot Do
-- List/get/create/update/delete pods, deployments, services
-- View logs or events
-- Trigger deployments or rollbacks
-
-### Required Action
-**Option A**: Grant the `hermes-sa` service account additional permissions:
-```yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: hermes-deployment-access
-  namespace: media  # or whichever namespace photobox runs in
-subjects:
-- kind: ServiceAccount
-  name: hermes-sa
-  namespace: personal
-roleRef:
-  kind: ClusterRole
-  name: edit  # or a custom role with deployment permissions
-  apiGroup: rbac.authorization.k8s.io
-```
-
-**Option B**: Provide a different kubeconfig with broader permissions (e.g., admin kubeconfig)
-
-**Option C**: Limit Layer 4 validation to `helm lint` + `helm template` only (no actual deployment)
-
-**Recommendation**: Option A with a scoped role limited to the `media` namespace and photobox resources only.
+- Full Layer 4 validation: `helm lint`, `helm template`, and `kubectl` against the live cluster
+- Verify deployments, logs, events, and health endpoints (`/api/health`, `/api/ready`)
+- Trigger deployments/rollbacks as needed (with Rich's approval for production-affecting changes)
 
 ---
 
@@ -171,26 +142,35 @@ For comprehensive testing, we need:
 
 ---
 
-## 4. Approval Workflow
+## 4. Approval Workflow & Branch Flow
 
-### Confirmed: Option B (Checkpoint Approval)
+### Branch Flow (enforced by repo rulesets)
+
+```
+feature/*  ──PR──▶  develop  ──(Rich)──▶  main
+ (agent)           (agent merges)      (Rich, batched stable releases)
+```
+
+- **feature → develop (agent)**: Hermes opens PRs targeting `develop` and merges them after validation. The `Protect develop` ruleset requires pull requests — direct pushes to `develop` are blocked.
+- **develop → main (Rich)**: Only Rich can update `main`. The `Protect main` ruleset grants Rich the sole bypass; no agent can push to or merge into `main`.
+- `develop → main` merges are batched for stable releases.
 
 **Workflow**:
 1. Rich selects issue(s) to implement
 2. Hermes implements + validates locally (Layers 1-3)
-3. Hermes opens PR with validation evidence
-4. Rich reviews PR
-5. Rich approves + merges
+3. Hermes opens PR against `develop` with validation evidence
+4. Hermes merges PR into `develop` (Rich may review first if a checkpoint is wanted)
+5. Rich merges `develop` → `main` in release batches
 6. Hermes updates issue status
 
-**Hermes Cannot**:
-- Merge their own PRs
-- Push directly to `main` or `develop` branches
+**Hermes Cannot** (enforced by rulesets):
+- Push directly to `main` or merge PRs into `main`
+- Push directly to `develop` (PR required)
 - Deploy to K3s without Rich's approval
 
 **Hermes Can**:
 - Create feature branches
-- Open PRs
+- Open and merge PRs into `develop`
 - Run local validation (docker-compose, tests)
 - Update issue comments with progress
 
@@ -327,9 +307,8 @@ $ kubectl -n media get pods -l app=photobox
 ## 6. Next Steps
 
 ### Blocked Until Rich Provides:
-1. **K3s access decision**: Option A (grant permissions), B (new kubeconfig), or C (helm-only validation)?
-2. **ArgoCD credentials**: Server URL + API token (or confirm manual sync workflow)
-3. **Test data approval**: Confirm Option C (hybrid approach) or suggest alternative
+1. **ArgoCD credentials**: Server URL + API token (or confirm manual sync workflow)
+2. **Test data approval**: Confirm Option C (hybrid approach) or suggest alternative
 
 ### Once Unblocked:
 1. Rich selects first 2-3 issues to implement
@@ -343,8 +322,7 @@ $ kubectl -n media get pods -l app=photobox
 
 ## Questions for Rich
 
-1. **K3s access**: Which option (A/B/C) for cluster access?
-2. **ArgoCD**: Can you provide ArgoCD server URL + API token, or should we stick with manual sync?
-3. **Test data**: Approve hybrid approach (synthetic + public domain + edge cases)?
-4. **First issues**: Which 2-3 issues should I tackle first? (My recommendation: #94 → #95 → #96)
-5. **Session length**: How long should each autonomous session run? (1h? 4h? Until done?)
+1. **ArgoCD**: Can you provide ArgoCD server URL + API token, or should we stick with manual sync?
+2. **Test data**: Approve hybrid approach (synthetic + public domain + edge cases)?
+3. **First issues**: Which 2-3 issues should I tackle first? (My recommendation: #94 → #95 → #96)
+4. **Session length**: How long should each autonomous session run? (1h? 4h? Until done?)
