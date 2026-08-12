@@ -6,15 +6,16 @@ metadata:
     {{- include "photobox.labels" . | nindent 4 }}
 data:
   DB_HOST: {{ include "photobox.database.host" . | quote }}
-  DB_PORT: {{ .Values.api.env.DB_PORT | quote }}
-  DB_USER: {{ .Values.api.env.DB_USER | quote }}
-  DB_NAME: {{ .Values.api.env.DB_NAME | quote }}
-  PHOTO_DIR: {{ .Values.api.env.PHOTO_DIR | quote }}
-  API_BASE_PATH: {{ .Values.api.env.API_BASE_PATH | quote }}
-  AI_ENABLED: {{ .Values.api.env.AI_ENABLED | quote }}
-  OLLAMA_HOST: {{ default (printf "http://%s-ollama:%d" (include "photobox.fullname" .) (int .Values.ollama.service.port)) .Values.api.env.OLLAMA_HOST | quote }}
-  OLLAMA_MODEL: {{ .Values.api.env.OLLAMA_MODEL | quote }}
-  DEFAULT_ADMIN_USERNAME: {{ .Values.api.env.DEFAULT_ADMIN_USERNAME | quote }}
-  CORS_ALLOWED_ORIGINS: {{ .Values.api.env.CORS_ALLOWED_ORIGINS | quote }}
-  TOKEN_DURATION: {{ .Values.api.env.TOKEN_DURATION | quote }}
-  CACHE_ENABLED: {{ .Values.api.env.CACHE_ENABLED | quote }}
+  DB_PORT: {{ .Values.env.DB_PORT | quote }}
+  DB_USER: {{ .Values.env.DB_USER | quote }}
+  DB_NAME: {{ .Values.env.DB_NAME | quote }}
+  PHOTO_DIR: {{ .Values.env.PHOTO_DIR | quote }}
+  API_BASE_PATH: {{ .Values.env.API_BASE_PATH | quote }}
+  AI_ENABLED: {{ .Values.env.AI_ENABLED | quote }}
+  OLLAMA_HOST: {{ default (printf "http://%s-ollama:%d" (include "photobox.fullname" .) (int .Values.ollama.service.port)) .Values.env.OLLAMA_HOST | quote }}
+  OLLAMA_MODEL: {{ .Values.env.OLLAMA_MODEL | quote }}
+  DEFAULT_ADMIN_USERNAME: {{ .Values.env.DEFAULT_ADMIN_USERNAME | quote }}
+  CORS_ALLOWED_ORIGINS: {{ .Values.env.CORS_ALLOWED_ORIGINS | quote }}
+  TOKEN_DURATION: {{ .Values.env.TOKEN_DURATION | quote }}
+  CACHE_ENABLED: {{ .Values.env.CACHE_ENABLED | quote }}
+  CACHE_HOST: {{ .Values.env.CACHE_HOST | quote }}

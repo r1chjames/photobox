@@ -15,6 +15,7 @@ type AppConfig struct {
 	PhotoDir           string
 	ApiBasePath        string
 	DbUrl              string
+	DbPassword         string
 	ResetSettings      bool
 	DebugMode          bool
 	Timezone           *time.Location
@@ -42,6 +43,25 @@ type AppConfig struct {
 }
 
 func New() *AppConfig {
+	cfg := load()
+
+	if err, warnings := cfg.validate(); err != nil {
+		slog.Error("invalid configuration", "error", err)
+		os.Exit(1)
+	} else {
+		for _, w := range warnings {
+			slog.Warn("configuration warning", "warning", w)
+		}
+	}
+
+	cfg.logEffectiveConfig()
+
+	return cfg
+}
+
+// load parses environment variables into an AppConfig without validating or
+// exiting. It is exported for tests and called by New.
+func load() *AppConfig {
 	dbHost := utils.GetEnv("DB_HOST", "localhost")
 	dbPort := utils.GetEnv("DB_PORT", "5432")
 	dbUser := utils.GetEnv("DB_USER", "photobox")
@@ -54,15 +74,14 @@ func New() *AppConfig {
 	debugMode, _ := strconv.ParseBool(utils.GetEnv("DEBUG_MODE", "false"))
 	timezone, _ := time.LoadLocation(utils.GetEnv("TIMEZONE", "Europe/London"))
 
-	token := utils.GetEnv("TOKEN", "")
+	// TOKEN and DEFAULT_ADMIN_PASSWORD are required and validated below; use
+	// os.Getenv here so a missing value produces a clean aggregated error
+	// rather than a panic from utils.GetEnv.
+	token := os.Getenv("TOKEN")
 	tokenDuration, _ := time.ParseDuration(utils.GetEnv("TOKEN_DURATION", "1h"))
 
 	adminUsername := utils.GetEnv("DEFAULT_ADMIN_USERNAME", "admin")
-	adminPassword := utils.GetEnv("DEFAULT_ADMIN_PASSWORD", "")
-	if adminPassword == "" {
-		slog.Error("DEFAULT_ADMIN_PASSWORD environment variable must be set")
-		os.Exit(1)
-	}
+	adminPassword := os.Getenv("DEFAULT_ADMIN_PASSWORD")
 
 	// Parse CORS allowed origins - comma-separated list
 	corsOriginsStr := utils.GetEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")
@@ -102,10 +121,11 @@ func New() *AppConfig {
 		indexWorkers = runtime.NumCPU()
 	}
 
-	return &AppConfig{
+	cfg := &AppConfig{
 		PhotoDir:           utils.GetEnv("PHOTO_DIR", "/photos"),
 		ApiBasePath:        utils.GetEnv("API_BASE_PATH", "/api"),
 		DbUrl:              dbURL,
+		DbPassword:         dbPassword,
 		ResetSettings:      resetSettings,
 		DebugMode:          debugMode,
 		Timezone:           timezone,
@@ -131,4 +151,6 @@ func New() *AppConfig {
 		S3UseSSL:           s3UseSSL,
 		PhotoIndexWorkers:  indexWorkers,
 	}
+
+	return cfg
 }

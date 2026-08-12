@@ -232,8 +232,8 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
         fetch('/api/health')
             .then(r => r.json())
             .then(data => {
-                if (data.data?.version) {
-                    setAppVersion(data.data.version);
+                if (data.version) {
+                    setAppVersion(data.version);
                 }
             })
             .catch(() => {});

@@ -5,13 +5,107 @@ on:
     branches: [main, develop]
     tags: ['v*']
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 env:
   REGISTRY: ghcr.io
 
 jobs:
+  go-test:
+    name: Go unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache-dependency-path: api/go.sum
+
+      - name: Unit tests (race + coverage)
+        working-directory: api
+        run: go test -race -count=1 -coverprofile=coverage.out ./...
+
+      - name: Coverage gate (>= 70%)
+        working-directory: api
+        run: |
+          total=$(go tool cover -func=coverage.out | grep '^total:' | awk '{print $3}' | tr -d '%')
+          echo "Total Go coverage: ${total}%"
+          if awk "BEGIN{exit !($total < 70)}"; then
+            echo "Coverage ${total}% is below the 70% threshold" >&2
+            exit 1
+          fi
+
+  webapp-test:
+    name: Webapp lint + test + build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: webapp/package-lock.json
+
+      - name: Install dependencies
+        working-directory: webapp
+        run: npm ci --legacy-peer-deps
+
+      - name: Lint
+        working-directory: webapp
+        run: npm run lint
+
+      - name: Unit tests (coverage)
+        working-directory: webapp
+        run: npm run test:coverage
+
+      - name: Build
+        working-directory: webapp
+        run: npm run build
+
+  integration-test:
+    name: Integration tests (Postgres)
+    # NOTE: temporarily disabled — the integration test suite in
+    # api/test/integration does not compile against the current domain model
+    # (stale field/method names). Re-enable after the suite is repaired.
+    if: false
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: photobox_test
+          POSTGRES_PASSWORD: photobox_test
+          POSTGRES_DB: photobox_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache-dependency-path: api/go.sum
+
+      - name: Run integration tests
+        working-directory: api
+        run: go test -v -tags=integration ./test/integration/...
+
   build-and-push:
+    name: Build and push Docker image
+    needs: [go-test, webapp-test]
     runs-on: ubuntu-latest
     permissions:
       contents: read

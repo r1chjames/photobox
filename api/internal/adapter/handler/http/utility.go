@@ -21,22 +21,6 @@ func NewUtilityHandler(svc port.UtilityService, version string) *UtilityHandler 
 	}
 }
 
-func (uh *UtilityHandler) HealthCheck(ctx *gin.Context) {
-	dbStatus := "up"
-	if err := uh.svc.Ping(); err != nil {
-		dbStatus = "down"
-	}
-
-	settings, _ := uh.svc.Healthcheck()
-
-	handleSuccess(ctx, gin.H{
-		"status":   "up",
-		"database": dbStatus,
-		"settings": settings,
-		"version":  uh.version,
-	})
-}
-
 func (uh *UtilityHandler) ListAllSettings(ctx *gin.Context) {
 	resp, err := uh.svc.ListAllSettings()
 	if err != nil {

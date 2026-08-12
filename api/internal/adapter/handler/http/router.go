@@ -25,6 +25,7 @@ func NewRouter(
 	photoHandler *PhotoHandler,
 	albumHandler AlbumHandler,
 	utilityHandler UtilityHandler,
+	healthHandler *HealthHandler,
 	userHandler UserHandler,
 	searchHandler SearchHandler,
 	shareHandler ShareHandler,
@@ -76,7 +77,7 @@ func NewRouter(
 	// Dedicated rate limiter for thumbnail endpoints: 30 req/s with burst of 60
 	thumbnailLimiter := NewIPRateLimiter(30, 60)
 
-	defineResources(appConfig, router, token, authHandler, photoHandler, albumHandler, utilityHandler, userHandler, searchHandler, shareHandler, authLimiter, thumbnailLimiter, wsHandler)
+	defineResources(appConfig, router, token, authHandler, photoHandler, albumHandler, utilityHandler, healthHandler, userHandler, searchHandler, shareHandler, authLimiter, thumbnailLimiter, wsHandler)
 
 	return &Router{
 		router,
@@ -91,6 +92,7 @@ func defineResources(
 	photoHandler *PhotoHandler,
 	albumHandler AlbumHandler,
 	utilityHandler UtilityHandler,
+	healthHandler *HealthHandler,
 	userHandler UserHandler,
 	searchHandler SearchHandler,
 	shareHandler ShareHandler,
@@ -99,6 +101,14 @@ func defineResources(
 	wsHandler *WebSocketHandler) {
 
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
+
+	// Health endpoints — unauthenticated, for Kubernetes probes.
+	health := router.Group(urlBasePath)
+	{
+		health.GET("/health", healthHandler.Liveness)
+		health.GET("/ready", healthHandler.Readiness)
+		health.GET("/healthz", healthHandler.Startup)
+	}
 
 	// WebSocket endpoint — upgrades after auth
 	router.GET(fmt.Sprintf("%s/ws", urlBasePath), authMiddleware(token), wsHandler.HandleUpgrade)
@@ -189,8 +199,6 @@ func defineResources(
 	// Public shared view (no auth)
 	router.GET(fmt.Sprintf("%s/shared/:token", urlBasePath), shareHandler.GetShared)
 	router.GET(fmt.Sprintf("%s/shared/:token/resource", urlBasePath), shareHandler.GetSharedResourceData)
-
-	router.GET(fmt.Sprintf("%s/health", urlBasePath), utilityHandler.HealthCheck)
 
 	// Admin share management
 	shares := router.Group(fmt.Sprintf("%s/shares", urlBasePath)).Use(authMiddleware(token), requireRole(domain.ADMINISTRATOR))

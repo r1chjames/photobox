@@ -50,6 +50,15 @@ func NewCacheService(config appconfig.AppConfig) *CacheService {
 	return &CacheService{enabled: false, ctx: ctx}
 }
 
+// Ping reports whether the cache backend is reachable. It returns an error
+// when the cache is disabled or the backend cannot be reached.
+func (cs *CacheService) Ping() error {
+	if !cs.enabled {
+		return fmt.Errorf("cache disabled")
+	}
+	return cs.client.Ping(cs.ctx).Err()
+}
+
 func (cs *CacheService) Get(key string) (string, error) {
 	if !cs.enabled {
 		return "", fmt.Errorf("cache disabled")

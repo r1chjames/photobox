@@ -177,6 +177,12 @@ func setupHttpHandlers(
 	photoHandler := http.NewPhotoHandler(appServices.photoService, appServices.jobService)
 	albumHandler := http.NewAlbumHandler(appServices.albumService)
 	utilityHandler := http.NewUtilityHandler(appServices.utilityService, version)
+	healthHandler := http.NewHealthHandler(
+		appServices.utilityService.Ping,
+		config.PhotoDir,
+		appServices.cacheService.Ping,
+		version,
+	)
 	searchHandler := http.NewSearchHandler(appServices.photoService, appServices.albumService)
 	shareHandler := http.NewShareHandler(appServices.shareService)
 	wsHandler := http.NewWebSocketHandler(appServices.wsHub)
@@ -188,6 +194,7 @@ func setupHttpHandlers(
 		photoHandler,
 		*albumHandler,
 		*utilityHandler,
+		healthHandler,
 		*userHandler,
 		*searchHandler,
 		*shareHandler,

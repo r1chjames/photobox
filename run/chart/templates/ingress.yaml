@@ -35,7 +35,7 @@ spec:
               service:
                 name: {{ include "photobox.fullname" $ }}
                 port:
-                  number: {{ $.Values.webapp.service.port }}
+                  number: {{ $.Values.service.port }}
           {{- end }}
     {{- end }}
 {{- end }}
