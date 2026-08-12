@@ -62,11 +62,11 @@ Create the name of the service account to use
 {{- end -}}
 
 {{/*
-API secret name
+Secret name
 */}}
-{{- define "photobox.api.secretName" -}}
-{{- if .Values.api.existingSecret -}}
-    {{ .Values.api.existingSecret }}
+{{- define "photobox.secretName" -}}
+{{- if .Values.existingSecret -}}
+    {{ .Values.existingSecret }}
 {{- else -}}
     {{ include "photobox.fullname" . }}-api
 {{- end -}}

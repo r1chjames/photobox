@@ -4,17 +4,17 @@ metadata:
   name: {{ include "photobox.fullname" . }}
   labels:
     {{- include "photobox.labels" . | nindent 4 }}
-    app.kubernetes.io/component: webapp
+    app.kubernetes.io/component: app
 spec:
-  type: {{ .Values.webapp.service.type }}
-  {{- if and (eq .Values.webapp.service.type "LoadBalancer") .Values.webapp.service.loadBalancerIP }}
-  loadBalancerIP: {{ .Values.webapp.service.loadBalancerIP }}
+  type: {{ .Values.service.type }}
+  {{- if and (eq .Values.service.type "LoadBalancer") .Values.service.loadBalancerIP }}
+  loadBalancerIP: {{ .Values.service.loadBalancerIP }}
   {{- end }}
   ports:
-    - port: {{ .Values.webapp.service.port }}
+    - port: {{ .Values.service.port }}
       targetPort: http
       protocol: TCP
       name: http
   selector:
     {{- include "photobox.selectorLabels" . | nindent 4 }}
-    app.kubernetes.io/component: webapp
+    app.kubernetes.io/component: app

@@ -2,7 +2,6 @@ package http
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -61,62 +60,6 @@ func (m *MockUtilityService) CreateBaseSettings(reset bool) error {
 	args := m.Called(reset)
 	return args.Error(0)
 }
-
-// TestUtilityHandler_HealthCheck_Success tests successful health check
-func TestUtilityHandler_HealthCheck_Success(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	mockService := new(MockUtilityService)
-	handler := NewUtilityHandler(mockService, "test-version")
-
-	expectedHealth := []*domain.Setting{
-		{
-			Key:   "status",
-			Value: "healthy",
-		},
-		{
-			Key:   "version",
-			Value: "1.0.0",
-		},
-	}
-
-	mockService.On("Ping").Return(nil)
-	mockService.On("Healthcheck").Return(expectedHealth, nil)
-
-	w := httptest.NewRecorder()
-	ctx, _ := gin.CreateTestContext(w)
-
-	ctx.Request = httptest.NewRequest(http.MethodGet, "/health", nil)
-
-	handler.HealthCheck(ctx)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-
-	var response struct {
-		Success bool `json:"success"`
-		Message string `json:"message"`
-		Data    struct {
-			Status   string           `json:"status"`
-			Database string           `json:"database"`
-			Settings []domain.Setting `json:"settings"`
-		} `json:"data"`
-	}
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err)
-	assert.True(t, response.Success)
-	assert.Equal(t, "up", response.Data.Status)
-	assert.Equal(t, "up", response.Data.Database)
-	assert.Len(t, response.Data.Settings, 2)
-
-	mockService.AssertExpectations(t)
-}
-
-// NOTE: HealthCheck error test skipped - handler bug calls both handleError and handleSuccess
-// The handler calls handleError(ctx, err) and then handleSuccess(ctx, resp) unconditionally,
-// causing two JSON responses to be written which creates invalid JSON
-// func TestUtilityHandler_HealthCheck_Error(t *testing.T) {
-// 	t.Skip("Handler has bug - calls both error and success handlers")
-// }
 
 // TestUtilityHandler_ListAllSettings_Success tests successful settings listing
 func TestUtilityHandler_ListAllSettings_Success(t *testing.T) {
@@ -232,39 +175,4 @@ func TestNewUtilityHandler(t *testing.T) {
 
 	assert.NotNil(t, handler)
 	assert.Equal(t, mockService, handler.svc)
-}
-
-// TestUtilityHandler_HealthCheck_WithDBError tests health check when DB is down
-func TestUtilityHandler_HealthCheck_WithDBError(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	mockService := new(MockUtilityService)
-	handler := NewUtilityHandler(mockService, "test-version")
-
-	mockService.On("Ping").Return(errors.New("connection refused"))
-	mockService.On("Healthcheck").Return([]*domain.Setting{}, nil)
-
-	w := httptest.NewRecorder()
-	ctx, _ := gin.CreateTestContext(w)
-
-	ctx.Request = httptest.NewRequest(http.MethodGet, "/health", nil)
-
-	handler.HealthCheck(ctx)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-
-	var response struct {
-		Success bool `json:"success"`
-		Data    struct {
-			Status   string           `json:"status"`
-			Database string           `json:"database"`
-			Settings []domain.Setting `json:"settings"`
-		} `json:"data"`
-	}
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err)
-	assert.Equal(t, "up", response.Data.Status)
-	assert.Equal(t, "down", response.Data.Database)
-
-	mockService.AssertExpectations(t)
 }

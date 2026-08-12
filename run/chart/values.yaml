@@ -3,6 +3,15 @@
 nameOverride: ""
 fullnameOverride: ""
 
+replicaCount: 1
+
+# The combined image ships both the Go API and the React webapp (served by
+# nginx on port 80, which proxies /api/ to the in-container API on 8080).
+image:
+  repository: ghcr.io/r1chjames/photobox
+  tag: latest
+  pullPolicy: IfNotPresent
+
 imagePullSecrets: []
 
 serviceAccount:
@@ -11,10 +20,71 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
-# Node scheduling
-nodeSelector: {}
-tolerations: []
-affinity: {}
+# ---------------------------------------------------------
+# Application environment (non-secret). Secrets live in .secrets below.
+# ---------------------------------------------------------
+env:
+  DB_PORT: "5432"
+  DB_USER: photobox
+  DB_NAME: photobox
+  PHOTO_DIR: /photos
+  API_BASE_PATH: /api
+  # Disabled by default. Enable together with ollama.enabled to turn on AI.
+  AI_ENABLED: "false"
+  OLLAMA_MODEL: moondream
+  # If empty, defaults to the internal Ollama service when ollama.enabled is true.
+  OLLAMA_HOST: ""
+  DEFAULT_ADMIN_USERNAME: admin
+  CORS_ALLOWED_ORIGINS: ""
+  TOKEN_DURATION: 24h
+  CACHE_ENABLED: "false"
+  CACHE_HOST: ""
+
+# If existingSecret is set, the generated secret is not created and all values
+# below must be provided externally.
+existingSecret: ""
+secrets:
+  # Must match database.postgresql.auth.password when database.enabled is true.
+  dbPassword: photobox
+  # TOKEN is the Paseto symmetric key and MUST be exactly 32 bytes. Override in
+  # production; the default placeholder is only valid so `helm template` renders.
+  token: "change-this-to-a-32-byte-secret!"
+  # Must be >=8 chars and not a known-weak value. Override in production.
+  adminPassword: "change-this-admin-password"
+  # S3/MinIO — only required when env.THUMBNAIL_STORAGE is set to "s3".
+  s3Endpoint: ""
+  s3AccessKey: ""
+  s3SecretKey: ""
+  s3Bucket: "photobox-thumbnails"
+
+# ---------------------------------------------------------
+# Service (exposes the combined container on port 80)
+# ---------------------------------------------------------
+service:
+  type: ClusterIP
+  port: 80
+  loadBalancerIP: ""
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Container-level security context. Full non-root / readOnlyRootFilesystem
+# hardening requires a non-root image (see README); enable per-environment.
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+# Pod-level security context. fsGroup lets the container write to the shared
+# photos PVC without running as root.
+podSecurityContext:
+  fsGroup: 1000
 
 # ---------------------------------------------------------
 # Ingress
@@ -22,7 +92,12 @@ affinity: {}
 ingress:
   enabled: false
   className: ""
-  annotations: {}
+  annotations:
+    # Traefik examples — uncomment/adjust per cluster:
+    # traefik.ingress.kubernetes.io/router.tls: "true"
+    # traefik.ingress.kubernetes.io/router.entrypoints: websecure
+  # Websocket support (for /api/ws) requires the following annotations on
+  # most controllers; Traefik enables websockets by default.
   hosts:
     - host: photobox.local
       paths:
@@ -42,76 +117,10 @@ persistence:
   hostPath: ""
 
 # ---------------------------------------------------------
-# API (Go backend)
-# ---------------------------------------------------------
-api:
-  enabled: true
-  replicaCount: 1
-  image:
-    # Update to your published API image
-    repository: photobox-api
-    tag: latest
-    pullPolicy: IfNotPresent
-  service:
-    type: ClusterIP
-    port: 8080
-  resources:
-    limits:
-      cpu: 500m
-      memory: 512Mi
-    requests:
-      cpu: 100m
-      memory: 128Mi
-  env:
-    DB_PORT: "5432"
-    DB_USER: photobox
-    DB_NAME: photobox
-    PHOTO_DIR: /photos
-    API_BASE_PATH: /api
-    AI_ENABLED: "true"
-    OLLAMA_MODEL: moondream
-    # If empty, defaults to the internal Ollama service when ollama.enabled is true
-    OLLAMA_HOST: ""
-    DEFAULT_ADMIN_USERNAME: admin
-    CORS_ALLOWED_ORIGINS: ""
-    TOKEN_DURATION: 24h
-    CACHE_ENABLED: "false"
-  # Secrets for the API. If existingSecret is set, a secret will not be created.
-  existingSecret: ""
-  secrets:
-    # Must match database.postgresql.auth.password when database.enabled is true
-    dbPassword: photobox
-    token: change-me
-    adminPassword: admin
-
-# ---------------------------------------------------------
-# Webapp (React frontend)
-# ---------------------------------------------------------
-webapp:
-  enabled: true
-  replicaCount: 1
-  image:
-    # Update to your published webapp image
-    repository: photobox-webapp
-    tag: latest
-    pullPolicy: IfNotPresent
-  service:
-    type: ClusterIP
-    port: 80
-    loadBalancerIP: ""
-  resources:
-    limits:
-      cpu: 200m
-      memory: 128Mi
-    requests:
-      cpu: 50m
-      memory: 64Mi
-
-# ---------------------------------------------------------
-# Ollama (AI runtime)
+# Ollama (AI runtime) — disabled by default
 # ---------------------------------------------------------
 ollama:
-  enabled: true
+  enabled: false
   replicaCount: 1
   image:
     repository: ollama/ollama
@@ -120,19 +129,25 @@ ollama:
   service:
     type: ClusterIP
     port: 11434
-  resources: {}
+  resources:
+    limits:
+      cpu: "4"
+      memory: 8Gi
+    requests:
+      cpu: "1"
+      memory: 2Gi
   persistence:
     enabled: false
     storageClass: ""
     accessMode: ReadWriteOnce
-    size: 10Gi
+    size: 20Gi
 
 # ---------------------------------------------------------
 # Database
 # ---------------------------------------------------------
 # When enabled, deploys a Bitnami PostgreSQL subchart.
-# When disabled, set database.host and api.secrets.dbPassword
-# (and matching api.env.DB_* values) to point to an external database.
+# When disabled, set database.host and secrets.dbPassword
+# (and matching env.DB_* values) to point to an external database.
 database:
   enabled: true
   # If disabled, set this to your external DB host.
@@ -148,3 +163,17 @@ database:
         enabled: true
         storageClass: ""
         size: 10Gi
+
+# ---------------------------------------------------------
+# HorizontalPodAutoscaler (optional)
+# ---------------------------------------------------------
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+# Node scheduling
+nodeSelector: {}
+tolerations: []
+affinity: {}
