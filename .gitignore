@@ -26,7 +26,10 @@ yarn-debug.log*
 yarn-error.log*
 
 # artifacts
-*.tar.gz# golang output binary directory
+*.tar.gz
+storybook-static/
+
+# golang output binary directory
 api/bin/
 api/vendor/
 

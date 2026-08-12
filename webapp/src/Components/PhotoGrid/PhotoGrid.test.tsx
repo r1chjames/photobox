@@ -17,9 +17,16 @@ vi.mock('@mantine/hooks', () => ({
     useHotkeys: vi.fn(),
 }));
 
-// Mock @egjs/react-infinitegrid
-vi.mock('@egjs/react-infinitegrid', () => ({
-    JustifiedInfiniteGrid: ({ children }: any) => <div data-testid="infinite-grid">{children}</div>,
+// Mock @tanstack/react-virtual — in jsdom there is no real layout, so the
+// virtualizer reports every row as visible. This lets the tests assert on the
+// rendered photos without a real scroll container.
+vi.mock('@tanstack/react-virtual', () => ({
+    useVirtualizer: ({ count }: any) => ({
+        getVirtualItems: () => Array.from({ length: count }, (_, index) => ({ key: index, index, start: index * 100, size: 100 })),
+        getTotalSize: () => count * 100,
+        scrollToIndex: vi.fn(),
+        measure: vi.fn(),
+    }),
 }));
 
 describe('PhotoGrid', () => {
@@ -67,7 +74,7 @@ describe('PhotoGrid', () => {
         });
     });
 
-    it('should render infinite grid', async () => {
+    it('should render virtualized grid', async () => {
         render(
             <PhotoGrid
                 photosAdapter={mockPhotosAdapter}
@@ -76,7 +83,7 @@ describe('PhotoGrid', () => {
         );
 
         await waitFor(() => {
-            expect(screen.getByTestId('infinite-grid')).toBeInTheDocument();
+            expect(screen.getByTestId('virtual-grid')).toBeInTheDocument();
         });
     });
 
@@ -124,7 +131,7 @@ describe('PhotoGrid', () => {
             expect(mockPhotosAdapter.getPhotosInfoInAlbum).toHaveBeenCalledWith(
                 'test-album-id',
                 expect.any(String), // fromId
-                30, // limit
+                60, // limit
                 false, // includeThumbnails
                 undefined, // startDate
                 undefined  // endDate
@@ -175,7 +182,7 @@ describe('PhotoGrid', () => {
         );
 
         await waitFor(() => {
-            expect(screen.getByTestId('infinite-grid')).toBeInTheDocument();
+            expect(screen.getByTestId('virtual-grid')).toBeInTheDocument();
         });
     });
 
@@ -187,14 +194,13 @@ describe('PhotoGrid', () => {
             />
         );
 
-        // Initially might show skeletons (depending on image load state)
         await waitFor(() => {
-            const grid = screen.getByTestId('infinite-grid');
+            const grid = screen.getByTestId('virtual-grid');
             expect(grid).toBeInTheDocument();
         });
     });
 
-    it('should group photos correctly with groupkey', async () => {
+    it('should render all photos in the virtualized grid', async () => {
         const manyPhotos = Array.from({ length: 65 }, (_, i) => ({
             id: `photo-${i}`,
             name: `photo${i}.jpg`,
@@ -219,10 +225,5 @@ describe('PhotoGrid', () => {
             const images = screen.getAllByRole('img');
             expect(images.length).toBe(65);
         });
-
-        // Photos should be grouped by index / 30
-        // First 30 photos: group 0
-        // Next 30 photos: group 1
-        // Last 5 photos: group 2
     });
 });
