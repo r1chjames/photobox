@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {useDropzone} from 'react-dropzone';
 import { useParams, useNavigate } from "react-router-dom";
 import { useQueryClient } from '@tanstack/react-query';
-import {JustifiedInfiniteGrid} from '@egjs/react-infinitegrid';
+import {useVirtualizer} from '@tanstack/react-virtual';
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 import {ISharesAdapter} from "../../Adapters/ISharesAdapter";
@@ -240,6 +240,8 @@ const GridImageItem = React.memo(
                         <img
                             src={effectiveThumbnailUrl}
                             alt={photo.name}
+                            loading="lazy"
+                            decoding="async"
                             onLoad={() => setIsLoaded(true)}
                             onError={() => setHasError(true)}
                         />
@@ -495,12 +497,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
 
     const appendDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // Pull-to-refresh state
-    const [pullStartY, setPullStartY] = useState(0);
-    const [pullDistance, setPullDistance] = useState(0);
-    const [isRefreshing, setIsRefreshing] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
-    const PULL_THRESHOLD = 80;
 
     useEffect(() => {
         return () => {
@@ -529,6 +526,51 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         fetchNextPage();
     }, [isFetchingNextPage, allRetrieved, fetchNextPage]);
 
+    // --- Virtualized grid (issue #92) ---
+    // Row-based virtualization keeps the DOM bounded (<~500 nodes) regardless of
+    // library size, replacing the previous infinite-grid that kept every loaded
+    // photo in the DOM.
+    const [gridColumns, setGridColumns] = useState(5);
+    const [containerWidth, setContainerWidth] = useState(0);
+    const gridGap = density === 'compact' ? 4 : density === 'large' ? 20 : 10;
+    const cardAspectRatio = 4 / 3;
+
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+        const compute = () => {
+            const width = el.clientWidth;
+            const targetCardWidth = density === 'compact' ? 160 : density === 'large' ? 300 : 220;
+            const cols = Math.max(2, Math.min(12, Math.floor((width + gridGap) / (targetCardWidth + gridGap))));
+            setContainerWidth(width);
+            setGridColumns(cols);
+        };
+        compute();
+        const ro = new ResizeObserver(compute);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [density, gridGap]);
+
+    const cardWidth = Math.max(80, (containerWidth - (gridColumns - 1) * gridGap) / gridColumns);
+    const cardHeight = cardWidth / cardAspectRatio;
+    const rowCount = Math.ceil(photos.length / gridColumns);
+
+    const virtualizer = useVirtualizer({
+        count: rowCount,
+        getScrollElement: () => containerRef.current,
+        estimateSize: () => cardHeight + gridGap,
+        overscan: 4,
+    });
+
+    // Load the next page when scrolling near the bottom of the virtualized grid.
+    const handleGridScroll = useCallback(() => {
+        const el = containerRef.current;
+        if (!el) return;
+        if (el.scrollTop + el.clientHeight >= el.scrollHeight - 1200) {
+            onRequestAppend();
+        }
+    }, [onRequestAppend]);
+
     const onImageClick = useCallback((photoId: string) => {
         const photoIndex = photosRef.current.findIndex(p => p.id === photoId);
         if (photoIndex !== -1) {
@@ -536,46 +578,6 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
             setImageModalOpen(true);
         }
     }, []);
-
-    const handleTouchStart = useCallback((e: React.TouchEvent) => {
-        if (containerRef.current && containerRef.current.scrollTop === 0) {
-            setPullStartY(e.touches[0].clientY);
-        }
-    }, []);
-
-    const handleTouchMove = useCallback((e: React.TouchEvent) => {
-        if (pullStartY > 0 && containerRef.current && containerRef.current.scrollTop === 0) {
-            const delta = e.touches[0].clientY - pullStartY;
-            if (delta > 0) {
-                setPullDistance(Math.min(delta * 0.5, 120));
-            }
-        }
-    }, [pullStartY]);
-
-    const handleTouchEnd = useCallback(() => {
-        if (pullDistance > PULL_THRESHOLD && !isRefreshing) {
-            setIsRefreshing(true);
-            setPullDistance(0);
-            refetch().then(() => {
-                notifications.show({
-                    title: 'Refreshed',
-                    message: 'Photos refreshed successfully',
-                    color: 'green',
-                });
-            }).catch(() => {
-                notifications.show({
-                    title: 'Refresh failed',
-                    message: 'Failed to refresh photos',
-                    color: 'red',
-                });
-            }).finally(() => {
-                setIsRefreshing(false);
-            });
-        } else {
-            setPullDistance(0);
-        }
-        setPullStartY(0);
-    }, [pullDistance, isRefreshing, refetch]);
 
     const onToggleSelect = useCallback((photoId: string) => {
         setSelectedIds(prev => {
@@ -857,89 +859,74 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         );
     }
 
-    const showPullIndicator = pullDistance > 10;
-
     return (
-        <div style={{ display: 'flex', height: '100%' }}>
-          <div
-            ref={containerRef}
-            className={`density-${density}`}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            style={{ flex: 1, overflowY: 'auto', position: 'relative' }}
-          >
-            {showPullIndicator && (
-                <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: pullDistance,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 10,
-                    transition: isRefreshing ? 'height 0.3s ease' : undefined,
-                }}>
-                    {isRefreshing ? (
-                        <Loader size="sm" />
-                    ) : (
-                        <div style={{
-                            transform: `rotate(${Math.min(pullDistance / PULL_THRESHOLD, 1) * 360}deg)`,
-                            transition: 'transform 0.1s',
-                        }}>
-                            ↓
-                        </div>
-                    )}
-                </div>
+        <div style={{ display: 'flex', height: 'calc(100vh - 112px)', flexDirection: 'column' }}>
+            <AlbumTitle/>
+            <PhotoGridUploadDropzone photosAdapter={props.photosAdapter} />
+            {isSelectionMode && (
+                <BulkActionsToolbar
+                    selectedCount={selectedIds.size}
+                    totalCount={photos.length}
+                    onSelectAll={handleSelectAll}
+                    onDeselectAll={handleDeselectAll}
+                    onFavorite={handleBulkFavorite}
+                    onDelete={handleBulkDelete}
+                    onDownload={handleBulkDownload}
+                    onAddTag={() => { setTagModalMode('add'); setTagModalOpen(true); }}
+                    onRemoveTag={() => { setTagModalMode('remove'); setTagModalOpen(true); }}
+                    onAddToAlbum={handleOpenAlbumModal}
+                    onCancel={() => { setIsSelectionMode(false); setSelectedIds(new Set()); }}
+                />
             )}
-            <div style={{ transform: `translateY(${showPullIndicator ? pullDistance : 0}px)`, transition: isRefreshing ? 'transform 0.3s ease' : undefined }}>
-                <AlbumTitle/>
-                <PhotoGridUploadDropzone photosAdapter={props.photosAdapter} />
-                {isSelectionMode && (
-                    <BulkActionsToolbar
-                        selectedCount={selectedIds.size}
-                        totalCount={photos.length}
-                        onSelectAll={handleSelectAll}
-                        onDeselectAll={handleDeselectAll}
-                        onFavorite={handleBulkFavorite}
-                        onDelete={handleBulkDelete}
-                        onDownload={handleBulkDownload}
-                        onAddTag={() => { setTagModalMode('add'); setTagModalOpen(true); }}
-                        onRemoveTag={() => { setTagModalMode('remove'); setTagModalOpen(true); }}
-                        onAddToAlbum={handleOpenAlbumModal}
-                        onCancel={() => { setIsSelectionMode(false); setSelectedIds(new Set()); }}
-                    />
-                )}
-                {viewMode === 'grid' ? (
-                    <JustifiedInfiniteGrid
-                        key={`grid-${density}`}
-                        placeholder={<Skeleton height={7} mt={6} radius="md"/>}
-                        className="container"
-                        gap={density === 'compact' ? 4 : density === 'large' ? 20 : 10}
-                        stretch={true}
-                        passUnstretchRow={true}
-                        onRequestAppend={onRequestAppend}
-                        threshold={800}
-                        useRecycle={false}
-                        preserveUIOnDestroy={true}
-                    >
-                        {photos.map((photo: Photo, index: number) => (
-                            <GridImageItem
-                                data-grid-groupkey={Math.floor(index / 30)}
-                                key={photo.id}
-                                photo={photo}
-                                thumbnailUrl={mergedThumbnailUrls.get(photo.id)}
-                                isSelectionMode={isSelectionMode}
-                                isSelected={selectedIds.has(photo.id)}
-                                onImageClick={onImageClick}
-                                onToggleSelect={onToggleSelect}
-                                onRetry={handleRetryThumbnail}
-                            />
-                        ))}
-                    </JustifiedInfiniteGrid>
-                ) : (
+            <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+                <div
+                    ref={containerRef}
+                    className={`density-${density}`}
+                    onScroll={handleGridScroll}
+                    style={{ flex: 1, overflowY: 'auto', position: 'relative' }}
+                >
+                    {viewMode === 'grid' ? (
+                        <div className="virtual-grid" data-testid="virtual-grid" style={{ height: virtualizer.getTotalSize(), position: 'relative', width: '100%' }}>
+                            {virtualizer.getVirtualItems().map((virtualRow) => {
+                                const startIndex = virtualRow.index * gridColumns;
+                                const rowPhotos = photos.slice(startIndex, startIndex + gridColumns);
+                                return (
+                                    <div
+                                        key={virtualRow.key}
+                                        style={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            width: '100%',
+                                            height: virtualRow.size,
+                                            transform: `translateY(${virtualRow.start}px)`,
+                                            display: 'grid',
+                                            gridTemplateColumns: `repeat(${gridColumns}, 1fr)`,
+                                            gap: gridGap,
+                                        }}
+                                    >
+                                        {rowPhotos.map((photo: Photo) => (
+                                            <GridImageItem
+                                                key={photo.id}
+                                                photo={photo}
+                                                thumbnailUrl={mergedThumbnailUrls.get(photo.id)}
+                                                isSelectionMode={isSelectionMode}
+                                                isSelected={selectedIds.has(photo.id)}
+                                                onImageClick={onImageClick}
+                                                onToggleSelect={onToggleSelect}
+                                                onRetry={handleRetryThumbnail}
+                                            />
+                                        ))}
+                                    </div>
+                                );
+                            })}
+                            {isFetchingNextPage && (
+                                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, textAlign: 'center', padding: 16 }}>
+                                    <Loader size="sm" />
+                                </div>
+                            )}
+                        </div>
+                    ) : (
                     <div style={{ padding: '0 8px' }}>
                         <Table striped highlightOnHover>
                             <Table.Thead>
@@ -1000,19 +987,19 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                         )}
                     </div>
                 )}
+                </div>
+                {!id && (
+                    <div style={{ width: 200, flexShrink: 0, position: 'relative' }}>
+                        <TimelineScrubber
+                            photosAdapter={props.photosAdapter}
+                            onSelectMonth={(year, month) => setDateFilter({ year, month })}
+                            onClear={() => setDateFilter(null)}
+                            activeYear={dateFilter?.year}
+                            activeMonth={dateFilter?.month}
+                        />
+                    </div>
+                )}
             </div>
-          </div>
-          {!id && (
-            <div style={{ width: 200, flexShrink: 0, position: 'relative' }}>
-              <TimelineScrubber
-                photosAdapter={props.photosAdapter}
-                onSelectMonth={(year, month) => setDateFilter({ year, month })}
-                onClear={() => setDateFilter(null)}
-                activeYear={dateFilter?.year}
-                activeMonth={dateFilter?.month}
-              />
-            </div>
-          )}
           {isImageModalOpen && (
                 <Modal
                     opened={isImageModalOpen}

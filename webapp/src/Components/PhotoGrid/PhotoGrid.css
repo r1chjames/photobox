@@ -57,6 +57,12 @@ a {
     width: 350px;
 }
 
+/* Virtualized grid: items fill their CSS grid cell instead of the fixed
+   width set by the density classes above (issue #92). */
+.virtual-grid .item {
+    width: 100%;
+}
+
 .masonrygrid.horizontal .item {
     width: auto;
     height: 250px;
