@@ -29,7 +29,7 @@ export const MapView: React.FC<MapViewProps> = ({ photosAdapter }) => {
     try {
       const data = await photosAdapter.getGeodata(90, -90, 180, -180);
       setPhotos(data || []);
-    } catch (e) {
+    } catch {
       setPhotos([]);
     } finally {
       setLoading(false);

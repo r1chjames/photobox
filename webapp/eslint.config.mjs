@@ -14,7 +14,7 @@ const compat = new FlatCompat({
 });
 
 export default [{
-    ignores: ["**/node_modules", "**/dist", "**/build"],
+    ignores: ["**/node_modules", "**/dist", "**/build", "**/storybook-static", "public/service-worker.js"],
 }, ...compat.extends(
     "eslint:recommended",
     "plugin:@typescript-eslint/eslint-recommended",
@@ -24,7 +24,12 @@ export default [{
         "@typescript-eslint": typescriptEslint,
     },
     rules: {
-        "@typescript-eslint/no-explicit-any": ["off"]
+        "@typescript-eslint/no-explicit-any": ["off"],
+        "@typescript-eslint/no-unused-vars": ["error", {
+            "argsIgnorePattern": "^_",
+            "varsIgnorePattern": "^_",
+            "caughtErrorsIgnorePattern": "^_"
+        }],
     },
     languageOptions: {
         parser: tsParser,

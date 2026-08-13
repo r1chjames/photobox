@@ -180,7 +180,7 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
             try {
                 await navigator.clipboard.writeText(shareUrl);
                 notifications.show({ title: 'Link copied', message: 'Photo link copied to clipboard', color: 'blue' });
-            } catch (e) {
+            } catch {
                 notifications.show({ title: 'Copy failed', message: 'Could not copy link to clipboard', color: 'red' });
             }
         }

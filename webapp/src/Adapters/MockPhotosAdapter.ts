@@ -68,7 +68,6 @@ export class MockPhotosAdapter implements IPhotosAdapter {
     return;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public searchPhotos = async (query: string, fromId: string, limit: number): Promise<Photo[]> => {
     const lowerQuery = query.toLowerCase();
     const filtered = this._photos.filter(p =>
@@ -104,7 +103,6 @@ export class MockPhotosAdapter implements IPhotosAdapter {
     return [];
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public getTimeline = async (): Promise<TimelineEntry[]> => {
     return [];
   }
@@ -171,7 +169,7 @@ export class MockPhotosAdapter implements IPhotosAdapter {
     });
   }
 
-  public getPhotosByTag = async (tag: string, fromId: string, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
+  public getPhotosByTag = async (tag: string, fromId: string, limit: number, _includeThumbnails: boolean): Promise<Photo[]> => {
     const filtered = this._photos.filter(p => {
       if (!p.tags) return false;
       return p.tags.split(',').map(t => t.trim()).includes(tag);

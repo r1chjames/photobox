@@ -129,7 +129,8 @@ export function useBlobUrl(
         return () => {
             release(key);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // NOTE: eslint-plugin-react-hooks is not registered in eslint.config.mjs,
+        // so exhaustive-deps is not enforced; deps are intentionally [key].
     }, [key]);
 
     return { url, loading, error, retry };
