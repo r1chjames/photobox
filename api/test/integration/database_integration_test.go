@@ -4,6 +4,8 @@
 package integration
 
 import (
+	"encoding/base64"
+	"strconv"
 	"testing"
 	"time"
 
@@ -54,10 +56,11 @@ func TestAlbumRepository_ListAllAlbums_Integration(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, albums, 10, "Should return 10 albums on first page")
 
-	// Test pagination - second page
+	// Test pagination - second page. ListAllAlbums expects the cursor to be the
+	// base64-encoded created_epoch of the last item of the previous page.
 	if len(albums) > 0 {
-		lastID := string(rune(albums[len(albums)-1].CreatedEpoch))
-		albums2, err := repo.ListAllAlbums(lastID, 10)
+		cursor := base64.StdEncoding.EncodeToString([]byte(strconv.FormatInt(albums[len(albums)-1].CreatedEpoch, 10)))
+		albums2, err := repo.ListAllAlbums(cursor, 10)
 		assert.NoError(t, err)
 		assert.Len(t, albums2, 5, "Should return remaining 5 albums")
 	}
@@ -76,37 +79,31 @@ func TestPhotoRepository_CreateAndList_Integration(t *testing.T) {
 	// Create test photos
 	photos := []domain.Photo{
 		{
-			ID:          "photo1",
-			AlbumId:     "album1",
-			Hash:        "hash1",
-			Path:        "/photos/album1/photo1.jpg",
-			Name:        "photo1.jpg",
-			MimeType:    "image/jpeg",
-			Size:        1024,
-			Metadata:    datatypes.JSON([]byte("{}")),
-			Description: "Test photo 1",
+			ID:             "photo1",
+			AlbumId:        "album1",
+			FileHash:       "hash1",
+			FilesystemPath: "/photos/album1/photo1.jpg",
+			Name:           "photo1.jpg",
+			MediaType:      "image/jpeg",
+			Metadata:       datatypes.JSON([]byte("{}")),
 		},
 		{
-			ID:          "photo2",
-			AlbumId:     "album1",
-			Hash:        "hash2",
-			Path:        "/photos/album1/photo2.jpg",
-			Name:        "photo2.jpg",
-			MimeType:    "image/jpeg",
-			Size:        2048,
-			Metadata:    datatypes.JSON([]byte("{}")),
-			Description: "Test photo 2",
+			ID:             "photo2",
+			AlbumId:        "album1",
+			FileHash:       "hash2",
+			FilesystemPath: "/photos/album1/photo2.jpg",
+			Name:           "photo2.jpg",
+			MediaType:      "image/jpeg",
+			Metadata:       datatypes.JSON([]byte("{}")),
 		},
 		{
-			ID:          "photo3",
-			AlbumId:     "album2",
-			Hash:        "hash3",
-			Path:        "/photos/album2/photo3.jpg",
-			Name:        "photo3.jpg",
-			MimeType:    "image/jpeg",
-			Size:        3072,
-			Metadata:    datatypes.JSON([]byte("{}")),
-			Description: "Test photo 3",
+			ID:             "photo3",
+			AlbumId:        "album2",
+			FileHash:       "hash3",
+			FilesystemPath: "/photos/album2/photo3.jpg",
+			Name:           "photo3.jpg",
+			MediaType:      "image/jpeg",
+			Metadata:       datatypes.JSON([]byte("{}")),
 		},
 	}
 
@@ -143,14 +140,13 @@ func TestPhotoRepository_GetPhotosInAlbumCount_Integration(t *testing.T) {
 	// Create photos in album1
 	for i := 0; i < 5; i++ {
 		photo := domain.Photo{
-			ID:       string(rune('A' + i)),
-			AlbumId:  "album1",
-			Hash:     string(rune('h' + i)),
-			Path:     "/test/path",
-			Name:     "test.jpg",
-			MimeType: "image/jpeg",
-			Size:     1024,
-			Metadata: datatypes.JSON([]byte("{}")),
+			ID:             string(rune('A' + i)),
+			AlbumId:        "album1",
+			FileHash:       string(rune('h' + i)),
+			FilesystemPath: "/test/path",
+			Name:           "test.jpg",
+			MediaType:      "image/jpeg",
+			Metadata:       datatypes.JSON([]byte("{}")),
 		}
 		err := photoRepo.CreatePhotoInfo(photo)
 		assert.NoError(t, err)
@@ -176,9 +172,10 @@ func TestUserRepository_CreateAndAuth_Integration(t *testing.T) {
 
 	// Create a user
 	user := &domain.User{
+		ID:       "user1",
 		Username: "testuser",
 		Password: "$2a$10$hashedpassword",
-		Role:     "user",
+		Role:     domain.VIEWER,
 	}
 
 	created, err := userRepo.CreateUser(user)
@@ -190,7 +187,7 @@ func TestUserRepository_CreateAndAuth_Integration(t *testing.T) {
 	retrieved, err := userRepo.GetUserByUsername("testuser")
 	assert.NoError(t, err)
 	assert.Equal(t, "testuser", retrieved.Username)
-	assert.Equal(t, "user", retrieved.Role)
+	assert.Equal(t, domain.VIEWER, retrieved.Role)
 
 	// Get user by ID
 	byID, err := userRepo.GetUserById(created.ID)
@@ -205,12 +202,16 @@ func TestUserRepository_ListUsers_Integration(t *testing.T) {
 
 	userRepo := repository.NewUserRepository(env)
 
-	// Create multiple users
+	// Create multiple users. Each user needs a unique ID and email — CreateUser
+	// uses OnConflict DoNothing, and users with an empty email all collide on
+	// the unique email index and would silently be dropped.
 	for i := 0; i < 12; i++ {
 		user := &domain.User{
+			ID:       "listuser-" + strconv.Itoa(i),
 			Username: string(rune('A'+i)) + "user",
+			Email:    "user" + strconv.Itoa(i) + "@example.com",
 			Password: "hashedpass",
-			Role:     "user",
+			Role:     domain.VIEWER,
 		}
 		_, err := userRepo.CreateUser(user)
 		assert.NoError(t, err)
@@ -218,17 +219,14 @@ func TestUserRepository_ListUsers_Integration(t *testing.T) {
 	}
 
 	// List first page
-	users, err := userRepo.ListAllUsers("", 10)
+	users, err := userRepo.ListUsers(1, 10)
 	assert.NoError(t, err)
 	assert.Len(t, users, 10, "Should return 10 users on first page")
 
 	// List second page
-	if len(users) > 0 {
-		lastID := users[len(users)-1].ID
-		users2, err := userRepo.ListAllUsers(lastID, 10)
-		assert.NoError(t, err)
-		assert.Len(t, users2, 2, "Should return remaining 2 users")
-	}
+	users2, err := userRepo.ListUsers(2, 10)
+	assert.NoError(t, err)
+	assert.Len(t, users2, 2, "Should return remaining 2 users")
 }
 
 // TestJobRepository_StatusUpdates_Integration tests job status management
@@ -271,16 +269,17 @@ func TestSettingsRepository_CRUD_Integration(t *testing.T) {
 
 	settingsRepo := repository.NewUtilityRepository(env)
 
-	// Get non-existent setting
-	_, err := settingsRepo.GetSetting("nonexistent")
-	assert.Error(t, err)
+	// Get non-existent setting — the repo returns an empty setting, no error
+	setting, err := settingsRepo.GetSetting("nonexistent")
+	assert.NoError(t, err)
+	assert.Empty(t, setting.Value, "Non-existent setting should have an empty value")
 
 	// Create base settings
 	err = settingsRepo.CreateBaseSettings(false)
 	assert.NoError(t, err)
 
 	// Get all settings
-	settings, err := settingsRepo.ListAllSettings()
+	settings, err := settingsRepo.GetAllSettings()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, settings, "Should have created base settings")
 

@@ -17,7 +17,7 @@ import (
 func TestDBConfig() appconfig.AppConfig {
 	timezone, _ := time.LoadLocation("UTC")
 	return appconfig.AppConfig{
-		DbUrl:    "host=localhost user=photobox_test password=photobox_test dbname=photobox_test port=5433 sslmode=disable",
+		DbUrl:    "host=localhost user=photobox_test password=photobox_test dbname=photobox_test port=5433 sslmode=disable search_path=photobox,public",
 		Timezone: timezone,
 		PhotoDir: "/tmp/photobox-test",
 	}
@@ -35,6 +35,12 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 	})
 	if err != nil {
 		t.Fatalf("Failed to connect to test database: %v", err)
+	}
+
+	// Ensure the photobox schema exists (mirrors production PerformDbSetup, so
+	// tables land in the schema that TeardownTestDB truncates).
+	if err := db.Exec("CREATE SCHEMA IF NOT EXISTS photobox").Error; err != nil {
+		t.Fatalf("Failed to create schema: %v", err)
 	}
 
 	// Run migrations
@@ -100,7 +106,7 @@ func SeedTestData(t *testing.T, db *gorm.DB) {
 		ID:       "user1",
 		Username: "testuser",
 		Password: "$2a$10$test", // bcrypt hash
-		Role:     "admin",
+		Role:     domain.ADMINISTRATOR,
 	}
 	db.Create(&user)
 
