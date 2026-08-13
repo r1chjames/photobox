@@ -8,6 +8,17 @@
     padding-bottom: var(--mantine-spacing-sm);
 }
 
+.logo {
+    width: 4rem;
+    height: 4rem;
+    flex-shrink: 0;
+
+    @media (max-width: $mantine-breakpoint-xs) {
+        width: 2.25rem;
+        height: 2.25rem;
+    }
+}
+
 .user {
     color: light-dark(var(--mantine-color-black), var(--mantine-color-dark-0));
     padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);

@@ -313,7 +313,7 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
             <AppShell.Header>
                 <div className={classes.header}>
                     <Container fluid>
-                        <Group justify="space-between" gap="xl">
+                        <Group justify="space-between" gap="md" wrap="wrap">
                             <Burger
                                 opened={opened}
                                 onClick={toggle}
@@ -321,7 +321,9 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
                                 size="sm"
                             />
                             <Group>
-                                <IconLibraryPhoto size="4rem" stroke={1.5} color={"var(--mantine-primary-color-filled)"}/>
+                                <div className={classes.logo}>
+                                    <IconLibraryPhoto size="100%" stroke={1.5} color={"var(--mantine-primary-color-filled)"}/>
+                                </div>
                                 <Text size="xl" fw={900} c={"var(--mantine-primary-color-filled)"}>
                                     Photobox
                                 </Text>
@@ -347,7 +349,7 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
                                 </Breadcrumbs>
                             </Group>
 
-                            <Group justify="space-between" gap="xl">
+                            <Group justify="space-between" gap="md">
                                 <TextInput
                                     placeholder="Search photos..."
                                     leftSection={<IconSearch size="1rem" />}

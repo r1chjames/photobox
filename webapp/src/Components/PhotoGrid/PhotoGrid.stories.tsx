@@ -52,6 +52,26 @@ export const AlbumPhotos: Story = {
     }
 };
 
+// Mobile viewport variant (issue #97) — verifies the 2-column grid + bottom nav
+// layout at phone width.
+export const AllPhotosMobile: Story = {
+    args: {
+        photosAdapter: new MockPhotosAdapter()
+            .withPhotos(albumsAndPhotos.getPhotos()),
+        albumsAdapter: new MockAlbumsAdapter()
+            .withAlbums(albumsAndPhotos.getAlbums())
+    },
+    parameters: {
+        viewport: {
+            defaultViewport: 'mobile2',
+        },
+        reactRouter: {
+            initialEntries: ['/'],
+            routePath: '/',
+        }
+    }
+};
+
 const emptyAlbum = new SBModelBuilder().newEmptyAlbum();
 export const EmptyAlbumPhotos: Story = {
     args: {

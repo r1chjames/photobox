@@ -30,6 +30,7 @@
     "@storybook/addon-docs": "^10.1.10",
     "@storybook/addon-links": "^10.1.10",
     "@storybook/addon-onboarding": "^10.1.10",
+    "@storybook/addon-viewport": "^8.6.18",
     "@storybook/react": "^10.1.10",
     "@storybook/react-vite": "^10.1.10",
     "@testing-library/dom": "^10.4.1",
