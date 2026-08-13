@@ -179,11 +179,12 @@ interface GridImageItemProps {
     onImageClick: (id: string) => void;
     onToggleSelect: (id: string) => void;
     onRetry?: (id: string) => void;
+    onLongPress?: (id: string) => void;
 }
 
 // By adding a custom comparison function to React.memo, we prevent re-renders unless the photo's ID changes.
 const GridImageItem = React.memo(
-    ({photo, isSelectionMode, isSelected, onImageClick, onToggleSelect, onRetry, thumbnailUrl}: GridImageItemProps & { thumbnailUrl: string | undefined }) => {
+    ({photo, isSelectionMode, isSelected, onImageClick, onToggleSelect, onRetry, onLongPress, thumbnailUrl}: GridImageItemProps & { thumbnailUrl: string | undefined }) => {
         const [isLoaded, setIsLoaded] = useState(false);
         const [hasError, setHasError] = useState(false);
         const effectiveThumbnailUrl = thumbnailUrl || photo.thumbnailUrl;
@@ -193,7 +194,35 @@ const GridImageItem = React.memo(
             setHasError(false);
         }, [effectiveThumbnailUrl]);
 
+        // Long-press (mobile) enters selection mode, matching Google Photos.
+        const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+        const longPressTriggered = useRef(false);
+
+        useEffect(() => () => {
+            if (longPressTimer.current) clearTimeout(longPressTimer.current);
+        }, []);
+
+        const handleTouchStart = () => {
+            if (isSelectionMode || !onLongPress) return;
+            longPressTriggered.current = false;
+            longPressTimer.current = setTimeout(() => {
+                longPressTriggered.current = true;
+                onLongPress(photo.id);
+            }, 500);
+        };
+
+        const cancelLongPress = () => {
+            if (longPressTimer.current) {
+                clearTimeout(longPressTimer.current);
+                longPressTimer.current = null;
+            }
+        };
+
         const handleClick = () => {
+            if (longPressTriggered.current) {
+                longPressTriggered.current = false;
+                return;
+            }
             if (isSelectionMode) {
                 onToggleSelect(photo.id);
             } else {
@@ -204,7 +233,14 @@ const GridImageItem = React.memo(
         const cameraModel = photo.metadata && typeof photo.metadata === 'object' && 'Model' in photo.metadata ? String(photo.metadata.Model) : undefined;
 
         return (
-            <div className="item" onClick={handleClick} style={{ position: 'relative' }}>
+            <div
+                className="item"
+                onClick={handleClick}
+                onTouchStart={handleTouchStart}
+                onTouchMove={cancelLongPress}
+                onTouchEnd={cancelLongPress}
+                style={{ position: 'relative' }}
+            >
                 {isSelectionMode && (
                     <div style={{ position: 'absolute', top: 4, left: 4, zIndex: 2 }} onClick={(e) => { e.stopPropagation(); onToggleSelect(photo.id); }}>
                         <Checkbox checked={isSelected} onChange={() => {}} size="md" />
@@ -618,6 +654,16 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         setSelectedIds(new Set());
     }, []);
 
+    // Long-press on mobile enters selection mode with the photo selected.
+    const handleLongPress = useCallback((photoId: string) => {
+        setIsSelectionMode(true);
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            next.add(photoId);
+            return next;
+        });
+    }, []);
+
     const handleBulkFavorite = useCallback(async () => {
         try {
             for (const photoId of selectedIds) {
@@ -915,6 +961,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                                                 onImageClick={onImageClick}
                                                 onToggleSelect={onToggleSelect}
                                                 onRetry={handleRetryThumbnail}
+                                                onLongPress={handleLongPress}
                                             />
                                         ))}
                                     </div>

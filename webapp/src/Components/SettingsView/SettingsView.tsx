@@ -370,6 +370,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
           handleSave={handleModalSave}
           handleClose={() => setShowModal(false)}
         />
+        <div style={{ overflowX: 'auto' }}>
         <Table>
             <Table.Thead>
                 <Table.Tr>
@@ -414,6 +415,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
                   ))}
             </Table.Tbody>
           </Table>
+        </div>
         <Flex direction="row" style={{width: "100%", justifyContent: "right"}}>
             <ActionIcon variant="subtle" size="xl" m={"1rem"} onClick={editing ? resetForm : () => setEditing(true)}>
               {editing ? <IconPencilCancel size="1.5rem" /> : <IconPencil size="1.5rem" />}
@@ -422,7 +424,7 @@ export const SettingsView: React.FunctionComponent<IProps> = (props) => {
               {editing ? <IconDeviceFloppy size="1.5rem" /> : <IconLayoutGridAdd size="1.5rem"/>}
             </ActionIcon>
         </Flex>
-        <Flex direction="row" gap="md" style={{ width: "100%", justifyContent: "right" }}>
+        <Flex direction="row" gap="md" wrap="wrap" style={{ width: "100%", justifyContent: "right" }}>
           {jobsLoading ? (
             <>
               <Skeleton height={36} width={130} radius="sm" />
