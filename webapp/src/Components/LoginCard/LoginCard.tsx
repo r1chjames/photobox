@@ -103,7 +103,7 @@ export const LoginCard: React.FunctionComponent<IProps> = (props) => {
             } else {
                 result = await props.usersAdapter.login({ username, email: "", password });
             }
-            login(result.token);
+            login(result.token, result.expires_at);
             navigate("/")
         } catch (e) {
             const message = e instanceof Error ? e.message : 'Authentication failed';
