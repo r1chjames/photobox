@@ -72,10 +72,6 @@ jobs:
 
   integration-test:
     name: Integration tests (Postgres)
-    # NOTE: temporarily disabled — the integration test suite in
-    # api/test/integration does not compile against the current domain model
-    # (stale field/method names). Re-enable after the suite is repaired.
-    if: false
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -107,7 +103,7 @@ jobs:
 
   build-and-push:
     name: Build and push Docker image
-    needs: [go-test, webapp-test]
+    needs: [go-test, webapp-test, integration-test]
     runs-on: ubuntu-latest
     permissions:
       contents: read

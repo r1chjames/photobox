@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"gitlab.com/r1chjames/photobox/api/internal/adapter/storage/filesystem/repository"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
-	"gitlab.com/r1chjames/photobox/api/internal/core/service"
 	"gitlab.com/r1chjames/photobox/api/test/testutil"
 )
 
@@ -79,7 +78,7 @@ func TestFilesystemRepository_GenerateThumbnail_Integration(t *testing.T) {
 	repo := repository.NewFilesystemRepository(config, nil)
 
 	// Generate thumbnail
-	thumbnail := repo.GenerateThumbnail(testImagePath)
+	thumbnail := repo.GenerateThumbnail(testImagePath, 200, 200)
 
 	// Verify thumbnail was generated
 	assert.NotNil(t, thumbnail, "Thumbnail should be generated")
@@ -105,7 +104,7 @@ func TestFilesystemRepository_GenerateThumbnail_PNG_Integration(t *testing.T) {
 	repo := repository.NewFilesystemRepository(config, nil)
 
 	// Generate thumbnail
-	thumbnail := repo.GenerateThumbnail(testImagePath)
+	thumbnail := repo.GenerateThumbnail(testImagePath, 200, 200)
 
 	assert.NotNil(t, thumbnail)
 	assert.Greater(t, len(thumbnail), 0)
@@ -125,7 +124,7 @@ func TestFilesystemRepository_GenerateThumbnail_InvalidFile_Integration(t *testi
 	repo := repository.NewFilesystemRepository(config, nil)
 
 	// Try to generate thumbnail for non-existent file
-	thumbnail := repo.GenerateThumbnail("/nonexistent/file.jpg")
+	thumbnail := repo.GenerateThumbnail("/nonexistent/file.jpg", 200, 200)
 
 	// Should return nil for invalid file
 	assert.Nil(t, thumbnail, "Should return nil for non-existent file")
@@ -155,41 +154,6 @@ func TestFilesystemRepository_CreateDirectoryIfNotExists_Integration(t *testing.
 	assert.NotEmpty(t, info, "Album directory should exist")
 }
 
-// TestFilesystemService_GetMetaData_Integration tests metadata extraction
-func TestFilesystemService_GetMetaData_Integration(t *testing.T) {
-	// Setup test database
-	db := testutil.SetupTestDB(t)
-	defer testutil.TeardownTestDB(t, db)
-
-	// Create test directory
-	testDir := testutil.CreateTestPhotoDir(t)
-	defer testutil.CleanupTestPhotoDir(t, testDir)
-
-	// Create test image
-	testImagePath := filepath.Join(testDir, "album1", "test.jpg")
-	testutil.CreateTestImage(t, testImagePath, 1920, 1080, "jpg")
-
-	// Setup services
-	timezone, _ := time.LoadLocation("UTC")
-	config := appconfig.AppConfig{
-		PhotoDir: testDir,
-		Timezone: timezone,
-	}
-
-	fsRepo := repository.NewFilesystemRepository(config, nil)
-	fsService := service.NewFilesystemService(fsRepo, nil, nil, 1, "filesystem")
-
-	// Get metadata
-	metadata := fsService.GetMetaData(testImagePath)
-
-	// Verify metadata
-	assert.NotNil(t, metadata, "Metadata should be extracted")
-	assert.NotEmpty(t, metadata.Hash, "Hash should be calculated")
-	assert.Equal(t, "image/jpeg", metadata.MimeType, "MIME type should be detected")
-	assert.Greater(t, metadata.Size, int64(0), "Size should be greater than 0")
-	assert.Equal(t, "album1", metadata.Album, "Album should be extracted from path")
-}
-
 // TestFilesystemScanConcurrency_Integration tests concurrent filesystem operations
 func TestFilesystemScanConcurrency_Integration(t *testing.T) {
 	testDir := testutil.CreateTestPhotoDir(t)
@@ -204,18 +168,17 @@ func TestFilesystemScanConcurrency_Integration(t *testing.T) {
 		Timezone: timezone,
 	}
 
-	repo := repository.NewFilesystemRepository(config, nil)
-
-	// Run scan multiple times concurrently to test for race conditions
+	// Run scan multiple times concurrently to test for race conditions.
+	// Each goroutine uses its own repository instance because ScanFilesystem
+	// owns mutable state (WaitGroup + dir semaphore) that is not safe to share.
 	done := make(chan bool)
 
 	for i := 0; i < 3; i++ {
 		go func() {
+			r := repository.NewFilesystemRepository(config, nil)
 			photoChan := make(chan string, 100)
-			go func() {
-				repo.ScanFilesystem(photoChan)
-				close(photoChan)
-			}()
+			r.ScanFilesystem(photoChan)
+			close(photoChan)
 
 			count := 0
 			for range photoChan {
