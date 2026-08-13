@@ -47,7 +47,7 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapt
             } else if (albumId) {
                 retrievedPhotos = await photosAdapter.getPhotosInfoInAlbum(albumId, fromId, limit, false, startDate, endDate);
             } else {
-                retrievedPhotos = await photosAdapter.getAllPhotosInfo(fromId, limit, false, startDate, endDate);
+                retrievedPhotos = await photosAdapter.getAllPhotosInfo(fromId, limit, false, startDate, endDate, favoritesOnly);
             }
 
             const photosData = retrievedPhotos ?? [];
@@ -70,10 +70,6 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapt
             // Client-side safety filter for mediaType
             if (mediaType) {
                 allPhotos = allPhotos.filter(p => p.mediaType === mediaType);
-            }
-            // Client-side filter for favorites
-            if (favoritesOnly) {
-                allPhotos = allPhotos.filter(p => p.favorite);
             }
             const uniquePhotos = Array.from(new Map(allPhotos.map(photo => [photo.id, photo])).values());
             return {

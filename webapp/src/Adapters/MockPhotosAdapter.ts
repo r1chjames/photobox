@@ -11,12 +11,15 @@ export class MockPhotosAdapter implements IPhotosAdapter {
     return this;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public getAllPhotosInfo = async (fromId: string, limit: number, includeThumbnails: boolean, startDate?: string, endDate?: string): Promise<Photo[]> => {
-    const startIndex = fromId ? this._photos.findIndex(p => p.id === fromId) + 1 : 0;
+  public getAllPhotosInfo = async (fromId: string, limit: number, includeThumbnails: boolean, startDate?: string, endDate?: string, favorite?: boolean): Promise<Photo[]> => {
+    let photos = this._photos;
+    if (favorite) {
+      photos = photos.filter(p => p.favorite);
+    }
+    const startIndex = fromId ? photos.findIndex(p => p.id === fromId) + 1 : 0;
     if (startIndex === -1) return []; // fromId not found
     const endIndex = startIndex + limit;
-    return this._photos.slice(startIndex, endIndex);
+    return photos.slice(startIndex, endIndex);
   }
 
   public getPhotoInfoById = async (photoId: string): Promise<Photo> => {
