@@ -86,3 +86,23 @@ export const EmptyAlbumPhotos: Story = {
         }
     }
 };
+
+// Favorites view (issue #126) — favourites are fetched server-side via
+// `favorites=true`; only favourited photos should appear.
+const favouritesPhotos = new SBModelBuilder().newAlbumWithPhotos(12).getPhotos()
+    .map((photo, index) => ({ ...photo, favorite: index % 2 === 0 }));
+export const Favorites: Story = {
+    args: {
+        photosAdapter: new MockPhotosAdapter()
+            .withPhotos(favouritesPhotos),
+        albumsAdapter: new MockAlbumsAdapter()
+            .withAlbums(new SBModelBuilder().newEmptyAlbum().getAlbums()),
+        favoritesOnly: true,
+    },
+    parameters: {
+        reactRouter: {
+            initialEntries: ['/favorites'],
+            routePath: '/favorites',
+        }
+    }
+};

@@ -50,6 +50,36 @@ describe('PhotosAdapter', () => {
                 {}
             );
         });
+
+        it('should append favorites=true when favorite flag is set', async () => {
+            const mockPhotos: Photo[] = [];
+            vi.mocked(mockRestApiAdapter.getPaginatedApiCall).mockResolvedValue(mockPhotos);
+
+            const result = await photosAdapter.getAllPhotosInfo('photo-123', 30, true, undefined, undefined, true);
+
+            expect(mockRestApiAdapter.getPaginatedApiCall).toHaveBeenCalledWith(
+                'photos?fromId=photo-123&limit=30&thumbnail=true&favorites=true',
+                {
+                    'Content-Type': 'application/json',
+                    Authorization: 'Bearer test-token',
+                },
+                {}
+            );
+            expect(result).toBe(mockPhotos);
+        });
+
+        it('should not append favorites param when favorite flag is false', async () => {
+            const mockPhotos: Photo[] = [];
+            vi.mocked(mockRestApiAdapter.getPaginatedApiCall).mockResolvedValue(mockPhotos);
+
+            await photosAdapter.getAllPhotosInfo('photo-123', 30, true, undefined, undefined, false);
+
+            expect(mockRestApiAdapter.getPaginatedApiCall).toHaveBeenCalledWith(
+                'photos?fromId=photo-123&limit=30&thumbnail=true',
+                expect.any(Object),
+                {}
+            );
+        });
     });
 
     describe('getPhotoInfoById', () => {
