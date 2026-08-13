@@ -40,7 +40,7 @@ export const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
     try {
       const data = await photosAdapter.getTimeline();
       setEntries(data || []);
-    } catch (e) {
+    } catch {
       setEntries([]);
     } finally {
       setLoading(false);

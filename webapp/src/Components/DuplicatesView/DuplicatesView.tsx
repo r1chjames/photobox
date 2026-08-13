@@ -111,7 +111,7 @@ export const DuplicatesView: React.FC<DuplicatesViewProps> = ({ photosAdapter })
                     }
                 });
                 setGroups(map);
-            } catch (e) {
+            } catch {
                 setGroups(new Map());
             } finally {
                 setLoading(false);

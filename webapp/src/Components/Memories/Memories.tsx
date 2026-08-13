@@ -46,7 +46,7 @@ export const Memories: React.FC<MemoriesProps> = ({ photosAdapter }) => {
                 }
             }
             setThumbnailUrls(urls);
-        } catch (e) {
+        } catch {
             setMemories([]);
         } finally {
             setLoading(false);

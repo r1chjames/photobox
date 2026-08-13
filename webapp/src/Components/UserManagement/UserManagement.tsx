@@ -4,7 +4,7 @@ import { User } from '../../Models/User';
 import { EmptyState } from '../EmptyState/EmptyState';
 import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
-import { Table, Title, Select, ActionIcon, Loader, Center, Text, Tooltip, Skeleton } from '@mantine/core';
+import { Table, Title, Select, ActionIcon, Text, Tooltip, Skeleton } from '@mantine/core';
 import { IconTrash, IconUsers } from '@tabler/icons-react';
 
 interface UserManagementProps {

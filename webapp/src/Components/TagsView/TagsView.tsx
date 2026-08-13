@@ -19,7 +19,7 @@ export const TagsView: React.FC<TagsViewProps> = ({ photosAdapter }) => {
             try {
                 const allTags = await photosAdapter.getAllTags();
                 setTags(allTags.sort());
-            } catch (e) {
+            } catch {
                 setTags([]);
             } finally {
                 setLoading(false);

@@ -45,7 +45,7 @@ export const SharedView: React.FC = () => {
         } else {
           setError(result.message || 'Failed to load shared content.');
         }
-      } catch (e) {
+      } catch {
         setError('Failed to load shared content.');
       } finally {
         setLoading(false);
