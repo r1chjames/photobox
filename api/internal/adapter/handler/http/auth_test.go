@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -29,7 +30,7 @@ func TestAuthHandler_Login_Success(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	mockService := new(MockAuthService)
-	handler := NewAuthHandler(mockService)
+	handler := NewAuthHandler(mockService, time.Hour)
 
 	loginReq := loginRequest{
 		Username: "testuser",
@@ -61,6 +62,8 @@ func TestAuthHandler_Login_Success(t *testing.T) {
 	assert.True(t, response.Success)
 	assert.Equal(t, "Success", response.Message)
 	assert.Equal(t, expectedToken, response.Data.AccessToken)
+	assert.False(t, response.Data.ExpiresAt.IsZero())
+	assert.WithinDuration(t, time.Now().Add(time.Hour), response.Data.ExpiresAt, time.Minute)
 
 	mockService.AssertExpectations(t)
 }
@@ -70,7 +73,7 @@ func TestAuthHandler_Login_InvalidCredentials(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	mockService := new(MockAuthService)
-	handler := NewAuthHandler(mockService)
+	handler := NewAuthHandler(mockService, time.Hour)
 
 	loginReq := loginRequest{
 		Username: "testuser",
@@ -144,7 +147,7 @@ func TestAuthHandler_Login_ValidationError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockService := new(MockAuthService)
-			handler := NewAuthHandler(mockService)
+			handler := NewAuthHandler(mockService, time.Hour)
 
 			w := httptest.NewRecorder()
 			ctx, _ := gin.CreateTestContext(w)
@@ -174,7 +177,7 @@ func TestAuthHandler_Login_InternalError(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	mockService := new(MockAuthService)
-	handler := NewAuthHandler(mockService)
+	handler := NewAuthHandler(mockService, time.Hour)
 
 	loginReq := loginRequest{
 		Username: "testuser",
@@ -209,7 +212,7 @@ func TestAuthHandler_Login_InvalidJSON(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	mockService := new(MockAuthService)
-	handler := NewAuthHandler(mockService)
+	handler := NewAuthHandler(mockService, time.Hour)
 
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)

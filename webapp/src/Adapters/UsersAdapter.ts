@@ -57,4 +57,5 @@ export class UsersAdapter implements IUsersAdapter {
 
 export interface Token {
   token: string;
+  expires_at?: string;
 }

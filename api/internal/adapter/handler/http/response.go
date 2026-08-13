@@ -74,13 +74,15 @@ func newMeta(total, limit, skip int) meta {
 
 // authResponse represents an authentication response body
 type authResponse struct {
-	AccessToken string `json:"token" example:"v2.local.Gdh5kiOTyyaQ3_bNykYDeYHO21Jg2..."`
+	AccessToken string    `json:"token" example:"v2.local.Gdh5kiOTyyaQ3_bNykYDeYHO21Jg2..."`
+	ExpiresAt   time.Time `json:"expires_at" example:"2026-08-13T12:00:00Z"`
 }
 
 // newAuthResponse is a helper function to create a response body for handling authentication data
-func newAuthResponse(token string) authResponse {
+func newAuthResponse(token string, expiresAt time.Time) authResponse {
 	return authResponse{
 		AccessToken: token,
+		ExpiresAt:   expiresAt,
 	}
 }
 

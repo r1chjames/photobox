@@ -3,17 +3,20 @@ package http
 import (
 	"github.com/gin-gonic/gin"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
+	"time"
 )
 
 // AuthHandler represents the HTTP handler for authentication-related requests
 type AuthHandler struct {
-	svc port.AuthService
+	svc           port.AuthService
+	tokenDuration time.Duration
 }
 
 // NewAuthHandler creates a new AuthHandler instance
-func NewAuthHandler(svc port.AuthService) *AuthHandler {
+func NewAuthHandler(svc port.AuthService, tokenDuration time.Duration) *AuthHandler {
 	return &AuthHandler{
 		svc,
+		tokenDuration,
 	}
 }
 
@@ -49,7 +52,7 @@ func (ah *AuthHandler) Login(ctx *gin.Context) {
 		return
 	}
 
-	rsp := newAuthResponse(token)
+	rsp := newAuthResponse(token, time.Now().Add(ah.tokenDuration))
 
 	handleSuccess(ctx, rsp)
 }

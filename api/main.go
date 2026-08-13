@@ -173,7 +173,7 @@ func setupHttpHandlers(
 	appServices *AppServices) (*http.Router, error) {
 
 	userHandler := http.NewUserHandler(appServices.userService)
-	authHandler := http.NewAuthHandler(appServices.authService)
+	authHandler := http.NewAuthHandler(appServices.authService, config.TokenDuration)
 	photoHandler := http.NewPhotoHandler(appServices.photoService, appServices.jobService)
 	albumHandler := http.NewAlbumHandler(appServices.albumService)
 	utilityHandler := http.NewUtilityHandler(appServices.utilityService, version)
