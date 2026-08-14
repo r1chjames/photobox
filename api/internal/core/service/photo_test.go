@@ -75,6 +75,11 @@ func (m *MockPhotoRepository) RestorePhoto(photoId string) (*domain.Photo, error
 	return args.Get(0).(*domain.Photo), args.Error(1)
 }
 
+func (m *MockPhotoRepository) SetTrashPath(photoId, trashPath string) error {
+	args := m.Called(photoId, trashPath)
+	return args.Error(0)
+}
+
 func (m *MockPhotoRepository) ListTrashPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
 	args := m.Called(fromId, limit, includeThumbnail)
 	if args.Get(0) == nil {
@@ -1129,6 +1134,7 @@ func TestDeletePhoto(t *testing.T) {
 					FilesystemPath: "/storage/photos/test.jpg",
 				}, nil)
 				mFs.On("MoveToTrash", mock.AnythingOfType("string")).Return("/trash/test.jpg", nil)
+				mPhoto.On("SetTrashPath", "photo-123", "/trash/test.jpg").Return(nil)
 			},
 			validate: func(t *testing.T, err error) {
 				assert.NoError(t, err)
@@ -1170,16 +1176,32 @@ func TestRestorePhoto(t *testing.T) {
 	tests := []struct {
 		name      string
 		photoId   string
-		mockSetup func(*MockPhotoRepository)
+		mockSetup func(*MockPhotoRepository, *MockFilesystemService)
 		validate  func(*testing.T, error)
 	}{
 		{
-			name:    "successfully restore photo",
+			name:    "successfully restore photo with trash path",
 			photoId: "photo-123",
-			mockSetup: func(mPhoto *MockPhotoRepository) {
+			mockSetup: func(mPhoto *MockPhotoRepository, mFs *MockFilesystemService) {
 				mPhoto.On("RestorePhoto", "photo-123").Return(&domain.Photo{
 					ID:             "photo-123",
 					FilesystemPath: "/storage/photos/test.jpg",
+					TrashPath:      "/storage/.trash/test.jpg",
+				}, nil)
+				mFs.On("RestoreFromTrash", "/storage/.trash/test.jpg", "/storage/photos/test.jpg").Return(nil)
+				mPhoto.On("SetTrashPath", "photo-123", "").Return(nil)
+			},
+			validate: func(t *testing.T, err error) {
+				assert.NoError(t, err)
+			},
+		},
+		{
+			name:    "legacy photo without trash path is no-op",
+			photoId: "photo-456",
+			mockSetup: func(mPhoto *MockPhotoRepository, mFs *MockFilesystemService) {
+				mPhoto.On("RestorePhoto", "photo-456").Return(&domain.Photo{
+					ID:             "photo-456",
+					FilesystemPath: "/storage/photos/old.jpg",
 				}, nil)
 			},
 			validate: func(t *testing.T, err error) {
@@ -1189,7 +1211,7 @@ func TestRestorePhoto(t *testing.T) {
 		{
 			name:    "photo not found",
 			photoId: "nonexistent",
-			mockSetup: func(mPhoto *MockPhotoRepository) {
+			mockSetup: func(mPhoto *MockPhotoRepository, mFs *MockFilesystemService) {
 				mPhoto.On("RestorePhoto", "nonexistent").Return(nil, errors.New("not found"))
 			},
 			validate: func(t *testing.T, err error) {
@@ -1205,13 +1227,14 @@ func TestRestorePhoto(t *testing.T) {
 			mockFsSvc := new(MockFilesystemService)
 			config := appconfig.AppConfig{}
 
-			tt.mockSetup(mockRepo)
+			tt.mockSetup(mockRepo, mockFsSvc)
 			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 
 			err := service.RestorePhoto(tt.photoId)
 
 			tt.validate(t, err)
 			mockRepo.AssertExpectations(t)
+			mockFsSvc.AssertExpectations(t)
 		})
 	}
 }
@@ -1704,8 +1727,10 @@ func TestBatchOperations(t *testing.T) {
 
 		mockRepo.On("SoftDeletePhoto", "p1").Return(&domain.Photo{ID: "p1", FilesystemPath: "/photos/a.jpg"}, nil)
 		mockRepo.On("SoftDeletePhoto", "p2").Return(&domain.Photo{ID: "p2", FilesystemPath: "/photos/b.jpg"}, nil)
-		mockFsSvc.On("MoveToTrash", "/photos/a.jpg").Return("", nil)
-		mockFsSvc.On("MoveToTrash", "/photos/b.jpg").Return("", nil)
+		mockFsSvc.On("MoveToTrash", "/photos/a.jpg").Return("/photos/.trash/a.jpg", nil)
+		mockFsSvc.On("MoveToTrash", "/photos/b.jpg").Return("/photos/.trash/b.jpg", nil)
+		mockRepo.On("SetTrashPath", "p1", "/photos/.trash/a.jpg").Return(nil)
+		mockRepo.On("SetTrashPath", "p2", "/photos/.trash/b.jpg").Return(nil)
 
 		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 		err := service.BatchDeletePhotos([]string{"p1", "p2"})

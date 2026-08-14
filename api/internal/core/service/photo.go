@@ -770,8 +770,12 @@ func (ps *PhotoService) DeletePhoto(photoId string) error {
 		return nil
 	}
 	unescapedPath := utils.UnescapeInvalidCharacters(photo.FilesystemPath)
-	_, err = ps.filesystemSvc.MoveToTrash(unescapedPath)
-	return err
+	trashPath, err := ps.filesystemSvc.MoveToTrash(unescapedPath)
+	if err != nil {
+		return err
+	}
+	// Remember where the file went so RestorePhoto can move it back.
+	return ps.photoRepo.SetTrashPath(photoId, trashPath)
 }
 
 // BatchDeletePhotos soft-deletes (moves to trash) multiple photos in one pass.
@@ -804,13 +808,18 @@ func (ps *PhotoService) RestorePhoto(photoId string) error {
 	if photo.FilesystemPath == "" {
 		return nil
 	}
-	trashPath := utils.UnescapeInvalidCharacters(photo.FilesystemPath)
-	// The original path is the same as the stored path before trash
-	// The filesystem repo will move it back
-	// For now, we assume the path in DB is the original path
-	// and the trash path is computed by the repo
-	_ = trashPath
-	return nil
+	originalPath := utils.UnescapeInvalidCharacters(photo.FilesystemPath)
+	trashPath := utils.UnescapeInvalidCharacters(photo.TrashPath)
+	if trashPath == "" {
+		// Legacy photos trashed before TrashPath was tracked: the file's
+		// original path is the best guess (it may already be in .trash).
+		return nil
+	}
+	if err := ps.filesystemSvc.RestoreFromTrash(trashPath, originalPath); err != nil {
+		return err
+	}
+	// File is back home; clear the recorded trash location.
+	return ps.photoRepo.SetTrashPath(photoId, "")
 }
 
 func (ps *PhotoService) ListTrashPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {

@@ -37,6 +37,10 @@ type Photo struct {
 	QualityScore   int            `json:"qualityScore" gorm:"default:0"`
 	BlurScore      float64        `json:"blurScore" gorm:"default:0"`
 	IsLowQuality   bool           `json:"isLowQuality" gorm:"default:false;index"`
+	// TrashPath records where the original file was moved when the photo was
+	// soft-deleted, so RestorePhoto can move it back. Empty for photos that
+	// were never deleted (or have no filesystem file).
+	TrashPath string `json:"-" gorm:"type:text"`
 }
 
 type PhotoTag struct {

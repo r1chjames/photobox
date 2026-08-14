@@ -386,6 +386,20 @@ func (m *MockPhotoRepository) RestorePhoto(photoId string) (*domain.Photo, error
 	return ret0, ret1
 }
 
+// SetTrashPath mocks base method.
+func (m *MockPhotoRepository) SetTrashPath(photoId, trashPath string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetTrashPath", photoId, trashPath)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetTrashPath indicates an expected call of SetTrashPath.
+func (mr *MockPhotoRepositoryMockRecorder) SetTrashPath(photoId, trashPath interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTrashPath", reflect.TypeOf((*MockPhotoRepository)(nil).SetTrashPath), photoId, trashPath)
+}
+
 // RestorePhoto indicates an expected call of RestorePhoto.
 func (mr *MockPhotoRepositoryMockRecorder) RestorePhoto(photoId interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
