@@ -1,9 +1,8 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import {useDisclosure, useHotkeys} from '@mantine/hooks';
-import {ActionIcon, Button, Chip, Dialog, Drawer, Group, Image, Loader, Modal, ScrollArea, Table, TextInput} from '@mantine/core';
+import {ActionIcon, Button, Chip, Dialog, Drawer, Group, Image, Loader, Modal, ScrollArea, TextInput} from '@mantine/core';
 import {useMediaQuery} from '@mantine/hooks';
 import {IconArrowLeftDashed, IconArrowRightDashed, IconDownload, IconHeart, IconHeartFilled, IconListDetails, IconRotateClockwise, IconShare2, IconTag} from '@tabler/icons-react';
-import {valueType} from "../../utils/TypeUtils";
 import {IPhotosAdapter} from '../../Adapters/IPhotosAdapter';
 import {ISharesAdapter} from '../../Adapters/ISharesAdapter';
 import {ShareModal} from '../ShareModal/ShareModal';
@@ -12,6 +11,7 @@ import {fetchPhotoBinWithAuth, revokeBlobUrl} from "../../utils/ImageUtils";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {notifications} from '@mantine/notifications';
 import {optimisticallyUpdatePhoto} from '../../utils/queryClientHelpers';
+import {MetadataPanel} from './MetadataPanel';
 
 interface IProps {
     photosAdapter: IPhotosAdapter;
@@ -28,7 +28,6 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
     const [tagInput, setTagInput] = useState('');
     const isMobile = useMediaQuery('(max-width: 50em)');
     const queryClient = useQueryClient();
-
     // Fetch surrounding photos to determine prev/next navigation
     const {data: allPhotos} = useQuery({
         queryKey: ['allPhotosForNavigation'],
@@ -177,32 +176,6 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
         };
     }, [photoUrl]);
 
-    const tableRow = (key: string, value: string) =>
-        <Table.Tr key={key}>
-            <Table.Td>{key}</Table.Td>
-            <Table.Td>{value}</Table.Td>
-        </Table.Tr>
-
-    const buildRows = (metadata: Record<string, any>): React.ReactNode => {
-        if (!metadata) {
-            return null;
-        }
-        return Object.entries(metadata)
-            .filter(([key, value]) => (value !== undefined) && (![...Array(100).keys()].map(v => v.toString()).includes(key)) && (value !== ""))
-            .map(([key, value]): React.ReactNode => {
-                switch (valueType(value)) {
-                    case ('json'):
-                        return buildRows(JSON.parse(value));
-                    case ('object'):
-                        return buildRows(value);
-                    case ('string'):
-                        return tableRow(key, value);
-                    default:
-                        return null;
-                }
-            })
-    };
-
     return (
         photo && photoUrl ?
             <>
@@ -284,17 +257,7 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                                     ))}
                                 </Group>
                             )}
-                            <Table>
-                                <Table.Thead>
-                                    <Table.Tr>
-                                        <Table.Th>Parameter</Table.Th>
-                                        <Table.Th>Value</Table.Th>
-                                    </Table.Tr>
-                                </Table.Thead>
-                                <Table.Tbody>
-                                    {photo.metadata && buildRows(photo.metadata)}
-                                </Table.Tbody>
-                            </Table>
+                            <MetadataPanel photo={photo} />
                         </ScrollArea>
                     </Drawer>
                 ) : (
@@ -311,17 +274,7 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                                     ))}
                                 </Group>
                             )}
-                            <Table>
-                                <Table.Thead>
-                                    <Table.Tr>
-                                        <Table.Th>Parameter</Table.Th>
-                                        <Table.Th>Value</Table.Th>
-                                    </Table.Tr>
-                                </Table.Thead>
-                                <Table.Tbody>
-                                    {photo.metadata && buildRows(photo.metadata)}
-                                </Table.Tbody>
-                            </Table>
+                            <MetadataPanel photo={photo} />
                         </ScrollArea>
                     </Dialog>
                 )}

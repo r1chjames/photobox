@@ -31,10 +31,22 @@ describe('PhotoDetail', () => {
                 id: 'test-photo-id',
                 name: 'test-photo.jpg',
                 metadata: {
-                    Camera: 'Canon EOS R5',
-                    ISO: '400',
-                    FocalLength: '50mm',
-                    ExifVersion: '0232',
+                    exif: {
+                        Make: 'Canon',
+                        Model: 'EOS R5',
+                        ISOSpeedRatings: [400],
+                        FNumber: '1/8',
+                        DateTimeOriginal: '2023:01:01 21:43:14',
+                        GPSLatitude: ['52/1', '2/1', '24/1'],
+                        GPSLongitude: ['0/1', '5/1', '40/1'],
+                        GPSLatitudeRef: 'N',
+                        GPSLongitudeRef: 'E',
+                    },
+                    size: 72731,
+                    width: 2400,
+                    height: 1200,
+                    mime: 'image/jpeg',
+                    md5: '1031db5affaee4fb204553478faec521',
                 },
             }),
             getAllPhotosInfo: vi.fn().mockResolvedValue([
@@ -95,75 +107,50 @@ describe('PhotoDetail', () => {
         await waitFor(() => {
             // Metadata should be visible since dialog is open by default
             expect(screen.getByText('Camera')).toBeInTheDocument();
-            expect(screen.getByText('Canon EOS R5')).toBeInTheDocument();
-        });
-    });
-
-    it('should filter numeric keys from metadata', async () => {
-        const adapterWithNumericKeys = {
-            getPhotoInfoById: vi.fn().mockResolvedValue({
-                id: 'test-photo-id',
-                name: 'test-photo.jpg',
-                metadata: {
-                    Camera: 'Canon EOS R5',
-                    '0': 'should be filtered',
-                    '1': 'should be filtered',
-                    '99': 'should be filtered',
-                    ISO: 'ISO 400',  // Changed from '400' to 'ISO 400' to avoid JSON parsing
-                },
-            }),
-            getAllPhotosInfo: vi.fn().mockResolvedValue([
-                { id: 'test-photo-id', name: 'test-photo.jpg' },
-            ]),
-        } as unknown as IPhotosAdapter;
-
-        render(<PhotoDetail photosAdapter={adapterWithNumericKeys} />);
-
-        await waitFor(() => {
-            expect(screen.getByText('Camera')).toBeInTheDocument();
-            expect(screen.getByText('ISO')).toBeInTheDocument();
-        }, { timeout: 3000 });
-
-        expect(screen.queryByText('should be filtered')).not.toBeInTheDocument();
-    });
-
-    it('should handle nested metadata objects', async () => {
-        const adapterWithNestedMetadata = {
-            getPhotoInfoById: vi.fn().mockResolvedValue({
-                id: 'test-photo-id',
-                name: 'test-photo.jpg',
-                metadata: {
-                    Camera: {
-                        Make: 'Canon',
-                        Model: 'EOS R5',
-                    },
-                },
-            }),
-            getAllPhotosInfo: vi.fn().mockResolvedValue([
-                { id: 'test-photo-id', name: 'test-photo.jpg' },
-            ]),
-        } as unknown as IPhotosAdapter;
-
-        render(<PhotoDetail photosAdapter={adapterWithNestedMetadata} />);
-
-        await waitFor(() => {
-            expect(screen.getByText('Make')).toBeInTheDocument();
             expect(screen.getByText('Canon')).toBeInTheDocument();
-            expect(screen.getByText('Model')).toBeInTheDocument();
             expect(screen.getByText('EOS R5')).toBeInTheDocument();
         });
     });
 
-    it('should handle metadata with empty values', async () => {
-        const adapterWithEmptyValues = {
+    it('should render grouped metadata sections', async () => {
+        render(<PhotoDetail photosAdapter={mockPhotosAdapter} />);
+
+        await waitFor(() => {
+            expect(screen.getByText('Camera')).toBeInTheDocument();
+            expect(screen.getByText('Settings')).toBeInTheDocument();
+            expect(screen.getByText('Date')).toBeInTheDocument();
+            expect(screen.getByText('Location')).toBeInTheDocument();
+            expect(screen.getByText('File')).toBeInTheDocument();
+        });
+    });
+
+    it('should format EXIF values nicely', async () => {
+        render(<PhotoDetail photosAdapter={mockPhotosAdapter} />);
+
+        await waitFor(() => {
+            // ISO from array
+            expect(screen.getByText('400')).toBeInTheDocument();
+            // Aperture f/1/8 -> f/0.13 (1/8 = 0.125)
+            expect(screen.getByText(/f\//)).toBeInTheDocument();
+            // GPS decimal degrees
+            expect(screen.getByText(/52\.04/)).toBeInTheDocument();
+            // File size 72731 bytes -> 71.0 KB
+            expect(screen.getByText(/KB/)).toBeInTheDocument();
+            // EXIF date 2023:01:01 -> friendly format
+            expect(screen.getByText(/2023/)).toBeInTheDocument();
+        });
+    });
+
+    it('should handle metadata with no exif', async () => {
+        const adapterNoExif = {
             getPhotoInfoById: vi.fn().mockResolvedValue({
                 id: 'test-photo-id',
                 name: 'test-photo.jpg',
                 metadata: {
-                    Camera: 'Canon EOS R5',
-                    EmptyField: '',
-                    UndefinedField: undefined,
-                    ISO: 'ISO 400',  // Changed from '400' to 'ISO 400' to avoid JSON parsing
+                    size: 1024,
+                    width: 100,
+                    height: 100,
+                    mime: 'image/png',
                 },
             }),
             getAllPhotosInfo: vi.fn().mockResolvedValue([
@@ -171,16 +158,31 @@ describe('PhotoDetail', () => {
             ]),
         } as unknown as IPhotosAdapter;
 
-        render(<PhotoDetail photosAdapter={adapterWithEmptyValues} />);
+        render(<PhotoDetail photosAdapter={adapterNoExif} />);
 
         await waitFor(() => {
-            expect(screen.getByText('Camera')).toBeInTheDocument();
-            expect(screen.getByText('ISO')).toBeInTheDocument();
-        }, { timeout: 3000 });
+            expect(screen.getByText('File')).toBeInTheDocument();
+            expect(screen.queryByText('Camera')).not.toBeInTheDocument();
+        });
+    });
 
-        // Empty and undefined fields should be filtered out
-        expect(screen.queryByText('EmptyField')).not.toBeInTheDocument();
-        expect(screen.queryByText('UndefinedField')).not.toBeInTheDocument();
+    it('should show empty state when no metadata exists', async () => {
+        const adapterNoMetadata = {
+            getPhotoInfoById: vi.fn().mockResolvedValue({
+                id: 'test-photo-id',
+                name: '',
+                metadata: {},
+            }),
+            getAllPhotosInfo: vi.fn().mockResolvedValue([
+                { id: 'test-photo-id', name: 'test-photo.jpg' },
+            ]),
+        } as unknown as IPhotosAdapter;
+
+        render(<PhotoDetail photosAdapter={adapterNoMetadata} />);
+
+        await waitFor(() => {
+            expect(screen.getByText(/no metadata available/i)).toBeInTheDocument();
+        });
     });
 
     it('should call getPhotoInfoById with correct id', async () => {
@@ -203,36 +205,5 @@ describe('PhotoDetail', () => {
         // Should show loader when error occurs (since component renders loader when no photo data)
         const loader = container.querySelector('.mantine-Loader-root');
         expect(loader).toBeInTheDocument();
-    });
-
-    it('should render metadata table with headers', async () => {
-        render(<PhotoDetail photosAdapter={mockPhotosAdapter} />);
-
-        await waitFor(() => {
-            expect(screen.getByText('Parameter')).toBeInTheDocument();
-            expect(screen.getByText('Value')).toBeInTheDocument();
-        });
-    });
-
-    it('should handle JSON string metadata', async () => {
-        const adapterWithJSONMetadata = {
-            getPhotoInfoById: vi.fn().mockResolvedValue({
-                id: 'test-photo-id',
-                name: 'test-photo.jpg',
-                metadata: {
-                    EXIF: '{"Make":"Canon","Model":"EOS R5"}',
-                },
-            }),
-            getAllPhotosInfo: vi.fn().mockResolvedValue([
-                { id: 'test-photo-id', name: 'test-photo.jpg' },
-            ]),
-        } as unknown as IPhotosAdapter;
-
-        render(<PhotoDetail photosAdapter={adapterWithJSONMetadata} />);
-
-        await waitFor(() => {
-            expect(screen.getByText('Make')).toBeInTheDocument();
-            expect(screen.getByText('Canon')).toBeInTheDocument();
-        });
     });
 });
