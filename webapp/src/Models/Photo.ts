@@ -21,4 +21,6 @@ export interface Photo {
   description?: string;
   latitude?: number;
   longitude?: number;
+  qualityScore?: number;
+  isLowQuality?: boolean;
 }

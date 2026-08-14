@@ -11,10 +11,13 @@ export class MockPhotosAdapter implements IPhotosAdapter {
     return this;
   }
 
-  public getAllPhotosInfo = async (fromId: string, limit: number, includeThumbnails: boolean, startDate?: string, endDate?: string, favorite?: boolean): Promise<Photo[]> => {
+  public getAllPhotosInfo = async (fromId: string, limit: number, includeThumbnails: boolean, startDate?: string, endDate?: string, favorite?: boolean, lowQuality?: boolean): Promise<Photo[]> => {
     let photos = this._photos;
     if (favorite) {
       photos = photos.filter(p => p.favorite);
+    }
+    if (lowQuality) {
+      photos = photos.filter(p => p.isLowQuality);
     }
     const startIndex = fromId ? photos.findIndex(p => p.id === fromId) + 1 : 0;
     if (startIndex === -1) return []; // fromId not found

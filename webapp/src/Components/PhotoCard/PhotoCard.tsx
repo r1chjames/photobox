@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import {Photo} from '../../Models/Photo';
 import {ActionIcon, Badge, Button, Card, Flex, Group, Image, Overlay, Stack, Tooltip} from '@mantine/core';
 import {useNavigate} from "react-router-dom";
-import {IconArrowLeftDashed, IconArrowRightDashed, IconCalendar, IconDownload, IconFolder, IconHeart, IconHeartFilled, IconMaximize, IconMinimize, IconPlayerPlay, IconRotateClockwise, IconShare2, IconX} from "@tabler/icons-react";
+import {IconArrowLeftDashed, IconArrowRightDashed, IconCalendar, IconDownload, IconFolder, IconHeart, IconHeartFilled, IconMaximize, IconMinimize, IconPhotoOff, IconPlayerPlay, IconRotateClockwise, IconShare2, IconX} from "@tabler/icons-react";
 import {useHotkeys} from "@mantine/hooks";
 import {notifications} from '@mantine/notifications';
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
@@ -391,6 +391,11 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                         {albumName && (
                             <Badge leftSection={<IconFolder size={14} />} variant="light" color="teal">
                                 {albumName}
+                            </Badge>
+                        )}
+                        {props.source.isLowQuality && (
+                            <Badge leftSection={<IconPhotoOff size={14} />} variant="light" color="red">
+                                Low quality
                             </Badge>
                         )}
                     </Group>

@@ -134,6 +134,27 @@ func (m *MockPhotoRepository) ListFavoritePhotos(fromId string, limit int, inclu
 	return args.Get(0).([]*domain.Photo), args.Error(1)
 }
 
+func (m *MockPhotoRepository) ListLowQualityPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	args := m.Called(fromId, limit, includeThumbnail)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoRepository) ListUnscoredPhotos(limit int) ([]*domain.Photo, error) {
+	args := m.Called(limit)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoRepository) UpdatePhotoQuality(photoId string, qualityScore int, blurScore float64, isLowQuality bool) error {
+	args := m.Called(photoId, qualityScore, blurScore, isLowQuality)
+	return args.Error(0)
+}
+
 func (m *MockPhotoRepository) SearchPhotos(query string, limit int) ([]*domain.Photo, error) {
 	args := m.Called(query, limit)
 	if args.Get(0) == nil {
@@ -1773,5 +1794,49 @@ func TestUpdatePhotoMetadata(t *testing.T) {
 		_, err := service.UpdatePhotoMetadata("p1", "", nil, nil, &dateTaken)
 
 		assert.ErrorIs(t, err, domain.ErrInvalidRequest)
+	})
+}
+
+// TestScoreAllPhotoQuality tests the quality backfill pass
+func TestScoreAllPhotoQuality(t *testing.T) {
+	t.Run("scores all unscored photos", func(t *testing.T) {
+		mockRepo := new(MockPhotoRepository)
+		mockAlbumSvc := new(MockAlbumService)
+		mockFsSvc := new(MockFilesystemService)
+		config := appconfig.AppConfig{}
+
+		mockRepo.On("ListUnscoredPhotos", 200).Return([]*domain.Photo{}, nil).Once()
+
+		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
+		scored, err := service.ScoreAllPhotoQuality(200)
+
+		assert.NoError(t, err)
+		assert.Equal(t, 0, scored)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("scores photos then stops when batch is short", func(t *testing.T) {
+		mockRepo := new(MockPhotoRepository)
+		mockAlbumSvc := new(MockAlbumService)
+		mockFsSvc := new(MockFilesystemService)
+		config := appconfig.AppConfig{}
+
+		// A real image file so the analyzer produces a score.
+		imgDir := t.TempDir()
+		imgPath := writeNoisyPNG(t, imgDir, "sharp.png", 200, 200)
+
+		// One batch of 1 photo (< batchSize) then empty
+		mockRepo.On("ListUnscoredPhotos", 200).Return([]*domain.Photo{
+			{ID: "p1", FilesystemPath: imgPath},
+		}, nil).Once()
+		mockRepo.On("GetPhotoById", "p1", false).Return(&domain.Photo{ID: "p1", FilesystemPath: imgPath}, nil).Once()
+		mockRepo.On("UpdatePhotoQuality", "p1", mock.Anything, mock.Anything, false).Return(nil).Once()
+
+		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
+		scored, err := service.ScoreAllPhotoQuality(200)
+
+		assert.NoError(t, err)
+		assert.Equal(t, 1, scored)
+		mockRepo.AssertExpectations(t)
 	})
 }

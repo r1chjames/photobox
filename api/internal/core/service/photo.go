@@ -306,6 +306,15 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 		}
 		photoInfo.Year, photoInfo.Month = getPhotoYearMonth(photo.Exif, photo.ModifiedTime)
 
+		// Compute deterministic quality metrics (blur/exposure) for images.
+		if photo.MediaType != "video" {
+			if quality, qErr := AnalyzeQuality(photo.Path); qErr == nil && quality != nil {
+				photoInfo.QualityScore = quality.Overall
+				photoInfo.BlurScore = quality.BlurScore
+				photoInfo.IsLowQuality = quality.IsLowQuality
+			}
+		}
+
 		slog.Info("Adding photo", "photo", photo.Name, "album", photo.Directory)
 
 		// Generate and store medium thumbnail at index time so thumbnails
@@ -942,6 +951,69 @@ func (ps *PhotoService) ListFavoritePhotos(fromId string, limit int, includeThum
 	}
 	ps.setPhotosSourcePath(resp)
 	return resp, nil
+}
+
+func (ps *PhotoService) ListLowQualityPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	resp, err := ps.photoRepo.ListLowQualityPhotos(fromId, limit, includeThumbnail)
+	if err != nil {
+		return nil, err
+	}
+	ps.setPhotosSourcePath(resp)
+	return resp, nil
+}
+
+// ScorePhotoQuality runs the deterministic quality analyzer on a photo and
+// stores the result. Returns (false, nil) when the photo is unscorable
+// (unreadable file) or already scored.
+func (ps *PhotoService) ScorePhotoQuality(photoId string) (bool, error) {
+	photo, err := ps.photoRepo.GetPhotoById(photoId, false)
+	if err != nil {
+		return false, err
+	}
+	if photo.QualityScore != 0 || photo.FilesystemPath == "" {
+		return false, nil
+	}
+	analysis, err := AnalyzeQuality(utils.UnescapeInvalidCharacters(photo.FilesystemPath))
+	if err != nil || analysis == nil {
+		return false, nil
+	}
+	if err := ps.photoRepo.UpdatePhotoQuality(photoId, analysis.Overall, analysis.BlurScore, analysis.IsLowQuality); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// ScoreAllPhotoQuality backfills quality scores for all unscored photos
+// (the index only scores newly-added files, so existing libraries need a
+// one-off pass). Returns the number of photos scored.
+func (ps *PhotoService) ScoreAllPhotoQuality(batchSize int) (int, error) {
+	if batchSize <= 0 {
+		batchSize = 200
+	}
+	scored := 0
+	for {
+		unscored, err := ps.photoRepo.ListUnscoredPhotos(batchSize)
+		if err != nil {
+			return scored, err
+		}
+		if len(unscored) == 0 {
+			break
+		}
+		for _, photo := range unscored {
+			ok, err := ps.ScorePhotoQuality(photo.ID)
+			if err != nil {
+				slog.Warn("Quality scoring failed", "photo", photo.ID, "error", err)
+				continue
+			}
+			if ok {
+				scored++
+			}
+		}
+		if len(unscored) < batchSize {
+			break
+		}
+	}
+	return scored, nil
 }
 
 func (ps *PhotoService) Search(query string, limit int) ([]*domain.Photo, error) {

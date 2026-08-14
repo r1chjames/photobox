@@ -170,6 +170,24 @@ func (m *MockPhotoService) ListFavoritePhotos(fromId string, limit int, includeT
 	return args.Get(0).([]*domain.Photo), args.Error(1)
 }
 
+func (m *MockPhotoService) ListLowQualityPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	args := m.Called(fromId, limit, includeThumbnail)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoService) ScorePhotoQuality(photoId string) (bool, error) {
+	args := m.Called(photoId)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockPhotoService) ScoreAllPhotoQuality(batchSize int) (int, error) {
+	args := m.Called(batchSize)
+	return args.Int(0), args.Error(1)
+}
+
 func (m *MockPhotoService) Search(query string, limit int) ([]*domain.Photo, error) {
 	args := m.Called(query, limit)
 	if args.Get(0) == nil {
@@ -1053,4 +1071,49 @@ func TestPhotoHandler_GetPhotoLocation(t *testing.T) {
 		assert.Equal(t, "Cambridge, United Kingdom", response.Data.Location)
 		mockPhotoSvc.AssertExpectations(t)
 	})
+}
+
+// TestPhotoHandler_ListPhotos_LowQuality tests the lowQuality filter
+func TestPhotoHandler_ListPhotos_LowQuality(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockPhotoSvc := new(MockPhotoService)
+	mockJobSvc := new(MockJobService)
+	handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+	expected := []*domain.Photo{
+		{ID: "p1", Name: "blurry.jpg", QualityScore: 12, IsLowQuality: true},
+		{ID: "p2", Name: "solid.jpg", QualityScore: 5, IsLowQuality: true},
+	}
+	mockPhotoSvc.On("ListLowQualityPhotos", "", 10, false).Return(expected, nil)
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/photos?lowQuality=true", nil)
+
+	handler.ListPhotos(ctx)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	mockPhotoSvc.AssertExpectations(t)
+}
+
+// TestPhotoHandler_ListPhotos_WithoutLowQuality tests default routing
+func TestPhotoHandler_ListPhotos_WithoutLowQuality(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockPhotoSvc := new(MockPhotoService)
+	mockJobSvc := new(MockJobService)
+	handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+	expected := []*domain.Photo{{ID: "p1", Name: "normal.jpg"}}
+	mockPhotoSvc.On("ListPhotos", "", 10, false, "", "", "").Return(expected, nil)
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/photos", nil)
+
+	handler.ListPhotos(ctx)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	mockPhotoSvc.AssertExpectations(t)
 }

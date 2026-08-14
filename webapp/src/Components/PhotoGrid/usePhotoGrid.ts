@@ -2,7 +2,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 
-const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapter, albumIdentifier: string | undefined, startDate?: string, endDate?: string, tags?: string, mediaType?: string, searchQuery?: string, favoritesOnly?: boolean) => {
+const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapter, albumIdentifier: string | undefined, startDate?: string, endDate?: string, tags?: string, mediaType?: string, searchQuery?: string, favoritesOnly?: boolean, lowQualityOnly?: boolean) => {
     const limit = 60;
 
     // When an albumIdentifier is present, it's used to fetch album details.
@@ -14,7 +14,7 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapt
     });
 
     // Use the fetched album's name if available, otherwise default to "All Photos".
-    const albumName = albumIdentifier ? album?.name : (searchQuery ? `Search: "${searchQuery}"` : (tags ? `Tag: ${tags}` : (favoritesOnly ? 'Favorites' : (mediaType === 'video' ? 'Videos' : 'All Photos'))));
+    const albumName = albumIdentifier ? album?.name : (searchQuery ? `Search: "${searchQuery}"` : (tags ? `Tag: ${tags}` : (favoritesOnly ? 'Favorites' : (lowQualityOnly ? 'Low quality' : (mediaType === 'video' ? 'Videos' : 'All Photos')))));
     const albumId = album?.id; // The actual ID of the album, to be used for fetching photos.
 
     const {
@@ -27,7 +27,7 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapt
     } = useInfiniteQuery({
         // The query key for photos is now dependent on the actual albumId and date filters.
         // This ensures that if the albumId or date range changes, the photos are re-fetched.
-        queryKey: ['albumPhotos', albumId, startDate, endDate, tags, mediaType, searchQuery, favoritesOnly],
+        queryKey: ['albumPhotos', albumId, startDate, endDate, tags, mediaType, searchQuery, favoritesOnly, lowQualityOnly],
         async queryFn({ pageParam = "" }) {
             const fromId = pageParam;
 
@@ -46,6 +46,8 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapt
                 retrievedPhotos = await photosAdapter.getVideos(fromId, limit);
             } else if (albumId) {
                 retrievedPhotos = await photosAdapter.getPhotosInfoInAlbum(albumId, fromId, limit, false, startDate, endDate);
+            } else if (lowQualityOnly) {
+                retrievedPhotos = await photosAdapter.getAllPhotosInfo(fromId, limit, false, undefined, undefined, false, true);
             } else {
                 retrievedPhotos = await photosAdapter.getAllPhotosInfo(fromId, limit, false, startDate, endDate, favoritesOnly);
             }

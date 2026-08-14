@@ -291,6 +291,52 @@ func (pr *PhotoRepository) ListFavoritePhotos(fromId string, limit int, includeT
 	return photos, result.Error
 }
 
+// ListLowQualityPhotos returns photos flagged as low quality (blurry,
+// badly exposed, or mostly-solid). Ordered by worst quality first.
+func (pr *PhotoRepository) ListLowQualityPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	var photos []*domain.Photo
+	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).
+		Where("is_low_quality = ? AND deleted_at IS NULL", true).
+		Where("hidden = ?", false).
+		Order("quality_score ASC").
+		Omit("thumbnail")
+	if fromId != "" {
+		fromPhoto, err := pr.GetPhotoById(fromId, false)
+		if err != nil {
+			return nil, err
+		}
+		result = result.Where("quality_score < ?", fromPhoto.QualityScore)
+	}
+	result = result.Limit(limit)
+	result = result.Find(&photos)
+	return photos, result.Error
+}
+
+// ListUnscoredPhotos returns non-video photos without a quality score yet,
+// used by the background quality pass to backfill scores for pre-existing
+// photos (the index only scores newly-added files).
+func (pr *PhotoRepository) ListUnscoredPhotos(limit int) ([]*domain.Photo, error) {
+	var photos []*domain.Photo
+	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).
+		Where("quality_score = 0 AND deleted_at IS NULL").
+		Where("media_type <> ? OR media_type IS NULL", "video").
+		Omit("thumbnail").
+		Limit(limit).
+		Find(&photos)
+	return photos, result.Error
+}
+
+// UpdatePhotoQuality persists the quality metrics for a photo.
+func (pr *PhotoRepository) UpdatePhotoQuality(photoId string, qualityScore int, blurScore float64, isLowQuality bool) error {
+	result := pr.dbEnv.Db.Model(&domain.Photo{}).Where("id = ?", photoId).Updates(map[string]interface{}{
+		"quality_score":  qualityScore,
+		"blur_score":     blurScore,
+		"is_low_quality": isLowQuality,
+		"updated_at":     time.Now(),
+	})
+	return result.Error
+}
+
 func (pr *PhotoRepository) SearchPhotos(query string, limit int) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
 	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).

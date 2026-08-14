@@ -48,6 +48,12 @@ type PhotoRepository interface {
 	AssignPhotosToAlbum(photoIds []string, albumId string) error
 	// ListFavoritePhotos returns only favorited photos
 	ListFavoritePhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error)
+	// ListLowQualityPhotos returns photos flagged as low quality
+	ListLowQualityPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
+	// ListUnscoredPhotos returns photos without a quality score yet
+	ListUnscoredPhotos(limit int) ([]*domain.Photo, error)
+	// UpdatePhotoQuality persists quality metrics for a photo
+	UpdatePhotoQuality(photoId string, qualityScore int, blurScore float64, isLowQuality bool) error
 	// SearchPhotos searches photos by query
 	SearchPhotos(query string, limit int) ([]*domain.Photo, error)
 	// GetTimeline returns photo counts grouped by year/month
@@ -136,6 +142,12 @@ type PhotoService interface {
 	BatchDeletePhotos(photoIds []string) error
 	// ListFavoritePhotos returns favorited photos
 	ListFavoritePhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error)
+	// ListLowQualityPhotos returns photos flagged as low quality
+	ListLowQualityPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
+	// ScorePhotoQuality runs the quality analyzer on a photo and stores results
+	ScorePhotoQuality(photoId string) (bool, error)
+	// ScoreAllPhotoQuality backfills quality scores for all unscored photos
+	ScoreAllPhotoQuality(batchSize int) (int, error)
 	// Search searches photos by query
 	Search(query string, limit int) ([]*domain.Photo, error)
 	// GetTimeline returns photo timeline data
