@@ -409,6 +409,65 @@ func (ph *PhotoHandler) SetFavorite(ctx *gin.Context) {
 	handleSuccess(ctx, photo)
 }
 
+// updateMetadataRequest carries user-editable metadata overrides. All fields
+// are optional; only provided fields are persisted.
+type updateMetadataRequest struct {
+	Description *string   `json:"description"`
+	Latitude    *float64  `json:"latitude"`
+	Longitude   *float64  `json:"longitude"`
+	DateTaken   *string   `json:"dateTaken"`
+}
+
+// UpdatePhotoMetadata persists user-editable metadata overrides for a photo.
+func (ph *PhotoHandler) UpdatePhotoMetadata(ctx *gin.Context) {
+	photoId := ctx.Param("id")
+	if photoId == "" {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "photo ID is required"})
+		return
+	}
+
+	var req updateMetadataRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		validationError(ctx, err)
+		return
+	}
+
+	description := ""
+	if req.Description != nil {
+		description = *req.Description
+	}
+
+	photo, err := ph.photoSvc.UpdatePhotoMetadata(photoId, description, req.Latitude, req.Longitude, req.DateTaken)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	handleSuccess(ctx, photo)
+}
+
+// PhotoLocationResponse is the reverse-geocoding result.
+type PhotoLocationResponse struct {
+	Location string `json:"location"`
+}
+
+// GetPhotoLocation reverse-geocodes a photo's GPS coordinates.
+func (ph *PhotoHandler) GetPhotoLocation(ctx *gin.Context) {
+	photoId := ctx.Param("id")
+	if photoId == "" {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "photo ID is required"})
+		return
+	}
+
+	location, err := ph.photoSvc.ReverseGeocode(ctx, photoId)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	handleSuccess(ctx, PhotoLocationResponse{Location: location})
+}
+
 type downloadPhotosRequest struct {
 	PhotoIds []string `json:"photoIds" binding:"required,min=1"`
 }

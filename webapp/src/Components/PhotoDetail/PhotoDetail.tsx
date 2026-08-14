@@ -257,7 +257,7 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                                     ))}
                                 </Group>
                             )}
-                            <MetadataPanel photo={photo} />
+                            <MetadataPanel photo={photo} photosAdapter={props.photosAdapter} />
                         </ScrollArea>
                     </Drawer>
                 ) : (
@@ -274,7 +274,7 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                                     ))}
                                 </Group>
                             )}
-                            <MetadataPanel photo={photo} />
+                            <MetadataPanel photo={photo} photosAdapter={props.photosAdapter} />
                         </ScrollArea>
                     </Dialog>
                 )}

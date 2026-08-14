@@ -38,6 +38,8 @@ type PhotoRepository interface {
 	EmptyTrash() error
 	// UpdatePhoto updates a photo record
 	UpdatePhoto(photo domain.Photo) error
+	// UpdatePhotoMetadata persists user-editable metadata overrides
+	UpdatePhotoMetadata(photoId string, updates domain.Photo) error
 	// SetFavorite updates only the favorite field of a photo
 	SetFavorite(photoId string, favorite bool) error
 	// SetFavoriteForPhotos updates the favorite flag for multiple photos
@@ -122,6 +124,10 @@ type PhotoService interface {
 	PurgeExpiredTrash(cutoff time.Time) (int, error)
 	// SetFavorite toggles favorite status
 	SetFavorite(photoId string, favorite bool) (*domain.Photo, error)
+	// UpdatePhotoMetadata persists user-editable metadata overrides
+	UpdatePhotoMetadata(photoId string, description string, latitude *float64, longitude *float64, dateTaken *string) (*domain.Photo, error)
+	// ReverseGeocode resolves a human-readable location for a photo's GPS coords
+	ReverseGeocode(ctx context.Context, photoId string) (string, error)
 	// BatchSetFavorite sets favorite for multiple photos
 	BatchSetFavorite(photoIds []string, favorite bool) error
 	// BatchAddToAlbum assigns multiple photos to an album

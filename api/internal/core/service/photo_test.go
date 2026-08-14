@@ -106,6 +106,11 @@ func (m *MockPhotoRepository) UpdatePhoto(photo domain.Photo) error {
 	return args.Error(0)
 }
 
+func (m *MockPhotoRepository) UpdatePhotoMetadata(photoId string, updates domain.Photo) error {
+	args := m.Called(photoId, updates)
+	return args.Error(0)
+}
+
 func (m *MockPhotoRepository) SetFavorite(photoId string, favorite bool) error {
 	args := m.Called(photoId, favorite)
 	return args.Error(0)
@@ -1713,5 +1718,60 @@ func TestBatchOperations(t *testing.T) {
 
 		assert.NoError(t, err)
 		mockRepo.AssertExpectations(t)
+	})
+}
+
+// TestUpdatePhotoMetadata tests metadata overrides
+func TestUpdatePhotoMetadata(t *testing.T) {
+	t.Run("updates description and coordinates", func(t *testing.T) {
+		mockRepo := new(MockPhotoRepository)
+		config := appconfig.AppConfig{}
+
+		existing := &domain.Photo{ID: "p1", Name: "photo.jpg"}
+		mockRepo.On("GetPhotoById", "p1", false).Return(existing, nil)
+		mockRepo.On("UpdatePhotoMetadata", "p1", mock.Anything).Return(nil)
+
+		service := NewPhotoService(mockRepo, new(MockAlbumService), new(MockFilesystemService), new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
+		lat := 52.04
+		lng := 0.094
+		photo, err := service.UpdatePhotoMetadata("p1", "Beach day", &lat, &lng, nil)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "Beach day", photo.Description)
+		assert.Equal(t, 52.04, photo.Latitude)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("date taken updates created epoch for timeline resort", func(t *testing.T) {
+		mockRepo := new(MockPhotoRepository)
+		config := appconfig.AppConfig{}
+
+		existing := &domain.Photo{ID: "p1", Name: "photo.jpg"}
+		mockRepo.On("GetPhotoById", "p1", false).Return(existing, nil)
+		mockRepo.On("UpdatePhotoMetadata", "p1", mock.Anything).Return(nil)
+
+		service := NewPhotoService(mockRepo, new(MockAlbumService), new(MockFilesystemService), new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
+		dateTaken := "2023-01-01T21:43:14Z"
+		photo, err := service.UpdatePhotoMetadata("p1", "", nil, nil, &dateTaken)
+
+		assert.NoError(t, err)
+		assert.Equal(t, int64(1672609394000), photo.CreatedEpoch)
+		assert.Equal(t, 2023, photo.Year)
+		assert.Equal(t, 1, photo.Month)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("invalid date is rejected", func(t *testing.T) {
+		mockRepo := new(MockPhotoRepository)
+		config := appconfig.AppConfig{}
+
+		existing := &domain.Photo{ID: "p1"}
+		mockRepo.On("GetPhotoById", "p1", false).Return(existing, nil)
+
+		service := NewPhotoService(mockRepo, new(MockAlbumService), new(MockFilesystemService), new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
+		dateTaken := "not-a-date"
+		_, err := service.UpdatePhotoMetadata("p1", "", nil, nil, &dateTaken)
+
+		assert.ErrorIs(t, err, domain.ErrInvalidRequest)
 	})
 }

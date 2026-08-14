@@ -132,6 +132,19 @@ func (m *MockSearchPhotoService) SetFavorite(photoId string, favorite bool) (*do
 	}
 	return args.Get(0).(*domain.Photo), args.Error(1)
 }
+
+func (m *MockSearchPhotoService) UpdatePhotoMetadata(photoId string, description string, latitude, longitude *float64, dateTaken *string) (*domain.Photo, error) {
+	args := m.Called(photoId, description, latitude, longitude, dateTaken)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Photo), args.Error(1)
+}
+
+func (m *MockSearchPhotoService) ReverseGeocode(ctx context.Context, photoId string) (string, error) {
+	args := m.Called(ctx, photoId)
+	return args.String(0), args.Error(1)
+}
 func (m *MockSearchPhotoService) BatchSetFavorite(photoIds []string, favorite bool) error {
 	args := m.Called(photoIds, favorite)
 	return args.Error(0)

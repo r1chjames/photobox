@@ -11,6 +11,8 @@ var (
 	ErrDataNotFound = errors.New("data not found")
 	// ErrNoUpdatedData is an error for when no data is provided to update
 	ErrNoUpdatedData = errors.New("no data to update")
+	// ErrInvalidRequest is an error for when a request contains invalid values
+	ErrInvalidRequest = errors.New("invalid request")
 	// ErrConflictingData is an error for when data conflicts with existing data
 	ErrConflictingData = errors.New("data conflicts with existing data in unique column")
 	// ErrTokenDuration is an error for when the token duration format is invalid

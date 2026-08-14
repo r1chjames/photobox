@@ -18,4 +18,7 @@ export interface Photo {
   dominantColor?: string;
   blurhash?: string;
   deletedAt?: string;
+  description?: string;
+  latitude?: number;
+  longitude?: number;
 }

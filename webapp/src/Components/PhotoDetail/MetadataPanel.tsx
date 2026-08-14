@@ -1,9 +1,13 @@
-import React from 'react';
-import {Group, Text, Badge, Divider, Stack} from '@mantine/core';
+import React, {useCallback, useEffect, useState} from 'react';
+import {ActionIcon, Group, Text, Badge, Divider, Stack, TextInput, Tooltip} from '@mantine/core';
+import {IconEdit, IconMapPin, IconCheck, IconX} from '@tabler/icons-react';
 import {Photo} from '../../Models/Photo';
+import {IPhotosAdapter} from '../../Adapters/IPhotosAdapter';
+import {notifications} from '@mantine/notifications';
 
 interface MetadataPanelProps {
     photo: Photo;
+    photosAdapter?: IPhotosAdapter;
 }
 
 interface MetadataRow {
@@ -138,10 +142,58 @@ function buildSections(photo: Photo): MetadataSection[] {
     return sections;
 }
 
-export const MetadataPanel: React.FC<MetadataPanelProps> = ({photo}) => {
+export const MetadataPanel: React.FC<MetadataPanelProps> = ({photo, photosAdapter}) => {
     const sections = buildSections(photo);
+    const [editing, setEditing] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [location, setLocation] = useState<string>('');
+    const [description, setDescription] = useState(photo.description ?? '');
+    const [dateTaken, setDateTaken] = useState(photo.dateTaken ?? '');
+    const [latitude, setLatitude] = useState(photo.latitude !== undefined ? String(photo.latitude) : '');
+    const [longitude, setLongitude] = useState(photo.longitude !== undefined ? String(photo.longitude) : '');
 
-    if (sections.length === 0) {
+    // Fetch reverse-geocoded location when the photo has GPS coordinates.
+    useEffect(() => {
+        let active = true;
+        if (photosAdapter && photo.latitude && photo.longitude) {
+            photosAdapter.getPhotoLocation(photo.id).then(loc => {
+                if (active && loc) setLocation(loc);
+            }).catch(() => { /* non-fatal */ });
+        }
+        return () => { active = false; };
+    }, [photosAdapter, photo.id, photo.latitude, photo.longitude]);
+
+    const handleSave = useCallback(async () => {
+        if (!photosAdapter) return;
+        setSaving(true);
+        try {
+            const updates: { description?: string; dateTaken?: string; latitude?: number; longitude?: number } = {};
+            if (description !== (photo.description ?? '')) updates.description = description;
+            if (dateTaken !== (photo.dateTaken ?? '')) updates.dateTaken = dateTaken ? new Date(dateTaken).toISOString() : undefined;
+            if (latitude !== '' && Number(latitude) !== photo.latitude) updates.latitude = Number(latitude);
+            if (longitude !== '' && Number(longitude) !== photo.longitude) updates.longitude = Number(longitude);
+
+            if (Object.keys(updates).length > 0) {
+                await photosAdapter.updatePhotoMetadata(photo.id, updates);
+                notifications.show({
+                    title: 'Metadata updated',
+                    message: 'Photo metadata has been saved',
+                    color: 'green',
+                });
+            }
+            setEditing(false);
+        } catch (e) {
+            notifications.show({
+                title: 'Failed to update metadata',
+                message: e instanceof Error ? e.message : 'An error occurred',
+                color: 'red',
+            });
+        } finally {
+            setSaving(false);
+        }
+    }, [photosAdapter, photo, description, dateTaken, latitude, longitude]);
+
+    if (sections.length === 0 && !photosAdapter) {
         return (
             <Text size="sm" c="dimmed" ta="center" py="md">
                 No metadata available for this photo.
@@ -151,6 +203,50 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({photo}) => {
 
     return (
         <Stack gap="md">
+            {location && (
+                <Group gap="xs" mb={0}>
+                    <IconMapPin size={14} color="var(--mantine-color-blue-6)" />
+                    <Text size="sm" c="blue">{location}</Text>
+                </Group>
+            )}
+
+            {photosAdapter && (
+                <Group justify="space-between" mb={0}>
+                    <Text size="sm" fw={600}>Edit</Text>
+                    {editing ? (
+                        <Group gap="xs">
+                            <Tooltip label="Save">
+                                <ActionIcon size="sm" color="green" onClick={handleSave} loading={saving} aria-label="Save metadata">
+                                    <IconCheck size={14}/>
+                                </ActionIcon>
+                            </Tooltip>
+                            <Tooltip label="Cancel">
+                                <ActionIcon size="sm" variant="subtle" onClick={() => setEditing(false)} aria-label="Cancel edit">
+                                    <IconX size={14}/>
+                                </ActionIcon>
+                            </Tooltip>
+                        </Group>
+                    ) : (
+                        <Tooltip label="Edit metadata">
+                            <ActionIcon size="sm" variant="subtle" onClick={() => setEditing(true)} aria-label="Edit metadata">
+                                <IconEdit size={14}/>
+                            </ActionIcon>
+                        </Tooltip>
+                    )}
+                </Group>
+            )}
+
+            {editing && photosAdapter && (
+                <Stack gap="xs">
+                    <TextInput label="Description" value={description} onChange={e => setDescription(e.currentTarget.value)} size="xs" placeholder="Add a caption…" />
+                    <TextInput label="Date taken" type="datetime-local" value={dateTaken ? dateTaken.slice(0, 16) : ''} onChange={e => setDateTaken(e.currentTarget.value)} size="xs" />
+                    <Group grow>
+                        <TextInput label="Latitude" value={latitude} onChange={e => setLatitude(e.currentTarget.value)} size="xs" placeholder="e.g. 52.04" />
+                        <TextInput label="Longitude" value={longitude} onChange={e => setLongitude(e.currentTarget.value)} size="xs" placeholder="e.g. 0.094" />
+                    </Group>
+                </Stack>
+            )}
+
             {sections.map(section => (
                 <div key={section.title}>
                     <Group justify="space-between" mb={4}>

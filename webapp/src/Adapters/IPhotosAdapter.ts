@@ -37,6 +37,8 @@ export interface IPhotosAdapter {
   batchSetFavorite(photoIds: string[], favorite: boolean): Promise<void>;
   batchDeletePhotos(photoIds: string[]): Promise<void>;
   batchAddToAlbum(photoIds: string[], albumId: string): Promise<void>;
+  updatePhotoMetadata(photoId: string, updates: { description?: string; latitude?: number; longitude?: number; dateTaken?: string }): Promise<Photo>;
+  getPhotoLocation(photoId: string): Promise<string>;
   getPhotosByTag(tag: string, fromId: string, limit: number, includeThumbnails: boolean): Promise<Photo[]>;
   getDuplicatePhotos(): Promise<Photo[]>;
   getPhotoThumbnailBlob(photoId: string): Promise<Blob | string>;

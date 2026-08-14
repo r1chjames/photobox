@@ -86,6 +86,16 @@ export const FullMetadata: Story = {
     },
 };
 
+export const EditableWithLocation: Story = {
+    args: {
+        photo: {...fullMetadataPhoto, description: 'Sunset over the coast', latitude: 52.04, longitude: 0.094} as never,
+        photosAdapter: {
+            getPhotoLocation: async () => 'Cambridge, United Kingdom',
+            updatePhotoMetadata: async () => fullMetadataPhoto,
+        } as never,
+    },
+};
+
 export const Minimal: Story = {
     args: {
         photo: minimalMetadataPhoto as never,

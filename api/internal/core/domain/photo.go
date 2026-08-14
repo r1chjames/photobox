@@ -33,6 +33,7 @@ type Photo struct {
 	Latitude       float64        `json:"latitude" gorm:"index"`
 	Longitude      float64        `json:"longitude" gorm:"index"`
 	Hidden         bool           `json:"hidden" gorm:"default:false;index"`
+	Description    string         `json:"description" gorm:"type:text"`
 }
 
 type PhotoTag struct {

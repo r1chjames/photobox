@@ -180,9 +180,13 @@ describe('PhotoDetail', () => {
 
         render(<PhotoDetail photosAdapter={adapterNoMetadata} />);
 
+        // With no metadata and no editable fields, the panel falls back to
+        // the empty message only when there is no adapter; PhotoDetail always
+        // passes one, so the Edit affordance is what appears.
         await waitFor(() => {
-            expect(screen.getByText(/no metadata available/i)).toBeInTheDocument();
+            expect(screen.getByText('Edit')).toBeInTheDocument();
         });
+        expect(screen.queryByText('Camera')).not.toBeInTheDocument();
     });
 
     it('should call getPhotoInfoById with correct id', async () => {
