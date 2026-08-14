@@ -41,6 +41,7 @@ import {
     IconMenu2,
     IconMoon,
     IconPhoto,
+    IconPhotoOff,
     IconSearch,
     IconSettings,
     IconSun,
@@ -66,6 +67,7 @@ export enum Labels {
     Tags = "Tags",
     Duplicates = "Duplicates",
     Videos = "Videos",
+    Quality = "Quality",
     Settings = "Settings"
 }
 
@@ -93,6 +95,12 @@ const navLinkData = [
         label: Labels.Trash,
         href: '/trash',
         description: 'Deleted photos'
+    },
+    {
+        icon: IconPhotoOff,
+        label: Labels.Quality,
+        href: '/quality',
+        description: 'Low-quality photos'
     },
     {
         icon: IconLink,
@@ -200,6 +208,8 @@ const buildBreadcrumbs = (location: string, activeLink: Labels, id?: string, alb
         items.push({ label: 'Duplicates', icon: <IconCopy size="0.9rem" /> });
     } else if (activeLink === Labels.Videos) {
         items.push({ label: 'Videos', icon: <IconVideo size="0.9rem" /> });
+    } else if (activeLink === Labels.Quality) {
+        items.push({ label: 'Quality', icon: <IconPhotoOff size="0.9rem" /> });
     } else if (activeLink === Labels.Settings) {
         items.push({ label: 'Settings', icon: <IconSettings size="0.9rem" /> });
     }

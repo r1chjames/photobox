@@ -60,6 +60,23 @@ func (s *Scheduler) AddScheduledJobs() {
 		slog.Error("Unable to add AI analysis job schedule", "error", err)
 	}
 
+	// Schedule quality backfill (daily, after the index run). Scores any
+	// photos missed by indexing (pre-existing libraries) and keeps scores
+	// fresh as files are touched.
+	_, err = s.cron.AddFunc("0 3 * * *", func() {
+		scored, err := s.photoSvc.ScoreAllPhotoQuality(200)
+		if err != nil {
+			slog.Error("Quality backfill failed", "error", err)
+			return
+		}
+		if scored > 0 {
+			slog.Info("Quality backfill complete", "scored", scored)
+		}
+	})
+	if err != nil {
+		slog.Error("Unable to add quality backfill job schedule", "error", err)
+	}
+
 	// Schedule trash retention cleanup to run daily. The retention period is
 	// read from settings each run so admin changes apply without a restart.
 	_, err = s.cron.AddFunc("0 2 * * *", func() {

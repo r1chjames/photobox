@@ -168,6 +168,24 @@ func (m *MockSearchPhotoService) ListFavoritePhotos(fromId string, limit int, in
 	return args.Get(0).([]*domain.Photo), args.Error(1)
 }
 
+func (m *MockSearchPhotoService) ListLowQualityPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	args := m.Called(fromId, limit, includeThumbnail)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
+func (m *MockSearchPhotoService) ScorePhotoQuality(photoId string) (bool, error) {
+	args := m.Called(photoId)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockSearchPhotoService) ScoreAllPhotoQuality(batchSize int) (int, error) {
+	args := m.Called(batchSize)
+	return args.Int(0), args.Error(1)
+}
+
 func (m *MockSearchPhotoService) Search(query string, limit int) ([]*domain.Photo, error) {
 	args := m.Called(query, limit)
 	if args.Get(0) == nil {

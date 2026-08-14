@@ -297,6 +297,50 @@ func (m *MockPhotoRepository) ListFavoritePhotos(fromId string, limit int, inclu
 	return ret0, ret1
 }
 
+// ListLowQualityPhotos mocks base method.
+func (m *MockPhotoRepository) ListLowQualityPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListLowQualityPhotos", fromId, limit, includeThumbnail)
+	ret0, _ := ret[0].([]*domain.Photo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListUnscoredPhotos mocks base method.
+func (m *MockPhotoRepository) ListUnscoredPhotos(limit int) ([]*domain.Photo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListUnscoredPhotos", limit)
+	ret0, _ := ret[0].([]*domain.Photo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListUnscoredPhotos indicates an expected call of ListUnscoredPhotos.
+func (mr *MockPhotoRepositoryMockRecorder) ListUnscoredPhotos(limit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUnscoredPhotos", reflect.TypeOf((*MockPhotoRepository)(nil).ListUnscoredPhotos), limit)
+}
+
+// UpdatePhotoQuality mocks base method.
+func (m *MockPhotoRepository) UpdatePhotoQuality(photoId string, qualityScore int, blurScore float64, isLowQuality bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdatePhotoQuality", photoId, qualityScore, blurScore, isLowQuality)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdatePhotoQuality indicates an expected call of UpdatePhotoQuality.
+func (mr *MockPhotoRepositoryMockRecorder) UpdatePhotoQuality(photoId, qualityScore, blurScore, isLowQuality interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePhotoQuality", reflect.TypeOf((*MockPhotoRepository)(nil).UpdatePhotoQuality), photoId, qualityScore, blurScore, isLowQuality)
+}
+
+// ListLowQualityPhotos indicates an expected call of ListLowQualityPhotos.
+func (mr *MockPhotoRepositoryMockRecorder) ListLowQualityPhotos(fromId, limit, includeThumbnail interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLowQualityPhotos", reflect.TypeOf((*MockPhotoRepository)(nil).ListLowQualityPhotos), fromId, limit, includeThumbnail)
+}
+
 // ListFavoritePhotos indicates an expected call of ListFavoritePhotos.
 func (mr *MockPhotoRepositoryMockRecorder) ListFavoritePhotos(fromId, limit, includeThumbnail, startDate, endDate interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
@@ -725,6 +769,51 @@ func (m *MockPhotoService) ListFavoritePhotos(fromId string, limit int, includeT
 	ret0, _ := ret[0].([]*domain.Photo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
+}
+
+// ListLowQualityPhotos mocks base method.
+func (m *MockPhotoService) ListLowQualityPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListLowQualityPhotos", fromId, limit, includeThumbnail)
+	ret0, _ := ret[0].([]*domain.Photo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ScorePhotoQuality mocks base method.
+func (m *MockPhotoService) ScorePhotoQuality(photoId string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ScorePhotoQuality", photoId)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ScorePhotoQuality indicates an expected call of ScorePhotoQuality.
+func (mr *MockPhotoServiceMockRecorder) ScorePhotoQuality(photoId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScorePhotoQuality", reflect.TypeOf((*MockPhotoService)(nil).ScorePhotoQuality), photoId)
+}
+
+// ScoreAllPhotoQuality mocks base method.
+func (m *MockPhotoService) ScoreAllPhotoQuality(batchSize int) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ScoreAllPhotoQuality", batchSize)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ScoreAllPhotoQuality indicates an expected call of ScoreAllPhotoQuality.
+func (mr *MockPhotoServiceMockRecorder) ScoreAllPhotoQuality(batchSize interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScoreAllPhotoQuality", reflect.TypeOf((*MockPhotoService)(nil).ScoreAllPhotoQuality), batchSize)
+}
+
+// ListLowQualityPhotos indicates an expected call of ListLowQualityPhotos.
+func (mr *MockPhotoServiceMockRecorder) ListLowQualityPhotos(fromId, limit, includeThumbnail interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLowQualityPhotos", reflect.TypeOf((*MockPhotoService)(nil).ListLowQualityPhotos), fromId, limit, includeThumbnail)
 }
 
 // ListFavoritePhotos indicates an expected call of ListFavoritePhotos.

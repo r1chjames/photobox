@@ -15,6 +15,7 @@ const LoginCard = React.lazy(() => import('../Components/LoginCard/LoginCard').t
 const PhotoDetail = React.lazy(() => import('../Components/PhotoDetail/PhotoDetail').then(m => ({default: m.PhotoDetail})));
 const SearchView = React.lazy(() => import('../Components/SearchView/SearchView').then(m => ({default: m.SearchView})));
 const FavoritesView = React.lazy(() => import('../Components/FavoritesView/FavoritesView').then(m => ({default: m.FavoritesView})));
+const LowQualityView = React.lazy(() => import('../Components/LowQualityView/LowQualityView').then(m => ({default: m.LowQualityView})));
 const TrashView = React.lazy(() => import('../Components/TrashView/TrashView').then(m => ({default: m.TrashView})));
 const ShareManagement = React.lazy(() => import('../Components/ShareManagement/ShareManagement').then(m => ({default: m.ShareManagement})));
 const UserManagement = React.lazy(() => import('../Components/UserManagement/UserManagement').then(m => ({default: m.UserManagement})));
@@ -85,6 +86,7 @@ const Router: React.FunctionComponent = () => {
                 <Route path="/album/new/:name" element={<CreateAlbumView photosAdapter={photosAdapter} />} />
                 <Route path="/search" element={<SearchView photosAdapter={photosAdapter} albumsAdapter={albumsAdapter} sharesAdapter={sharesAdapter} />} />
                 <Route path="/favorites" element={<FavoritesView photosAdapter={photosAdapter} albumsAdapter={albumsAdapter} sharesAdapter={sharesAdapter} />} />
+                <Route path="/quality" element={<LowQualityView photosAdapter={photosAdapter} albumsAdapter={albumsAdapter} sharesAdapter={sharesAdapter} />} />
                 <Route path="/trash" element={<TrashView photosAdapter={photosAdapter} settingsAdapter={settingsAdapter} />} />
                 <Route path="/shares" element={<ShareManagement sharesAdapter={sharesAdapter} />} />
                 <Route path="/users" element={<UserManagement usersAdapter={usersAdapter} />} />

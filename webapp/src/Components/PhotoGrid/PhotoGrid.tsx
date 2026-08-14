@@ -166,6 +166,7 @@ interface IProps {
     mediaType?: string;
     searchQuery?: string;
     favoritesOnly?: boolean;
+    lowQualityOnly?: boolean;
 }
 
 const defaultProps = {
@@ -460,7 +461,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     })() : undefined;
 
     // The hook now provides a simple, flat, de-duplicated array of photos.
-    const {photos, albumName, allRetrieved, fetchNextPage, isFetchingNextPage, isFetching, refetch} = usePhotoGrid(props.photosAdapter, props.albumsAdapter, id, startDate, endDate, props.tags, props.mediaType, props.searchQuery, props.favoritesOnly);
+    const {photos, albumName, allRetrieved, fetchNextPage, isFetchingNextPage, isFetching, refetch} = usePhotoGrid(props.photosAdapter, props.albumsAdapter, id, startDate, endDate, props.tags, props.mediaType, props.searchQuery, props.favoritesOnly, props.lowQualityOnly);
 
     const photoIdsKey = React.useMemo(() => photos.map(p => p.id).join(','), [photos]);
 

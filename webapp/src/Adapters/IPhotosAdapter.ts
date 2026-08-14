@@ -16,7 +16,7 @@ export interface TimelineEntry {
 
 export interface IPhotosAdapter {
 
-  getAllPhotosInfo(fromId: string, limit: number, includeThumbnails: boolean, startDate?: string, endDate?: string, favorite?: boolean): Promise<Photo[]>;
+  getAllPhotosInfo(fromId: string, limit: number, includeThumbnails: boolean, startDate?: string, endDate?: string, favorite?: boolean, lowQuality?: boolean): Promise<Photo[]>;
   getPhotoInfoById(photoId: string): Promise<Photo>;
   getPhotosInfoInAlbum(albumId: string, fromId: string, limit: number, includeThumbnails: boolean, startDate?: string, endDate?: string): Promise<Photo[]>;
   getPhotoCountInAlbum(albumId: string): Promise<any>;

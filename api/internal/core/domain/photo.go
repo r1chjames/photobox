@@ -34,6 +34,9 @@ type Photo struct {
 	Longitude      float64        `json:"longitude" gorm:"index"`
 	Hidden         bool           `json:"hidden" gorm:"default:false;index"`
 	Description    string         `json:"description" gorm:"type:text"`
+	QualityScore   int            `json:"qualityScore" gorm:"default:0"`
+	BlurScore      float64        `json:"blurScore" gorm:"default:0"`
+	IsLowQuality   bool           `json:"isLowQuality" gorm:"default:false;index"`
 }
 
 type PhotoTag struct {

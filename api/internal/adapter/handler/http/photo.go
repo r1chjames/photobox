@@ -59,6 +59,7 @@ func (ph *PhotoHandler) ListPhotos(ctx *gin.Context) {
 	}
 
 	favorites, _ := strconv.ParseBool(ctx.DefaultQuery("favorites", "false"))
+	lowQuality, _ := strconv.ParseBool(ctx.DefaultQuery("lowQuality", "false"))
 	startDate := ctx.Query("startDate")
 	endDate := ctx.Query("endDate")
 
@@ -70,6 +71,8 @@ func (ph *PhotoHandler) ListPhotos(ctx *gin.Context) {
 	if tagsQuery != "" {
 		tags := strings.Split(tagsQuery, ",")
 		photoResp, err = ph.photoSvc.ListPhotosByTags(tags, fromId, limit, includeThumbnail)
+	} else if lowQuality {
+		photoResp, err = ph.photoSvc.ListLowQualityPhotos(fromId, limit, includeThumbnail)
 	} else if favorites {
 		photoResp, err = ph.photoSvc.ListFavoritePhotos(fromId, limit, includeThumbnail, startDate, endDate)
 	} else if albumId != "" {
@@ -256,6 +259,24 @@ func (ph *PhotoHandler) StartJob(c *gin.Context) {
 			if err := ph.photoSvc.AnalyzeExistingPhotos(); err != nil {
 				slog.Error("AI analysis job failed", "error", err)
 			}
+		}
+	case "Quality_analysis":
+		friendlyName = "Quality analysis"
+		runFunc = func() {
+			defer func() {
+				if r := recover(); r != nil {
+					slog.Error("Quality analysis job panicked", "recover", r)
+				}
+				if err := ph.jobSvc.JobComplete(jobType); err != nil {
+					slog.Error("Unable to complete quality analysis job", "error", err)
+				}
+			}()
+			scored, err := ph.photoSvc.ScoreAllPhotoQuality(200)
+			if err != nil {
+				slog.Error("Quality analysis job failed", "error", err)
+				return
+			}
+			slog.Info("Quality analysis complete", "scored", scored)
 		}
 	default:
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Unknown job type: " + jobType})
