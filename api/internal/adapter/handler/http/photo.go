@@ -249,7 +249,9 @@ func (ph *PhotoHandler) StartJob(c *gin.Context) {
 				if r := recover(); r != nil {
 					slog.Error("AI analysis job panicked", "recover", r)
 				}
-				ph.jobSvc.JobComplete(jobType)
+				if err := ph.jobSvc.JobComplete(jobType); err != nil {
+					slog.Error("Unable to complete AI analysis job", "error", err)
+				}
 			}()
 			if err := ph.photoSvc.AnalyzeExistingPhotos(); err != nil {
 				slog.Error("AI analysis job failed", "error", err)

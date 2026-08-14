@@ -90,7 +90,7 @@ func TestGetUserById_Success(t *testing.T) {
 	}
 
 	if user == nil {
-		t.Error("expected user to be returned, got nil")
+		t.Fatal("expected user to be returned, got nil")
 	}
 
 	if user.ID != userID {
@@ -151,7 +151,7 @@ func TestGetUserByUsername_Success(t *testing.T) {
 	}
 
 	if user == nil {
-		t.Error("expected user to be returned, got nil")
+		t.Fatal("expected user to be returned, got nil")
 	}
 
 	if user.Username != username {
@@ -182,7 +182,7 @@ func TestGetApprovedUserByUsername_Success(t *testing.T) {
 	}
 
 	if user == nil {
-		t.Error("expected user to be returned, got nil")
+		t.Fatal("expected user to be returned, got nil")
 	}
 
 	if user.Username != username {
@@ -251,7 +251,7 @@ func TestCreateUser_Success(t *testing.T) {
 	}
 
 	if result == nil {
-		t.Error("expected user to be returned, got nil")
+		t.Fatal("expected user to be returned, got nil")
 	}
 
 	if result.Username != "newuser" {

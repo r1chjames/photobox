@@ -543,7 +543,7 @@ func TestPhotoHandler_DownloadPhotos_Success(t *testing.T) {
 	mockPhotoSvc.On("DownloadPhotos", []string{"photo1", "photo2"}, mock.Anything).
 		Return(nil).Run(func(args mock.Arguments) {
 		writer := args.Get(1).(io.Writer)
-		writer.Write([]byte("PK"))
+		_, _ = writer.Write([]byte("PK"))
 	})
 
 	w := httptest.NewRecorder()

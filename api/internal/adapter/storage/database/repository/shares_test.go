@@ -56,7 +56,7 @@ func TestGetShareByToken_Success(t *testing.T) {
 	}
 
 	if share == nil {
-		t.Error("expected share to be returned, got nil")
+		t.Fatal("expected share to be returned, got nil")
 	}
 
 	if share.Token != token {
