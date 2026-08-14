@@ -126,6 +126,16 @@ export class PhotosAdapter implements IPhotosAdapter {
     return this.restApiAdapter.postApiCall(rotatePath, {}, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 
+  public editPhoto = async (photoId: string, params: { rotate?: number; crop?: { x: number; y: number; width: number; height: number }; brightness?: number; contrast?: number; saturation?: number; autoEnhance?: boolean }): Promise<Photo> => {
+    const editPath = `photos/${photoId}/edit`;
+    return this.restApiAdapter.postApiCall(editPath, params as Record<string, unknown>, this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
+
+  public clearEdits = async (photoId: string): Promise<Photo> => {
+    const editPath = `photos/${photoId}/edit`;
+    return this.restApiAdapter.deleteApiCall(editPath, this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
+
   public getGeodata = async (north: number, south: number, east: number, west: number): Promise<PhotoGeoData[]> => {
     const geodataPath = `photos/geodata?north=${north}&south=${south}&east=${east}&west=${west}`;
     return this.restApiAdapter.getApiCall(geodataPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});

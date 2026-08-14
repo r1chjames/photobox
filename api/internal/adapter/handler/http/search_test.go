@@ -218,6 +218,22 @@ func (m *MockSearchPhotoService) RotatePhoto(photoId string, direction string) (
 	return args.Get(0).(*domain.Photo), args.Error(1)
 }
 
+func (m *MockSearchPhotoService) EditPhoto(photoId string, params domain.EditParams) (*domain.Photo, error) {
+	args := m.Called(photoId, params)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Photo), args.Error(1)
+}
+
+func (m *MockSearchPhotoService) ClearEdits(photoId string) (*domain.Photo, error) {
+	args := m.Called(photoId)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Photo), args.Error(1)
+}
+
 func (m *MockSearchPhotoService) DownloadPhotos(photoIds []string, writer io.Writer) error {
 	args := m.Called(photoIds, writer)
 	return args.Error(0)

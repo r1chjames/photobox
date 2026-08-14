@@ -41,12 +41,40 @@ type Photo struct {
 	// soft-deleted, so RestorePhoto can move it back. Empty for photos that
 	// were never deleted (or have no filesystem file).
 	TrashPath string `json:"-" gorm:"type:text"`
+	// EditParams holds the last-applied non-destructive edit parameters
+	// (rotate/crop/adjustments) as JSON. Empty when the photo is unedited.
+	EditParams datatypes.JSON `json:"editParams" gorm:"type:jsonb"`
 }
 
 type PhotoTag struct {
 	PhotoID string `gorm:"primaryKey;index:idx_photo_tag,priority:1"`
 	Tag     string `gorm:"primaryKey;index:idx_photo_tag,priority:2;index:idx_tag_photo,priority:1"`
 	Source  string `gorm:"default:''"`
+}
+
+// EditParams describes a non-destructive edit. All fields are optional;
+// only provided fields are applied. Applied to a copy, never the original.
+type EditParams struct {
+	// Rotate is clockwise rotation in degrees: 0, 90, 180 or 270.
+	Rotate *int `json:"rotate,omitempty"`
+	// Crop is an optional region in fractional coords (0-1) of the image.
+	Crop *CropParams `json:"crop,omitempty"`
+	// Brightness / Contrast / Saturation are percentage adjustments
+	// (imaging semantics: -100..100).
+	Brightness *float64 `json:"brightness,omitempty"`
+	Contrast   *float64 `json:"contrast,omitempty"`
+	Saturation *float64 `json:"saturation,omitempty"`
+	// AutoEnhance applies a gamma correction tuned to brighten shadows
+	// (simple auto-levels without a full histogram stretch).
+	AutoEnhance *bool `json:"autoEnhance,omitempty"`
+}
+
+// CropParams is a fractional crop rectangle (0-1 across each axis).
+type CropParams struct {
+	X      float64 `json:"x"`
+	Y      float64 `json:"y"`
+	Width  float64 `json:"width"`
+	Height float64 `json:"height"`
 }
 
 type TimelineEntry struct {

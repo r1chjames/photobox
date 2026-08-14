@@ -623,6 +623,66 @@ func (ph *PhotoHandler) RotatePhoto(ctx *gin.Context) {
 	handleSuccess(ctx, photo)
 }
 
+// editPhotoRequest is the body for POST /photos/:id/edit. All fields are
+// optional; the edit is applied to a copy, never the original.
+type editPhotoRequest struct {
+	Rotate      *int                    `json:"rotate"`
+	Crop        *domain.CropParams      `json:"crop"`
+	Brightness  *float64                `json:"brightness"`
+	Contrast    *float64                `json:"contrast"`
+	Saturation  *float64                `json:"saturation"`
+	AutoEnhance *bool                   `json:"autoEnhance"`
+}
+
+// EditPhoto applies a non-destructive edit to a photo.
+func (ph *PhotoHandler) EditPhoto(ctx *gin.Context) {
+	photoId := ctx.Param("id")
+	if photoId == "" {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "photo ID is required"})
+		return
+	}
+
+	var req editPhotoRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		validationError(ctx, err)
+		return
+	}
+
+	params := domain.EditParams{
+		Rotate:      req.Rotate,
+		Crop:        req.Crop,
+		Brightness:  req.Brightness,
+		Contrast:    req.Contrast,
+		Saturation:  req.Saturation,
+		AutoEnhance: req.AutoEnhance,
+	}
+
+	photo, err := ph.photoSvc.EditPhoto(photoId, params)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	handleSuccess(ctx, photo)
+}
+
+// ClearEdits discards any edited copy and stored edit params.
+func (ph *PhotoHandler) ClearEdits(ctx *gin.Context) {
+	photoId := ctx.Param("id")
+	if photoId == "" {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "photo ID is required"})
+		return
+	}
+
+	photo, err := ph.photoSvc.ClearEdits(photoId)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	handleSuccess(ctx, photo)
+}
+
 func (ph *PhotoHandler) GetTimeline(ctx *gin.Context) {
 	entries, err := ph.photoSvc.GetTimeline()
 	if err != nil {

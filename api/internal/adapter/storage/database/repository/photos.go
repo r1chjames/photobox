@@ -168,6 +168,15 @@ func (pr *PhotoRepository) SetTrashPath(photoId, trashPath string) error {
 	return pr.dbEnv.Db.Model(&domain.Photo{}).Where("id = ?", photoId).Update("trash_path", trashPath).Error
 }
 
+// SetEditParams stores the non-destructive edit parameters for a photo
+// (nil clears them).
+func (pr *PhotoRepository) SetEditParams(photoId string, params []byte) error {
+	if params == nil {
+		return pr.dbEnv.Db.Model(&domain.Photo{}).Where("id = ?", photoId).Update("edit_params", nil).Error
+	}
+	return pr.dbEnv.Db.Model(&domain.Photo{}).Where("id = ?", photoId).Update("edit_params", string(params)).Error
+}
+
 func (pr *PhotoRepository) ListTrashPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
 	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("deleted_at IS NOT NULL").Order("created_epoch ASC").Omit("thumbnail")

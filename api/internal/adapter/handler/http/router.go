@@ -180,6 +180,8 @@ func defineResources(
 	router.PATCH(fmt.Sprintf("%s/photos/:id/tags", urlBasePath), authMiddleware(token), photoHandler.UpdatePhotoTags)
 	router.PATCH(fmt.Sprintf("%s/photos/:id/metadata", urlBasePath), authMiddleware(token), photoHandler.UpdatePhotoMetadata)
 	router.GET(fmt.Sprintf("%s/photos/:id/location", urlBasePath), authMiddleware(token), photoHandler.GetPhotoLocation)
+	router.POST(fmt.Sprintf("%s/photos/:id/edit", urlBasePath), authMiddleware(token), photoHandler.EditPhoto)
+	router.DELETE(fmt.Sprintf("%s/photos/:id/edit", urlBasePath), authMiddleware(token), photoHandler.ClearEdits)
 	router.POST(fmt.Sprintf("%s/photos/:id/rotate", urlBasePath), authMiddleware(token), photoHandler.RotatePhoto)
 
 	// Photo system jobs (admin-only)
