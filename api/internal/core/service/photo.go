@@ -82,6 +82,7 @@ type PhotoService struct {
 	config           appconfig.AppConfig
 	thumbnailStorage port.ThumbnailStorage
 	wsHub            *ws.Hub
+	geocoder         *Geocoder
 }
 
 // NewPhotoService creates a new Photo service instance
@@ -96,7 +97,28 @@ func NewPhotoService(photoRepo port.PhotoRepository, albumRepo port.AlbumService
 		config,
 		thumbnailStorage,
 		wsHub,
+		nil,
 	}
+}
+
+// SetGeocoder installs the reverse-geocoder used by the metadata location
+// enrichment. Optional: when nil, location lookups return empty.
+func (ps *PhotoService) SetGeocoder(g *Geocoder) {
+	ps.geocoder = g
+}
+
+// ReverseGeocode resolves a human-readable location for the photo's GPS
+// coordinates. Returns empty when the photo has no coordinates or the
+// geocoder is not configured.
+func (ps *PhotoService) ReverseGeocode(ctx context.Context, photoId string) (string, error) {
+	photo, err := ps.photoRepo.GetPhotoById(photoId, false)
+	if err != nil {
+		return "", err
+	}
+	if ps.geocoder == nil || (photo.Latitude == 0 && photo.Longitude == 0) {
+		return "", nil
+	}
+	return ps.geocoder.Reverse(ctx, photo.Latitude, photo.Longitude)
 }
 
 func (ps *PhotoService) ListPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error) {
@@ -857,6 +879,55 @@ func (ps *PhotoService) SetFavorite(photoId string, favorite bool) (*domain.Phot
 	}
 	photo.Favorite = favorite
 	err = ps.photoRepo.SetFavorite(photoId, favorite)
+	if err != nil {
+		return nil, err
+	}
+	ps.setPhotoSourcePath(photo)
+	return photo, nil
+}
+
+// UpdatePhotoMetadata persists user-editable metadata overrides
+// (description, GPS location, date taken). The date override is converted
+// to created_epoch + year/month so the photo re-sorts in the timeline.
+// Original EXIF in the metadata JSONB is preserved (overrides are stored
+// on dedicated columns).
+func (ps *PhotoService) UpdatePhotoMetadata(photoId string, description string, latitude *float64, longitude *float64, dateTaken *string) (*domain.Photo, error) {
+	photo, err := ps.photoRepo.GetPhotoById(photoId, false)
+	if err != nil {
+		return nil, err
+	}
+
+	updates := domain.Photo{}
+
+	if description != "" {
+		updates.Description = description
+		photo.Description = description
+	}
+	if latitude != nil {
+		updates.Latitude = *latitude
+		photo.Latitude = *latitude
+	}
+	if longitude != nil {
+		updates.Longitude = *longitude
+		photo.Longitude = *longitude
+	}
+	if dateTaken != nil {
+		t, err := time.Parse("2006-01-02T15:04:05Z07:00", *dateTaken)
+		if err != nil {
+			t, err = time.Parse(time.RFC3339, *dateTaken)
+			if err != nil {
+				return nil, domain.ErrInvalidRequest
+			}
+		}
+		updates.CreatedEpoch = t.UnixMilli()
+		updates.Year = t.Year()
+		updates.Month = int(t.Month())
+		photo.CreatedEpoch = updates.CreatedEpoch
+		photo.Year = updates.Year
+		photo.Month = updates.Month
+	}
+
+	err = ps.photoRepo.UpdatePhotoMetadata(photoId, updates)
 	if err != nil {
 		return nil, err
 	}

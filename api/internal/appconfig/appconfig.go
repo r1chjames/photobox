@@ -41,6 +41,7 @@ type AppConfig struct {
 	S3UseSSL           bool
 	PhotoIndexWorkers  int
 	TrashRetentionDays int
+	GeocodeEndpoint    string
 }
 
 func New() *AppConfig {
@@ -128,6 +129,9 @@ func load() *AppConfig {
 		trashRetentionDays = 0
 	}
 
+	// Nominatim-compatible reverse geocoding endpoint (empty = public OSM).
+	geocodeEndpoint := os.Getenv("GEOCODE_ENDPOINT")
+
 	cfg := &AppConfig{
 		PhotoDir:           utils.GetEnv("PHOTO_DIR", "/photos"),
 		ApiBasePath:        utils.GetEnv("API_BASE_PATH", "/api"),
@@ -158,6 +162,7 @@ func load() *AppConfig {
 		S3UseSSL:           s3UseSSL,
 		PhotoIndexWorkers:  indexWorkers,
 		TrashRetentionDays: trashRetentionDays,
+		GeocodeEndpoint:    geocodeEndpoint,
 	}
 
 	return cfg

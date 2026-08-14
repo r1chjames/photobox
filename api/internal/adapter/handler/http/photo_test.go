@@ -134,6 +134,19 @@ func (m *MockPhotoService) SetFavorite(photoId string, favorite bool) (*domain.P
 	return args.Get(0).(*domain.Photo), args.Error(1)
 }
 
+func (m *MockPhotoService) UpdatePhotoMetadata(photoId string, description string, latitude, longitude *float64, dateTaken *string) (*domain.Photo, error) {
+	args := m.Called(photoId, description, latitude, longitude, dateTaken)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoService) ReverseGeocode(ctx context.Context, photoId string) (string, error) {
+	args := m.Called(ctx, photoId)
+	return args.String(0), args.Error(1)
+}
+
 func (m *MockPhotoService) BatchSetFavorite(photoIds []string, favorite bool) error {
 	args := m.Called(photoIds, favorite)
 	return args.Error(0)
@@ -959,5 +972,85 @@ func TestPhotoHandler_AddPhotosToAlbum(t *testing.T) {
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 		mockPhotoSvc.AssertNotCalled(t, "BatchAddToAlbum", mock.Anything, mock.Anything)
+	})
+}
+
+// TestPhotoHandler_UpdatePhotoMetadata tests PATCH /photos/:id/metadata
+func TestPhotoHandler_UpdatePhotoMetadata(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("success", func(t *testing.T) {
+		mockPhotoSvc := new(MockPhotoService)
+		mockJobSvc := new(MockJobService)
+		handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+		expected := &domain.Photo{ID: "photo123", Description: "Beach day"}
+		lat := 52.04
+		lng := 0.094
+		dateTaken := "2023-01-01T21:43:14Z"
+		mockPhotoSvc.On("UpdatePhotoMetadata", "photo123", "Beach day", &lat, &lng, &dateTaken).Return(expected, nil)
+
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		ctx.Params = gin.Params{{Key: "id", Value: "photo123"}}
+		body, _ := json.Marshal(map[string]interface{}{
+			"description": "Beach day",
+			"latitude":    52.04,
+			"longitude":   0.094,
+			"dateTaken":   "2023-01-01T21:43:14Z",
+		})
+		ctx.Request = httptest.NewRequest(http.MethodPatch, "/photos/photo123/metadata", bytes.NewBuffer(body))
+		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		handler.UpdatePhotoMetadata(ctx)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		mockPhotoSvc.AssertExpectations(t)
+	})
+
+	t.Run("missing id", func(t *testing.T) {
+		mockPhotoSvc := new(MockPhotoService)
+		mockJobSvc := new(MockJobService)
+		handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		body, _ := json.Marshal(map[string]interface{}{"description": "x"})
+		ctx.Request = httptest.NewRequest(http.MethodPatch, "/photos//metadata", bytes.NewBuffer(body))
+		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		handler.UpdatePhotoMetadata(ctx)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+}
+
+// TestPhotoHandler_GetPhotoLocation tests GET /photos/:id/location
+func TestPhotoHandler_GetPhotoLocation(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("success", func(t *testing.T) {
+		mockPhotoSvc := new(MockPhotoService)
+		mockJobSvc := new(MockJobService)
+		handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+		mockPhotoSvc.On("ReverseGeocode", mock.Anything, "photo123").Return("Cambridge, United Kingdom", nil)
+
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		ctx.Params = gin.Params{{Key: "id", Value: "photo123"}}
+		ctx.Request = httptest.NewRequest(http.MethodGet, "/photos/photo123/location", nil)
+
+		handler.GetPhotoLocation(ctx)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		var response struct {
+			Success bool `json:"success"`
+			Data    PhotoLocationResponse `json:"data"`
+		}
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, "Cambridge, United Kingdom", response.Data.Location)
+		mockPhotoSvc.AssertExpectations(t)
 	})
 }

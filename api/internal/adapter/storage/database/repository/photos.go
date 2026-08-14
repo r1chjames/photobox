@@ -213,6 +213,26 @@ func (pr *PhotoRepository) UpdatePhoto(photo domain.Photo) error {
 	return result.Error
 }
 
+// UpdatePhotoMetadata persists user-editable metadata overrides for a photo.
+// Only non-zero fields are updated so partial edits preserve the rest.
+func (pr *PhotoRepository) UpdatePhotoMetadata(photoID string, updates domain.Photo) error {
+	fields := map[string]interface{}{"updated_at": time.Now()}
+	if updates.Description != "" {
+		fields["description"] = updates.Description
+	}
+	if updates.Latitude != 0 || updates.Longitude != 0 {
+		fields["latitude"] = updates.Latitude
+		fields["longitude"] = updates.Longitude
+	}
+	if updates.CreatedEpoch != 0 {
+		fields["created_epoch"] = updates.CreatedEpoch
+		fields["year"] = updates.Year
+		fields["month"] = updates.Month
+	}
+	result := pr.dbEnv.Db.Model(&domain.Photo{}).Where("id = ?", photoID).Updates(fields)
+	return result.Error
+}
+
 func (pr *PhotoRepository) SetFavorite(photoId string, favorite bool) error {
 	result := pr.dbEnv.Db.Model(&domain.Photo{}).Where("id = ?", photoId).Update("favorite", favorite)
 	return result.Error

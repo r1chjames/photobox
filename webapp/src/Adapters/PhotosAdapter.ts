@@ -164,6 +164,17 @@ export class PhotosAdapter implements IPhotosAdapter {
     return this.restApiAdapter.postApiCall(batchPath, { photoIds, action: 'add_to_album', albumId }, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 
+  public updatePhotoMetadata = async (photoId: string, updates: { description?: string; latitude?: number; longitude?: number; dateTaken?: string }): Promise<Photo> => {
+    const path = `photos/${photoId}/metadata`;
+    return this.restApiAdapter.patchApiCall(path, updates as Record<string, unknown>, this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
+
+  public getPhotoLocation = async (photoId: string): Promise<string> => {
+    const path = `photos/${photoId}/location`;
+    const response = await this.restApiAdapter.getApiCall(path, this.buildHeaders(this.restApiAdapter.authHeader()), {});
+    return response?.location ?? '';
+  }
+
   public getPhotosByTag = async (tag: string, fromId: string, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
     const path = `photos?fromId=${fromId}&limit=${limit}&thumbnail=${includeThumbnails}&tags=${encodeURIComponent(tag)}`;
     return this.restApiAdapter.getPaginatedApiCall(path, this.buildHeaders(this.restApiAdapter.authHeader()), {});

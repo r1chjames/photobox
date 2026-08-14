@@ -428,6 +428,20 @@ func (m *MockPhotoRepository) UpdatePhoto(photo domain.Photo) error {
 	return ret0
 }
 
+// UpdatePhotoMetadata mocks base method.
+func (m *MockPhotoRepository) UpdatePhotoMetadata(photoId string, updates domain.Photo) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdatePhotoMetadata", photoId, updates)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdatePhotoMetadata indicates an expected call of UpdatePhotoMetadata.
+func (mr *MockPhotoRepositoryMockRecorder) UpdatePhotoMetadata(photoId, updates interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePhotoMetadata", reflect.TypeOf((*MockPhotoRepository)(nil).UpdatePhotoMetadata), photoId, updates)
+}
+
 // UpdatePhoto indicates an expected call of UpdatePhoto.
 func (mr *MockPhotoRepositoryMockRecorder) UpdatePhoto(photo interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
@@ -975,6 +989,36 @@ func (m *MockPhotoService) SetFavorite(photoId string, favorite bool) (*domain.P
 	ret0, _ := ret[0].(*domain.Photo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
+}
+
+// UpdatePhotoMetadata mocks base method.
+func (m *MockPhotoService) UpdatePhotoMetadata(photoId string, description string, latitude, longitude *float64, dateTaken *string) (*domain.Photo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdatePhotoMetadata", photoId, description, latitude, longitude, dateTaken)
+	ret0, _ := ret[0].(*domain.Photo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdatePhotoMetadata indicates an expected call of UpdatePhotoMetadata.
+func (mr *MockPhotoServiceMockRecorder) UpdatePhotoMetadata(photoId, description, latitude, longitude, dateTaken interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePhotoMetadata", reflect.TypeOf((*MockPhotoService)(nil).UpdatePhotoMetadata), photoId, description, latitude, longitude, dateTaken)
+}
+
+// ReverseGeocode mocks base method.
+func (m *MockPhotoService) ReverseGeocode(ctx context.Context, photoId string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReverseGeocode", ctx, photoId)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReverseGeocode indicates an expected call of ReverseGeocode.
+func (mr *MockPhotoServiceMockRecorder) ReverseGeocode(ctx, photoId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReverseGeocode", reflect.TypeOf((*MockPhotoService)(nil).ReverseGeocode), ctx, photoId)
 }
 
 // BatchSetFavorite mocks base method.

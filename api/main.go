@@ -148,6 +148,7 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 	}
 
 	photoService := service.NewPhotoService(photoRepo, albumService, filesystemService, cacheService, aiService, *config, thumbnailStorage, wsHub, jobService)
+	photoService.SetGeocoder(service.NewGeocoder(*config, cacheService))
 
 	// Share
 	shareRepo := repository.NewShareRepository(dbEnv)

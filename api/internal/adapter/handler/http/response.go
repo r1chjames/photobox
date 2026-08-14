@@ -121,6 +121,7 @@ var errorStatusMap = map[error]int{
 	domain.ErrExpiredToken:               http.StatusUnauthorized,
 	domain.ErrForbidden:                  http.StatusForbidden,
 	domain.ErrNoUpdatedData:              http.StatusBadRequest,
+	domain.ErrInvalidRequest:             http.StatusBadRequest,
 	domain.ErrJobAlreadyRunning:          http.StatusConflict,
 }
 

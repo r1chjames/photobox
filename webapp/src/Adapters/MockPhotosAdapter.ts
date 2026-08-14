@@ -227,4 +227,22 @@ export class MockPhotosAdapter implements IPhotosAdapter {
       if (photoIds.includes(p.id)) p.albumId = albumId;
     });
   }
+
+  public updatePhotoMetadata = async (photoId: string, updates: { description?: string; latitude?: number; longitude?: number; dateTaken?: string }): Promise<Photo> => {
+    const photo = this._photos.find(p => p.id === photoId);
+    if (!photo) {
+      return Promise.reject(`Photo with id ${photoId} not found in mock adapter`);
+    }
+    if (updates.description !== undefined) photo.description = updates.description;
+    if (updates.latitude !== undefined) photo.latitude = updates.latitude;
+    if (updates.longitude !== undefined) photo.longitude = updates.longitude;
+    if (updates.dateTaken !== undefined) photo.dateTaken = updates.dateTaken;
+    return photo;
+  }
+
+  public getPhotoLocation = async (photoId: string): Promise<string> => {
+    const photo = this._photos.find(p => p.id === photoId);
+    if (!photo || (!photo.latitude && !photo.longitude)) return '';
+    return 'Mock Location, United Kingdom';
+  }
 }
