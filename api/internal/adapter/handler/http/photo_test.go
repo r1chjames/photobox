@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -118,6 +119,11 @@ func (m *MockPhotoService) ListTrashPhotos(fromId string, limit int, includeThum
 func (m *MockPhotoService) EmptyTrash() error {
 	args := m.Called()
 	return args.Error(0)
+}
+
+func (m *MockPhotoService) PurgeExpiredTrash(cutoff time.Time) (int, error) {
+	args := m.Called(cutoff)
+	return args.Int(0), args.Error(1)
 }
 
 func (m *MockPhotoService) SetFavorite(photoId string, favorite bool) (*domain.Photo, error) {

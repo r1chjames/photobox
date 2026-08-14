@@ -88,6 +88,19 @@ func (m *MockPhotoRepository) EmptyTrash() error {
 	return args.Error(0)
 }
 
+func (m *MockPhotoRepository) ListExpiredTrashPhotos(cutoff time.Time) ([]*domain.Photo, error) {
+	args := m.Called(cutoff)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoRepository) PermanentlyDeletePhotos(photoIds []string) error {
+	args := m.Called(photoIds)
+	return args.Error(0)
+}
+
 func (m *MockPhotoRepository) UpdatePhoto(photo domain.Photo) error {
 	args := m.Called(photo)
 	return args.Error(0)
@@ -339,6 +352,15 @@ func (m *MockFilesystemService) RestoreFromTrash(trashPath, originalPath string)
 
 func (m *MockFilesystemService) RenameDirectory(oldPath, newPath string) error {
 	args := m.Called(oldPath, newPath)
+	return args.Error(0)
+}
+func (m *MockFilesystemService) PermanentlyDelete(path string) error {
+	args := m.Called(path)
+	return args.Error(0)
+}
+
+func (m *MockFilesystemService) PermanentlyDeleteTrashFile(originalPath string) error {
+	args := m.Called(originalPath)
 	return args.Error(0)
 }
 
@@ -1212,14 +1234,106 @@ func TestEmptyTrash(t *testing.T) {
 		mockRepo := new(MockPhotoRepository)
 		mockAlbumSvc := new(MockAlbumService)
 		mockFsSvc := new(MockFilesystemService)
+		mockCache := new(MockCacheService)
+		mockThumbs := new(MockThumbnailStorage)
 		config := appconfig.AppConfig{}
 
-		mockRepo.On("EmptyTrash").Return(nil)
+		trashedPhotos := []*domain.Photo{
+			{ID: "photo-1", FilesystemPath: "/photos/original-1.jpg"},
+			{ID: "photo-2", FilesystemPath: "/photos/original-2.jpg"},
+		}
+		mockRepo.On("ListTrashPhotos", "", 10000, false).Return(trashedPhotos, nil)
+		mockFsSvc.On("PermanentlyDelete", "/photos/original-1.jpg").Return(nil)
+		mockFsSvc.On("PermanentlyDeleteTrashFile", "/photos/original-1.jpg").Return(nil)
+		mockFsSvc.On("PermanentlyDelete", "/photos/original-2.jpg").Return(nil)
+		mockFsSvc.On("PermanentlyDeleteTrashFile", "/photos/original-2.jpg").Return(nil)
+		mockThumbs.On("Delete", mock.Anything, "photo-1").Return(nil)
+		mockThumbs.On("Delete", mock.Anything, "photo-2").Return(nil)
+		for _, size := range []string{"s", "m", "l"} {
+			mockCache.On("Delete", "thumbnail:photo-1:"+size).Return(nil)
+			mockCache.On("Delete", "thumbnail:photo-2:"+size).Return(nil)
+		}
+		mockRepo.On("PermanentlyDeletePhotos", []string{"photo-1", "photo-2"}).Return(nil)
+
+		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, mockCache, nil, config, mockThumbs, nil, nil)
+		err := service.EmptyTrash()
+
+		assert.NoError(t, err)
+		mockRepo.AssertExpectations(t)
+		mockFsSvc.AssertExpectations(t)
+	})
+
+	t.Run("empty trash with no photos", func(t *testing.T) {
+		mockRepo := new(MockPhotoRepository)
+		mockAlbumSvc := new(MockAlbumService)
+		mockFsSvc := new(MockFilesystemService)
+		config := appconfig.AppConfig{}
+
+		mockRepo.On("ListTrashPhotos", "", 10000, false).Return([]*domain.Photo{}, nil)
 
 		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 		err := service.EmptyTrash()
 
 		assert.NoError(t, err)
+		mockRepo.AssertExpectations(t)
+	})
+}
+
+// TestPurgeExpiredTrash tests the retention-based trash purge
+func TestPurgeExpiredTrash(t *testing.T) {
+	t.Run("purges expired photos and returns count", func(t *testing.T) {
+		mockRepo := new(MockPhotoRepository)
+		mockAlbumSvc := new(MockAlbumService)
+		mockFsSvc := new(MockFilesystemService)
+		mockCache := new(MockCacheService)
+		mockThumbs := new(MockThumbnailStorage)
+		config := appconfig.AppConfig{}
+
+		cutoff := time.Now().AddDate(0, 0, -60)
+		expired := []*domain.Photo{
+			{ID: "expired-1", FilesystemPath: "/photos/trashed-1.jpg"},
+			{ID: "expired-2", FilesystemPath: "/photos/trashed-2.jpg"},
+		}
+		mockRepo.On("ListExpiredTrashPhotos", cutoff).Return(expired, nil)
+		mockFsSvc.On("PermanentlyDelete", "/photos/trashed-1.jpg").Return(nil)
+		mockFsSvc.On("PermanentlyDeleteTrashFile", "/photos/trashed-1.jpg").Return(nil)
+		mockFsSvc.On("PermanentlyDelete", "/photos/trashed-2.jpg").Return(nil)
+		mockFsSvc.On("PermanentlyDeleteTrashFile", "/photos/trashed-2.jpg").Return(nil)
+		mockThumbs.On("Delete", mock.Anything, "expired-1").Return(nil)
+		mockThumbs.On("Delete", mock.Anything, "expired-2").Return(nil)
+		mockCache.On("Delete", "thumbnail:expired-1:s").Return(nil)
+		mockCache.On("Delete", "thumbnail:expired-1:m").Return(nil)
+		mockCache.On("Delete", "thumbnail:expired-1:l").Return(nil)
+		mockCache.On("Delete", "thumbnail:expired-2:s").Return(nil)
+		mockCache.On("Delete", "thumbnail:expired-2:m").Return(nil)
+		mockCache.On("Delete", "thumbnail:expired-2:l").Return(nil)
+		mockRepo.On("PermanentlyDeletePhotos", []string{"expired-1", "expired-2"}).Return(nil)
+
+		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, mockCache, nil, config, mockThumbs, nil, nil)
+		count, err := service.PurgeExpiredTrash(cutoff)
+
+		assert.NoError(t, err)
+		assert.Equal(t, 2, count)
+		mockRepo.AssertExpectations(t)
+		mockFsSvc.AssertExpectations(t)
+		mockCache.AssertExpectations(t)
+		mockThumbs.AssertExpectations(t)
+	})
+
+	t.Run("no-op when no photos are expired", func(t *testing.T) {
+		mockRepo := new(MockPhotoRepository)
+		mockAlbumSvc := new(MockAlbumService)
+		mockFsSvc := new(MockFilesystemService)
+		config := appconfig.AppConfig{}
+
+		cutoff := time.Now().AddDate(0, 0, -60)
+		mockRepo.On("ListExpiredTrashPhotos", cutoff).Return([]*domain.Photo{}, nil)
+
+		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
+		count, err := service.PurgeExpiredTrash(cutoff)
+
+		assert.NoError(t, err)
+		assert.Equal(t, 0, count)
 		mockRepo.AssertExpectations(t)
 	})
 }

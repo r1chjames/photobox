@@ -85,7 +85,7 @@ const Router: React.FunctionComponent = () => {
                 <Route path="/album/new/:name" element={<CreateAlbumView photosAdapter={photosAdapter} />} />
                 <Route path="/search" element={<SearchView photosAdapter={photosAdapter} albumsAdapter={albumsAdapter} sharesAdapter={sharesAdapter} />} />
                 <Route path="/favorites" element={<FavoritesView photosAdapter={photosAdapter} albumsAdapter={albumsAdapter} sharesAdapter={sharesAdapter} />} />
-                <Route path="/trash" element={<TrashView photosAdapter={photosAdapter} />} />
+                <Route path="/trash" element={<TrashView photosAdapter={photosAdapter} settingsAdapter={settingsAdapter} />} />
                 <Route path="/shares" element={<ShareManagement sharesAdapter={sharesAdapter} />} />
                 <Route path="/users" element={<UserManagement usersAdapter={usersAdapter} />} />
                 <Route path="/map" element={<MapView photosAdapter={photosAdapter} />} />

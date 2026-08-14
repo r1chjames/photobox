@@ -8,6 +8,7 @@ import (
 	context "context"
 	io "io"
 	reflect "reflect"
+	time "time"
 
 	gomock "github.com/golang/mock/gomock"
 	domain "gitlab.com/r1chjames/photobox/api/internal/core/domain"
@@ -76,6 +77,35 @@ func (m *MockPhotoRepository) EmptyTrash() error {
 func (mr *MockPhotoRepositoryMockRecorder) EmptyTrash() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EmptyTrash", reflect.TypeOf((*MockPhotoRepository)(nil).EmptyTrash))
+}
+
+// ListExpiredTrashPhotos mocks base method.
+func (m *MockPhotoRepository) ListExpiredTrashPhotos(cutoff time.Time) ([]*domain.Photo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListExpiredTrashPhotos", cutoff)
+	ret0, _ := ret[0].([]*domain.Photo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListExpiredTrashPhotos indicates an expected call of ListExpiredTrashPhotos.
+func (mr *MockPhotoRepositoryMockRecorder) ListExpiredTrashPhotos(cutoff interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListExpiredTrashPhotos", reflect.TypeOf((*MockPhotoRepository)(nil).ListExpiredTrashPhotos), cutoff)
+}
+
+// PermanentlyDeletePhotos mocks base method.
+func (m *MockPhotoRepository) PermanentlyDeletePhotos(photoIds []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PermanentlyDeletePhotos", photoIds)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PermanentlyDeletePhotos indicates an expected call of PermanentlyDeletePhotos.
+func (mr *MockPhotoRepositoryMockRecorder) PermanentlyDeletePhotos(photoIds interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PermanentlyDeletePhotos", reflect.TypeOf((*MockPhotoRepository)(nil).PermanentlyDeletePhotos), photoIds)
 }
 
 // GetAllTags mocks base method.
@@ -821,6 +851,21 @@ func (m *MockPhotoService) PhotoThumbnails(photoIds []string) (map[string][]byte
 func (mr *MockPhotoServiceMockRecorder) PhotoThumbnails(photoIds interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PhotoThumbnails", reflect.TypeOf((*MockPhotoService)(nil).PhotoThumbnails), photoIds)
+}
+
+// PurgeExpiredTrash mocks base method.
+func (m *MockPhotoService) PurgeExpiredTrash(cutoff time.Time) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PurgeExpiredTrash", cutoff)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PurgeExpiredTrash indicates an expected call of PurgeExpiredTrash.
+func (mr *MockPhotoServiceMockRecorder) PurgeExpiredTrash(cutoff interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PurgeExpiredTrash", reflect.TypeOf((*MockPhotoService)(nil).PurgeExpiredTrash), cutoff)
 }
 
 // RestorePhoto mocks base method.

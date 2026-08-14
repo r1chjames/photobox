@@ -3,6 +3,7 @@ package port
 import (
 	"context"
 	"io"
+	"time"
 
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 )
@@ -29,6 +30,10 @@ type PhotoRepository interface {
 	RestorePhoto(photoId string) (*domain.Photo, error)
 	// ListTrashPhotos returns all photos in trash
 	ListTrashPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
+	// ListExpiredTrashPhotos returns trashed photos deleted before the given cutoff
+	ListExpiredTrashPhotos(cutoff time.Time) ([]*domain.Photo, error)
+	// PermanentlyDeletePhotos hard-deletes the given photo rows
+	PermanentlyDeletePhotos(photoIds []string) error
 	// EmptyTrash permanently deletes all trashed photos
 	EmptyTrash() error
 	// UpdatePhoto updates a photo record
@@ -109,6 +114,8 @@ type PhotoService interface {
 	ListTrashPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
 	// EmptyTrash permanently deletes all trashed photos
 	EmptyTrash() error
+	// PurgeExpiredTrash permanently deletes trashed photos older than the cutoff
+	PurgeExpiredTrash(cutoff time.Time) (int, error)
 	// SetFavorite toggles favorite status
 	SetFavorite(photoId string, favorite bool) (*domain.Photo, error)
 	// ListFavoritePhotos returns favorited photos

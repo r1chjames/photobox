@@ -45,6 +45,16 @@ func (m *MockFilesystemRepository) RenameDirectory(oldPath, newPath string) erro
 	return args.Error(0)
 }
 
+func (m *MockFilesystemRepository) PermanentlyDelete(path string) error {
+	args := m.Called(path)
+	return args.Error(0)
+}
+
+func (m *MockFilesystemRepository) PermanentlyDeleteTrashFile(originalPath string) error {
+	args := m.Called(originalPath)
+	return args.Error(0)
+}
+
 // MockJobService is a mock implementation of port.JobService for filesystem tests
 type MockJobServiceFS struct {
 	mock.Mock

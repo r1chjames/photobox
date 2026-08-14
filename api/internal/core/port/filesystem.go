@@ -18,6 +18,8 @@ type FilesystemRepository interface {
 	MoveToTrash(path string) (string, error)
 	RestoreFromTrash(trashPath, originalPath string) error
 	RenameDirectory(oldPath, newPath string) error
+	PermanentlyDelete(path string) error
+	PermanentlyDeleteTrashFile(originalPath string) error
 }
 
 // FilesystemService is an interface for interacting with filesystem-related business logic
@@ -30,4 +32,6 @@ type FilesystemService interface {
 	MoveToTrash(path string) (string, error)
 	RestoreFromTrash(trashPath, originalPath string) error
 	RenameDirectory(oldPath, newPath string) error
+	PermanentlyDelete(path string) error
+	PermanentlyDeleteTrashFile(originalPath string) error
 }
