@@ -23,4 +23,5 @@ export interface Photo {
   longitude?: number;
   qualityScore?: number;
   isLowQuality?: boolean;
+  editParams?: { rotate?: number; crop?: { x: number; y: number; width: number; height: number }; brightness?: number; contrast?: number; saturation?: number; autoEnhance?: boolean };
 }

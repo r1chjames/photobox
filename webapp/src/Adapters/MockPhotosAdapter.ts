@@ -231,6 +231,33 @@ export class MockPhotosAdapter implements IPhotosAdapter {
     });
   }
 
+  public rotatePhoto = async (photoId: string, direction: 'cw' | 'ccw'): Promise<Photo> => {
+    const photo = this._photos.find(p => p.id === photoId);
+    if (!photo) {
+      return Promise.reject(`Photo with id ${photoId} not found in mock adapter`);
+    }
+    photo.editParams = { ...(photo.editParams || {}), rotate: ((photo.editParams?.rotate || 0) + (direction === 'cw' ? 90 : 270)) % 360 };
+    return photo;
+  }
+
+  public editPhoto = async (photoId: string, params: { rotate?: number; crop?: { x: number; y: number; width: number; height: number }; brightness?: number; contrast?: number; saturation?: number; autoEnhance?: boolean }): Promise<Photo> => {
+    const photo = this._photos.find(p => p.id === photoId);
+    if (!photo) {
+      return Promise.reject(`Photo with id ${photoId} not found in mock adapter`);
+    }
+    photo.editParams = { ...(photo.editParams || {}), ...params };
+    return photo;
+  }
+
+  public clearEdits = async (photoId: string): Promise<Photo> => {
+    const photo = this._photos.find(p => p.id === photoId);
+    if (!photo) {
+      return Promise.reject(`Photo with id ${photoId} not found in mock adapter`);
+    }
+    photo.editParams = undefined;
+    return photo;
+  }
+
   public updatePhotoMetadata = async (photoId: string, updates: { description?: string; latitude?: number; longitude?: number; dateTaken?: string }): Promise<Photo> => {
     const photo = this._photos.find(p => p.id === photoId);
     if (!photo) {

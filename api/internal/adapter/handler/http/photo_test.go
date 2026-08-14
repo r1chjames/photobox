@@ -220,6 +220,22 @@ func (m *MockPhotoService) RotatePhoto(photoId string, direction string) (*domai
 	return args.Get(0).(*domain.Photo), args.Error(1)
 }
 
+func (m *MockPhotoService) EditPhoto(photoId string, params domain.EditParams) (*domain.Photo, error) {
+	args := m.Called(photoId, params)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoService) ClearEdits(photoId string) (*domain.Photo, error) {
+	args := m.Called(photoId)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Photo), args.Error(1)
+}
+
 func (m *MockPhotoService) DownloadPhotos(photoIds []string, writer io.Writer) error {
 	args := m.Called(photoIds, writer)
 	return args.Error(0)
@@ -1113,6 +1129,72 @@ func TestPhotoHandler_ListPhotos_WithoutLowQuality(t *testing.T) {
 	ctx.Request = httptest.NewRequest(http.MethodGet, "/photos", nil)
 
 	handler.ListPhotos(ctx)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	mockPhotoSvc.AssertExpectations(t)
+}
+
+// TestPhotoHandler_EditPhoto tests POST /photos/:id/edit
+func TestPhotoHandler_EditPhoto(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("success", func(t *testing.T) {
+		mockPhotoSvc := new(MockPhotoService)
+		mockJobSvc := new(MockJobService)
+		handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+		rot := 90
+		expected := &domain.Photo{ID: "photo123"}
+		params := domain.EditParams{Rotate: &rot}
+		mockPhotoSvc.On("EditPhoto", "photo123", params).Return(expected, nil)
+
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		ctx.Params = gin.Params{{Key: "id", Value: "photo123"}}
+		body, _ := json.Marshal(map[string]interface{}{"rotate": 90})
+		ctx.Request = httptest.NewRequest(http.MethodPost, "/photos/photo123/edit", bytes.NewBuffer(body))
+		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		handler.EditPhoto(ctx)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		mockPhotoSvc.AssertExpectations(t)
+	})
+
+	t.Run("missing id", func(t *testing.T) {
+		mockPhotoSvc := new(MockPhotoService)
+		mockJobSvc := new(MockJobService)
+		handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		body, _ := json.Marshal(map[string]interface{}{"rotate": 90})
+		ctx.Request = httptest.NewRequest(http.MethodPost, "/photos//edit", bytes.NewBuffer(body))
+		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		handler.EditPhoto(ctx)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+}
+
+// TestPhotoHandler_ClearEdits tests DELETE /photos/:id/edit
+func TestPhotoHandler_ClearEdits(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockPhotoSvc := new(MockPhotoService)
+	mockJobSvc := new(MockJobService)
+	handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+	expected := &domain.Photo{ID: "photo123"}
+	mockPhotoSvc.On("ClearEdits", "photo123").Return(expected, nil)
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Params = gin.Params{{Key: "id", Value: "photo123"}}
+	ctx.Request = httptest.NewRequest(http.MethodDelete, "/photos/photo123/edit", nil)
+
+	handler.ClearEdits(ctx)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	mockPhotoSvc.AssertExpectations(t)

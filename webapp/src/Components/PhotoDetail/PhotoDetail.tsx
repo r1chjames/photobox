@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {useDisclosure, useHotkeys} from '@mantine/hooks';
 import {ActionIcon, Button, Chip, Dialog, Drawer, Group, Image, Loader, Modal, ScrollArea, TextInput} from '@mantine/core';
 import {useMediaQuery} from '@mantine/hooks';
-import {IconArrowLeftDashed, IconArrowRightDashed, IconDownload, IconHeart, IconHeartFilled, IconListDetails, IconRotateClockwise, IconShare2, IconTag} from '@tabler/icons-react';
+import {IconArrowLeftDashed, IconArrowRightDashed, IconDownload, IconHeart, IconHeartFilled, IconListDetails, IconPhotoEdit, IconRotateClockwise, IconShare2, IconTag} from '@tabler/icons-react';
 import {IPhotosAdapter} from '../../Adapters/IPhotosAdapter';
 import {ISharesAdapter} from '../../Adapters/ISharesAdapter';
 import {ShareModal} from '../ShareModal/ShareModal';
@@ -12,6 +12,7 @@ import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {notifications} from '@mantine/notifications';
 import {optimisticallyUpdatePhoto} from '../../utils/queryClientHelpers';
 import {MetadataPanel} from './MetadataPanel';
+import {EditPanel} from './EditPanel';
 
 interface IProps {
     photosAdapter: IPhotosAdapter;
@@ -25,6 +26,7 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
     const [isFavorite, setIsFavorite] = useState(false);
     const [showShareModal, setShowShareModal] = useState(false);
     const [showTagModal, setShowTagModal] = useState(false);
+    const [showEditPanel, setShowEditPanel] = useState(false);
     const [tagInput, setTagInput] = useState('');
     const isMobile = useMediaQuery('(max-width: 50em)');
     const queryClient = useQueryClient();
@@ -129,6 +131,8 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                 message: `Rotated ${direction === 'cw' ? 'clockwise' : 'counter-clockwise'}`,
                 color: 'green',
             });
+            queryClient.invalidateQueries({queryKey: ['fetchPhoto', photo.id]});
+            queryClient.invalidateQueries({queryKey: ['fetchPhotoBin', photo.id]});
         } catch (e) {
             notifications.show({
                 title: 'Rotation failed',
@@ -136,7 +140,13 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                 color: 'red',
             });
         }
-    }, [props.photosAdapter, photo]);
+    }, [props.photosAdapter, photo, queryClient]);
+
+    const handleEditSaved = useCallback(() => {
+        if (!photo) return;
+        queryClient.invalidateQueries({queryKey: ['fetchPhoto', photo.id]});
+        queryClient.invalidateQueries({queryKey: ['fetchPhotoBin', photo.id]});
+    }, [photo, queryClient]);
 
     const handleSaveTags = useCallback(async () => {
         if (!photo) return;
@@ -241,9 +251,17 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                     <Button onClick={() => handleRotate('cw')} leftSection={<IconRotateClockwise size={16} />} variant="light">
                         Rotate
                     </Button>
+                    <Button onClick={() => setShowEditPanel(prev => !prev)} leftSection={<IconPhotoEdit size={16} />} variant={showEditPanel ? 'filled' : 'light'}>
+                        Edit
+                    </Button>
                     <Button onClick={handleDownload} leftSection={<IconDownload size={16} />}>Download</Button>
                     <Button onClick={toggle} leftSection={<IconListDetails size={16} />} variant="light">Metadata</Button>
                 </Group>
+                {showEditPanel && photo && (
+                    <div style={{maxWidth: 420, margin: '0 auto', marginTop: '1rem'}}>
+                        <EditPanel photo={photo} photosAdapter={props.photosAdapter} onSaved={handleEditSaved} />
+                    </div>
+                )}
                 {isMobile ? (
                     <Drawer opened={opened} onClose={close} title="Metadata" position="bottom" size="md">
                         <ScrollArea>

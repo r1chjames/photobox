@@ -394,6 +394,20 @@ func (m *MockPhotoRepository) SetTrashPath(photoId, trashPath string) error {
 	return ret0
 }
 
+// SetEditParams mocks base method.
+func (m *MockPhotoRepository) SetEditParams(photoId string, params []byte) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetEditParams", photoId, params)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetEditParams indicates an expected call of SetEditParams.
+func (mr *MockPhotoRepositoryMockRecorder) SetEditParams(photoId, params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetEditParams", reflect.TypeOf((*MockPhotoRepository)(nil).SetEditParams), photoId, params)
+}
+
 // SetTrashPath indicates an expected call of SetTrashPath.
 func (mr *MockPhotoRepositoryMockRecorder) SetTrashPath(photoId, trashPath interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
@@ -1034,6 +1048,36 @@ func (m *MockPhotoService) RotatePhoto(photoId, direction string) (*domain.Photo
 	ret0, _ := ret[0].(*domain.Photo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
+}
+
+// EditPhoto mocks base method.
+func (m *MockPhotoService) EditPhoto(photoId string, params domain.EditParams) (*domain.Photo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EditPhoto", photoId, params)
+	ret0, _ := ret[0].(*domain.Photo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// EditPhoto indicates an expected call of EditPhoto.
+func (mr *MockPhotoServiceMockRecorder) EditPhoto(photoId, params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EditPhoto", reflect.TypeOf((*MockPhotoService)(nil).EditPhoto), photoId, params)
+}
+
+// ClearEdits mocks base method.
+func (m *MockPhotoService) ClearEdits(photoId string) (*domain.Photo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClearEdits", photoId)
+	ret0, _ := ret[0].(*domain.Photo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ClearEdits indicates an expected call of ClearEdits.
+func (mr *MockPhotoServiceMockRecorder) ClearEdits(photoId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClearEdits", reflect.TypeOf((*MockPhotoService)(nil).ClearEdits), photoId)
 }
 
 // RotatePhoto indicates an expected call of RotatePhoto.

@@ -30,6 +30,8 @@ type PhotoRepository interface {
 	RestorePhoto(photoId string) (*domain.Photo, error)
 	// SetTrashPath records the trash file location for a soft-deleted photo
 	SetTrashPath(photoId, trashPath string) error
+	// SetEditParams stores the non-destructive edit parameters for a photo
+	SetEditParams(photoId string, params []byte) error
 	// ListTrashPhotos returns all photos in trash
 	ListTrashPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
 	// ListExpiredTrashPhotos returns trashed photos deleted before the given cutoff
@@ -158,6 +160,10 @@ type PhotoService interface {
 	GetGeodata(north, south, east, west float64) ([]domain.PhotoGeoData, error)
 	// RotatePhoto rotates a photo
 	RotatePhoto(photoId string, direction string) (*domain.Photo, error)
+	// EditPhoto applies a non-destructive edit (rotate/crop/adjust)
+	EditPhoto(photoId string, params domain.EditParams) (*domain.Photo, error)
+	// ClearEdits removes any edited copy and stored edit params
+	ClearEdits(photoId string) (*domain.Photo, error)
 	// DownloadPhotos streams a zip of photos
 	DownloadPhotos(photoIds []string, writer io.Writer) error
 	// GetAllTags returns all distinct tags across photos

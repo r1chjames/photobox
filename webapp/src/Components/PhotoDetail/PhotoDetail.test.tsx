@@ -184,7 +184,7 @@ describe('PhotoDetail', () => {
         // the empty message only when there is no adapter; PhotoDetail always
         // passes one, so the Edit affordance is what appears.
         await waitFor(() => {
-            expect(screen.getByText('Edit')).toBeInTheDocument();
+            expect(screen.getAllByText('Edit').length).toBeGreaterThan(0);
         });
         expect(screen.queryByText('Camera')).not.toBeInTheDocument();
     });

@@ -80,6 +80,11 @@ func (m *MockPhotoRepository) SetTrashPath(photoId, trashPath string) error {
 	return args.Error(0)
 }
 
+func (m *MockPhotoRepository) SetEditParams(photoId string, params []byte) error {
+	args := m.Called(photoId, params)
+	return args.Error(0)
+}
+
 func (m *MockPhotoRepository) ListTrashPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
 	args := m.Called(fromId, limit, includeThumbnail)
 	if args.Get(0) == nil {

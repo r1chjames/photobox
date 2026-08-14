@@ -180,6 +180,10 @@ func (ps *PhotoService) PhotoBinary(photoId string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// Serve the edited copy when one exists (non-destructive edits).
+	if edited := ps.editedCopyPath(photoId); edited != "" {
+		return edited, nil
+	}
 	// Validate path is within photo directory
 	absBase, _ := filepath.Abs(ps.config.PhotoDir)
 	unescapedPath := utils.UnescapeInvalidCharacters(photoInfo.FilesystemPath)
@@ -1042,9 +1046,84 @@ func (ps *PhotoService) RotatePhoto(photoId string, direction string) (*domain.P
 	if err != nil {
 		return nil, err
 	}
-	// TODO: implement actual EXIF rotation or re-encode
-	_ = direction
+	if photo.FilesystemPath == "" {
+		return photo, nil
+	}
+
+	// Load current edit params (if any) and add rotation on top.
+	params, err := ParseEditParams(photo.EditParams)
+	if err != nil {
+		return nil, err
+	}
+	current := 0
+	if params.Rotate != nil {
+		current = *params.Rotate
+	}
+	if direction == "cw" {
+		current = (current + 90) % 360
+	} else {
+		current = (current + 270) % 360
+	}
+	params.Rotate = &current
+
+	return ps.applyAndPersistEdits(photo, *params)
+}
+
+// EditPhoto applies a non-destructive edit (rotate/crop/adjust) to a photo.
+func (ps *PhotoService) EditPhoto(photoId string, params EditParams) (*domain.Photo, error) {
+	photo, err := ps.photoRepo.GetPhotoById(photoId, false)
+	if err != nil {
+		return nil, err
+	}
+	if photo.FilesystemPath == "" {
+		return photo, nil
+	}
+	return ps.applyAndPersistEdits(photo, params)
+}
+
+// ClearEdits removes any edited copy and stored edit params.
+func (ps *PhotoService) ClearEdits(photoId string) (*domain.Photo, error) {
+	photo, err := ps.photoRepo.GetPhotoById(photoId, false)
+	if err != nil {
+		return nil, err
+	}
+	edited := editedFileName(ps.config.PhotoDir, photoId)
+	if err := os.Remove(edited); err != nil && !os.IsNotExist(err) {
+		slog.Warn("Unable to remove edited copy", "photo", photoId, "error", err)
+	}
+	if err := ps.photoRepo.SetEditParams(photoId, nil); err != nil {
+		return nil, err
+	}
+	photo.EditParams = nil
 	return photo, nil
+}
+
+// applyAndPersistEdits renders the edited copy from the original and stores
+// the edit params so photo/bin serves the edited version.
+func (ps *PhotoService) applyAndPersistEdits(photo *domain.Photo, params EditParams) (*domain.Photo, error) {
+	originalPath := utils.UnescapeInvalidCharacters(photo.FilesystemPath)
+	_, err := ApplyEditsForPhoto(ps.config.PhotoDir, photo.ID, originalPath, params)
+	if err != nil {
+		return nil, err
+	}
+	raw, err := MarshalEditParams(&params)
+	if err != nil {
+		return nil, err
+	}
+	if err := ps.photoRepo.SetEditParams(photo.ID, raw); err != nil {
+		return nil, err
+	}
+	photo.EditParams = raw
+	return photo, nil
+}
+
+// editedCopyPath returns the .edited path for a photo if it exists.
+func (ps *PhotoService) editedCopyPath(photoId string) string {
+	p := editedFileName(ps.config.PhotoDir, photoId)
+	if _, err := os.Stat(p); err == nil {
+		return p
+	}
+	return ""
 }
 
 func (ps *PhotoService) DownloadPhotos(photoIds []string, writer io.Writer) error {

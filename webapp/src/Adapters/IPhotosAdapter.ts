@@ -29,6 +29,8 @@ export interface IPhotosAdapter {
   getTrashedPhotos(fromId: string, limit: number): Promise<Photo[]>;
   restorePhoto(photoId: string): Promise<void>;
   rotatePhoto(photoId: string, direction: 'cw' | 'ccw'): Promise<Photo>;
+  editPhoto(photoId: string, params: { rotate?: number; crop?: { x: number; y: number; width: number; height: number }; brightness?: number; contrast?: number; saturation?: number; autoEnhance?: boolean }): Promise<Photo>;
+  clearEdits(photoId: string): Promise<Photo>;
   getGeodata(north: number, south: number, east: number, west: number): Promise<PhotoGeoData[]>;
   getTimeline(): Promise<TimelineEntry[]>;
   getAllTags(): Promise<string[]>;
