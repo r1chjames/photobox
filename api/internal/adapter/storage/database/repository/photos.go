@@ -162,6 +162,12 @@ func (pr *PhotoRepository) RestorePhoto(photoId string) (*domain.Photo, error) {
 	return photo, nil
 }
 
+// SetTrashPath records where the original file lives while the photo is in
+// the trash (used by RestorePhoto to move the file back).
+func (pr *PhotoRepository) SetTrashPath(photoId, trashPath string) error {
+	return pr.dbEnv.Db.Model(&domain.Photo{}).Where("id = ?", photoId).Update("trash_path", trashPath).Error
+}
+
 func (pr *PhotoRepository) ListTrashPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
 	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("deleted_at IS NOT NULL").Order("created_epoch ASC").Omit("thumbnail")

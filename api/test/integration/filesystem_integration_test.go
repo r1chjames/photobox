@@ -4,6 +4,7 @@
 package integration
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -193,4 +194,58 @@ func TestFilesystemScanConcurrency_Integration(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		<-done
 	}
+}
+
+// TestFilesystemRepository_MoveAndRestoreFromTrash_Integration verifies the
+// trash round-trip: a file moved to .trash can be restored to its original
+// path, and both locations are consistent.
+func TestFilesystemRepository_MoveAndRestoreFromTrash_Integration(t *testing.T) {
+	testDir := testutil.CreateTestPhotoDir(t)
+	defer testutil.CleanupTestPhotoDir(t, testDir)
+
+	testutil.CreateTestPhotoStructure(t, testDir)
+
+	timezone, _ := time.LoadLocation("UTC")
+	config := appconfig.AppConfig{
+		PhotoDir: testDir,
+		Timezone: timezone,
+	}
+	repo := repository.NewFilesystemRepository(config, nil)
+
+	// Pick the first photo and note its original path
+	photoChan := make(chan string, 10)
+	go func() {
+		repo.ScanFilesystem(photoChan)
+		close(photoChan)
+	}()
+	originalPath := ""
+	for path := range photoChan {
+		originalPath = path
+		break
+	}
+	assert.NotEmpty(t, originalPath, "should find at least one photo")
+	_, err := os.Stat(originalPath)
+	assert.NoError(t, err, "original should exist before move")
+
+	// Move to trash
+	trashPath, err := repo.MoveToTrash(originalPath)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, trashPath)
+	assert.NotEqual(t, originalPath, trashPath)
+
+	// Original gone, trash present
+	_, err = os.Stat(originalPath)
+	assert.Error(t, err, "original should be gone after move")
+	_, err = os.Stat(trashPath)
+	assert.NoError(t, err, "trash file should exist")
+
+	// Restore
+	err = repo.RestoreFromTrash(trashPath, originalPath)
+	assert.NoError(t, err)
+
+	// Original back, trash gone
+	_, err = os.Stat(originalPath)
+	assert.NoError(t, err, "original should be restored")
+	_, err = os.Stat(trashPath)
+	assert.Error(t, err, "trash file should be gone after restore")
 }

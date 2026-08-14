@@ -28,6 +28,8 @@ type PhotoRepository interface {
 	SoftDeletePhoto(photoId string) (*domain.Photo, error)
 	// RestorePhoto restores a photo from trash
 	RestorePhoto(photoId string) (*domain.Photo, error)
+	// SetTrashPath records the trash file location for a soft-deleted photo
+	SetTrashPath(photoId, trashPath string) error
 	// ListTrashPhotos returns all photos in trash
 	ListTrashPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
 	// ListExpiredTrashPhotos returns trashed photos deleted before the given cutoff
