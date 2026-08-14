@@ -211,4 +211,20 @@ export class MockPhotosAdapter implements IPhotosAdapter {
     if (startIndex === -1) return [];
     return videos.slice(startIndex, startIndex + limit);
   }
+
+  public batchSetFavorite = async (photoIds: string[], favorite: boolean): Promise<void> => {
+    this._photos.forEach(p => {
+      if (photoIds.includes(p.id)) p.favorite = favorite;
+    });
+  }
+
+  public batchDeletePhotos = async (photoIds: string[]): Promise<void> => {
+    this._photos = this._photos.filter(p => !photoIds.includes(p.id));
+  }
+
+  public batchAddToAlbum = async (photoIds: string[], albumId: string): Promise<void> => {
+    this._photos.forEach(p => {
+      if (photoIds.includes(p.id)) p.albumId = albumId;
+    });
+  }
 }

@@ -149,6 +149,21 @@ export class PhotosAdapter implements IPhotosAdapter {
     return this.restApiAdapter.postApiCall(batchPath, { photoIds, tags, operation }, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 
+  public batchSetFavorite = async (photoIds: string[], favorite: boolean): Promise<void> => {
+    const batchPath = 'photos/batch';
+    return this.restApiAdapter.postApiCall(batchPath, { photoIds, action: 'favorite', favorite }, this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
+
+  public batchDeletePhotos = async (photoIds: string[]): Promise<void> => {
+    const batchPath = 'photos/batch';
+    return this.restApiAdapter.postApiCall(batchPath, { photoIds, action: 'delete' }, this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
+
+  public batchAddToAlbum = async (photoIds: string[], albumId: string): Promise<void> => {
+    const batchPath = 'photos/batch';
+    return this.restApiAdapter.postApiCall(batchPath, { photoIds, action: 'add_to_album', albumId }, this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
+
   public getPhotosByTag = async (tag: string, fromId: string, limit: number, includeThumbnails: boolean): Promise<Photo[]> => {
     const path = `photos?fromId=${fromId}&limit=${limit}&thumbnail=${includeThumbnails}&tags=${encodeURIComponent(tag)}`;
     return this.restApiAdapter.getPaginatedApiCall(path, this.buildHeaders(this.restApiAdapter.authHeader()), {});

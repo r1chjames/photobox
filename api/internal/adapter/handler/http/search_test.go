@@ -132,6 +132,20 @@ func (m *MockSearchPhotoService) SetFavorite(photoId string, favorite bool) (*do
 	}
 	return args.Get(0).(*domain.Photo), args.Error(1)
 }
+func (m *MockSearchPhotoService) BatchSetFavorite(photoIds []string, favorite bool) error {
+	args := m.Called(photoIds, favorite)
+	return args.Error(0)
+}
+
+func (m *MockSearchPhotoService) BatchAddToAlbum(photoIds []string, albumId string) error {
+	args := m.Called(photoIds, albumId)
+	return args.Error(0)
+}
+
+func (m *MockSearchPhotoService) BatchDeletePhotos(photoIds []string) error {
+	args := m.Called(photoIds)
+	return args.Error(0)
+}
 
 func (m *MockSearchPhotoService) ListFavoritePhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
 	args := m.Called(fromId, limit, includeThumbnail)

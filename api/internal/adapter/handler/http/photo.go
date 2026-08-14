@@ -421,6 +421,91 @@ type batchTagsRequest struct {
 	Operation string   `json:"operation" binding:"required,oneof=add remove set"`
 }
 
+// batchPhotosRequest is the unified bulk-operation body:
+//
+//	{ "photoIds": [...], "action": "add_to_album"|"delete"|"favorite"|"tag", "albumId": "...", "favorite": true, "tags": [...], "tagOperation": "add" }
+type batchPhotosRequest struct {
+	PhotoIds     []string `json:"photoIds" binding:"required,min=1"`
+	Action       string   `json:"action" binding:"required,oneof=add_to_album delete favorite tag"`
+	AlbumId      string   `json:"albumId"`
+	Favorite     *bool    `json:"favorite"`
+	Tags         []string `json:"tags"`
+	TagOperation string   `json:"tagOperation" binding:"omitempty,oneof=add remove set"`
+}
+
+// BatchPhotos applies a single bulk action to many photos in one request.
+func (ph *PhotoHandler) BatchPhotos(ctx *gin.Context) {
+	var req batchPhotosRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		validationError(ctx, err)
+		return
+	}
+
+	switch req.Action {
+	case "add_to_album":
+		if req.AlbumId == "" {
+			validationError(ctx, fmt.Errorf("albumId is required for add_to_album action"))
+			return
+		}
+		if err := ph.photoSvc.BatchAddToAlbum(req.PhotoIds, req.AlbumId); err != nil {
+			handleError(ctx, err)
+			return
+		}
+	case "delete":
+		if err := ph.photoSvc.BatchDeletePhotos(req.PhotoIds); err != nil {
+			handleError(ctx, err)
+			return
+		}
+	case "favorite":
+		if req.Favorite == nil {
+			validationError(ctx, fmt.Errorf("favorite is required for favorite action"))
+			return
+		}
+		if err := ph.photoSvc.BatchSetFavorite(req.PhotoIds, *req.Favorite); err != nil {
+			handleError(ctx, err)
+			return
+		}
+	case "tag":
+		operation := req.TagOperation
+		if operation == "" {
+			operation = "add"
+		}
+		if err := ph.photoSvc.BatchUpdatePhotoTags(req.PhotoIds, req.Tags, operation); err != nil {
+			handleError(ctx, err)
+			return
+		}
+	default:
+		validationError(ctx, fmt.Errorf("unsupported batch action: %s", req.Action))
+		return
+	}
+
+	handleSuccess(ctx, gin.H{"message": fmt.Sprintf("Batch %s completed for %d photos", req.Action, len(req.PhotoIds))})
+}
+
+// addPhotosToAlbumRequest is the body for POST /albums/:id/photos.
+type addPhotosToAlbumRequest struct {
+	PhotoIds []string `json:"photoIds" binding:"required,min=1"`
+}
+
+// AddPhotosToAlbum assigns photos to the album named by the URL :id param.
+func (ph *PhotoHandler) AddPhotosToAlbum(ctx *gin.Context) {
+	albumId := ctx.Param("id")
+	if albumId == "" {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "album ID is required"})
+		return
+	}
+	var req addPhotosToAlbumRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		validationError(ctx, err)
+		return
+	}
+	if err := ph.photoSvc.BatchAddToAlbum(req.PhotoIds, albumId); err != nil {
+		handleError(ctx, err)
+		return
+	}
+	handleSuccess(ctx, gin.H{"message": fmt.Sprintf("Added %d photos to album", len(req.PhotoIds))})
+}
+
 func (ph *PhotoHandler) DownloadPhotos(ctx *gin.Context) {
 	var req downloadPhotosRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {

@@ -144,6 +144,7 @@ func defineResources(
 		albums.GET("", albumHandler.ListAlbums)
 		albums.GET("/count", albumHandler.AlbumCount)
 		albums.POST("", albumHandler.CreateAlbum)
+		albums.POST("/:id/photos", photoHandler.AddPhotosToAlbum)
 		albums.PATCH("/:id", albumHandler.UpdateAlbum)
 		albums.DELETE("/:id", albumHandler.DeleteAlbum)
 	}
@@ -165,6 +166,7 @@ func defineResources(
 		photos.DELETE("/trash/empty", photoHandler.EmptyTrash)
 		photos.POST("/trash/restore/:id", photoHandler.RestorePhoto)
 		photos.POST("/download", photoHandler.DownloadPhotos)
+	photos.POST("/batch", photoHandler.BatchPhotos)
 		photos.GET("/timeline", photoHandler.GetTimeline)
 	photos.GET("/geodata", photoHandler.GetGeodata)
 	photos.GET("/tags", photoHandler.GetAllTags)

@@ -218,6 +218,25 @@ func (pr *PhotoRepository) SetFavorite(photoId string, favorite bool) error {
 	return result.Error
 }
 
+// SetFavoriteForPhotos updates the favorite flag for multiple photos in a
+// single query.
+func (pr *PhotoRepository) SetFavoriteForPhotos(photoIds []string, favorite bool) error {
+	if len(photoIds) == 0 {
+		return nil
+	}
+	result := pr.dbEnv.Db.Model(&domain.Photo{}).Where("id IN ?", photoIds).Update("favorite", favorite)
+	return result.Error
+}
+
+// AssignPhotosToAlbum moves the given photos into an album (single query).
+func (pr *PhotoRepository) AssignPhotosToAlbum(photoIds []string, albumId string) error {
+	if len(photoIds) == 0 {
+		return nil
+	}
+	result := pr.dbEnv.Db.Model(&domain.Photo{}).Where("id IN ?", photoIds).Update("album_id", albumId)
+	return result.Error
+}
+
 func (pr *PhotoRepository) ListFavoritePhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
 	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("favorite = ? AND deleted_at IS NULL", true).Where("hidden = ?", false).Order("created_epoch ASC").Omit("thumbnail")

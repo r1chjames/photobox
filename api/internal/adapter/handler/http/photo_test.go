@@ -134,6 +134,21 @@ func (m *MockPhotoService) SetFavorite(photoId string, favorite bool) (*domain.P
 	return args.Get(0).(*domain.Photo), args.Error(1)
 }
 
+func (m *MockPhotoService) BatchSetFavorite(photoIds []string, favorite bool) error {
+	args := m.Called(photoIds, favorite)
+	return args.Error(0)
+}
+
+func (m *MockPhotoService) BatchAddToAlbum(photoIds []string, albumId string) error {
+	args := m.Called(photoIds, albumId)
+	return args.Error(0)
+}
+
+func (m *MockPhotoService) BatchDeletePhotos(photoIds []string) error {
+	args := m.Called(photoIds)
+	return args.Error(0)
+}
+
 func (m *MockPhotoService) ListFavoritePhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
 	args := m.Called(fromId, limit, includeThumbnail)
 	if args.Get(0) == nil {
@@ -788,4 +803,161 @@ func TestStopAllJobs_Error(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 
 	mockJobSvc.AssertExpectations(t)
+}
+
+// TestPhotoHandler_BatchPhotos tests the unified bulk endpoint
+func TestPhotoHandler_BatchPhotos(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("add_to_album success", func(t *testing.T) {
+		mockPhotoSvc := new(MockPhotoService)
+		mockJobSvc := new(MockJobService)
+		handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+		mockPhotoSvc.On("BatchAddToAlbum", []string{"p1", "p2"}, "album1").Return(nil)
+
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		body, _ := json.Marshal(map[string]interface{}{
+			"photoIds": []string{"p1", "p2"},
+			"action":   "add_to_album",
+			"albumId":  "album1",
+		})
+		ctx.Request = httptest.NewRequest(http.MethodPost, "/photos/batch", bytes.NewBuffer(body))
+		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		handler.BatchPhotos(ctx)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		mockPhotoSvc.AssertExpectations(t)
+	})
+
+	t.Run("delete success", func(t *testing.T) {
+		mockPhotoSvc := new(MockPhotoService)
+		mockJobSvc := new(MockJobService)
+		handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+		mockPhotoSvc.On("BatchDeletePhotos", []string{"p1", "p2"}).Return(nil)
+
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		body, _ := json.Marshal(map[string]interface{}{
+			"photoIds": []string{"p1", "p2"},
+			"action":   "delete",
+		})
+		ctx.Request = httptest.NewRequest(http.MethodPost, "/photos/batch", bytes.NewBuffer(body))
+		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		handler.BatchPhotos(ctx)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		mockPhotoSvc.AssertExpectations(t)
+	})
+
+	t.Run("favorite success", func(t *testing.T) {
+		mockPhotoSvc := new(MockPhotoService)
+		mockJobSvc := new(MockJobService)
+		handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+		fav := true
+		mockPhotoSvc.On("BatchSetFavorite", []string{"p1"}, true).Return(nil)
+
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		body, _ := json.Marshal(map[string]interface{}{
+			"photoIds": []string{"p1"},
+			"action":   "favorite",
+			"favorite": true,
+		})
+		ctx.Request = httptest.NewRequest(http.MethodPost, "/photos/batch", bytes.NewBuffer(body))
+		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		handler.BatchPhotos(ctx)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		_ = fav
+		mockPhotoSvc.AssertExpectations(t)
+	})
+
+	t.Run("missing albumId validation", func(t *testing.T) {
+		mockPhotoSvc := new(MockPhotoService)
+		mockJobSvc := new(MockJobService)
+		handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		body, _ := json.Marshal(map[string]interface{}{
+			"photoIds": []string{"p1"},
+			"action":   "add_to_album",
+		})
+		ctx.Request = httptest.NewRequest(http.MethodPost, "/photos/batch", bytes.NewBuffer(body))
+		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		handler.BatchPhotos(ctx)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockPhotoSvc.AssertNotCalled(t, "BatchAddToAlbum", mock.Anything, mock.Anything)
+	})
+
+	t.Run("unsupported action", func(t *testing.T) {
+		mockPhotoSvc := new(MockPhotoService)
+		mockJobSvc := new(MockJobService)
+		handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		body, _ := json.Marshal(map[string]interface{}{
+			"photoIds": []string{"p1"},
+			"action":   "explode",
+		})
+		ctx.Request = httptest.NewRequest(http.MethodPost, "/photos/batch", bytes.NewBuffer(body))
+		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		handler.BatchPhotos(ctx)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+}
+
+// TestPhotoHandler_AddPhotosToAlbum tests POST /albums/:id/photos
+func TestPhotoHandler_AddPhotosToAlbum(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("success", func(t *testing.T) {
+		mockPhotoSvc := new(MockPhotoService)
+		mockJobSvc := new(MockJobService)
+		handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+		mockPhotoSvc.On("BatchAddToAlbum", []string{"p1", "p2"}, "album1").Return(nil)
+
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		ctx.Params = gin.Params{{Key: "id", Value: "album1"}}
+		body, _ := json.Marshal(map[string]interface{}{"photoIds": []string{"p1", "p2"}})
+		ctx.Request = httptest.NewRequest(http.MethodPost, "/albums/album1/photos", bytes.NewBuffer(body))
+		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		handler.AddPhotosToAlbum(ctx)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		mockPhotoSvc.AssertExpectations(t)
+	})
+
+	t.Run("missing photos validation", func(t *testing.T) {
+		mockPhotoSvc := new(MockPhotoService)
+		mockJobSvc := new(MockJobService)
+		handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		ctx.Params = gin.Params{{Key: "id", Value: "album1"}}
+		body, _ := json.Marshal(map[string]interface{}{"photoIds": []string{}})
+		ctx.Request = httptest.NewRequest(http.MethodPost, "/albums/album1/photos", bytes.NewBuffer(body))
+		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		handler.AddPhotosToAlbum(ctx)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockPhotoSvc.AssertNotCalled(t, "BatchAddToAlbum", mock.Anything, mock.Anything)
+	})
 }

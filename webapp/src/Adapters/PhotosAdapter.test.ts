@@ -212,4 +212,36 @@ describe('PhotosAdapter', () => {
             );
         });
     });
+
+    describe('batch operations', () => {
+        it('batchSetFavorite posts favorite action to photos/batch', async () => {
+            await photosAdapter.batchSetFavorite(['p1', 'p2'], true);
+
+            expect(mockRestApiAdapter.postApiCall).toHaveBeenCalledWith(
+                'photos/batch',
+                { photoIds: ['p1', 'p2'], action: 'favorite', favorite: true },
+                expect.objectContaining({ Authorization: 'Bearer test-token' })
+            );
+        });
+
+        it('batchDeletePhotos posts delete action to photos/batch', async () => {
+            await photosAdapter.batchDeletePhotos(['p1', 'p2']);
+
+            expect(mockRestApiAdapter.postApiCall).toHaveBeenCalledWith(
+                'photos/batch',
+                { photoIds: ['p1', 'p2'], action: 'delete' },
+                expect.objectContaining({ Authorization: 'Bearer test-token' })
+            );
+        });
+
+        it('batchAddToAlbum posts add_to_album action to photos/batch', async () => {
+            await photosAdapter.batchAddToAlbum(['p1', 'p2'], 'album1');
+
+            expect(mockRestApiAdapter.postApiCall).toHaveBeenCalledWith(
+                'photos/batch',
+                { photoIds: ['p1', 'p2'], action: 'add_to_album', albumId: 'album1' },
+                expect.objectContaining({ Authorization: 'Bearer test-token' })
+            );
+        });
+    });
 });

@@ -40,6 +40,10 @@ type PhotoRepository interface {
 	UpdatePhoto(photo domain.Photo) error
 	// SetFavorite updates only the favorite field of a photo
 	SetFavorite(photoId string, favorite bool) error
+	// SetFavoriteForPhotos updates the favorite flag for multiple photos
+	SetFavoriteForPhotos(photoIds []string, favorite bool) error
+	// AssignPhotosToAlbum moves multiple photos into an album
+	AssignPhotosToAlbum(photoIds []string, albumId string) error
 	// ListFavoritePhotos returns only favorited photos
 	ListFavoritePhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error)
 	// SearchPhotos searches photos by query
@@ -118,6 +122,12 @@ type PhotoService interface {
 	PurgeExpiredTrash(cutoff time.Time) (int, error)
 	// SetFavorite toggles favorite status
 	SetFavorite(photoId string, favorite bool) (*domain.Photo, error)
+	// BatchSetFavorite sets favorite for multiple photos
+	BatchSetFavorite(photoIds []string, favorite bool) error
+	// BatchAddToAlbum assigns multiple photos to an album
+	BatchAddToAlbum(photoIds []string, albumId string) error
+	// BatchDeletePhotos soft-deletes (moves to trash) multiple photos
+	BatchDeletePhotos(photoIds []string) error
 	// ListFavoritePhotos returns favorited photos
 	ListFavoritePhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error)
 	// Search searches photos by query

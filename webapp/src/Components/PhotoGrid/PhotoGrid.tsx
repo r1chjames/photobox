@@ -666,9 +666,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
 
     const handleBulkFavorite = useCallback(async () => {
         try {
-            for (const photoId of selectedIds) {
-                await props.photosAdapter.favoritePhoto(photoId, true);
-            }
+            await props.photosAdapter.batchSetFavorite(Array.from(selectedIds), true);
             const selectedIdsSet = new Set(selectedIds);
             queryClient.setQueriesData(
                 { queryKey: ['albumPhotos'] },
@@ -711,9 +709,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
             confirmProps: { color: 'red' },
             onConfirm: async () => {
                 try {
-                    for (const photoId of selectedIds) {
-                        await props.photosAdapter.deletePhoto(photoId);
-                    }
+                    await props.photosAdapter.batchDeletePhotos(Array.from(selectedIds));
                     notifications.show({
                         title: 'Deleted',
                         message: `${selectedIds.size} photo${selectedIds.size !== 1 ? 's' : ''} moved to trash`,
@@ -781,7 +777,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
 
     const handleBulkAddToAlbum = useCallback(async (albumId: string) => {
         try {
-            await props.albumsAdapter.addPhotosToAlbum(albumId, Array.from(selectedIds));
+            await props.photosAdapter.batchAddToAlbum(Array.from(selectedIds), albumId);
             notifications.show({
                 title: 'Added to album',
                 message: `${selectedIds.size} photo${selectedIds.size !== 1 ? 's' : ''} added to album`,

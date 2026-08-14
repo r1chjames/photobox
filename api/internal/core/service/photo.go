@@ -743,6 +743,28 @@ func (ps *PhotoService) DeletePhoto(photoId string) error {
 	return err
 }
 
+// BatchDeletePhotos soft-deletes (moves to trash) multiple photos in one pass.
+// A single photo failing does not abort the batch; the error is logged.
+func (ps *PhotoService) BatchDeletePhotos(photoIds []string) error {
+	for _, photoId := range photoIds {
+		if err := ps.DeletePhoto(photoId); err != nil {
+			slog.Warn("Failed to delete photo in batch", "id", photoId, "error", err)
+		}
+	}
+	return nil
+}
+
+// BatchSetFavorite sets the favorite flag for multiple photos in a single
+// database query.
+func (ps *PhotoService) BatchSetFavorite(photoIds []string, favorite bool) error {
+	return ps.photoRepo.SetFavoriteForPhotos(photoIds, favorite)
+}
+
+// BatchAddToAlbum assigns multiple photos to an album in a single query.
+func (ps *PhotoService) BatchAddToAlbum(photoIds []string, albumId string) error {
+	return ps.photoRepo.AssignPhotosToAlbum(photoIds, albumId)
+}
+
 func (ps *PhotoService) RestorePhoto(photoId string) error {
 	photo, err := ps.photoRepo.RestorePhoto(photoId)
 	if err != nil {
