@@ -377,6 +377,34 @@ func (mr *MockPhotoRepositoryMockRecorder) SetFavorite(photoId, favorite interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetFavorite", reflect.TypeOf((*MockPhotoRepository)(nil).SetFavorite), photoId, favorite)
 }
 
+// SetFavoriteForPhotos mocks base method.
+func (m *MockPhotoRepository) SetFavoriteForPhotos(photoIds []string, favorite bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetFavoriteForPhotos", photoIds, favorite)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetFavoriteForPhotos indicates an expected call of SetFavoriteForPhotos.
+func (mr *MockPhotoRepositoryMockRecorder) SetFavoriteForPhotos(photoIds, favorite interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetFavoriteForPhotos", reflect.TypeOf((*MockPhotoRepository)(nil).SetFavoriteForPhotos), photoIds, favorite)
+}
+
+// AssignPhotosToAlbum mocks base method.
+func (m *MockPhotoRepository) AssignPhotosToAlbum(photoIds []string, albumId string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AssignPhotosToAlbum", photoIds, albumId)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AssignPhotosToAlbum indicates an expected call of AssignPhotosToAlbum.
+func (mr *MockPhotoRepositoryMockRecorder) AssignPhotosToAlbum(photoIds, albumId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AssignPhotosToAlbum", reflect.TypeOf((*MockPhotoRepository)(nil).AssignPhotosToAlbum), photoIds, albumId)
+}
+
 // SoftDeletePhoto mocks base method.
 func (m *MockPhotoRepository) SoftDeletePhoto(photoId string) (*domain.Photo, error) {
 	m.ctrl.T.Helper()
@@ -947,6 +975,48 @@ func (m *MockPhotoService) SetFavorite(photoId string, favorite bool) (*domain.P
 	ret0, _ := ret[0].(*domain.Photo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
+}
+
+// BatchSetFavorite mocks base method.
+func (m *MockPhotoService) BatchSetFavorite(photoIds []string, favorite bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BatchSetFavorite", photoIds, favorite)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// BatchSetFavorite indicates an expected call of BatchSetFavorite.
+func (mr *MockPhotoServiceMockRecorder) BatchSetFavorite(photoIds, favorite interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchSetFavorite", reflect.TypeOf((*MockPhotoService)(nil).BatchSetFavorite), photoIds, favorite)
+}
+
+// BatchAddToAlbum mocks base method.
+func (m *MockPhotoService) BatchAddToAlbum(photoIds []string, albumId string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BatchAddToAlbum", photoIds, albumId)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// BatchAddToAlbum indicates an expected call of BatchAddToAlbum.
+func (mr *MockPhotoServiceMockRecorder) BatchAddToAlbum(photoIds, albumId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchAddToAlbum", reflect.TypeOf((*MockPhotoService)(nil).BatchAddToAlbum), photoIds, albumId)
+}
+
+// BatchDeletePhotos mocks base method.
+func (m *MockPhotoService) BatchDeletePhotos(photoIds []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BatchDeletePhotos", photoIds)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// BatchDeletePhotos indicates an expected call of BatchDeletePhotos.
+func (mr *MockPhotoServiceMockRecorder) BatchDeletePhotos(photoIds interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchDeletePhotos", reflect.TypeOf((*MockPhotoService)(nil).BatchDeletePhotos), photoIds)
 }
 
 // SetFavorite indicates an expected call of SetFavorite.

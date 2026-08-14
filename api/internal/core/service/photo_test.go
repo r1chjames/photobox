@@ -111,6 +111,16 @@ func (m *MockPhotoRepository) SetFavorite(photoId string, favorite bool) error {
 	return args.Error(0)
 }
 
+func (m *MockPhotoRepository) SetFavoriteForPhotos(photoIds []string, favorite bool) error {
+	args := m.Called(photoIds, favorite)
+	return args.Error(0)
+}
+
+func (m *MockPhotoRepository) AssignPhotosToAlbum(photoIds []string, albumId string) error {
+	args := m.Called(photoIds, albumId)
+	return args.Error(0)
+}
+
 func (m *MockPhotoRepository) ListFavoritePhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error) {
 	args := m.Called(fromId, limit, includeThumbnail)
 	if args.Get(0) == nil {
@@ -1657,4 +1667,51 @@ func TestGetPhotoEpoch(t *testing.T) {
 	after := time.Now().UnixMilli()
 	assert.GreaterOrEqual(t, epoch2, before)
 	assert.LessOrEqual(t, epoch2, after)
+}
+// TestBatchOperations tests the bulk service methods
+func TestBatchOperations(t *testing.T) {
+	t.Run("batch delete soft-deletes each photo", func(t *testing.T) {
+		mockRepo := new(MockPhotoRepository)
+		mockAlbumSvc := new(MockAlbumService)
+		mockFsSvc := new(MockFilesystemService)
+		config := appconfig.AppConfig{}
+
+		mockRepo.On("SoftDeletePhoto", "p1").Return(&domain.Photo{ID: "p1", FilesystemPath: "/photos/a.jpg"}, nil)
+		mockRepo.On("SoftDeletePhoto", "p2").Return(&domain.Photo{ID: "p2", FilesystemPath: "/photos/b.jpg"}, nil)
+		mockFsSvc.On("MoveToTrash", "/photos/a.jpg").Return("", nil)
+		mockFsSvc.On("MoveToTrash", "/photos/b.jpg").Return("", nil)
+
+		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
+		err := service.BatchDeletePhotos([]string{"p1", "p2"})
+
+		assert.NoError(t, err)
+		mockRepo.AssertExpectations(t)
+		mockFsSvc.AssertExpectations(t)
+	})
+
+	t.Run("batch favorite updates in single query", func(t *testing.T) {
+		mockRepo := new(MockPhotoRepository)
+		config := appconfig.AppConfig{}
+
+		mockRepo.On("SetFavoriteForPhotos", []string{"p1", "p2"}, true).Return(nil)
+
+		service := NewPhotoService(mockRepo, new(MockAlbumService), new(MockFilesystemService), new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
+		err := service.BatchSetFavorite([]string{"p1", "p2"}, true)
+
+		assert.NoError(t, err)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("batch add to album", func(t *testing.T) {
+		mockRepo := new(MockPhotoRepository)
+		config := appconfig.AppConfig{}
+
+		mockRepo.On("AssignPhotosToAlbum", []string{"p1", "p2"}, "album1").Return(nil)
+
+		service := NewPhotoService(mockRepo, new(MockAlbumService), new(MockFilesystemService), new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
+		err := service.BatchAddToAlbum([]string{"p1", "p2"}, "album1")
+
+		assert.NoError(t, err)
+		mockRepo.AssertExpectations(t)
+	})
 }
