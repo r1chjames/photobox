@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strconv"
+	"time"
 
 	"github.com/robfig/cron/v3"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
@@ -56,6 +58,30 @@ func (s *Scheduler) AddScheduledJobs() {
 		slog.Error("Unable to add AI analysis job schedule", "error", err)
 	}
 
+	// Schedule trash retention cleanup to run daily. The retention period is
+	// read from settings each run so admin changes apply without a restart.
+	_, err = s.cron.AddFunc("0 2 * * *", func() {
+		retentionDays, err := s.trashRetentionDays()
+		if err != nil {
+			slog.Error("Trash retention cleanup skipped: unable to read retention setting", "error", err)
+			return
+		}
+		if retentionDays <= 0 {
+			slog.Info("Trash retention cleanup skipped: retention disabled (0 days)")
+			return
+		}
+		cutoff := time.Now().AddDate(0, 0, -retentionDays)
+		deleted, err := s.photoSvc.PurgeExpiredTrash(cutoff)
+		if err != nil {
+			slog.Error("Trash retention cleanup failed", "error", err)
+			return
+		}
+		slog.Info("Trash retention cleanup complete", "deleted", deleted)
+	})
+	if err != nil {
+		slog.Error("Unable to add trash retention job schedule", "error", err)
+	}
+
 	setting, err := s.utilSvc.GetSetting("index_frequency_cron")
 	if err != nil {
 		slog.Warn("Unable to get photo index cron expression from database, index scheduling will not be enabled")
@@ -74,6 +100,20 @@ func (s *Scheduler) AddScheduledJobs() {
 
 func UpdateJobSchedule() {
 
+}
+
+// trashRetentionDays reads the trash retention period from settings, falling
+// back to the configured default when the setting is missing or unparseable.
+func (s *Scheduler) trashRetentionDays() (int, error) {
+	setting, err := s.utilSvc.GetSetting("trash_retention_days")
+	if err == nil && setting != nil && setting.Value != "" {
+		days, err := strconv.Atoi(setting.Value)
+		if err == nil {
+			return days, nil
+		}
+		slog.Warn("Invalid trash_retention_days setting, using configured default", "value", setting.Value)
+	}
+	return s.config.TrashRetentionDays, nil
 }
 
 func (s *Scheduler) StopAllRunningJobs() {

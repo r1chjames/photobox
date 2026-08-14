@@ -281,6 +281,14 @@ func (fss *FilesystemService) RenameDirectory(oldPath, newPath string) error {
 	return fss.fsRepo.RenameDirectory(oldPath, newPath)
 }
 
+func (fss *FilesystemService) PermanentlyDelete(path string) error {
+	return fss.fsRepo.PermanentlyDelete(path)
+}
+
+func (fss *FilesystemService) PermanentlyDeleteTrashFile(originalPath string) error {
+	return fss.fsRepo.PermanentlyDeleteTrashFile(originalPath)
+}
+
 // convertGPSCoordinate converts an EXIF GPS rational tag to decimal degrees
 func convertGPSCoordinate(tag *tiff.Tag) float64 {
 	// GPS coordinates are stored as 3 rational values: degrees, minutes, seconds

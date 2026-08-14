@@ -17,4 +17,5 @@ export interface Photo {
   height?: number;
   dominantColor?: string;
   blurhash?: string;
+  deletedAt?: string;
 }

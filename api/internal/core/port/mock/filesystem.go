@@ -77,6 +77,34 @@ func (mr *MockFilesystemRepositoryMockRecorder) MoveToTrash(path interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MoveToTrash", reflect.TypeOf((*MockFilesystemRepository)(nil).MoveToTrash), path)
 }
 
+// PermanentlyDelete mocks base method.
+func (m *MockFilesystemRepository) PermanentlyDelete(path string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PermanentlyDelete", path)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PermanentlyDelete indicates an expected call of PermanentlyDelete.
+func (mr *MockFilesystemRepositoryMockRecorder) PermanentlyDelete(path interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PermanentlyDelete", reflect.TypeOf((*MockFilesystemRepository)(nil).PermanentlyDelete), path)
+}
+
+// PermanentlyDeleteTrashFile mocks base method.
+func (m *MockFilesystemRepository) PermanentlyDeleteTrashFile(originalPath string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PermanentlyDeleteTrashFile", originalPath)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PermanentlyDeleteTrashFile indicates an expected call of PermanentlyDeleteTrashFile.
+func (mr *MockFilesystemRepositoryMockRecorder) PermanentlyDeleteTrashFile(originalPath interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PermanentlyDeleteTrashFile", reflect.TypeOf((*MockFilesystemRepository)(nil).PermanentlyDeleteTrashFile), originalPath)
+}
+
 // RenameDirectory mocks base method.
 func (m *MockFilesystemRepository) RenameDirectory(oldPath, newPath string) error {
 	m.ctrl.T.Helper()
@@ -193,6 +221,34 @@ func (m *MockFilesystemService) RenameDirectory(oldPath, newPath string) error {
 func (mr *MockFilesystemServiceMockRecorder) RenameDirectory(oldPath, newPath interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RenameDirectory", reflect.TypeOf((*MockFilesystemService)(nil).RenameDirectory), oldPath, newPath)
+}
+
+// PermanentlyDelete mocks base method.
+func (m *MockFilesystemService) PermanentlyDelete(path string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PermanentlyDelete", path)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PermanentlyDelete indicates an expected call of PermanentlyDelete.
+func (mr *MockFilesystemServiceMockRecorder) PermanentlyDelete(path interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PermanentlyDelete", reflect.TypeOf((*MockFilesystemService)(nil).PermanentlyDelete), path)
+}
+
+// PermanentlyDeleteTrashFile mocks base method.
+func (m *MockFilesystemService) PermanentlyDeleteTrashFile(originalPath string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PermanentlyDeleteTrashFile", originalPath)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PermanentlyDeleteTrashFile indicates an expected call of PermanentlyDeleteTrashFile.
+func (mr *MockFilesystemServiceMockRecorder) PermanentlyDeleteTrashFile(originalPath interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PermanentlyDeleteTrashFile", reflect.TypeOf((*MockFilesystemService)(nil).PermanentlyDeleteTrashFile), originalPath)
 }
 
 // RestoreFromTrash mocks base method.

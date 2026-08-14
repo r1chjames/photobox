@@ -214,6 +214,11 @@ func (m *MockPhotoService) EmptyTrash() error {
 	return args.Error(0)
 }
 
+func (m *MockPhotoService) PurgeExpiredTrash(cutoff time.Time) (int, error) {
+	args := m.Called(cutoff)
+	return args.Int(0), args.Error(1)
+}
+
 func (m *MockPhotoService) SetFavorite(photoId string, favorite bool) (*domain.Photo, error) {
 	args := m.Called(photoId, favorite)
 	if args.Get(0) == nil {

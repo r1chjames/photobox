@@ -268,3 +268,46 @@ func (fs *FilesystemRepository) RenameDirectory(oldPath, newPath string) error {
 	}
 	return nil
 }
+
+// PermanentlyDelete removes a file from disk (used when purging trashed
+// originals). Returns nil if the file does not exist.
+func (fs *FilesystemRepository) PermanentlyDelete(path string) error {
+	if path == "" {
+		return nil
+	}
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to permanently delete file: %w", err)
+	}
+	return nil
+}
+
+// PermanentlyDeleteTrashFile removes every trashed copy of an original file
+// from the .trash directory. MoveToTrash may have stored the file as either
+// <name> or <millis>_<name> when collisions occurred, so all variants are
+// removed. Missing files are not an error.
+func (fs *FilesystemRepository) PermanentlyDeleteTrashFile(originalPath string) error {
+	if originalPath == "" {
+		return nil
+	}
+	trashDir := filepath.Join(fs.config.PhotoDir, ".trash")
+	filename := filepath.Base(originalPath)
+
+	entries, err := os.ReadDir(trashDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to read trash directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if name == filename || strings.HasSuffix(name, "_"+filename) {
+			_ = os.Remove(filepath.Join(trashDir, name))
+		}
+	}
+	return nil
+}

@@ -40,6 +40,7 @@ type AppConfig struct {
 	S3Bucket           string
 	S3UseSSL           bool
 	PhotoIndexWorkers  int
+	TrashRetentionDays int
 }
 
 func New() *AppConfig {
@@ -121,6 +122,12 @@ func load() *AppConfig {
 		indexWorkers = runtime.NumCPU()
 	}
 
+	// Trash retention in days; 0 disables automatic trash cleanup.
+	trashRetentionDays, _ := strconv.Atoi(utils.GetEnv("TRASH_RETENTION_DAYS", "60"))
+	if trashRetentionDays < 0 {
+		trashRetentionDays = 0
+	}
+
 	cfg := &AppConfig{
 		PhotoDir:           utils.GetEnv("PHOTO_DIR", "/photos"),
 		ApiBasePath:        utils.GetEnv("API_BASE_PATH", "/api"),
@@ -150,6 +157,7 @@ func load() *AppConfig {
 		S3Bucket:           s3Bucket,
 		S3UseSSL:           s3UseSSL,
 		PhotoIndexWorkers:  indexWorkers,
+		TrashRetentionDays: trashRetentionDays,
 	}
 
 	return cfg

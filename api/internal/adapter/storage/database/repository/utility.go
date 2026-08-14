@@ -98,6 +98,14 @@ func (ur *UtilityRepository) CreateBaseSettings(reset bool) error {
 			Description:  "CRON expression used to initiate indexing",
 			Value:        "0 1 * * *",
 		},
+		{
+			Key:          "trash_retention_days",
+			FriendlyName: "Trash retention (days)",
+			Category:     "System",
+			Type:         "Text",
+			Description:  "Days to keep photos in trash before permanent deletion. 0 disables auto-cleanup.",
+			Value:        "60",
+		},
 	}
 	if reset {
 		return ur.UpdateAllSettings(settings)

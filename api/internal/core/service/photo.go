@@ -770,7 +770,62 @@ func (ps *PhotoService) ListTrashPhotos(fromId string, limit int, includeThumbna
 }
 
 func (ps *PhotoService) EmptyTrash() error {
-	return ps.photoRepo.EmptyTrash()
+	// Fetch all trashed photos so we can remove their files, thumbnails and
+	// cache entries before hard-deleting the DB rows.
+	trashed, err := ps.photoRepo.ListTrashPhotos("", 10000, false)
+	if err != nil {
+		return err
+	}
+	return ps.purgeTrashPhotos(trashed)
+}
+
+// PurgeExpiredTrash permanently deletes photos that were soft-deleted before
+// the given cutoff (used by the trash retention job). Returns the number of
+// photos permanently deleted.
+func (ps *PhotoService) PurgeExpiredTrash(cutoff time.Time) (int, error) {
+	expired, err := ps.photoRepo.ListExpiredTrashPhotos(cutoff)
+	if err != nil {
+		return 0, err
+	}
+	if len(expired) == 0 {
+		return 0, nil
+	}
+	if err := ps.purgeTrashPhotos(expired); err != nil {
+		return 0, err
+	}
+	return len(expired), nil
+}
+
+// purgeTrashPhotos permanently deletes the given trashed photos: original
+// file, thumbnails and cache entries, then the DB row itself.
+func (ps *PhotoService) purgeTrashPhotos(photos []*domain.Photo) error {
+	photoIds := make([]string, 0, len(photos))
+	for _, photo := range photos {
+		if photo == nil {
+			continue
+		}
+		photoIds = append(photoIds, photo.ID)
+
+		// Original file (may live in .trash or at its original path).
+		if photo.FilesystemPath != "" {
+			unescapedPath := utils.UnescapeInvalidCharacters(photo.FilesystemPath)
+			_ = ps.filesystemSvc.PermanentlyDelete(unescapedPath)
+			_ = ps.filesystemSvc.PermanentlyDeleteTrashFile(unescapedPath)
+		}
+
+		// Thumbnails from storage (filesystem or S3).
+		_ = ps.thumbnailStorage.Delete(context.Background(), photo.ID)
+
+		// Cached thumbnail paths.
+		for _, size := range []string{"s", "m", "l"} {
+			_ = ps.cacheSvc.Delete(fmt.Sprintf("thumbnail:%s:%s", photo.ID, size))
+		}
+	}
+
+	if len(photoIds) == 0 {
+		return nil
+	}
+	return ps.photoRepo.PermanentlyDeletePhotos(photoIds)
 }
 
 func (ps *PhotoService) SetFavorite(photoId string, favorite bool) (*domain.Photo, error) {

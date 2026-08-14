@@ -5,6 +5,7 @@ package integration
 
 import (
 	"encoding/base64"
+	"fmt"
 	"strconv"
 	"testing"
 	"time"
@@ -161,6 +162,57 @@ func TestPhotoRepository_GetPhotosInAlbumCount_Integration(t *testing.T) {
 	count2, err := photoRepo.GetPhotosInAlbumCount("album2")
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), count2, "Should count 0 photos in album2")
+}
+
+// TestPhotoRepository_TrashRetention_Integration tests the age-based trash
+// purge used by the retention job.
+func TestPhotoRepository_TrashRetention_Integration(t *testing.T) {
+	env := testutil.CreateTestEnv(t)
+	defer testutil.CleanupTestEnv(t, env)
+
+	testutil.SeedTestData(t, env.Db)
+
+	photoRepo := repository.NewPhotoRepository(env)
+
+	// Create three photos
+	for i := 1; i <= 3; i++ {
+		photo := domain.Photo{
+			ID:             fmt.Sprintf("trash%d", i),
+			AlbumId:        "album1",
+			FileHash:       fmt.Sprintf("hash%d", i),
+			FilesystemPath: "/test/path",
+			Name:           fmt.Sprintf("trash%d.jpg", i),
+			MediaType:      "image/jpeg",
+			Metadata:       datatypes.JSON([]byte("{}")),
+		}
+		err := photoRepo.CreatePhotoInfo(photo)
+		assert.NoError(t, err)
+	}
+
+	// Soft-delete all three
+	for i := 1; i <= 3; i++ {
+		_, err := photoRepo.SoftDeletePhoto(fmt.Sprintf("trash%d", i))
+		assert.NoError(t, err)
+	}
+
+	// Backdate two of them beyond the retention window (60 days)
+	oldTime := time.Now().AddDate(0, 0, -90)
+	err := env.Db.Model(&domain.Photo{}).Where("id IN ?", []string{"trash1", "trash2"}).Update("deleted_at", oldTime).Error
+	assert.NoError(t, err)
+
+	// ListExpiredTrashPhotos should return only the two old ones
+	cutoff := time.Now().AddDate(0, 0, -60)
+	expired, err := photoRepo.ListExpiredTrashPhotos(cutoff)
+	assert.NoError(t, err)
+	assert.Len(t, expired, 2, "Should return the 2 photos deleted before the cutoff")
+
+	// PermanentlyDeletePhotos removes only those rows
+	err = photoRepo.PermanentlyDeletePhotos([]string{expired[0].ID, expired[1].ID})
+	assert.NoError(t, err)
+
+	remaining, err := photoRepo.ListTrashPhotos("", 100, false)
+	assert.NoError(t, err)
+	assert.Len(t, remaining, 1, "One photo should remain in trash")
 }
 
 // TestUserRepository_CreateAndAuth_Integration tests user authentication flow

@@ -182,6 +182,28 @@ func (pr *PhotoRepository) EmptyTrash() error {
 	return result.Error
 }
 
+// ListExpiredTrashPhotos returns photos whose deleted_at predates the given
+// cutoff. Used by the trash retention job to find photos eligible for
+// permanent deletion.
+func (pr *PhotoRepository) ListExpiredTrashPhotos(cutoff time.Time) ([]*domain.Photo, error) {
+	var photos []*domain.Photo
+	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).
+		Where("deleted_at IS NOT NULL").
+		Where("deleted_at < ?", cutoff).
+		Order("deleted_at ASC").
+		Find(&photos)
+	return photos, result.Error
+}
+
+// PermanentlyDeletePhotos hard-deletes the given photo rows from the database.
+func (pr *PhotoRepository) PermanentlyDeletePhotos(photoIds []string) error {
+	if len(photoIds) == 0 {
+		return nil
+	}
+	result := pr.dbEnv.Db.Where("id IN ?", photoIds).Delete(&domain.Photo{})
+	return result.Error
+}
+
 func (pr *PhotoRepository) UpdatePhoto(photo domain.Photo) error {
 	result := pr.dbEnv.Db.Model(&domain.Photo{}).Where("id = ?", photo.ID).Updates(map[string]interface{}{
 		"thumbnail_path": photo.ThumbnailPath,
