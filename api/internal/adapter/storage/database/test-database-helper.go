@@ -9,7 +9,7 @@ import (
 )
 
 func MockDB(t *testing.T) (*Env, sqlmock.Sqlmock, *sql.DB) {
-	dbConn, mock, err := sqlmock.New()
+	dbConn, mock, _ := sqlmock.New()
 	mockedDB, err := gorm.Open(postgres.New(postgres.Config{DSN: "test_db", Conn: dbConn}), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)

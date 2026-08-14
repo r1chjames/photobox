@@ -127,9 +127,6 @@ func (fss *FilesystemService) PerformPhotoIndex(ctx context.Context, save func([
 
 func (fss *FilesystemService) WriteFileToFilesystem(photo domain.PhotoUpload) domain.PhotoFile {
 
-	if !utils.IsMediaFile(photo.Name) {
-	}
-
 	basePath, _ := fss.utilitySvc.GetSetting("default_new_albums_dir")
 	fileSavePath := fmt.Sprintf("%s/%s/%s", basePath.Value, photo.AlbumName, photo.Name)
 	slog.Info("Saving photo", "path", fileSavePath)
@@ -137,8 +134,8 @@ func (fss *FilesystemService) WriteFileToFilesystem(photo domain.PhotoUpload) do
 	fss.fsRepo.CreateDirectoryIfNotExists(basePath.Value, photo.AlbumName)
 	value := strings.Split(photo.BinaryContent, ",")
 
-	decodedData, err := b64.StdEncoding.DecodeString(value[1])
-	err = os.WriteFile(fileSavePath, decodedData, 0644)
+	decodedData, _ := b64.StdEncoding.DecodeString(value[1])
+	err := os.WriteFile(fileSavePath, decodedData, 0644)
 	if err != nil {
 		slog.Error("Unable to save photo from upload", "error", err)
 	}
@@ -199,14 +196,14 @@ func (fss *FilesystemService) getMetaData(path string, name string, fileInfo os.
 			height = cfg.Height
 		}
 		// Reset file position for subsequent reads
-		file.Seek(0, 0)
+		_, _ = file.Seek(0, 0)
 	}
 
 	// Get MIME type by reading first 512 bytes
 	buffer := make([]byte, 512)
 	n, _ := file.Read(buffer)
 	mimeType := http.DetectContentType(buffer[:n])
-	file.Seek(0, 0)
+	_, _ = file.Seek(0, 0)
 
 	// Get MD5 sum
 	md5Sum, err := utils.GetSum(file)
@@ -214,7 +211,7 @@ func (fss *FilesystemService) getMetaData(path string, name string, fileInfo os.
 		slog.Error("Unable to calculate MD5 sum", "path", path, "error", err)
 		md5Sum = ""
 	}
-	file.Seek(0, 0)
+	_, _ = file.Seek(0, 0)
 
 	// Get EXIF data
 	exifData := utils.GetExifData(file)

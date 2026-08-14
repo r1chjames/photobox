@@ -28,7 +28,7 @@ func TestGetPhotoById_Success(t *testing.T) {
 	}
 
 	if photo == nil {
-		t.Error("expected photo to be returned, got nil")
+		t.Fatal("expected photo to be returned, got nil")
 	}
 
 	if photo.ID != photoID {
@@ -60,7 +60,7 @@ func TestGetPhotoById_WithoutThumbnail(t *testing.T) {
 	}
 
 	if photo == nil {
-		t.Error("expected photo to be returned, got nil")
+		t.Fatal("expected photo to be returned, got nil")
 	}
 
 	if photo.ID != photoID {
@@ -423,7 +423,7 @@ func TestSoftDeletePhoto_Success(t *testing.T) {
 	}
 
 	if photo == nil {
-		t.Error("expected photo to be returned, got nil")
+		t.Fatal("expected photo to be returned, got nil")
 	}
 
 	if photo.ID != photoID {
@@ -489,7 +489,7 @@ func TestRestorePhoto_Success(t *testing.T) {
 	}
 
 	if photo == nil {
-		t.Error("expected photo to be returned, got nil")
+		t.Fatal("expected photo to be returned, got nil")
 	}
 
 	if photo.ID != photoID {

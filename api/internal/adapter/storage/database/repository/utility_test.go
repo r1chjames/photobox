@@ -88,7 +88,7 @@ func TestGetSetting_Success(t *testing.T) {
 	}
 
 	if setting == nil {
-		t.Error("expected setting to be returned, got nil")
+		t.Fatal("expected setting to be returned, got nil")
 	}
 
 	if setting.Key != settingKey {

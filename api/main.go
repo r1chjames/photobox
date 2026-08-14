@@ -36,7 +36,9 @@ func main() {
 		slog.Error("Failed to create base settings", "error", err)
 		os.Exit(1)
 	}
-	services.jobService.CreateBaseJobs()
+	if err := services.jobService.CreateBaseJobs(); err != nil {
+		slog.Error("Failed to create base jobs", "error", err)
+	}
 	services.scheduler.StopAllRunningJobs()
 	services.scheduler.AddScheduledJobs()
 	addDefaultAdminUser(services.userService, appConfig)

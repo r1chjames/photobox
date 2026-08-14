@@ -48,7 +48,9 @@ func (s *Scheduler) AddScheduledJobs() {
 			if r := recover(); r != nil {
 				slog.Error("AI analysis job panicked", "recover", r)
 			}
-			s.jobSvc.JobComplete("AI_analysis")
+			if err := s.jobSvc.JobComplete("AI_analysis"); err != nil {
+				slog.Error("Unable to complete AI analysis job", "error", err)
+			}
 		}()
 		if err := s.photoSvc.AnalyzeExistingPhotos(); err != nil {
 			slog.Error("AI analysis job failed", "error", err)
@@ -121,5 +123,7 @@ func (s *Scheduler) StopAllRunningJobs() {
 	if res.Err() != nil {
 		slog.Error("Unable to stop scheduler", "error", res.Err())
 	}
-	s.jobSvc.UpdateAllJobsStatus("NOT_RUNNING")
+	if err := s.jobSvc.UpdateAllJobsStatus("NOT_RUNNING"); err != nil {
+		slog.Error("Unable to reset job statuses", "error", err)
+	}
 }
