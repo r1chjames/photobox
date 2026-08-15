@@ -73,6 +73,82 @@ func (pr *PhotoRepository) ListAllPhotos(fromId string, limit int, includeThumbn
 	return photos, result.Error
 }
 
+// SearchPhotosWithFilters returns photos matching the combined search
+// filters. Unused filters are ignored so any combination works.
+func (pr *PhotoRepository) SearchPhotosWithFilters(filters domain.PhotoSearchFilters, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	var photos []*domain.Photo
+	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).
+		Where("deleted_at IS NULL").
+		Where("hidden = ?", false).
+		Order("created_epoch ASC").
+		Omit("thumbnail")
+
+	if fromId != "" {
+		fromPhoto, err := pr.GetPhotoById(fromId, false)
+		if err != nil {
+			return nil, err
+		}
+		result = result.Where("created_epoch > ?", fromPhoto.CreatedEpoch)
+	}
+
+	if filters.StartDate != "" {
+		if t, err := time.Parse("2006-01-02T15:04:05", filters.StartDate); err == nil {
+			result = result.Where("created_epoch >= ?", t.UnixMilli())
+		}
+	}
+	if filters.EndDate != "" {
+		if t, err := time.Parse("2006-01-02T15:04:05", filters.EndDate); err == nil {
+			result = result.Where("created_epoch <= ?", t.UnixMilli())
+		}
+	}
+	if filters.MediaType != "" {
+		result = result.Where("media_type = ?", filters.MediaType)
+	}
+	if filters.Camera != "" {
+		// Match EXIF Make/Model inside the metadata JSONB payload. JSON text
+		// may include whitespace after colons, so match the key and a
+		// whitespace-tolerant value pattern.
+		like := "%" + filters.Camera + "%"
+		result = result.Where(
+			"(metadata::text ILIKE ? OR metadata::text ILIKE ?)",
+			quoteJSONPattern("Make", like), quoteJSONPattern("Model", like),
+		)
+	}
+	if filters.HasGPS {
+		result = result.Where("latitude IS NOT NULL AND longitude IS NOT NULL AND latitude <> 0 AND longitude <> 0")
+	}
+	if filters.Orientation != "" {
+		switch filters.Orientation {
+		case "landscape":
+			result = result.Where("width > height")
+		case "portrait":
+			result = result.Where("height > width")
+		case "square":
+			result = result.Where("width = height")
+		}
+	}
+	if filters.Favorite {
+		result = result.Where("favorite = ?", true)
+	}
+	if filters.LowQuality {
+		result = result.Where("is_low_quality = ?", true)
+	}
+	if len(filters.Tags) > 0 {
+		result = result.Where("id IN (SELECT photo_id FROM photo_tags WHERE tag IN ? GROUP BY photo_id HAVING COUNT(DISTINCT tag) = ?)", filters.Tags, len(filters.Tags))
+	}
+
+	result = result.Limit(limit)
+	result = result.Find(&photos)
+	return photos, result.Error
+}
+
+// quoteJSONPattern builds a LIKE fragment matching a JSON key's string value,
+// tolerant of whitespace after the colon. For key "Make" and pattern
+// "%Canon%": %"Make"%:%"%Canon%"%
+func quoteJSONPattern(key, valuePattern string) string {
+	return "%\"" + key + "\"%:%\"" + valuePattern + "\"%"
+}
+
 func (pr *PhotoRepository) ListAllPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
 	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("deleted_at IS NULL AND album_id = ?", albumId).Where("hidden = ?", false).Order("created_epoch ASC").Omit("thumbnail")

@@ -11,13 +11,26 @@ export class MockPhotosAdapter implements IPhotosAdapter {
     return this;
   }
 
-  public getAllPhotosInfo = async (fromId: string, limit: number, includeThumbnails: boolean, startDate?: string, endDate?: string, favorite?: boolean, lowQuality?: boolean): Promise<Photo[]> => {
+  public getAllPhotosInfo = async (fromId: string, limit: number, includeThumbnails: boolean, startDate?: string, endDate?: string, favorite?: boolean, lowQuality?: boolean, camera?: string, hasGps?: boolean, orientation?: string): Promise<Photo[]> => {
     let photos = this._photos;
     if (favorite) {
       photos = photos.filter(p => p.favorite);
     }
     if (lowQuality) {
       photos = photos.filter(p => p.isLowQuality);
+    }
+    if (camera) {
+      photos = photos.filter(p => (p.metadata as any)?.exif?.Make?.toLowerCase().includes(camera.toLowerCase()) || (p.metadata as any)?.exif?.Model?.toLowerCase().includes(camera.toLowerCase()));
+    }
+    if (hasGps) {
+      photos = photos.filter(p => p.latitude && p.longitude);
+    }
+    if (orientation === 'landscape') {
+      photos = photos.filter(p => (p.width ?? 0) > (p.height ?? 0));
+    } else if (orientation === 'portrait') {
+      photos = photos.filter(p => (p.height ?? 0) > (p.width ?? 0));
+    } else if (orientation === 'square') {
+      photos = photos.filter(p => (p.width ?? 0) === (p.height ?? 0));
     }
     const startIndex = fromId ? photos.findIndex(p => p.id === fromId) + 1 : 0;
     if (startIndex === -1) return []; // fromId not found

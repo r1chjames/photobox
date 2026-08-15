@@ -348,3 +348,65 @@ func TestSettingsRepository_CRUD_Integration(t *testing.T) {
 		assert.Equal(t, "updated_value", retrieved.Value)
 	}
 }
+
+// TestPhotoRepository_AdvancedSearch_Integration tests combined filters
+func TestPhotoRepository_AdvancedSearch_Integration(t *testing.T) {
+	env := testutil.CreateTestEnv(t)
+	defer testutil.CleanupTestEnv(t, env)
+
+	testutil.SeedTestData(t, env.Db)
+
+	photoRepo := repository.NewPhotoRepository(env)
+
+	// Seed photos with different cameras, GPS presence, orientation
+	now := time.Now()
+	photos := []domain.Photo{
+		{ID: "c1", Name: "canon-landscape-gps.jpg", AlbumId: "album1", FilesystemPath: "/photos/a.jpg",
+			Metadata: datatypes.JSON([]byte(`{"exif":{"Make":"Canon","Model":"EOS R5"}}`)),
+			Latitude: 52.0, Longitude: 0.5, Width: 2000, Height: 1000,
+			CreatedEpoch: now.UnixMilli(), Year: now.Year(), Month: int(now.Month())},
+		{ID: "c2", Name: "canon-portrait-nogps.jpg", AlbumId: "album1", FilesystemPath: "/photos/b.jpg",
+			Metadata: datatypes.JSON([]byte(`{"exif":{"Make":"Canon","Model":"EOS R6"}}`)),
+			Width: 1000, Height: 2000,
+			CreatedEpoch: now.UnixMilli(), Year: now.Year(), Month: int(now.Month())},
+		{ID: "i1", Name: "iphone-square-gps.jpg", AlbumId: "album1", FilesystemPath: "/photos/c.jpg",
+			Metadata: datatypes.JSON([]byte(`{"exif":{"Make":"Apple","Model":"iPhone 15"}}`)),
+			Latitude: 51.0, Longitude: -1.0, Width: 1000, Height: 1000,
+			CreatedEpoch: now.UnixMilli(), Year: now.Year(), Month: int(now.Month())},
+	}
+	for _, p := range photos {
+		assert.NoError(t, photoRepo.CreatePhotoInfo(p))
+	}
+
+	t.Run("camera filter", func(t *testing.T) {
+		res, err := photoRepo.SearchPhotosWithFilters(domain.PhotoSearchFilters{Camera: "Canon"}, "", 100, false)
+		assert.NoError(t, err)
+		assert.Len(t, res, 2, "both Canon photos")
+	})
+
+	t.Run("camera + hasGps", func(t *testing.T) {
+		res, err := photoRepo.SearchPhotosWithFilters(domain.PhotoSearchFilters{Camera: "Canon", HasGPS: true}, "", 100, false)
+		assert.NoError(t, err)
+		assert.Len(t, res, 1, "only the Canon photo with GPS")
+		assert.Equal(t, "c1", res[0].ID)
+	})
+
+	t.Run("orientation portrait", func(t *testing.T) {
+		res, err := photoRepo.SearchPhotosWithFilters(domain.PhotoSearchFilters{Orientation: "portrait"}, "", 100, false)
+		assert.NoError(t, err)
+		assert.Len(t, res, 1)
+		assert.Equal(t, "c2", res[0].ID)
+	})
+
+	t.Run("hasGps only", func(t *testing.T) {
+		res, err := photoRepo.SearchPhotosWithFilters(domain.PhotoSearchFilters{HasGPS: true}, "", 100, false)
+		assert.NoError(t, err)
+		assert.Len(t, res, 2, "c1 and i1 have GPS")
+	})
+
+	t.Run("no filters returns all", func(t *testing.T) {
+		res, err := photoRepo.SearchPhotosWithFilters(domain.PhotoSearchFilters{}, "", 100, false)
+		assert.NoError(t, err)
+		assert.GreaterOrEqual(t, len(res), 3)
+	})
+}

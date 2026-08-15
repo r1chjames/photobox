@@ -77,6 +77,26 @@ type CropParams struct {
 	Height float64 `json:"height"`
 }
 
+// PhotoSearchFilters holds advanced multi-filter search criteria. Zero-value
+// fields are ignored, so filters combine freely.
+type PhotoSearchFilters struct {
+	StartDate string
+	EndDate   string
+	MediaType string
+	// Camera matches EXIF Make/Model (e.g. "Canon" or "iPhone").
+	Camera string
+	// HasGPS restricts to photos with coordinates when true.
+	HasGPS bool
+	// Orientation: "landscape", "portrait" or "square".
+	Orientation string
+	// Tags requires all listed tags (AND).
+	Tags []string
+	// Favorite restricts to favourited photos when true.
+	Favorite bool
+	// LowQuality restricts to quality-flagged photos when true.
+	LowQuality bool
+}
+
 type TimelineEntry struct {
 	Year  int   `json:"year"`
 	Month int   `json:"month"`

@@ -176,6 +176,14 @@ func (m *MockSearchPhotoService) ListLowQualityPhotos(fromId string, limit int, 
 	return args.Get(0).([]*domain.Photo), args.Error(1)
 }
 
+func (m *MockSearchPhotoService) SearchPhotosWithFilters(filters domain.PhotoSearchFilters, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	args := m.Called(filters, fromId, limit, includeThumbnail)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
 func (m *MockSearchPhotoService) ScorePhotoQuality(photoId string) (bool, error) {
 	args := m.Called(photoId)
 	return args.Bool(0), args.Error(1)

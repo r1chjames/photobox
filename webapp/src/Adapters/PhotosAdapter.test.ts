@@ -68,8 +68,46 @@ describe('PhotosAdapter', () => {
             expect(result).toBe(mockPhotos);
         });
 
-        it('should not append favorites param when favorite flag is false', async () => {
+        it('should append advanced search filters when provided', async () => {
             const mockPhotos: Photo[] = [];
+            vi.mocked(mockRestApiAdapter.getPaginatedApiCall).mockResolvedValue(mockPhotos);
+
+            await photosAdapter.getAllPhotosInfo('', 60, false, undefined, undefined, false, false, 'Canon', true, 'landscape');
+
+            expect(mockRestApiAdapter.getPaginatedApiCall).toHaveBeenCalledWith(
+                'photos?fromId=&limit=60&thumbnail=false&camera=Canon&hasGps=true&orientation=landscape',
+                expect.any(Object),
+                {}
+            );
+        });
+
+        it('should encode camera value in query string', async () => {
+            const mockPhotos: Photo[] = [];
+            vi.mocked(mockRestApiAdapter.getPaginatedApiCall).mockResolvedValue(mockPhotos);
+
+            await photosAdapter.getAllPhotosInfo('', 60, false, undefined, undefined, false, false, 'Google Pixel', false, '');
+
+            expect(mockRestApiAdapter.getPaginatedApiCall).toHaveBeenCalledWith(
+                'photos?fromId=&limit=60&thumbnail=false&camera=Google%20Pixel',
+                expect.any(Object),
+                {}
+            );
+        });
+
+        it('should append date range filters', async () => {
+            const mockPhotos: Photo[] = [];
+            vi.mocked(mockRestApiAdapter.getPaginatedApiCall).mockResolvedValue(mockPhotos);
+
+            await photosAdapter.getAllPhotosInfo('', 60, false, '2023-01-01T00:00:00Z', '2023-01-31T23:59:59Z');
+
+            expect(mockRestApiAdapter.getPaginatedApiCall).toHaveBeenCalledWith(
+                'photos?fromId=&limit=60&thumbnail=false&startDate=2023-01-01T00%3A00%3A00Z&endDate=2023-01-31T23%3A59%3A59Z',
+                expect.any(Object),
+                {}
+            );
+        });
+
+        it('should not append favorites param when favorite flag is false', async () => {            const mockPhotos: Photo[] = [];
             vi.mocked(mockRestApiAdapter.getPaginatedApiCall).mockResolvedValue(mockPhotos);
 
             await photosAdapter.getAllPhotosInfo('photo-123', 30, true, undefined, undefined, false);

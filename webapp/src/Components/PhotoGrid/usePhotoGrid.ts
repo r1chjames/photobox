@@ -2,7 +2,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 
-const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapter, albumIdentifier: string | undefined, startDate?: string, endDate?: string, tags?: string, mediaType?: string, searchQuery?: string, favoritesOnly?: boolean, lowQualityOnly?: boolean) => {
+const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapter, albumIdentifier: string | undefined, startDate?: string, endDate?: string, tags?: string, mediaType?: string, searchQuery?: string, favoritesOnly?: boolean, lowQualityOnly?: boolean, camera?: string, hasGps?: boolean, orientation?: string) => {
     const limit = 60;
 
     // When an albumIdentifier is present, it's used to fetch album details.
@@ -27,7 +27,7 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapt
     } = useInfiniteQuery({
         // The query key for photos is now dependent on the actual albumId and date filters.
         // This ensures that if the albumId or date range changes, the photos are re-fetched.
-        queryKey: ['albumPhotos', albumId, startDate, endDate, tags, mediaType, searchQuery, favoritesOnly, lowQualityOnly],
+        queryKey: ['albumPhotos', albumId, startDate, endDate, tags, mediaType, searchQuery, favoritesOnly, lowQualityOnly, camera, hasGps, orientation],
         async queryFn({ pageParam = "" }) {
             const fromId = pageParam;
 
@@ -47,7 +47,9 @@ const usePhotoGrid = (photosAdapter: IPhotosAdapter, albumsAdapter: IAlbumsAdapt
             } else if (albumId) {
                 retrievedPhotos = await photosAdapter.getPhotosInfoInAlbum(albumId, fromId, limit, false, startDate, endDate);
             } else if (lowQualityOnly) {
-                retrievedPhotos = await photosAdapter.getAllPhotosInfo(fromId, limit, false, undefined, undefined, false, true);
+                retrievedPhotos = await photosAdapter.getAllPhotosInfo(fromId, limit, false, undefined, undefined, false, true, camera, hasGps, orientation);
+            } else if (camera || hasGps || orientation) {
+                retrievedPhotos = await photosAdapter.getAllPhotosInfo(fromId, limit, false, startDate, endDate, favoritesOnly, false, camera, hasGps, orientation);
             } else {
                 retrievedPhotos = await photosAdapter.getAllPhotosInfo(fromId, limit, false, startDate, endDate, favoritesOnly);
             }

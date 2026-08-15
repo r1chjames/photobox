@@ -975,6 +975,17 @@ func (ps *PhotoService) ListLowQualityPhotos(fromId string, limit int, includeTh
 	return resp, nil
 }
 
+// SearchPhotosWithFilters returns photos matching the combined advanced
+// search filters.
+func (ps *PhotoService) SearchPhotosWithFilters(filters domain.PhotoSearchFilters, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	resp, err := ps.photoRepo.SearchPhotosWithFilters(filters, fromId, limit, includeThumbnail)
+	if err != nil {
+		return nil, err
+	}
+	ps.setPhotosSourcePath(resp)
+	return resp, nil
+}
+
 // ScorePhotoQuality runs the deterministic quality analyzer on a photo and
 // stores the result. Returns (false, nil) when the photo is unscorable
 // (unreadable file) or already scored.

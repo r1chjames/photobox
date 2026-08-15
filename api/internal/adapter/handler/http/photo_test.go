@@ -178,6 +178,14 @@ func (m *MockPhotoService) ListLowQualityPhotos(fromId string, limit int, includ
 	return args.Get(0).([]*domain.Photo), args.Error(1)
 }
 
+func (m *MockPhotoService) SearchPhotosWithFilters(filters domain.PhotoSearchFilters, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	args := m.Called(filters, fromId, limit, includeThumbnail)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
 func (m *MockPhotoService) ScorePhotoQuality(photoId string) (bool, error) {
 	args := m.Called(photoId)
 	return args.Bool(0), args.Error(1)
@@ -1198,4 +1206,50 @@ func TestPhotoHandler_ClearEdits(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	mockPhotoSvc.AssertExpectations(t)
+}
+
+// TestPhotoHandler_ListPhotos_AdvancedFilters tests the combined filter path
+func TestPhotoHandler_ListPhotos_AdvancedFilters(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("camera + hasGps + orientation compose", func(t *testing.T) {
+		mockPhotoSvc := new(MockPhotoService)
+		mockJobSvc := new(MockJobService)
+		handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+		expected := []*domain.Photo{{ID: "p1", Name: "canon-landscape-gps.jpg"}}
+		filters := domain.PhotoSearchFilters{
+			Camera:      "Canon",
+			HasGPS:      true,
+			Orientation: "landscape",
+		}
+		mockPhotoSvc.On("SearchPhotosWithFilters", filters, "", 10, false).Return(expected, nil)
+
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		ctx.Request = httptest.NewRequest(http.MethodGet, "/photos?camera=Canon&hasGps=true&orientation=landscape", nil)
+
+		handler.ListPhotos(ctx)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		mockPhotoSvc.AssertExpectations(t)
+	})
+
+	t.Run("no advanced filters routes to standard path", func(t *testing.T) {
+		mockPhotoSvc := new(MockPhotoService)
+		mockJobSvc := new(MockJobService)
+		handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+		expected := []*domain.Photo{{ID: "p1", Name: "normal.jpg"}}
+		mockPhotoSvc.On("ListPhotos", "", 10, false, "", "", "").Return(expected, nil)
+
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		ctx.Request = httptest.NewRequest(http.MethodGet, "/photos", nil)
+
+		handler.ListPhotos(ctx)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		mockPhotoSvc.AssertExpectations(t)
+	})
 }
