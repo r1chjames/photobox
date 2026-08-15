@@ -18,7 +18,7 @@ export class PhotosAdapter implements IPhotosAdapter {
     return { ...standardHeaders, ...additionalHeaders };
   }
 
-  public getAllPhotosInfo = async (fromId: string, limit: number, includeThumbnails: boolean, startDate?: string, endDate?: string, favorite?: boolean, lowQuality?: boolean): Promise<Photo[]> => {
+  public getAllPhotosInfo = async (fromId: string, limit: number, includeThumbnails: boolean, startDate?: string, endDate?: string, favorite?: boolean, lowQuality?: boolean, camera?: string, hasGps?: boolean, orientation?: string): Promise<Photo[]> => {
     let getAllPhotosPath = `photos?fromId=${fromId}&limit=${limit}&thumbnail=${includeThumbnails}`;
     if (startDate) {
       getAllPhotosPath += `&startDate=${encodeURIComponent(startDate)}`;
@@ -31,6 +31,15 @@ export class PhotosAdapter implements IPhotosAdapter {
     }
     if (lowQuality) {
       getAllPhotosPath += `&lowQuality=true`;
+    }
+    if (camera) {
+      getAllPhotosPath += `&camera=${encodeURIComponent(camera)}`;
+    }
+    if (hasGps) {
+      getAllPhotosPath += `&hasGps=true`;
+    }
+    if (orientation) {
+      getAllPhotosPath += `&orientation=${orientation}`;
     }
     return this.restApiAdapter.getPaginatedApiCall(getAllPhotosPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }

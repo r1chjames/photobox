@@ -306,6 +306,21 @@ func (m *MockPhotoRepository) ListLowQualityPhotos(fromId string, limit int, inc
 	return ret0, ret1
 }
 
+// SearchPhotosWithFilters mocks base method.
+func (m *MockPhotoRepository) SearchPhotosWithFilters(filters domain.PhotoSearchFilters, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchPhotosWithFilters", filters, fromId, limit, includeThumbnail)
+	ret0, _ := ret[0].([]*domain.Photo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchPhotosWithFilters indicates an expected call of SearchPhotosWithFilters.
+func (mr *MockPhotoRepositoryMockRecorder) SearchPhotosWithFilters(filters, fromId, limit, includeThumbnail interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchPhotosWithFilters", reflect.TypeOf((*MockPhotoRepository)(nil).SearchPhotosWithFilters), filters, fromId, limit, includeThumbnail)
+}
+
 // ListUnscoredPhotos mocks base method.
 func (m *MockPhotoRepository) ListUnscoredPhotos(limit int) ([]*domain.Photo, error) {
 	m.ctrl.T.Helper()
@@ -806,6 +821,21 @@ func (m *MockPhotoService) ListLowQualityPhotos(fromId string, limit int, includ
 	ret0, _ := ret[0].([]*domain.Photo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
+}
+
+// SearchPhotosWithFilters mocks base method.
+func (m *MockPhotoService) SearchPhotosWithFilters(filters domain.PhotoSearchFilters, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchPhotosWithFilters", filters, fromId, limit, includeThumbnail)
+	ret0, _ := ret[0].([]*domain.Photo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchPhotosWithFilters indicates an expected call of SearchPhotosWithFilters.
+func (mr *MockPhotoServiceMockRecorder) SearchPhotosWithFilters(filters, fromId, limit, includeThumbnail interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchPhotosWithFilters", reflect.TypeOf((*MockPhotoService)(nil).SearchPhotosWithFilters), filters, fromId, limit, includeThumbnail)
 }
 
 // ScorePhotoQuality mocks base method.

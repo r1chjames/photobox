@@ -167,6 +167,11 @@ interface IProps {
     searchQuery?: string;
     favoritesOnly?: boolean;
     lowQualityOnly?: boolean;
+    camera?: string;
+    hasGps?: boolean;
+    orientation?: string;
+    startDate?: string;
+    endDate?: string;
 }
 
 const defaultProps = {
@@ -454,14 +459,14 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         } catch { /* ignore */ }
     }, [viewMode]);
 
-    const startDate = dateFilter ? `${dateFilter.year}-${String(dateFilter.month).padStart(2, '0')}-01T00:00:00` : undefined;
-    const endDate = dateFilter ? (() => {
+    const startDate = props.startDate ?? (dateFilter ? `${dateFilter.year}-${String(dateFilter.month).padStart(2, '0')}-01T00:00:00` : undefined);
+    const endDate = props.endDate ?? (dateFilter ? (() => {
         const lastDay = new Date(dateFilter.year, dateFilter.month, 0).getDate();
         return `${dateFilter.year}-${String(dateFilter.month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}T23:59:59`;
-    })() : undefined;
+    })() : undefined);
 
     // The hook now provides a simple, flat, de-duplicated array of photos.
-    const {photos, albumName, allRetrieved, fetchNextPage, isFetchingNextPage, isFetching, refetch} = usePhotoGrid(props.photosAdapter, props.albumsAdapter, id, startDate, endDate, props.tags, props.mediaType, props.searchQuery, props.favoritesOnly, props.lowQualityOnly);
+    const {photos, albumName, allRetrieved, fetchNextPage, isFetchingNextPage, isFetching, refetch} = usePhotoGrid(props.photosAdapter, props.albumsAdapter, id, startDate, endDate, props.tags, props.mediaType, props.searchQuery, props.favoritesOnly, props.lowQualityOnly, props.camera, props.hasGps, props.orientation);
 
     const photoIdsKey = React.useMemo(() => photos.map(p => p.id).join(','), [photos]);
 

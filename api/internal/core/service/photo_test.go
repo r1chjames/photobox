@@ -152,6 +152,14 @@ func (m *MockPhotoRepository) ListLowQualityPhotos(fromId string, limit int, inc
 	return args.Get(0).([]*domain.Photo), args.Error(1)
 }
 
+func (m *MockPhotoRepository) SearchPhotosWithFilters(filters domain.PhotoSearchFilters, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
+	args := m.Called(filters, fromId, limit, includeThumbnail)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
 func (m *MockPhotoRepository) ListUnscoredPhotos(limit int) ([]*domain.Photo, error) {
 	args := m.Called(limit)
 	if args.Get(0) == nil {

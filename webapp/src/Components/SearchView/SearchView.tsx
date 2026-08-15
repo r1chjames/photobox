@@ -5,8 +5,8 @@ import { IAlbumsAdapter } from '../../Adapters/IAlbumsAdapter';
 import { ISharesAdapter } from '../../Adapters/ISharesAdapter';
 import { PhotoGrid } from '../PhotoGrid/PhotoGrid';
 import { EmptyState } from '../EmptyState/EmptyState';
-import { IconSearch, IconCalendar, IconTag, IconX } from '@tabler/icons-react';
-import { Chip, Group, Button, Stack, Text } from '@mantine/core';
+import { IconSearch, IconCalendar, IconTag, IconCamera, IconMapPin, IconAspectRatio, IconX } from '@tabler/icons-react';
+import { Chip, Group, Button, Stack, Text, Select, TextInput } from '@mantine/core';
 
 interface SearchViewProps {
     photosAdapter: IPhotosAdapter;
@@ -20,6 +20,9 @@ export const SearchView: React.FC<SearchViewProps> = ({ photosAdapter, albumsAda
 
     const [fromDate, setFromDate] = useState<string>('');
     const [toDate, setToDate] = useState<string>('');
+    const [camera, setCamera] = useState<string>('');
+    const [hasGps, setHasGps] = useState<boolean>(false);
+    const [orientation, setOrientation] = useState<string>('');
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [availableTags, setAvailableTags] = useState<string[]>([]);
     const [tagsLoading, setTagsLoading] = useState(false);
@@ -39,12 +42,15 @@ export const SearchView: React.FC<SearchViewProps> = ({ photosAdapter, albumsAda
         fetchTags();
     }, [photosAdapter]);
 
-    const hasActiveFilters = query || fromDate || toDate || selectedTags.length > 0;
+    const hasActiveFilters = query || fromDate || toDate || camera || hasGps || orientation || selectedTags.length > 0;
 
     const handleClearFilters = () => {
         setSearchParams({});
         setFromDate('');
         setToDate('');
+        setCamera('');
+        setHasGps(false);
+        setOrientation('');
         setSelectedTags([]);
     };
 
@@ -57,15 +63,16 @@ export const SearchView: React.FC<SearchViewProps> = ({ photosAdapter, albumsAda
     // Build the tags string for PhotoGrid (comma-separated)
     const tagsParam = selectedTags.length > 0 ? selectedTags.join(',') : undefined;
 
-    // Note: PhotoGrid does not currently accept fromDate/toDate props.
-    // Date range filtering UI is ready for when backend support is added.
-    // Currently, date inputs are displayed but not passed to PhotoGrid.
+    // Convert date inputs to the backend's expected ISO format. Date-only
+    // inputs are interpreted as local midnight and sent as UTC.
+    const startDateParam = fromDate ? new Date(`${fromDate}T00:00:00`).toISOString() : undefined;
+    const endDateParam = toDate ? new Date(`${toDate}T23:59:59`).toISOString() : undefined;
 
     if (!hasActiveFilters) {
         return (
             <EmptyState
                 title="Search your photos"
-                description="Type a keyword in the search box above to find photos by name, album, or metadata."
+                description="Type a keyword in the search box above, or combine filters below to narrow your library."
                 icon={<IconSearch size="2rem" />}
             />
         );
@@ -112,6 +119,38 @@ export const SearchView: React.FC<SearchViewProps> = ({ photosAdapter, albumsAda
                                 color: 'var(--mantine-color-text)',
                                 maxWidth: '160px',
                             }}
+                        />
+                    </Group>
+
+                    {/* Advanced filter row */}
+                    <Group gap="xs" wrap="wrap">
+                        <TextInput
+                            size="sm"
+                            placeholder="Camera (e.g. Canon, iPhone)"
+                            value={camera}
+                            onChange={e => setCamera(e.currentTarget.value)}
+                            leftSection={<IconCamera size={14} />}
+                            style={{ maxWidth: 220 }}
+                        />
+                        <Chip checked={hasGps} onChange={() => setHasGps(prev => !prev)} size="sm" variant="outline">
+                            <Group gap={4}>
+                                <IconMapPin size={14} />
+                                Has GPS
+                            </Group>
+                        </Chip>
+                        <Select
+                            size="sm"
+                            placeholder="Orientation"
+                            clearable
+                            data={[
+                                { value: 'landscape', label: 'Landscape' },
+                                { value: 'portrait', label: 'Portrait' },
+                                { value: 'square', label: 'Square' },
+                            ]}
+                            value={orientation || null}
+                            onChange={(v) => setOrientation(v ?? '')}
+                            leftSection={<IconAspectRatio size={14} />}
+                            style={{ maxWidth: 180 }}
                         />
                     </Group>
 
@@ -168,6 +207,11 @@ export const SearchView: React.FC<SearchViewProps> = ({ photosAdapter, albumsAda
                     sharesAdapter={sharesAdapter}
                     searchQuery={query || undefined}
                     tags={tagsParam}
+                    startDate={startDateParam}
+                    endDate={endDateParam}
+                    camera={camera || undefined}
+                    hasGps={hasGps}
+                    orientation={orientation || undefined}
                 />
             </div>
         </Stack>

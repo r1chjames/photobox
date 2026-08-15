@@ -68,7 +68,29 @@ func (ph *PhotoHandler) ListPhotos(ctx *gin.Context) {
 	mediaType := ctx.Query("mediaType")
 
 	tagsQuery := ctx.Query("tags")
-	if tagsQuery != "" {
+
+	// Advanced search filters (issue 101): camera, hasGps, orientation.
+	// When any is present, route through the combined filter query so the
+	// filters compose with each other and with date/mediaType.
+	camera := ctx.Query("camera")
+	hasGps, _ := strconv.ParseBool(ctx.DefaultQuery("hasGps", "false"))
+	orientation := ctx.Query("orientation")
+	advanced := camera != "" || hasGps || orientation != ""
+
+	if advanced {
+		filters := domain.PhotoSearchFilters{
+			StartDate:   startDate,
+			EndDate:     endDate,
+			MediaType:   mediaType,
+			Camera:      camera,
+			HasGPS:      hasGps,
+			Orientation: orientation,
+			Tags:        nil,
+			Favorite:    favorites,
+			LowQuality:  lowQuality,
+		}
+		photoResp, err = ph.photoSvc.SearchPhotosWithFilters(filters, fromId, limit, includeThumbnail)
+	} else if tagsQuery != "" {
 		tags := strings.Split(tagsQuery, ",")
 		photoResp, err = ph.photoSvc.ListPhotosByTags(tags, fromId, limit, includeThumbnail)
 	} else if lowQuality {
