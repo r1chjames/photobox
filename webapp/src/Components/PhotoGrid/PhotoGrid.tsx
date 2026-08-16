@@ -22,6 +22,7 @@ import './PhotoGrid.css';
 import {Photo} from "../../Models/Photo";
 import {fetchThumbnailsBatch, getCachedThumbnail, fetchThumbnailWithAuth, revokeThumbnail} from "../../utils/ThumbnailUtils";
 import {BlurhashCanvas} from "../BlurhashCanvas/BlurhashCanvas";
+import {GridSkeleton} from "../GridSkeleton/GridSkeleton";
 import {useWebSocket} from "../../hooks/useWebSocket";
 
 const getPhotoDisplayDate = (photo: Photo): string => {
@@ -253,7 +254,9 @@ const GridImageItem = React.memo(
                     </div>
                 )}
                 <div className="thumbnail" style={{ aspectRatio: '4 / 3' }}>
-                    {(!effectiveThumbnailUrl || !isLoaded) && !hasError && (
+                    {/* Placeholder stays beneath the image and fades out via
+                        the img's opacity transition — no pop-in (issue #144). */}
+                    {!hasError && (
                         photo.blurhash ? (
                             <BlurhashCanvas
                                 hash={photo.blurhash}
@@ -286,6 +289,11 @@ const GridImageItem = React.memo(
                             decoding="async"
                             onLoad={() => setIsLoaded(true)}
                             onError={() => setHasError(true)}
+                            style={{
+                                position: 'relative',
+                                opacity: isLoaded ? 1 : 0,
+                                transition: 'opacity 0.3s ease-in-out',
+                            }}
                         />
                     )}
                     {hasError && (
@@ -580,15 +588,19 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     useEffect(() => {
         const el = containerRef.current;
         if (!el) return;
-        const compute = () => {
-            const width = el.clientWidth;
+        const compute = (entries?: ResizeObserverEntry[]) => {
+            // Prefer the observed content width; fall back to clientWidth for
+            // the synchronous first call (and test environments that stub
+            // ResizeObserver with a fixed entry).
+            const width = entries && entries.length > 0 ? entries[0].contentRect.width : el.clientWidth;
+            if (width <= 0) return;
             const targetCardWidth = density === 'compact' ? 160 : density === 'large' ? 300 : 220;
             const cols = Math.max(2, Math.min(12, Math.floor((width + gridGap) / (targetCardWidth + gridGap))));
             setContainerWidth(width);
             setGridColumns(cols);
         };
         compute();
-        const ro = new ResizeObserver(compute);
+        const ro = new ResizeObserver((entries) => compute(entries));
         ro.observe(el);
         return () => ro.disconnect();
     }, [density, gridGap]);
@@ -597,12 +609,25 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const cardHeight = cardWidth / cardAspectRatio;
     const rowCount = Math.ceil(photos.length / gridColumns);
 
+    // TanStack Virtual captures `estimateSize` when the virtualizer is first
+    // created, so a closure over cardHeight would freeze at the initial
+    // 80px-floor value. Keep the live height in a ref and read it inside a
+    // stable function so rows always measure at the settled card size.
+    const rowHeightRef = useRef(cardHeight + gridGap);
+    rowHeightRef.current = cardHeight + gridGap;
+
     const virtualizer = useVirtualizer({
         count: rowCount,
         getScrollElement: () => containerRef.current,
-        estimateSize: () => cardHeight + gridGap,
+        estimateSize: () => rowHeightRef.current,
         overscan: 4,
     });
+
+    // Re-measure when the card geometry settles so the initial batch renders
+    // at the real row height instead of the 80px floor (issue #143).
+    useEffect(() => {
+        virtualizer.measure();
+    }, [cardHeight, gridColumns, gridGap, virtualizer]);
 
     // Load the next page when scrolling near the bottom of the virtualized grid.
     const handleGridScroll = useCallback(() => {
@@ -889,28 +914,36 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         </div>
     );
 
-    if (photos.length === 0 && !isFetching) {
-        const isVideos = props.mediaType === 'video';
-        return (
-            <>
-                <AlbumTitle/>
-                <EmptyState
-                    title={id ? "This album is empty" : isVideos ? "No videos yet" : "No photos yet"}
-                    description={id ? "Upload photos to see them here." : isVideos ? "Your video library is empty. Upload videos or configure your photo directory." : "Your photo library is empty. Upload photos or configure your photo directory."}
-                    icon={<IconPhotoOff size="2rem" />}
-                    action={{
-                        label: isVideos ? "Upload videos" : "Upload photos",
-                        onClick: () => navigate('/album/new/General'),
-                    }}
-                />
-            </>
-        );
-    }
+    // Initial load: paint skeleton cards immediately instead of a spinner
+    // so the grid never shows a loading animation (issues #143/#144). The
+    // scroll container stays mounted across skeleton → grid so ResizeObserver
+    // keeps observing the same element (re-mounting it would detach the RO
+    // and the grid would never measure). Until a real width is known the
+    // card height would be at its 80px floor and the virtualizer would cache
+    // wrong row sizes → overlap (issue #143) — so skeleton until measured.
+    const showSkeleton = containerWidth === 0;
+    const showEmpty = photos.length === 0 && !isFetching;
 
     return (
         <div style={{ display: 'flex', height: 'calc(100vh - 112px)', flexDirection: 'column' }}>
             <AlbumTitle/>
-            <PhotoGridUploadDropzone photosAdapter={props.photosAdapter} />
+            {showEmpty && (
+                <>
+                    <PhotoGridUploadDropzone photosAdapter={props.photosAdapter} />
+                    <EmptyState
+                        title={id ? "This album is empty" : props.mediaType === 'video' ? "No videos yet" : "No photos yet"}
+                        description={id ? "Upload photos to see them here." : props.mediaType === 'video' ? "Your video library is empty. Upload videos or configure your photo directory." : "Your photo library is empty. Upload photos or configure your photo directory."}
+                        icon={<IconPhotoOff size="2rem" />}
+                        action={{
+                            label: props.mediaType === 'video' ? "Upload videos" : "Upload photos",
+                            onClick: () => navigate('/album/new/General'),
+                        }}
+                    />
+                </>
+            )}
+            {!showEmpty && (
+                <PhotoGridUploadDropzone photosAdapter={props.photosAdapter} />
+            )}
             {isSelectionMode && (
                 <BulkActionsToolbar
                     selectedCount={selectedIds.size}
@@ -933,7 +966,9 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                     onScroll={handleGridScroll}
                     style={{ flex: 1, overflowY: 'auto', position: 'relative' }}
                 >
-                    {viewMode === 'grid' ? (
+                    {showEmpty ? null : showSkeleton ? (
+                        <GridSkeleton columns={gridColumns} rows={3} gap={gridGap} />
+                    ) : viewMode === 'grid' ? (
                         <div className="virtual-grid" data-testid="virtual-grid" style={{ height: virtualizer.getTotalSize(), position: 'relative', width: '100%' }}>
                             {virtualizer.getVirtualItems().map((virtualRow) => {
                                 const startIndex = virtualRow.index * gridColumns;
