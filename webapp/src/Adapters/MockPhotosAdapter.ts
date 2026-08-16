@@ -106,15 +106,6 @@ export class MockPhotosAdapter implements IPhotosAdapter {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public rotatePhoto = async (photoId: string, direction: 'cw' | 'ccw'): Promise<Photo> => {
-    const photo = this._photos.find(p => p.id === photoId);
-    if (!photo) {
-      return Promise.reject(`Photo with id ${photoId} not found in mock adapter`);
-    }
-    return photo;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public getGeodata = async (north: number, south: number, east: number, west: number): Promise<PhotoGeoData[]> => {
     return [];
   }

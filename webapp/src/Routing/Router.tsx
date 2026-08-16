@@ -3,7 +3,7 @@ import {Navigate, Outlet, Route, Routes, useLocation} from "react-router-dom";
 import {useAuth} from "./AuthContext";
 import {useAdapters} from "./AdapterContext";
 import {AppBar} from "../Components/AppBar/AppBar";
-import {Loader, Center} from "@mantine/core";
+import {GridSkeleton} from "../Components/GridSkeleton/GridSkeleton";
 import { AnimatePresence, motion } from 'framer-motion';
 
 const PhotoGrid = React.lazy(() => import('../Components/PhotoGrid/PhotoGrid').then(m => ({default: m.PhotoGrid})));
@@ -26,10 +26,10 @@ const SharedView = React.lazy(() => import('../Components/SharedView/SharedView'
 const DuplicatesView = React.lazy(() => import('../Components/DuplicatesView/DuplicatesView').then(m => ({default: m.DuplicatesView})));
 const AccountSettings = React.lazy(() => import('../Components/AccountSettings/AccountSettings').then(m => ({default: m.AccountSettings})));
 
+// Skeleton grid while lazy route chunks load — no spinner, matches the
+// photo grid layout so content replaces it without a loading animation.
 const PageLoader = () => (
-    <Center h="100vh">
-        <Loader size="lg"/>
-    </Center>
+    <GridSkeleton columns={6} rows={4} />
 );
 
 const ProtectedRoute = (props: { children: React.ReactNode }) => {
