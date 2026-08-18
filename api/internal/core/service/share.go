@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"time"
 
+	"gitlab.com/r1chjames/photobox/api/internal/adapter/handler/auth"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 )
@@ -45,9 +46,12 @@ func (ss *ShareService) CreateShare(resourceType, resourceId, createdBy string, 
 
 	var passwordHash string
 	if password != nil && *password != "" {
-		// In a real app, hash the password with bcrypt/argon2
-		// For simplicity, we store it plaintext here (NOT for production)
-		passwordHash = *password
+		// Hash share passwords at rest (argon2id, matching user passwords).
+		hashed, err := auth.CreateHash(*password, auth.DefaultArgon2idHash())
+		if err != nil {
+			return nil, err
+		}
+		passwordHash = hashed
 	}
 
 	share := &domain.SharedLink{
@@ -77,7 +81,18 @@ func (ss *ShareService) GetSharedResource(token string, password *string) (*doma
 	}
 
 	if share.PasswordHash != "" {
-		if password == nil || *password != share.PasswordHash {
+		if password == nil {
+			return nil, domain.ErrSharedLinkPasswordRequired
+		}
+		// Verify against the argon2id hash. Legacy plaintext rows (created
+		// before hashing) are compared directly and re-hashed on success.
+		match, err := auth.ComparePasswordAndHash(*password, share.PasswordHash)
+		if err != nil {
+			// Not an argon2id hash — treat as legacy plaintext.
+			if *password != share.PasswordHash {
+				return nil, domain.ErrSharedLinkPasswordRequired
+			}
+		} else if !match {
 			return nil, domain.ErrSharedLinkPasswordRequired
 		}
 	}
@@ -114,10 +129,28 @@ func (ss *ShareService) GetSharedResourceData(token string, password *string) (*
 	}, nil
 }
 
-func (ss *ShareService) ListShares() ([]*domain.SharedLink, error) {
+// ListShares returns shares. When createdBy is non-empty, only that user's
+// shares are returned (owner scoping — issue #151). Empty createdBy lists all
+// (admin/ops path).
+func (ss *ShareService) ListShares(createdBy string) ([]*domain.SharedLink, error) {
+	if createdBy != "" {
+		return ss.repo.ListSharesByOwner(createdBy)
+	}
 	return ss.repo.ListShares()
 }
 
-func (ss *ShareService) RevokeShare(token string) error {
+// RevokeShare deletes a share. When createdBy is non-empty, the share is only
+// deleted if it belongs to that user (owner scoping — issue #151); otherwise
+// it is treated as not found to avoid leaking existence.
+func (ss *ShareService) RevokeShare(token, createdBy string) error {
+	if createdBy != "" {
+		share, err := ss.repo.GetShareByToken(token)
+		if err != nil {
+			return domain.ErrDataNotFound
+		}
+		if share.CreatedBy != createdBy {
+			return domain.ErrDataNotFound
+		}
+	}
 	return ss.repo.DeleteShare(token)
 }

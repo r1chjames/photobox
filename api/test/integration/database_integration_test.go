@@ -410,3 +410,39 @@ func TestPhotoRepository_AdvancedSearch_Integration(t *testing.T) {
 		assert.GreaterOrEqual(t, len(res), 3)
 	})
 }
+
+// TestShareRepository_OwnerScoping_Integration verifies share owner scoping
+// (issue #151): a user can only list/revoke their own shares.
+func TestShareRepository_OwnerScoping_Integration(t *testing.T) {
+	env := testutil.CreateTestEnv(t)
+	defer testutil.CleanupTestEnv(t, env)
+
+	testutil.SeedTestData(t, env.Db)
+
+	shareRepo := repository.NewShareRepository(env)
+
+	// Create shares owned by two different users
+	shares := []*domain.SharedLink{
+		{Token: "token-user-a", ResourceType: "photo", ResourceId: "p1", CreatedBy: "user-a"},
+		{Token: "token-user-b", ResourceType: "album", ResourceId: "a1", CreatedBy: "user-b"},
+	}
+	for _, s := range shares {
+		assert.NoError(t, shareRepo.CreateShare(s))
+	}
+
+	// ListSharesByOwner returns only that user's shares
+	userAShares, err := shareRepo.ListSharesByOwner("user-a")
+	assert.NoError(t, err)
+	assert.Len(t, userAShares, 1)
+	assert.Equal(t, "token-user-a", userAShares[0].Token)
+
+	userBShares, err := shareRepo.ListSharesByOwner("user-b")
+	assert.NoError(t, err)
+	assert.Len(t, userBShares, 1)
+	assert.Equal(t, "token-user-b", userBShares[0].Token)
+
+	// Full list returns both (admin path)
+	all, err := shareRepo.ListShares()
+	assert.NoError(t, err)
+	assert.Len(t, all, 2)
+}

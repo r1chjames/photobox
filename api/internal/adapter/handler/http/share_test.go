@@ -36,8 +36,8 @@ func (m *MockShareService) GetSharedResource(token string, password *string) (*d
 	return args.Get(0).(*domain.SharedLink), args.Error(1)
 }
 
-func (m *MockShareService) ListShares() ([]*domain.SharedLink, error) {
-	args := m.Called()
+func (m *MockShareService) ListShares(createdBy string) ([]*domain.SharedLink, error) {
+	args := m.Called(createdBy)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -52,8 +52,8 @@ func (m *MockShareService) GetSharedResourceData(token string, password *string)
 	return args.Get(0).(*port.SharedResourceData), args.Error(1)
 }
 
-func (m *MockShareService) RevokeShare(token string) error {
-	args := m.Called(token)
+func (m *MockShareService) RevokeShare(token, createdBy string) error {
+	args := m.Called(token, createdBy)
 	return args.Error(0)
 }
 
@@ -236,10 +236,12 @@ func TestShareHandler_ListShares_Success(t *testing.T) {
 		{Token: "token2", ResourceType: "album"},
 	}
 
-	mockService.On("ListShares").Return(shares, nil)
+	// Non-admin user: scoped to their own shares.
+	mockService.On("ListShares", "00000000-0000-0000-0000-000000000001").Return(shares, nil)
 
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
+	ctx.Set(authorizationPayloadKey, &domain.TokenPayload{ID: uuid.MustParse("00000000-0000-0000-0000-000000000001"), Role: domain.CONTRIBUTOR})
 
 	ctx.Request = httptest.NewRequest(http.MethodGet, "/shares", nil)
 
@@ -266,10 +268,11 @@ func TestShareHandler_RevokeShare_Success(t *testing.T) {
 	mockService := new(MockShareService)
 	handler := NewShareHandler(mockService)
 
-	mockService.On("RevokeShare", "token123").Return(nil)
+	mockService.On("RevokeShare", "token123", "00000000-0000-0000-0000-000000000001").Return(nil)
 
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
+	ctx.Set(authorizationPayloadKey, &domain.TokenPayload{ID: uuid.MustParse("00000000-0000-0000-0000-000000000001"), Role: domain.CONTRIBUTOR})
 
 	ctx.Params = gin.Params{{Key: "token", Value: "token123"}}
 	ctx.Request = httptest.NewRequest(http.MethodDelete, "/shares/token123", nil)

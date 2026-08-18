@@ -115,7 +115,18 @@ func (sh *ShareHandler) GetSharedResourceData(ctx *gin.Context) {
 }
 
 func (sh *ShareHandler) ListShares(ctx *gin.Context) {
-	shares, err := sh.shareSvc.ListShares()
+	payload := GetAuthPayload(ctx)
+	if payload == nil {
+		handleAbort(ctx, domain.ErrUnauthorized)
+		return
+	}
+	// Owner scoping: non-admins only see their own shares (issue #151).
+	// Admins pass empty createdBy to list all (ops path).
+	createdBy := payload.ID.String()
+	if payload.Role == domain.ADMINISTRATOR {
+		createdBy = ""
+	}
+	shares, err := sh.shareSvc.ListShares(createdBy)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -130,7 +141,18 @@ func (sh *ShareHandler) RevokeShare(ctx *gin.Context) {
 		return
 	}
 
-	err := sh.shareSvc.RevokeShare(token)
+	payload := GetAuthPayload(ctx)
+	if payload == nil {
+		handleAbort(ctx, domain.ErrUnauthorized)
+		return
+	}
+	// Owner scoping: non-admins can only revoke their own shares (issue #151).
+	createdBy := payload.ID.String()
+	if payload.Role == domain.ADMINISTRATOR {
+		createdBy = ""
+	}
+
+	err := sh.shareSvc.RevokeShare(token, createdBy)
 	if err != nil {
 		handleError(ctx, err)
 		return

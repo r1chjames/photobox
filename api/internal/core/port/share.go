@@ -9,6 +9,7 @@ type ShareRepository interface {
 	CreateShare(share *domain.SharedLink) error
 	GetShareByToken(token string) (*domain.SharedLink, error)
 	ListShares() ([]*domain.SharedLink, error)
+	ListSharesByOwner(createdBy string) ([]*domain.SharedLink, error)
 	DeleteShare(token string) error
 	IncrementViewCount(token string) error
 }
@@ -24,6 +25,6 @@ type ShareService interface {
 	CreateShare(resourceType, resourceId, createdBy string, expiry *string, password *string) (*domain.SharedLink, error)
 	GetSharedResource(token string, password *string) (*domain.SharedLink, error)
 	GetSharedResourceData(token string, password *string) (*SharedResourceData, error)
-	ListShares() ([]*domain.SharedLink, error)
-	RevokeShare(token string) error
+	ListShares(createdBy string) ([]*domain.SharedLink, error)
+	RevokeShare(token, createdBy string) error
 }
