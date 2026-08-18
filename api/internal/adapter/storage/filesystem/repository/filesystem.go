@@ -28,6 +28,7 @@ type FilesystemRepository struct {
 	jobSvc       *service.JobService
 	config       appconfig.AppConfig
 	dirSem       chan struct{} // Semaphore to limit concurrent directory walking
+	ffmpegSem    chan struct{} // Semaphore to bound concurrent ffmpeg processes
 	ffmpegFound   bool
 	exifToolFound bool
 }
@@ -43,10 +44,20 @@ func NewFilesystemRepository(config appconfig.AppConfig, jobService *service.Job
 	if !hasExifTool {
 		slog.Info("exiftool not found in PATH, RAW photo thumbnails will use EXIF preview only")
 	}
+	// Bound concurrent ffmpeg processes so batch thumbnail regeneration
+	// (index workers run N batches in parallel) can't spawn unbounded
+	// processes. Each video frame extraction is short-lived; a small pool
+	// keeps memory bounded while still parallelising (issue #41).
+	ffmpegPoolSize := config.FFmpegPoolSize
+	if ffmpegPoolSize <= 0 {
+		ffmpegPoolSize = 2
+	}
 	return &FilesystemRepository{
 		wg:           sync.WaitGroup{},
 		jobSvc:       jobService,
 		config:       config,
+		dirSem:       make(chan struct{}, runtime.NumCPU()*4),
+		ffmpegSem:    make(chan struct{}, ffmpegPoolSize),
 		ffmpegFound:  hasFfmpeg,
 		exifToolFound: hasExifTool,
 	}
@@ -178,6 +189,11 @@ func (fs *FilesystemRepository) generateVideoThumbnail(path string, width, heigh
 	if !fs.ffmpegFound {
 		return nil
 	}
+	// Bound concurrent ffmpeg processes (issue #41): batch thumbnail
+	// generation can otherwise spawn an unbounded number of processes.
+	fs.ffmpegSem <- struct{}{}
+	defer func() { <-fs.ffmpegSem }()
+
 	cmd := exec.Command("ffmpeg", "-i", path, "-ss", "00:00:01", "-vframes", "1", "-f", "image2pipe", "-vcodec", "png", "-")
 	var out bytes.Buffer
 	cmd.Stdout = &out

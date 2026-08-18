@@ -42,6 +42,7 @@ type AppConfig struct {
 	PhotoIndexWorkers  int
 	TrashRetentionDays int
 	GeocodeEndpoint    string
+	FFmpegPoolSize     int
 }
 
 func New() *AppConfig {
@@ -132,6 +133,12 @@ func load() *AppConfig {
 	// Nominatim-compatible reverse geocoding endpoint (empty = public OSM).
 	geocodeEndpoint := os.Getenv("GEOCODE_ENDPOINT")
 
+	// Concurrent ffmpeg processes for video thumbnails; 0/absent = 2.
+	ffmpegPoolSize, _ := strconv.Atoi(utils.GetEnv("FFMPEG_POOL_SIZE", "2"))
+	if ffmpegPoolSize < 1 {
+		ffmpegPoolSize = 2
+	}
+
 	cfg := &AppConfig{
 		PhotoDir:           utils.GetEnv("PHOTO_DIR", "/photos"),
 		ApiBasePath:        utils.GetEnv("API_BASE_PATH", "/api"),
@@ -163,6 +170,7 @@ func load() *AppConfig {
 		PhotoIndexWorkers:  indexWorkers,
 		TrashRetentionDays: trashRetentionDays,
 		GeocodeEndpoint:    geocodeEndpoint,
+		FFmpegPoolSize:     ffmpegPoolSize,
 	}
 
 	return cfg
