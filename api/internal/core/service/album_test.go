@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
+	"gorm.io/datatypes"
 )
 
 // MockAlbumRepository is a mock implementation of port.AlbumRepository
@@ -58,6 +59,11 @@ func (m *MockAlbumRepository) CreateAlbumIfNotExists(name string) (*domain.Album
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*domain.Album), args.Error(1)
+}
+
+func (m *MockAlbumRepository) CreateAlbumWithMetadata(album *domain.Album) error {
+	args := m.Called(album)
+	return args.Error(0)
 }
 
 func (m *MockAlbumRepository) UpdateAlbum(album *domain.Album) error {
@@ -594,4 +600,43 @@ func TestSearchAlbums(t *testing.T) {
 			mockRepo.AssertExpectations(t)
 		})
 	}
+}
+
+// TestSmartAlbums tests smart album creation and rule parsing
+func TestSmartAlbums(t *testing.T) {
+	t.Run("create smart album stores rules in metadata", func(t *testing.T) {
+		mockRepo := new(MockAlbumRepository)
+		config := appconfig.AppConfig{}
+
+		rules := domain.SmartAlbumRules{Camera: "Canon", Favorite: true}
+		mockRepo.On("CreateAlbumWithMetadata", mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+			album := args.Get(0).(*domain.Album)
+			assert.Equal(t, "Best 2024", album.Name)
+			assert.True(t, album.IsSmart())
+			assert.Equal(t, "Canon", album.SmartRules().Camera)
+			assert.True(t, album.SmartRules().Favorite)
+		})
+
+		svc := NewAlbumService(mockRepo, config)
+		album, err := svc.CreateSmartAlbum("Best 2024", rules)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, album)
+		assert.True(t, album.IsSmart())
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("rules convert to photo search filters", func(t *testing.T) {
+		rules := domain.SmartAlbumRules{Camera: "Canon", HasGPS: true, Orientation: "landscape"}
+		filters := rules.ToFilters()
+		assert.Equal(t, "Canon", filters.Camera)
+		assert.True(t, filters.HasGPS)
+		assert.Equal(t, "landscape", filters.Orientation)
+	})
+
+	t.Run("regular album is not smart", func(t *testing.T) {
+		album := &domain.Album{Name: "Manual", Metadata: datatypes.JSON([]byte(`{"foo":"bar"}`))}
+		assert.False(t, album.IsSmart())
+		assert.Equal(t, domain.SmartAlbumRules{}, album.SmartRules())
+	})
 }

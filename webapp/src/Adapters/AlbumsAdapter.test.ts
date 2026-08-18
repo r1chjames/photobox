@@ -143,3 +143,40 @@ describe('AlbumsAdapter', () => {
         });
     });
 });
+describe('AlbumsAdapter smart albums', () => {
+    let mockRestApiAdapter: IRestApiAdapter;
+    let albumsAdapter: AlbumsAdapter;
+
+    beforeEach(() => {
+        mockRestApiAdapter = {
+            getApiCall: vi.fn(),
+            getPaginatedApiCall: vi.fn(),
+            postApiCall: vi.fn(),
+            patchApiCall: vi.fn(),
+            getBinaryApiCall: vi.fn(),
+            authHeader: vi.fn().mockReturnValue({ Authorization: 'Bearer test-token' }),
+        } as unknown as IRestApiAdapter;
+
+        albumsAdapter = new AlbumsAdapter(mockRestApiAdapter);
+    });
+
+    it('createSmartAlbum posts rules to albums/smart', async () => {
+        await albumsAdapter.createSmartAlbum('Best 2024', { camera: 'Canon', favorite: true });
+
+        expect(mockRestApiAdapter.postApiCall).toHaveBeenCalledWith(
+            'albums/smart',
+            { name: 'Best 2024', rules: { camera: 'Canon', favorite: true } },
+            expect.objectContaining({ Authorization: 'Bearer test-token' })
+        );
+    });
+
+    it('updateSmartAlbum patches rules to albums/:id/smart', async () => {
+        await albumsAdapter.updateSmartAlbum('smart-1', { lowQuality: true });
+
+        expect(mockRestApiAdapter.patchApiCall).toHaveBeenCalledWith(
+            'albums/smart-1/smart',
+            { rules: { lowQuality: true } },
+            expect.objectContaining({ Authorization: 'Bearer test-token' })
+        );
+    });
+});

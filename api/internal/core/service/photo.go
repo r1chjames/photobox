@@ -122,6 +122,21 @@ func (ps *PhotoService) ReverseGeocode(ctx context.Context, photoId string) (str
 }
 
 func (ps *PhotoService) ListPhotosInAlbum(albumId string, fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error) {
+	// Smart albums resolve their rules to a filter query instead of the
+	// static album_id membership query.
+	if album, err := ps.albumSvc.GetAlbumById(albumId); err == nil && album != nil && album.IsSmart() {
+		rules := album.SmartRules()
+		rules.StartDate = startDate
+		rules.EndDate = endDate
+		rules.MediaType = mediaType
+		resp, err := ps.photoRepo.SearchPhotosWithFilters(rules.ToFilters(), fromId, limit, includeThumbnail)
+		if err != nil {
+			return nil, domain.ErrDataNotFound
+		}
+		ps.setPhotosSourcePath(resp)
+		return resp, nil
+	}
+
 	resp, err := ps.photoRepo.ListAllPhotosInAlbum(albumId, fromId, limit, includeThumbnail, startDate, endDate, mediaType)
 	if err != nil {
 		return nil, domain.ErrDataNotFound
@@ -172,6 +187,14 @@ func (ps *PhotoService) PerformPhotoIndex(ctx context.Context) {
 }
 
 func (ps *PhotoService) PhotoCount(albumId string) (int64, error) {
+	// Smart albums count via their filter rules, not the album_id membership.
+	if album, err := ps.albumSvc.GetAlbumById(albumId); err == nil && album != nil && album.IsSmart() {
+		resp, err := ps.photoRepo.SearchPhotosWithFilters(album.SmartRules().ToFilters(), "", 10000, false)
+		if err != nil {
+			return 0, err
+		}
+		return int64(len(resp)), nil
+	}
 	return ps.photoRepo.GetPhotosInAlbumCount(albumId)
 }
 

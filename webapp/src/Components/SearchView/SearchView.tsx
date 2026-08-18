@@ -7,6 +7,8 @@ import { PhotoGrid } from '../PhotoGrid/PhotoGrid';
 import { EmptyState } from '../EmptyState/EmptyState';
 import { IconSearch, IconCalendar, IconTag, IconCamera, IconMapPin, IconAspectRatio, IconX } from '@tabler/icons-react';
 import { Chip, Group, Button, Stack, Text, Select, TextInput } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import { SmartAlbumRules } from '../../Models/SmartAlbumRules';
 
 interface SearchViewProps {
     photosAdapter: IPhotosAdapter;
@@ -26,6 +28,7 @@ export const SearchView: React.FC<SearchViewProps> = ({ photosAdapter, albumsAda
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [availableTags, setAvailableTags] = useState<string[]>([]);
     const [tagsLoading, setTagsLoading] = useState(false);
+    const [savingSmartAlbum, setSavingSmartAlbum] = useState(false);
 
     useEffect(() => {
         const fetchTags = async () => {
@@ -52,6 +55,39 @@ export const SearchView: React.FC<SearchViewProps> = ({ photosAdapter, albumsAda
         setHasGps(false);
         setOrientation('');
         setSelectedTags([]);
+    };
+
+    const handleSaveAsSmartAlbum = async () => {
+        if (!albumsAdapter.createSmartAlbum) return;
+        setSavingSmartAlbum(true);
+        try {
+            const name = window.prompt('Name this smart album', query ? `Search: ${query}` : 'Smart album');
+            if (!name || !name.trim()) return;
+            const rules: SmartAlbumRules = {
+                startDate: startDateParam,
+                endDate: endDateParam,
+                camera: camera || undefined,
+                hasGps,
+                orientation: orientation || undefined,
+                tags: selectedTags.length ? selectedTags : undefined,
+                favorite: undefined,
+                lowQuality: undefined,
+            };
+            await albumsAdapter.createSmartAlbum(name.trim(), rules);
+            notifications.show({
+                title: 'Smart album created',
+                message: `"${name.trim()}" will stay up to date automatically`,
+                color: 'teal',
+            });
+        } catch (e) {
+            notifications.show({
+                title: 'Failed to create smart album',
+                message: e instanceof Error ? e.message : 'An error occurred',
+                color: 'red',
+            });
+        } finally {
+            setSavingSmartAlbum(false);
+        }
     };
 
     const handleTagToggle = (tag: string) => {
@@ -190,6 +226,17 @@ export const SearchView: React.FC<SearchViewProps> = ({ photosAdapter, albumsAda
                         >
                             Clear all filters
                         </Button>
+                        {hasActiveFilters && albumsAdapter.createSmartAlbum && (
+                            <Button
+                                variant="light"
+                                color="teal"
+                                size="xs"
+                                onClick={handleSaveAsSmartAlbum}
+                                loading={savingSmartAlbum}
+                            >
+                                Save as smart album
+                            </Button>
+                        )}
                         {selectedTags.length > 0 && (
                             <Text size="xs" c="dimmed">
                                 {selectedTags.length} tag{selectedTags.length !== 1 ? 's' : ''} selected

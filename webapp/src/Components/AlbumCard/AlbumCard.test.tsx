@@ -236,4 +236,39 @@ describe('AlbumCard', () => {
 
         expect(useAlbumCard).toHaveBeenCalledWith(mockPhotosAdapter, mockAlbum);
     });
+    it('should render Smart badge for smart albums', async () => {
+        mockAlbum.metadata = JSON.stringify({ smart: true, rules: { camera: 'Canon' } });
+        render(
+            <AlbumCard
+                photosAdapter={mockPhotosAdapter}
+                albumsAdapter={mockAlbumsAdapter}
+                source={mockAlbum}
+                albumViewCallback={mockAlbumViewCallback}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText('Test Album')).toBeInTheDocument();
+            expect(screen.getByText('Smart')).toBeInTheDocument();
+        });
+    });
+
+    it('should not render Smart badge for regular albums', async () => {
+        mockAlbum.metadata = '{}';
+        render(
+            <AlbumCard
+                photosAdapter={mockPhotosAdapter}
+                albumsAdapter={mockAlbumsAdapter}
+                source={mockAlbum}
+                albumViewCallback={mockAlbumViewCallback}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText('Test Album')).toBeInTheDocument();
+        });
+        expect(screen.queryByText('Smart')).not.toBeInTheDocument();
+    });
 });
+
+

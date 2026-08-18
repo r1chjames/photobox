@@ -31,6 +31,16 @@ export const AlbumGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const [{albums, createAlbumModalAlbumNameErrorText, newAlbumName, handleNewAlbumNameValueChange}] = useAlbumGrid(props.albumsAdapter);
     const [displayCount, setDisplayCount] = useState(props.initialDisplayCount ?? albums?.length ?? 0);
 
+    // Sync display count once albums arrive. Previously initialized to 0 when
+    // albums was still loading, leaving the /albums view empty ("Load More"
+    // shown but no cards) until a manual increment — the Dashboard passed an
+    // initialDisplayCount so it was masked there.
+    React.useEffect(() => {
+        if (props.initialDisplayCount === undefined && albums && albums.length > 0) {
+            setDisplayCount(albums.length);
+        }
+    }, [albums, props.initialDisplayCount]);
+
   const newAlbumModalSaveClick = useCallback(async () => {
     try {
       await props.albumsAdapter.createAlbum(newAlbumName);

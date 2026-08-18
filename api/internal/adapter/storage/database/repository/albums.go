@@ -49,6 +49,15 @@ func (ar *AlbumRepository) CreateAlbum(name string) (*domain.Album, error) {
 	return &album, nil
 }
 
+// CreateAlbumWithMetadata creates an album with the given metadata payload
+// (used for smart albums whose rules live in metadata).
+func (ar *AlbumRepository) CreateAlbumWithMetadata(album *domain.Album) error {
+	album.ID = uuid.New().String()
+	album.CreatedEpoch = time.Now().UnixMilli()
+	ar.dbEnv.Db.Create(album)
+	return ar.dbEnv.Db.Error
+}
+
 func (ar *AlbumRepository) CreateAlbumIfNotExists(name string) (*domain.Album, error) {
 	var album domain.Album
 	album.ID = uuid.New().String()

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Album } from '../../Models/Album';
+import {Album, isSmartAlbum} from '../../Models/Album';
 import {ActionIcon, Badge, Text, Card, Group, Image, Loader, Menu, TextInput} from '@mantine/core';
 import {IconDotsVertical, IconPencil, IconTrash, IconPhotoOff} from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
@@ -110,6 +110,9 @@ export const AlbumCard: React.FunctionComponent<IProps> = (props) => {
         <Badge color="blue" variant="light" size="xs">
           {photoCount} photos
         </Badge>
+        {isSmartAlbum(props.source) && (
+          <Badge color="teal" variant="light" size="xs">Smart</Badge>
+        )}
       </Group>
     </Card>
   );

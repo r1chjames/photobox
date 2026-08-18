@@ -352,6 +352,22 @@ func (m *MockSearchAlbumService) CreateAlbum(name string) (*domain.Album, error)
 	return args.Get(0).(*domain.Album), args.Error(1)
 }
 
+func (m *MockSearchAlbumService) CreateSmartAlbum(name string, rules domain.SmartAlbumRules) (*domain.Album, error) {
+	args := m.Called(name, rules)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Album), args.Error(1)
+}
+
+func (m *MockSearchAlbumService) UpdateSmartAlbum(id string, rules domain.SmartAlbumRules) (*domain.Album, error) {
+	args := m.Called(id, rules)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Album), args.Error(1)
+}
+
 func (m *MockSearchAlbumService) CreateAlbumIfNotExists(name string) (*domain.Album, error) {
 	args := m.Called(name)
 	if args.Get(0) == nil {

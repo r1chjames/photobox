@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 
@@ -40,6 +41,48 @@ func (as *AlbumService) AlbumCount() (int64, error) {
 
 func (as *AlbumService) CreateAlbum(name string) (*domain.Album, error) {
 	return as.repo.CreateAlbum(name)
+}
+
+// CreateSmartAlbum creates an album whose contents are defined by filter
+// rules rather than explicit membership. The rules are stored in the
+// album's metadata along with a smart marker.
+func (as *AlbumService) CreateSmartAlbum(name string, rules domain.SmartAlbumRules) (*domain.Album, error) {
+	meta, err := json.Marshal(map[string]any{
+		"smart": true,
+		"rules": rules,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	album := &domain.Album{
+		Name:     name,
+		Metadata: meta,
+	}
+	if err := as.repo.CreateAlbumWithMetadata(album); err != nil {
+		return nil, err
+	}
+	return album, nil
+}
+
+// UpdateSmartAlbum replaces the rules of a smart album.
+func (as *AlbumService) UpdateSmartAlbum(id string, rules domain.SmartAlbumRules) (*domain.Album, error) {
+	album, err := as.repo.GetAlbumById(id)
+	if err != nil {
+		return nil, err
+	}
+	meta, err := json.Marshal(map[string]any{
+		"smart": true,
+		"rules": rules,
+	})
+	if err != nil {
+		return nil, err
+	}
+	album.Metadata = meta
+	if err := as.repo.UpdateAlbum(album); err != nil {
+		return nil, err
+	}
+	return album, nil
 }
 
 func (as *AlbumService) UpdateAlbum(id string, updates map[string]any) (*domain.Album, error) {

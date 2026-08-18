@@ -56,6 +56,22 @@ func (m *MockAlbumService) CreateAlbum(name string) (*domain.Album, error) {
 	return args.Get(0).(*domain.Album), args.Error(1)
 }
 
+func (m *MockAlbumService) CreateSmartAlbum(name string, rules domain.SmartAlbumRules) (*domain.Album, error) {
+	args := m.Called(name, rules)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Album), args.Error(1)
+}
+
+func (m *MockAlbumService) UpdateSmartAlbum(id string, rules domain.SmartAlbumRules) (*domain.Album, error) {
+	args := m.Called(id, rules)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Album), args.Error(1)
+}
+
 func (m *MockAlbumService) CreateAlbumIfNotExists(name string) (*domain.Album, error) {
 	args := m.Called(name)
 	if args.Get(0) == nil {
@@ -375,5 +391,57 @@ func TestAlbumHandler_DeleteAlbum_Success(t *testing.T) {
 	assert.True(t, response.Success)
 	assert.Equal(t, "Album deleted", response.Data["message"])
 
+	mockService.AssertExpectations(t)
+}
+
+// TestAlbumHandler_CreateSmartAlbum tests POST /albums/smart
+func TestAlbumHandler_CreateSmartAlbum(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockService := new(MockAlbumService)
+	handler := NewAlbumHandler(mockService)
+
+	expected := &domain.Album{ID: "smart-1", Name: "Best 2024"}
+	rules := domain.SmartAlbumRules{Camera: "Canon", Favorite: true}
+	mockService.On("CreateSmartAlbum", "Best 2024", rules).Return(expected, nil)
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	body, _ := json.Marshal(map[string]interface{}{
+		"name":  "Best 2024",
+		"rules": map[string]interface{}{"camera": "Canon", "favorite": true},
+	})
+	ctx.Request = httptest.NewRequest(http.MethodPost, "/albums/smart", bytes.NewBuffer(body))
+	ctx.Request.Header.Set("Content-Type", "application/json")
+
+	handler.CreateSmartAlbum(ctx)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	mockService.AssertExpectations(t)
+}
+
+// TestAlbumHandler_UpdateSmartAlbum tests PATCH /albums/:id/smart
+func TestAlbumHandler_UpdateSmartAlbum(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockService := new(MockAlbumService)
+	handler := NewAlbumHandler(mockService)
+
+	expected := &domain.Album{ID: "smart-1"}
+	rules := domain.SmartAlbumRules{LowQuality: true}
+	mockService.On("UpdateSmartAlbum", "smart-1", rules).Return(expected, nil)
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Params = gin.Params{{Key: "id", Value: "smart-1"}}
+	body, _ := json.Marshal(map[string]interface{}{
+		"rules": map[string]interface{}{"lowQuality": true},
+	})
+	ctx.Request = httptest.NewRequest(http.MethodPatch, "/albums/smart-1/smart", bytes.NewBuffer(body))
+	ctx.Request.Header.Set("Content-Type", "application/json")
+
+	handler.UpdateSmartAlbum(ctx)
+
+	assert.Equal(t, http.StatusOK, w.Code)
 	mockService.AssertExpectations(t)
 }
