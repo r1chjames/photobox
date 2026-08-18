@@ -42,6 +42,18 @@ func (sr *ShareRepository) ListShares() ([]*domain.SharedLink, error) {
 	return shares, nil
 }
 
+// ListSharesByOwner returns only the shares created by the given user
+// (owner scoping — issue #151).
+func (sr *ShareRepository) ListSharesByOwner(createdBy string) ([]*domain.SharedLink, error) {
+	var shares []*domain.SharedLink
+	result := sr.dbEnv.Db.Where("created_by = ?", createdBy).Find(&shares)
+	err := db.HandleError(result)
+	if err != nil {
+		return nil, err
+	}
+	return shares, nil
+}
+
 func (sr *ShareRepository) DeleteShare(token string) error {
 	result := sr.dbEnv.Db.Delete(&domain.SharedLink{}, "token = ?", token)
 	return db.HandleError(result)

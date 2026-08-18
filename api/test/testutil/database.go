@@ -50,6 +50,7 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 		&domain.Setting{},
 		&domain.Job{},
 		&domain.User{},
+		&domain.SharedLink{},
 	)
 	if err != nil {
 		t.Fatalf("Failed to run migrations: %v", err)
