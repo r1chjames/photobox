@@ -1,5 +1,6 @@
 import {IRestApiAdapter} from "./RestApiAdapter";
 import {IAlbumsAdapter} from "./IAlbumsAdapter";
+import {SmartAlbumRules} from "../Models/SmartAlbumRules";
 
 export class AlbumsAdapter implements IAlbumsAdapter {
 
@@ -34,6 +35,16 @@ export class AlbumsAdapter implements IAlbumsAdapter {
   public createAlbum = async (name: string, description?: string) => {
     const createAlbumPath = 'albums';
     return this.restApiAdapter.postApiCall(createAlbumPath, { name, description }, this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
+
+  public createSmartAlbum = async (name: string, rules: SmartAlbumRules) => {
+    const createPath = 'albums/smart';
+    return this.restApiAdapter.postApiCall(createPath, { name, rules }, this.buildHeaders(this.restApiAdapter.authHeader()));
+  }
+
+  public updateSmartAlbum = async (albumId: string, rules: SmartAlbumRules) => {
+    const updatePath = `albums/${albumId}/smart`;
+    return this.restApiAdapter.patchApiCall(updatePath, { rules }, this.buildHeaders(this.restApiAdapter.authHeader()));
   }
 
   public updateAlbum = async (albumId: string, updates: { name?: string; description?: string; coverPhotoId?: string }) => {

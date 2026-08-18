@@ -58,6 +58,20 @@ func (m *MockAlbumRepository) CreateAlbum(name string) (*domain.Album, error) {
 	return ret0, ret1
 }
 
+// CreateAlbumWithMetadata mocks base method.
+func (m *MockAlbumRepository) CreateAlbumWithMetadata(album *domain.Album) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateAlbumWithMetadata", album)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateAlbumWithMetadata indicates an expected call of CreateAlbumWithMetadata.
+func (mr *MockAlbumRepositoryMockRecorder) CreateAlbumWithMetadata(album interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAlbumWithMetadata", reflect.TypeOf((*MockAlbumRepository)(nil).CreateAlbumWithMetadata), album)
+}
+
 // CreateAlbum indicates an expected call of CreateAlbum.
 func (mr *MockAlbumRepositoryMockRecorder) CreateAlbum(name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
@@ -226,6 +240,36 @@ func (m *MockAlbumService) CreateAlbum(name string) (*domain.Album, error) {
 	ret0, _ := ret[0].(*domain.Album)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
+}
+
+// CreateSmartAlbum mocks base method.
+func (m *MockAlbumService) CreateSmartAlbum(name string, rules domain.SmartAlbumRules) (*domain.Album, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateSmartAlbum", name, rules)
+	ret0, _ := ret[0].(*domain.Album)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateSmartAlbum indicates an expected call of CreateSmartAlbum.
+func (mr *MockAlbumServiceMockRecorder) CreateSmartAlbum(name, rules interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSmartAlbum", reflect.TypeOf((*MockAlbumService)(nil).CreateSmartAlbum), name, rules)
+}
+
+// UpdateSmartAlbum mocks base method.
+func (m *MockAlbumService) UpdateSmartAlbum(id string, rules domain.SmartAlbumRules) (*domain.Album, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateSmartAlbum", id, rules)
+	ret0, _ := ret[0].(*domain.Album)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateSmartAlbum indicates an expected call of UpdateSmartAlbum.
+func (mr *MockAlbumServiceMockRecorder) UpdateSmartAlbum(id, rules interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSmartAlbum", reflect.TypeOf((*MockAlbumService)(nil).UpdateSmartAlbum), id, rules)
 }
 
 // CreateAlbum indicates an expected call of CreateAlbum.

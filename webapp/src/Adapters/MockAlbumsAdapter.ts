@@ -1,6 +1,7 @@
 import {IAlbumsAdapter} from "./IAlbumsAdapter";
 import {Album} from "../Models/Album";
 import {Photo} from "../Models/Photo";
+import {SmartAlbumRules} from "../Models/SmartAlbumRules";
 
 export class MockAlbumsAdapter implements IAlbumsAdapter {
 
@@ -38,6 +39,29 @@ export class MockAlbumsAdapter implements IAlbumsAdapter {
 
   public createAlbum = async (name: string, description?: string): Promise<Album> => {
     return { id: 'new-album', name, description: description ?? '', tags: '', metadata: {} as Record<string, unknown>, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as unknown as Album;
+  }
+
+  public createSmartAlbum = async (name: string, rules: SmartAlbumRules): Promise<Album> => {
+    const album = {
+      id: `smart-${this._albums.length + 1}`,
+      name,
+      description: '',
+      tags: '',
+      metadata: JSON.stringify({ smart: true, rules }),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    } as unknown as Album;
+    this._albums.push(album);
+    return album;
+  }
+
+  public updateSmartAlbum = async (albumId: string, rules: SmartAlbumRules): Promise<Album> => {
+    const album = this._albums.find(a => a.id === albumId);
+    if (!album) {
+      return Promise.reject(`Album with id ${albumId} not found in mock adapter`);
+    }
+    album.metadata = JSON.stringify({ smart: true, rules });
+    return album;
   }
 
   public updateAlbum = async (albumId: string, updates: { name?: string; description?: string; coverPhotoId?: string }): Promise<Album> => {

@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
+	"gorm.io/datatypes"
 )
 
 // MockPhotoRepository is a mock implementation of port.PhotoRepository
@@ -316,6 +317,22 @@ func (m *MockAlbumService) GetAlbumByName(name string) (*domain.Album, error) {
 
 func (m *MockAlbumService) CreateAlbum(name string) (*domain.Album, error) {
 	args := m.Called(name)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Album), args.Error(1)
+}
+
+func (m *MockAlbumService) CreateSmartAlbum(name string, rules domain.SmartAlbumRules) (*domain.Album, error) {
+	args := m.Called(name, rules)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Album), args.Error(1)
+}
+
+func (m *MockAlbumService) UpdateSmartAlbum(id string, rules domain.SmartAlbumRules) (*domain.Album, error) {
+	args := m.Called(id, rules)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -717,6 +734,23 @@ func TestListPhotosInAlbum(t *testing.T) {
 				assert.Nil(t, photos)
 			},
 		},
+		{
+			name:             "smart album resolves through filter query",
+			albumId:          "smart-999",
+			fromId:           "",
+			limit:            10,
+			includeThumbnail: false,
+			mockSetup: func(m *MockPhotoRepository) {
+				// Smart albums never hit the static membership query.
+				m.On("SearchPhotosWithFilters", mock.Anything, "", 10, false).
+					Return([]*domain.Photo{{ID: "p1", Name: "canon.jpg"}}, nil)
+			},
+			validate: func(t *testing.T, photos []*domain.Photo, err error) {
+				assert.NoError(t, err)
+				assert.Len(t, photos, 1)
+				assert.Equal(t, "canon.jpg", photos[0].Name)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -727,6 +761,14 @@ func TestListPhotosInAlbum(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
+			// ListPhotosInAlbum checks smart-album status first; a non-smart
+			// (or missing) album falls through to the standard membership query.
+			albumMeta := datatypes.JSON([]byte(`{}`))
+			if tt.albumId == "smart-999" {
+				albumMeta = datatypes.JSON([]byte(`{"smart":true,"rules":{"camera":"Canon"}}`))
+			}
+			mockAlbumSvc.On("GetAlbumById", tt.albumId).
+				Return(&domain.Album{ID: tt.albumId, Name: "Album", Metadata: albumMeta}, nil)
 			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 
 			result, err := service.ListPhotosInAlbum(tt.albumId, tt.fromId, tt.limit, tt.includeThumbnail, "", "", "")
@@ -778,6 +820,18 @@ func TestPhotoCount(t *testing.T) {
 				assert.Equal(t, int64(0), count)
 			},
 		},
+		{
+			name:    "smart album counts via filters",
+			albumId: "smart-999",
+			mockSetup: func(m *MockPhotoRepository) {
+				m.On("SearchPhotosWithFilters", mock.Anything, "", 10000, false).
+					Return([]*domain.Photo{{ID: "p1"}, {ID: "p2"}, {ID: "p3"}}, nil)
+			},
+			validate: func(t *testing.T, count int64, err error) {
+				assert.NoError(t, err)
+				assert.Equal(t, int64(3), count)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -788,6 +842,14 @@ func TestPhotoCount(t *testing.T) {
 			config := appconfig.AppConfig{}
 
 			tt.mockSetup(mockRepo)
+			// PhotoCount checks smart-album status first; non-smart falls through
+			// to the standard album_id count.
+			albumMeta := datatypes.JSON([]byte(`{}`))
+			if tt.albumId == "smart-999" {
+				albumMeta = datatypes.JSON([]byte(`{"smart":true,"rules":{}}`))
+			}
+			mockAlbumSvc.On("GetAlbumById", tt.albumId).
+				Return(&domain.Album{ID: tt.albumId, Name: "Album", Metadata: albumMeta}, nil)
 			service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
 
 			result, err := service.PhotoCount(tt.albumId)

@@ -144,6 +144,8 @@ func defineResources(
 		albums.GET("", albumHandler.ListAlbums)
 		albums.GET("/count", albumHandler.AlbumCount)
 		albums.POST("", albumHandler.CreateAlbum)
+		albums.POST("/smart", albumHandler.CreateSmartAlbum)
+		albums.PATCH("/:id/smart", albumHandler.UpdateSmartAlbum)
 		albums.POST("/:id/photos", photoHandler.AddPhotosToAlbum)
 		albums.PATCH("/:id", albumHandler.UpdateAlbum)
 		albums.DELETE("/:id", albumHandler.DeleteAlbum)

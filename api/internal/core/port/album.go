@@ -14,6 +14,8 @@ type AlbumRepository interface {
 	GetAlbumByName(name string) (*domain.Album, error)
 	// CreateAlbum creates an album
 	CreateAlbum(name string) (*domain.Album, error)
+	// CreateAlbumWithMetadata creates an album with the given metadata
+	CreateAlbumWithMetadata(album *domain.Album) error
 	// CreateAlbumIfNotExists creates an album if it doesn't exist
 	CreateAlbumIfNotExists(name string) (*domain.Album, error)
 	// ListAllAlbums returns all stored albums
@@ -42,6 +44,10 @@ type AlbumService interface {
 	AlbumCount() (int64, error)
 	// CreateAlbum creates an album
 	CreateAlbum(name string) (*domain.Album, error)
+	// CreateSmartAlbum creates a rule-based smart album
+	CreateSmartAlbum(name string, rules domain.SmartAlbumRules) (*domain.Album, error)
+	// UpdateSmartAlbum replaces a smart album's rules
+	UpdateSmartAlbum(id string, rules domain.SmartAlbumRules) (*domain.Album, error)
 	// UpdateAlbum updates an album
 	UpdateAlbum(id string, updates map[string]any) (*domain.Album, error)
 	// DeleteAlbum deletes an album

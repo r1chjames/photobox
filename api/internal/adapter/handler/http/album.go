@@ -101,6 +101,55 @@ func (ah *AlbumHandler) CreateAlbum(ctx *gin.Context) {
 	handleSuccess(ctx, album)
 }
 
+// createSmartAlbumRequest is the body for POST /albums/smart.
+type createSmartAlbumRequest struct {
+	Name  string                 `json:"name" binding:"required"`
+	Rules domain.SmartAlbumRules `json:"rules"`
+}
+
+// CreateSmartAlbum creates a rule-based album (contents derived from filters).
+func (ah *AlbumHandler) CreateSmartAlbum(ctx *gin.Context) {
+	var req createSmartAlbumRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		validationError(ctx, err)
+		return
+	}
+
+	album, err := ah.svc.CreateSmartAlbum(req.Name, req.Rules)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	handleSuccess(ctx, album)
+}
+
+// updateSmartAlbumRequest is the body for PATCH /albums/:id/smart.
+type updateSmartAlbumRequest struct {
+	Rules domain.SmartAlbumRules `json:"rules"`
+}
+
+// UpdateSmartAlbum replaces a smart album's filter rules.
+func (ah *AlbumHandler) UpdateSmartAlbum(ctx *gin.Context) {
+	albumId := ctx.Param("id")
+	if albumId == "" {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "album ID is required"})
+		return
+	}
+
+	var req updateSmartAlbumRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		validationError(ctx, err)
+		return
+	}
+
+	album, err := ah.svc.UpdateSmartAlbum(albumId, req.Rules)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	handleSuccess(ctx, album)
+}
+
 type updateAlbumRequest struct {
 	Name         string `json:"name"`
 	Description  string `json:"description"`
