@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { IPhotosAdapter } from '../../Adapters/IPhotosAdapter';
-import { Photo } from '../../Models/Photo';
-import { Card, Image, Text, Group, Title, Skeleton } from '@mantine/core';
+import { MemoryGroup } from '../../Models/MemoryGroup';
+import { Card, Image, Text, Group, Title, Skeleton, Stack, Badge } from '@mantine/core';
 import { IconClock } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { fetchThumbnailWithAuth, getCachedThumbnail, revokeThumbnail } from '../../utils/ThumbnailUtils';
@@ -10,44 +10,38 @@ interface MemoriesProps {
     photosAdapter: IPhotosAdapter;
 }
 
+/**
+ * "On This Day" — surfaces photos taken on today's date in previous years,
+ * grouped by year. Backed by GET /photos/memories.
+ */
 export const Memories: React.FC<MemoriesProps> = ({ photosAdapter }) => {
-    const [memories, setMemories] = useState<Photo[]>([]);
+    const [groups, setGroups] = useState<MemoryGroup[]>([]);
     const [thumbnailUrls, setThumbnailUrls] = useState<Map<string, string>>(new Map());
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
     const loadMemories = useCallback(async () => {
         try {
-            const today = new Date();
-            const month = today.getMonth() + 1;
-            const day = today.getDate();
+            const result = await photosAdapter.getMemories();
+            const safe = result || [];
+            setGroups(safe);
 
-            const allPhotos = await photosAdapter.getAllPhotosInfo('', 500, false);
-            const filtered = allPhotos.filter(photo => {
-                if (!photo.createdAt) return false;
-                const date = new Date(photo.createdAt);
-                return date.getMonth() + 1 === month && date.getDate() === day;
-            });
-
-            // Sort by year descending
-            filtered.sort((a, b) => new Date(b.createdAt).getFullYear() - new Date(a.createdAt).getFullYear());
-            const sliced = filtered.slice(0, 6);
-            setMemories(sliced);
-
-            // Load thumbnails
+            // Load thumbnails for all photos across groups
             const urls = new Map<string, string>();
-            for (const photo of sliced) {
-                const cached = getCachedThumbnail(photo.id);
-                if (cached) {
-                    urls.set(photo.id, cached);
-                } else {
-                    const url = await fetchThumbnailWithAuth(photosAdapter, photo.id);
-                    urls.set(photo.id, url);
+            for (const group of safe) {
+                for (const photo of group.photos) {
+                    const cached = getCachedThumbnail(photo.id);
+                    if (cached) {
+                        urls.set(photo.id, cached);
+                    } else {
+                        const url = await fetchThumbnailWithAuth(photosAdapter, photo.id);
+                        urls.set(photo.id, url);
+                    }
                 }
             }
             setThumbnailUrls(urls);
         } catch {
-            setMemories([]);
+            setGroups([]);
         } finally {
             setLoading(false);
         }
@@ -58,50 +52,64 @@ export const Memories: React.FC<MemoriesProps> = ({ photosAdapter }) => {
         return () => {
             thumbnailUrls.forEach((_, id) => revokeThumbnail(id));
         };
+        // NOTE: react-hooks plugin not registered; deps intentionally [loadMemories].
     }, [loadMemories]);
 
     if (loading) {
         return (
-            <Card withBorder radius="md" p="md" mb="md">
-                <Group gap="xs" mb="sm">
-                    <IconClock size="1.25rem" />
-                    <Title size="h5">On This Day</Title>
-                </Group>
-                <Group gap="sm">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                        <Skeleton key={i} height={120} width={160} radius="sm" />
-                    ))}
-                </Group>
-            </Card>
+            <Stack gap="md">
+                <Skeleton height={24} width={200} />
+                <Skeleton height={120} />
+                <Skeleton height={120} />
+            </Stack>
         );
     }
 
-    if (memories.length === 0) {
-        return null;
+    if (groups.length === 0) {
+        return (
+            <Stack align="center" gap="xs" py="xl">
+                <IconClock size={32} opacity={0.4} />
+                <Text c="dimmed">No memories for today yet.</Text>
+            </Stack>
+        );
     }
 
     return (
-        <Card withBorder radius="md" p="md" mb="md">
-            <Group gap="xs" mb="sm">
-                <IconClock size="1.25rem" />
-                <Title size="h5">On This Day</Title>
-            </Group>
-            <Group gap="sm">
-                {memories.map(photo => {
-                    const year = new Date(photo.createdAt).getFullYear();
-                    const url = thumbnailUrls.get(photo.id);
-                    return (
-                        <Card key={photo.id} p={0} radius="sm" withBorder style={{ cursor: 'pointer' }} onClick={() => navigate(`/photo/${photo.id}`)}>
-                            {url ? (
-                                <Image src={url} height={120} width={160} fit="cover" radius="sm" />
-                            ) : (
-                                <Skeleton height={120} width={160} radius="sm" />
-                            )}
-                            <Text size="xs" ta="center" mt={4} c="dimmed">{year}</Text>
-                        </Card>
-                    );
-                })}
-            </Group>
-        </Card>
+        <Stack gap="lg">
+            <Title order={3}>On This Day</Title>
+            {groups.map(group => (
+                <div key={group.year}>
+                    <Group gap="xs" mb="sm">
+                        <Title order={4}>{group.year}</Title>
+                        <Badge variant="light" color="teal" size="sm">
+                            {group.yearsAgo} year{group.yearsAgo !== 1 ? 's' : ''} ago
+                        </Badge>
+                    </Group>
+                    <Group gap="sm" wrap="wrap">
+                        {group.photos.map(photo => (
+                            <Card
+                                key={photo.id}
+                                shadow="sm"
+                                radius="md"
+                                withBorder
+                                w={160}
+                                p={0}
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => navigate(`/photo/${photo.id}`)}
+                            >
+                                <Card.Section>
+                                    {thumbnailUrls.get(photo.id) ? (
+                                        <Image src={thumbnailUrls.get(photo.id)} h={110} fit="cover" />
+                                    ) : (
+                                        <Skeleton height={110} />
+                                    )}
+                                </Card.Section>
+                                <Text size="xs" fw={500} p="xs" lineClamp={1}>{photo.name}</Text>
+                            </Card>
+                        ))}
+                    </Group>
+                </div>
+            ))}
+        </Stack>
     );
 };

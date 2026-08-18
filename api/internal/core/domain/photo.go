@@ -111,6 +111,13 @@ type PhotoGeoData struct {
 	DateTaken   string `json:"dateTaken"`
 }
 
+// MemoryGroup is a set of photos from one prior year for "On This Day".
+type MemoryGroup struct {
+	Year     int      `json:"year"`
+	YearsAgo int      `json:"yearsAgo"`
+	Photos   []*Photo `json:"photos"`
+}
+
 type PhotoUpload struct {
 	Name          string `json:"name"`
 	AlbumName     string `json:"albumName"`

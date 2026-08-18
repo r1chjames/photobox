@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
@@ -712,6 +713,27 @@ func (ph *PhotoHandler) GetTimeline(ctx *gin.Context) {
 		return
 	}
 	handleSuccess(ctx, entries)
+}
+
+// GetMemories returns "On This Day" photos grouped by year. Accepts an
+// optional date=YYYY-MM-DD (defaults to today).
+func (ph *PhotoHandler) GetMemories(ctx *gin.Context) {
+	month, day := time.Now().Month(), time.Now().Day()
+	if dateStr := ctx.Query("date"); dateStr != "" {
+		t, err := time.Parse("2006-01-02", dateStr)
+		if err != nil {
+			validationError(ctx, err)
+			return
+		}
+		month, day = t.Month(), t.Day()
+	}
+
+	groups, err := ph.photoSvc.ListMemories(int(month), day, 10)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	handleSuccess(ctx, groups)
 }
 
 func (ph *PhotoHandler) GetGeodata(ctx *gin.Context) {

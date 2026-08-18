@@ -54,6 +54,8 @@ type PhotoRepository interface {
 	ListFavoritePhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error)
 	// ListLowQualityPhotos returns photos flagged as low quality
 	ListLowQualityPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
+	// ListMemories returns photos taken on a given month/day in prior years
+	ListMemories(month, day int, limit int) ([]*domain.Photo, error)
 	// SearchPhotosWithFilters returns photos matching the combined filters
 	SearchPhotosWithFilters(filters domain.PhotoSearchFilters, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
 	// ListUnscoredPhotos returns photos without a quality score yet
@@ -150,6 +152,8 @@ type PhotoService interface {
 	ListFavoritePhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string) ([]*domain.Photo, error)
 	// ListLowQualityPhotos returns photos flagged as low quality
 	ListLowQualityPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
+	// ListMemories returns "On This Day" photos grouped by year
+	ListMemories(month, day int, maxPerYear int) ([]domain.MemoryGroup, error)
 	// SearchPhotosWithFilters returns photos matching the combined filters
 	SearchPhotosWithFilters(filters domain.PhotoSearchFilters, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error)
 	// ScorePhotoQuality runs the quality analyzer on a photo and stores results

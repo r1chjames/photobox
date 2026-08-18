@@ -446,3 +446,42 @@ func TestShareRepository_OwnerScoping_Integration(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, all, 2)
 }
+
+// TestPhotoRepository_Memories_Integration tests the "On This Day" query
+func TestPhotoRepository_Memories_Integration(t *testing.T) {
+	env := testutil.CreateTestEnv(t)
+	defer testutil.CleanupTestEnv(t, env)
+
+	testutil.SeedTestData(t, env.Db)
+
+	photoRepo := repository.NewPhotoRepository(env)
+
+	now := time.Now()
+	// Photos on the same month/day in prior years + one in the current year
+	photos := []domain.Photo{
+		{ID: "m1", Name: "old1.jpg", AlbumId: "album1", FilesystemPath: "/photos/a.jpg",
+			CreatedEpoch: time.Date(now.Year()-2, now.Month(), now.Day(), 12, 0, 0, 0, time.UTC).UnixMilli()},
+		{ID: "m2", Name: "old2.jpg", AlbumId: "album1", FilesystemPath: "/photos/b.jpg",
+			CreatedEpoch: time.Date(now.Year()-3, now.Month(), now.Day(), 12, 0, 0, 0, time.UTC).UnixMilli()},
+		{ID: "m3", Name: "current.jpg", AlbumId: "album1", FilesystemPath: "/photos/c.jpg",
+			CreatedEpoch: time.Date(now.Year(), now.Month(), now.Day(), 12, 0, 0, 0, time.UTC).UnixMilli()},
+		{ID: "m4", Name: "otherday.jpg", AlbumId: "album1", FilesystemPath: "/photos/d.jpg",
+			CreatedEpoch: time.Date(now.Year()-2, now.Month(), now.Day()+1, 12, 0, 0, 0, time.UTC).UnixMilli()},
+	}
+	for _, p := range photos {
+		assert.NoError(t, photoRepo.CreatePhotoInfo(p))
+	}
+
+	res, err := photoRepo.ListMemories(int(now.Month()), now.Day(), 100)
+	assert.NoError(t, err)
+	// Should return m1 and m2 (prior years, same day), exclude m3 (current year) and m4 (different day)
+	assert.Len(t, res, 2)
+	ids := map[string]bool{}
+	for _, p := range res {
+		ids[p.ID] = true
+	}
+	assert.True(t, ids["m1"])
+	assert.True(t, ids["m2"])
+	assert.False(t, ids["m3"])
+	assert.False(t, ids["m4"])
+}

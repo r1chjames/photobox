@@ -33,6 +33,7 @@ export interface IPhotosAdapter {
   clearEdits(photoId: string): Promise<Photo>;
   getGeodata(north: number, south: number, east: number, west: number): Promise<PhotoGeoData[]>;
   getTimeline(): Promise<TimelineEntry[]>;
+  getMemories(date?: string): Promise<MemoryGroup[]>;
   getAllTags(): Promise<string[]>;
   updatePhotoTags(photoId: string, tags: string[]): Promise<Photo>;
   batchUpdatePhotoTags(photoIds: string[], tags: string[], operation: 'add' | 'remove' | 'set'): Promise<void>;

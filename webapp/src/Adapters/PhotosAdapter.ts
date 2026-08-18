@@ -155,6 +155,11 @@ export class PhotosAdapter implements IPhotosAdapter {
     return this.restApiAdapter.getApiCall(timelinePath, this.buildHeaders(this.restApiAdapter.authHeader()), {});
   }
 
+  public getMemories = async (date?: string): Promise<MemoryGroup[]> => {
+    const path = date ? `photos/memories?date=${encodeURIComponent(date)}` : 'photos/memories';
+    return this.restApiAdapter.getApiCall(path, this.buildHeaders(this.restApiAdapter.authHeader()), {});
+  }
+
   public getAllTags = async (): Promise<string[]> => {
     const tagsPath = 'photos/tags';
     const response = await this.restApiAdapter.getApiCall(tagsPath, this.buildHeaders(this.restApiAdapter.authHeader()), {});

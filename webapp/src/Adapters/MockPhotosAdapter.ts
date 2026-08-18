@@ -1,5 +1,6 @@
 import {Photo} from "../Models/Photo";
 import {JobType} from "../Models/Job";
+import {MemoryGroup} from "../Models/MemoryGroup";
 import {IPhotosAdapter, PhotoGeoData, TimelineEntry} from "./IPhotosAdapter";
 
 export class MockPhotosAdapter implements IPhotosAdapter {
@@ -112,6 +113,25 @@ export class MockPhotosAdapter implements IPhotosAdapter {
 
   public getTimeline = async (): Promise<TimelineEntry[]> => {
     return [];
+  }
+
+  public getMemories = async (_date?: string): Promise<MemoryGroup[]> => {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+    const groups = new Map<number, Photo[]>();
+    this._photos.forEach(p => {
+      if (!p.createdAt) return;
+      const d = new Date(p.createdAt);
+      if (d.getMonth() + 1 === month && d.getDate() === day && d.getFullYear() < now.getFullYear()) {
+        const year = d.getFullYear();
+        if (!groups.has(year)) groups.set(year, []);
+        if (groups.get(year)!.length < 10) groups.get(year)!.push(p);
+      }
+    });
+    return [...groups.entries()]
+      .sort((a, b) => b[0] - a[0])
+      .map(([year, photos]) => ({ year, yearsAgo: now.getFullYear() - year, photos }));
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
