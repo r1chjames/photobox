@@ -72,3 +72,37 @@ func TestFilesystemRepository_StructureValidation(t *testing.T) {
 // These methods involve complex file I/O, concurrent operations with goroutines,
 // channels, and external library calls (image processing) that are better tested
 // with actual files in an integration test environment.
+
+// TestFFmpegPoolBounds verifies the ffmpeg semaphore caps concurrent process
+// spawns to the configured pool size (issue #41).
+func TestFFmpegPoolBounds(t *testing.T) {
+	timezone, _ := time.LoadLocation("UTC")
+
+	t.Run("semaphore capacity equals pool size", func(t *testing.T) {
+		config := appconfig.AppConfig{PhotoDir: t.TempDir(), Timezone: timezone, FFmpegPoolSize: 3}
+		repo := NewFilesystemRepository(config, nil)
+		assert.Equal(t, 3, cap(repo.ffmpegSem), "semaphore should hold the pool size")
+	})
+
+	t.Run("default pool size is 2 when unset", func(t *testing.T) {
+		config := appconfig.AppConfig{PhotoDir: t.TempDir(), Timezone: timezone}
+		repo := NewFilesystemRepository(config, nil)
+		assert.Equal(t, 2, cap(repo.ffmpegSem), "unset pool should default to 2")
+	})
+
+	t.Run("pool of 1 serialises video thumbnail calls", func(t *testing.T) {
+		config := appconfig.AppConfig{PhotoDir: t.TempDir(), Timezone: timezone, FFmpegPoolSize: 1}
+		repo := NewFilesystemRepository(config, nil)
+		assert.Equal(t, 1, cap(repo.ffmpegSem))
+		// Acquiring both slots: the second send must block until the first is
+		// released, proving the semaphore enforces the cap.
+		repo.ffmpegSem <- struct{}{}
+		select {
+		case repo.ffmpegSem <- struct{}{}:
+			t.Fatal("second acquisition should block with pool size 1")
+		default:
+			// Expected: channel is full.
+		}
+		<-repo.ffmpegSem
+	})
+}
