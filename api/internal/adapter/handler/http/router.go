@@ -170,6 +170,7 @@ func defineResources(
 		photos.POST("/download", photoHandler.DownloadPhotos)
 	photos.POST("/batch", photoHandler.BatchPhotos)
 		photos.GET("/timeline", photoHandler.GetTimeline)
+		photos.GET("/memories", photoHandler.GetMemories)
 	photos.GET("/geodata", photoHandler.GetGeodata)
 	photos.GET("/tags", photoHandler.GetAllTags)
 	photos.POST("/tags/batch", photoHandler.BatchUpdatePhotoTags)

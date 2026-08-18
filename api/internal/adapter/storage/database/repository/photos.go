@@ -36,6 +36,23 @@ func (pr *PhotoRepository) GetPhotoById(photoId string, includeThumbnail bool) (
 	return &photo, nil
 }
 
+// ListMemories returns photos taken on the given month/day in previous years
+// ("On This Day"), ordered by year descending. Excludes the current year.
+func (pr *PhotoRepository) ListMemories(month, day int, limit int) ([]*domain.Photo, error) {
+	var photos []*domain.Photo
+	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).
+		Where("deleted_at IS NULL").
+		Where("hidden = ?", false).
+		Where("EXTRACT(MONTH FROM to_timestamp(created_epoch / 1000.0)) = ?", month).
+		Where("EXTRACT(DAY FROM to_timestamp(created_epoch / 1000.0)) = ?", day).
+		Where("EXTRACT(YEAR FROM to_timestamp(created_epoch / 1000.0)) < ?", time.Now().Year()).
+		Order("created_epoch DESC").
+		Omit("thumbnail").
+		Limit(limit).
+		Find(&photos)
+	return photos, result.Error
+}
+
 func (pr *PhotoRepository) ListAllPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error) {
 	var photos []*domain.Photo
 	result := pr.dbEnv.Db.Model(&[]domain.Photo{}).Where("deleted_at IS NULL").Where("hidden = ?", false).Order("created_epoch ASC").Omit("thumbnail")

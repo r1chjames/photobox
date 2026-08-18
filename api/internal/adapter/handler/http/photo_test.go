@@ -178,6 +178,14 @@ func (m *MockPhotoService) ListLowQualityPhotos(fromId string, limit int, includ
 	return args.Get(0).([]*domain.Photo), args.Error(1)
 }
 
+func (m *MockPhotoService) ListMemories(month, day int, maxPerYear int) ([]domain.MemoryGroup, error) {
+	args := m.Called(month, day, maxPerYear)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domain.MemoryGroup), args.Error(1)
+}
+
 func (m *MockPhotoService) SearchPhotosWithFilters(filters domain.PhotoSearchFilters, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
 	args := m.Called(filters, fromId, limit, includeThumbnail)
 	if args.Get(0) == nil {
@@ -1248,6 +1256,48 @@ func TestPhotoHandler_ListPhotos_AdvancedFilters(t *testing.T) {
 		ctx.Request = httptest.NewRequest(http.MethodGet, "/photos", nil)
 
 		handler.ListPhotos(ctx)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		mockPhotoSvc.AssertExpectations(t)
+	})
+}
+
+// TestPhotoHandler_GetMemories tests GET /photos/memories
+func TestPhotoHandler_GetMemories(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("defaults to today", func(t *testing.T) {
+		mockPhotoSvc := new(MockPhotoService)
+		mockJobSvc := new(MockJobService)
+		handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+		now := time.Now()
+		groups := []domain.MemoryGroup{{Year: now.Year() - 2, YearsAgo: 2, Photos: []*domain.Photo{{ID: "p1"}}}}
+		mockPhotoSvc.On("ListMemories", int(now.Month()), now.Day(), 10).Return(groups, nil)
+
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		ctx.Request = httptest.NewRequest(http.MethodGet, "/photos/memories", nil)
+
+		handler.GetMemories(ctx)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		mockPhotoSvc.AssertExpectations(t)
+	})
+
+	t.Run("accepts explicit date", func(t *testing.T) {
+		mockPhotoSvc := new(MockPhotoService)
+		mockJobSvc := new(MockJobService)
+		handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+		groups := []domain.MemoryGroup{{Year: 2022, YearsAgo: 4, Photos: []*domain.Photo{{ID: "p1"}}}}
+		mockPhotoSvc.On("ListMemories", 1, 15, 10).Return(groups, nil)
+
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		ctx.Request = httptest.NewRequest(http.MethodGet, "/photos/memories?date=2026-01-15", nil)
+
+		handler.GetMemories(ctx)
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		mockPhotoSvc.AssertExpectations(t)

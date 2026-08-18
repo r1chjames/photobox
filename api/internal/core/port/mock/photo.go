@@ -306,6 +306,21 @@ func (m *MockPhotoRepository) ListLowQualityPhotos(fromId string, limit int, inc
 	return ret0, ret1
 }
 
+// ListMemories mocks base method.
+func (m *MockPhotoRepository) ListMemories(month, day int, limit int) ([]*domain.Photo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListMemories", month, day, limit)
+	ret0, _ := ret[0].([]*domain.Photo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListMemories indicates an expected call of ListMemories.
+func (mr *MockPhotoRepositoryMockRecorder) ListMemories(month, day, limit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListMemories", reflect.TypeOf((*MockPhotoRepository)(nil).ListMemories), month, day, limit)
+}
+
 // SearchPhotosWithFilters mocks base method.
 func (m *MockPhotoRepository) SearchPhotosWithFilters(filters domain.PhotoSearchFilters, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
 	m.ctrl.T.Helper()
@@ -821,6 +836,21 @@ func (m *MockPhotoService) ListLowQualityPhotos(fromId string, limit int, includ
 	ret0, _ := ret[0].([]*domain.Photo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
+}
+
+// ListMemories mocks base method.
+func (m *MockPhotoService) ListMemories(month, day int, maxPerYear int) ([]domain.MemoryGroup, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListMemories", month, day, maxPerYear)
+	ret0, _ := ret[0].([]domain.MemoryGroup)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListMemories indicates an expected call of ListMemories.
+func (mr *MockPhotoServiceMockRecorder) ListMemories(month, day, maxPerYear interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListMemories", reflect.TypeOf((*MockPhotoService)(nil).ListMemories), month, day, maxPerYear)
 }
 
 // SearchPhotosWithFilters mocks base method.

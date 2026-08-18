@@ -42,6 +42,7 @@ import {
     IconMoon,
     IconPhoto,
     IconPhotoOff,
+    IconClock,
     IconSearch,
     IconSettings,
     IconSun,
@@ -68,6 +69,7 @@ export enum Labels {
     Duplicates = "Duplicates",
     Videos = "Videos",
     Quality = "Quality",
+    Memories = "Memories",
     Settings = "Settings"
 }
 
@@ -101,6 +103,12 @@ const navLinkData = [
         label: Labels.Quality,
         href: '/quality',
         description: 'Low-quality photos'
+    },
+    {
+        icon: IconClock,
+        label: Labels.Memories,
+        href: '/memories',
+        description: 'On this day'
     },
     {
         icon: IconLink,
@@ -171,6 +179,8 @@ const getActiveLinkFromPath = (pathname: string): Labels => {
     if (pathname.startsWith('/map')) return Labels.Map;
     if (pathname.startsWith('/tags')) return Labels.Tags;
     if (pathname.startsWith('/duplicates')) return Labels.Duplicates;
+    if (pathname.startsWith('/quality')) return Labels.Quality;
+    if (pathname.startsWith('/memories')) return Labels.Memories;
     if (pathname.startsWith('/settings')) return Labels.Settings;
     return Labels.Dashboard;
 };
@@ -210,6 +220,8 @@ const buildBreadcrumbs = (location: string, activeLink: Labels, id?: string, alb
         items.push({ label: 'Videos', icon: <IconVideo size="0.9rem" /> });
     } else if (activeLink === Labels.Quality) {
         items.push({ label: 'Quality', icon: <IconPhotoOff size="0.9rem" /> });
+    } else if (activeLink === Labels.Memories) {
+        items.push({ label: 'Memories', icon: <IconClock size="0.9rem" /> });
     } else if (activeLink === Labels.Settings) {
         items.push({ label: 'Settings', icon: <IconSettings size="0.9rem" /> });
     }

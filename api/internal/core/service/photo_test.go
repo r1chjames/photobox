@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -147,6 +148,14 @@ func (m *MockPhotoRepository) ListFavoritePhotos(fromId string, limit int, inclu
 
 func (m *MockPhotoRepository) ListLowQualityPhotos(fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
 	args := m.Called(fromId, limit, includeThumbnail)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoRepository) ListMemories(month, day int, limit int) ([]*domain.Photo, error) {
+	args := m.Called(month, day, limit)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -1937,6 +1946,55 @@ func TestScoreAllPhotoQuality(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, 1, scored)
+		mockRepo.AssertExpectations(t)
+	})
+}
+
+// TestListMemories tests "On This Day" grouping by year
+func TestListMemories(t *testing.T) {
+	t.Run("groups photos by year descending", func(t *testing.T) {
+		mockRepo := new(MockPhotoRepository)
+		config := appconfig.AppConfig{}
+
+		now := time.Now()
+		// Photos from 2 and 3 years ago on the same month/day
+		photos := []*domain.Photo{
+			{ID: "p1", CreatedEpoch: time.Date(now.Year()-2, now.Month(), now.Day(), 12, 0, 0, 0, time.UTC).UnixMilli()},
+			{ID: "p2", CreatedEpoch: time.Date(now.Year()-3, now.Month(), now.Day(), 12, 0, 0, 0, time.UTC).UnixMilli()},
+			{ID: "p3", CreatedEpoch: time.Date(now.Year()-3, now.Month(), now.Day(), 13, 0, 0, 0, time.UTC).UnixMilli()},
+		}
+		mockRepo.On("ListMemories", int(now.Month()), now.Day(), 500).Return(photos, nil)
+
+		service := NewPhotoService(mockRepo, new(MockAlbumService), new(MockFilesystemService), new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
+		groups, err := service.ListMemories(int(now.Month()), now.Day(), 10)
+
+		assert.NoError(t, err)
+		assert.Len(t, groups, 2, "two distinct years")
+		assert.Equal(t, now.Year()-2, groups[0].Year, "most recent year first")
+		assert.Equal(t, 2, groups[0].YearsAgo)
+		assert.Len(t, groups[0].Photos, 1)
+		assert.Equal(t, now.Year()-3, groups[1].Year)
+		assert.Len(t, groups[1].Photos, 2)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("caps photos per year", func(t *testing.T) {
+		mockRepo := new(MockPhotoRepository)
+		config := appconfig.AppConfig{}
+
+		now := time.Now()
+		var photos []*domain.Photo
+		for i := 0; i < 15; i++ {
+			photos = append(photos, &domain.Photo{ID: fmt.Sprintf("p%d", i), CreatedEpoch: time.Date(now.Year()-2, now.Month(), now.Day(), 12, 0, 0, 0, time.UTC).UnixMilli()})
+		}
+		mockRepo.On("ListMemories", int(now.Month()), now.Day(), 500).Return(photos, nil)
+
+		service := NewPhotoService(mockRepo, new(MockAlbumService), new(MockFilesystemService), new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
+		groups, err := service.ListMemories(int(now.Month()), now.Day(), 10)
+
+		assert.NoError(t, err)
+		assert.Len(t, groups, 1)
+		assert.Len(t, groups[0].Photos, 10, "capped at maxPerYear")
 		mockRepo.AssertExpectations(t)
 	})
 }

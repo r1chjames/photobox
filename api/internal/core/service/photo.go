@@ -998,6 +998,54 @@ func (ps *PhotoService) ListLowQualityPhotos(fromId string, limit int, includeTh
 	return resp, nil
 }
 
+// ListMemories returns "On This Day" photos grouped by year. Each group is
+// capped at maxPerYear photos.
+func (ps *PhotoService) ListMemories(month, day int, maxPerYear int) ([]domain.MemoryGroup, error) {
+	if maxPerYear <= 0 {
+		maxPerYear = 10
+	}
+	photos, err := ps.photoRepo.ListMemories(month, day, maxPerYear*50)
+	if err != nil {
+		return nil, err
+	}
+	ps.setPhotosSourcePath(photos)
+
+	currentYear := time.Now().Year()
+	byYear := make(map[int][]*domain.Photo)
+	var years []int
+	for _, p := range photos {
+		year := time.UnixMilli(p.CreatedEpoch).Year()
+		if year <= 0 || year >= currentYear {
+			continue
+		}
+		if _, ok := byYear[year]; !ok {
+			years = append(years, year)
+		}
+		if len(byYear[year]) < maxPerYear {
+			byYear[year] = append(byYear[year], p)
+		}
+	}
+
+	// Sort years descending (most recent first).
+	for i := 0; i < len(years); i++ {
+		for j := i + 1; j < len(years); j++ {
+			if years[j] > years[i] {
+				years[i], years[j] = years[j], years[i]
+			}
+		}
+	}
+
+	groups := make([]domain.MemoryGroup, 0, len(years))
+	for _, year := range years {
+		groups = append(groups, domain.MemoryGroup{
+			Year:     year,
+			YearsAgo: currentYear - year,
+			Photos:   byYear[year],
+		})
+	}
+	return groups, nil
+}
+
 // SearchPhotosWithFilters returns photos matching the combined advanced
 // search filters.
 func (ps *PhotoService) SearchPhotosWithFilters(filters domain.PhotoSearchFilters, fromId string, limit int, includeThumbnail bool) ([]*domain.Photo, error) {
