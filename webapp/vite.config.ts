@@ -32,14 +32,63 @@ export default defineConfig({
             },
             workbox: {
                 runtimeCaching: [
+                    // Photo thumbnails: cache-first so the grid renders offline
+                    // (serve from cache, update in background).
                     {
-                        urlPattern: /^https:\/\/.*\/.*/i,
-                        handler: 'NetworkFirst',
+                        urlPattern: /\/api\/photo\/thumbnail\/.*/i,
+                        handler: 'CacheFirst',
+                        options: {
+                            cacheName: 'photobox-thumbnails',
+                            expiration: {
+                                maxEntries: 500,
+                                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+                            },
+                            cacheableResponse: {
+                                statuses: [0, 200],
+                            },
+                        },
+                    },
+                    // Photo originals (viewed): cache-on-view with LRU eviction
+                    // so recently-viewed photos are available offline.
+                    {
+                        urlPattern: /\/api\/photo\/bin\/.*/i,
+                        handler: 'CacheFirst',
+                        options: {
+                            cacheName: 'photobox-originals',
+                            expiration: {
+                                maxEntries: 100,
+                                maxAgeSeconds: 60 * 60 * 24 * 7, // 1 week
+                            },
+                            cacheableResponse: {
+                                statuses: [0, 200],
+                            },
+                        },
+                    },
+                    // API responses: stale-while-revalidate so lists/albums
+                    // render from cache while refreshing in the background.
+                    {
+                        urlPattern: /\/api\/.*/i,
+                        handler: 'StaleWhileRevalidate',
                         options: {
                             cacheName: 'photobox-api-cache',
                             expiration: {
                                 maxEntries: 100,
                                 maxAgeSeconds: 60 * 60 * 24 * 7, // 1 week
+                            },
+                            cacheableResponse: {
+                                statuses: [0, 200],
+                            },
+                        },
+                    },
+                    // Other cross-origin (tiles, etc.): network-first fallback.
+                    {
+                        urlPattern: /^https:\/\/.*\/.*/i,
+                        handler: 'NetworkFirst',
+                        options: {
+                            cacheName: 'photobox-network-cache',
+                            expiration: {
+                                maxEntries: 100,
+                                maxAgeSeconds: 60 * 60 * 24 * 7,
                             },
                             cacheableResponse: {
                                 statuses: [0, 200],
