@@ -155,6 +155,7 @@ func defineResources(
 	{
 		photo.GET("/info/*id", photoHandler.GetPhoto)
 		photo.GET("/bin/*id", photoHandler.GetPhotoBin)
+		photo.POST("", photoHandler.UploadPhoto)
 	}
 
 	// Thumbnail endpoint with dedicated stricter rate limiter

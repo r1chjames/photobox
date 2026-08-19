@@ -157,6 +157,34 @@ func (ph *PhotoHandler) GetPhotoCount(ctx *gin.Context) {
 	handleSuccess(ctx, photoCount)
 }
 
+// uploadPhotoRequest is the body for POST /photo (base64-encoded file).
+type uploadPhotoRequest struct {
+	Name          string `json:"name" binding:"required"`
+	AlbumName     string `json:"albumName" binding:"required"`
+	BinaryContent string `json:"binaryContent" binding:"required"`
+}
+
+// UploadPhoto accepts a base64-encoded photo, writes it to the filesystem
+// and indexes it (issue #98).
+func (ph *PhotoHandler) UploadPhoto(ctx *gin.Context) {
+	var req uploadPhotoRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		validationError(ctx, err)
+		return
+	}
+
+	photo, err := ph.photoSvc.UploadPhoto(domain.PhotoUpload{
+		Name:          req.Name,
+		AlbumName:     req.AlbumName,
+		BinaryContent: req.BinaryContent,
+	})
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	handleSuccess(ctx, photo)
+}
+
 func (ph *PhotoHandler) GetPhotoBin(ctx *gin.Context) {
 	photoId := ctx.Param("id")[1:] // Strip leading slash from catch-all parameter
 	if photoId == "" {

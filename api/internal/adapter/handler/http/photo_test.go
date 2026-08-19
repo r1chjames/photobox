@@ -89,6 +89,14 @@ func (m *MockPhotoService) SavePhoto(photo domain.PhotoFile) error {
 	return args.Error(0)
 }
 
+func (m *MockPhotoService) UploadPhoto(upload domain.PhotoUpload) (*domain.Photo, error) {
+	args := m.Called(upload)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Photo), args.Error(1)
+}
+
 func (m *MockPhotoService) SavePhotos(photos []domain.PhotoFile) error {
 	args := m.Called(photos)
 	return args.Error(0)
@@ -1301,5 +1309,50 @@ func TestPhotoHandler_GetMemories(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		mockPhotoSvc.AssertExpectations(t)
+	})
+}
+
+// TestPhotoHandler_UploadPhoto tests POST /photo
+func TestPhotoHandler_UploadPhoto(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("success", func(t *testing.T) {
+		mockPhotoSvc := new(MockPhotoService)
+		mockJobSvc := new(MockJobService)
+		handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+		expected := &domain.Photo{ID: "photo-1", Name: "test.jpg"}
+		upload := domain.PhotoUpload{Name: "test.jpg", AlbumName: "General", BinaryContent: "data:image/jpeg;base64,AAAA"}
+		mockPhotoSvc.On("UploadPhoto", upload).Return(expected, nil)
+
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		body, _ := json.Marshal(map[string]string{
+			"name": "test.jpg", "albumName": "General", "binaryContent": "data:image/jpeg;base64,AAAA",
+		})
+		ctx.Request = httptest.NewRequest(http.MethodPost, "/photo", bytes.NewBuffer(body))
+		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		handler.UploadPhoto(ctx)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		mockPhotoSvc.AssertExpectations(t)
+	})
+
+	t.Run("missing fields validation", func(t *testing.T) {
+		mockPhotoSvc := new(MockPhotoService)
+		mockJobSvc := new(MockJobService)
+		handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		body, _ := json.Marshal(map[string]string{"name": "test.jpg"})
+		ctx.Request = httptest.NewRequest(http.MethodPost, "/photo", bytes.NewBuffer(body))
+		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		handler.UploadPhoto(ctx)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		mockPhotoSvc.AssertNotCalled(t, "UploadPhoto", mock.Anything)
 	})
 }

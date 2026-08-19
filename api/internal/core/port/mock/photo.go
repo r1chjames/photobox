@@ -1154,6 +1154,21 @@ func (m *MockPhotoService) SavePhoto(photo domain.PhotoFile) error {
 	return ret0
 }
 
+// UploadPhoto mocks base method.
+func (m *MockPhotoService) UploadPhoto(upload domain.PhotoUpload) (*domain.Photo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UploadPhoto", upload)
+	ret0, _ := ret[0].(*domain.Photo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UploadPhoto indicates an expected call of UploadPhoto.
+func (mr *MockPhotoServiceMockRecorder) UploadPhoto(upload interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UploadPhoto", reflect.TypeOf((*MockPhotoService)(nil).UploadPhoto), upload)
+}
+
 // SavePhoto indicates an expected call of SavePhoto.
 func (mr *MockPhotoServiceMockRecorder) SavePhoto(photo interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
