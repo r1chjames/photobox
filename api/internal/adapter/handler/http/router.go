@@ -29,6 +29,7 @@ func NewRouter(
 	userHandler UserHandler,
 	searchHandler SearchHandler,
 	shareHandler ShareHandler,
+	apiKeyHandler *ApiKeyHandler,
 	wsHandler *WebSocketHandler) (*Router, error) {
 
 	router := gin.New()
@@ -77,7 +78,7 @@ func NewRouter(
 	// Dedicated rate limiter for thumbnail endpoints: 30 req/s with burst of 60
 	thumbnailLimiter := NewIPRateLimiter(30, 60)
 
-	defineResources(appConfig, router, token, authHandler, photoHandler, albumHandler, utilityHandler, healthHandler, userHandler, searchHandler, shareHandler, authLimiter, thumbnailLimiter, wsHandler)
+	defineResources(appConfig, router, token, authHandler, photoHandler, albumHandler, utilityHandler, healthHandler, userHandler, searchHandler, shareHandler, apiKeyHandler, authLimiter, thumbnailLimiter, wsHandler)
 
 	return &Router{
 		router,
@@ -96,6 +97,7 @@ func defineResources(
 	userHandler UserHandler,
 	searchHandler SearchHandler,
 	shareHandler ShareHandler,
+	apiKeyHandler *ApiKeyHandler,
 	authLimiter *IPRateLimiter,
 	thumbnailLimiter *IPRateLimiter,
 	wsHandler *WebSocketHandler) {
@@ -220,5 +222,13 @@ func defineResources(
 	// Settings management is admin-only
 	router.GET(fmt.Sprintf("%s/settings", urlBasePath), authMiddleware(token), requireRole(domain.ADMINISTRATOR), utilityHandler.ListAllSettings)
 	router.POST(fmt.Sprintf("%s/settings", urlBasePath), authMiddleware(token), requireRole(domain.ADMINISTRATOR), utilityHandler.UpdateSettings)
+
+	// API key management (admin-only, issue #112)
+	apiKeys := router.Group(fmt.Sprintf("%s/api-keys", urlBasePath)).Use(authMiddleware(token), requireRole(domain.ADMINISTRATOR))
+	{
+		apiKeys.POST("", apiKeyHandler.CreateApiKey)
+		apiKeys.GET("", apiKeyHandler.ListApiKeys)
+		apiKeys.DELETE("/:id", apiKeyHandler.RevokeApiKey)
+	}
 
 }

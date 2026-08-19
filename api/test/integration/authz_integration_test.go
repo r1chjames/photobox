@@ -61,6 +61,10 @@ func buildAuthzRouter(t *testing.T, env *database.Env, config *appconfig.AppConf
 	shareRepo := repository.NewShareRepository(env)
 	shareService := service.NewShareService(shareRepo, photoService, albumService)
 
+	apiKeyRepo := repository.NewApiKeyRepository(env)
+	apiKeyService := service.NewApiKeyService(apiKeyRepo)
+	httpHandler.SetApiKeyService(apiKeyService)
+
 	userHandler := httpHandler.NewUserHandler(userService)
 	authHandler := httpHandler.NewAuthHandler(authService, config.TokenDuration)
 	photoHandler := httpHandler.NewPhotoHandler(photoService, jobService)
@@ -69,6 +73,7 @@ func buildAuthzRouter(t *testing.T, env *database.Env, config *appconfig.AppConf
 	healthHandler := httpHandler.NewHealthHandler(utilityService.Ping, config.PhotoDir, cacheService.Ping, "test")
 	searchHandler := httpHandler.NewSearchHandler(photoService, albumService)
 	shareHandler := httpHandler.NewShareHandler(shareService)
+	apiKeyHandler := httpHandler.NewApiKeyHandler(apiKeyService)
 	wsHandler := httpHandler.NewWebSocketHandler(wsHub)
 
 	router, err := httpHandler.NewRouter(
@@ -82,6 +87,7 @@ func buildAuthzRouter(t *testing.T, env *database.Env, config *appconfig.AppConf
 		*userHandler,
 		*searchHandler,
 		*shareHandler,
+		apiKeyHandler,
 		wsHandler,
 	)
 	assert.NoError(t, err)
@@ -214,4 +220,45 @@ func TestAuthZ_ShareOwnerScoping_404(t *testing.T) {
 	// User A can revoke their own share
 	err = shareService.RevokeShare("token-a", userA.ID)
 	assert.NoError(t, err)
+}
+
+// TestAuthZ_ApiKeyAuth verifies API key authentication (issue #112): a key
+// created via the service can access protected endpoints via X-API-Key.
+func TestAuthZ_ApiKeyAuth(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	env := testutil.CreateTestEnv(t)
+	defer testutil.CleanupTestEnv(t, env)
+
+	timezone, _ := time.LoadLocation("UTC")
+	config := &appconfig.AppConfig{
+		PhotoDir:         t.TempDir(),
+		Timezone:         timezone,
+		Token:            "0123456789abcdef0123456789abcdef",
+		TokenDuration:    time.Hour,
+		ThumbnailDir:     t.TempDir(),
+		ThumbnailStorage: "filesystem",
+		CorsAllowedOrigins: []string{"http://localhost"},
+		ApiBasePath: "/api",
+	}
+	router := buildAuthzRouter(t, env, config)
+
+	// Create an API key directly via the service
+	apiKeyRepo := repository.NewApiKeyRepository(env)
+	apiKeySvc := service.NewApiKeyService(apiKeyRepo)
+	key, _, err := apiKeySvc.CreateKey("test-key", domain.ApiKeyReadOnly, "user-1")
+	assert.NoError(t, err)
+
+	// Access a protected endpoint with the API key
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/photos", nil)
+	req.Header.Set("X-API-Key", key)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code, "valid API key should access protected endpoint")
+
+	// Invalid API key is rejected
+	w2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest(http.MethodGet, "/api/photos", nil)
+	req2.Header.Set("X-API-Key", "pb_invalid")
+	router.ServeHTTP(w2, req2)
+	assert.Equal(t, http.StatusUnauthorized, w2.Code, "invalid API key should be rejected")
 }
