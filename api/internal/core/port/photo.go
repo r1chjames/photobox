@@ -122,6 +122,8 @@ type PhotoService interface {
 	PhotoThumbnails(photoIds []string) (map[string][]byte, error)
 	//SavePhoto saves photo to database
 	SavePhoto(photo domain.PhotoFile) error
+	// UploadPhoto writes an uploaded photo and indexes it
+	UploadPhoto(upload domain.PhotoUpload) (*domain.Photo, error)
 	//SavePhotos saves photos to database
 	SavePhotos(photos []domain.PhotoFile) error
 	// PerformPhotoIndex initiates an index of image files on filesystem

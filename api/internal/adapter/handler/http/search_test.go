@@ -89,6 +89,14 @@ func (m *MockSearchPhotoService) SavePhoto(photo domain.PhotoFile) error {
 	return args.Error(0)
 }
 
+func (m *MockSearchPhotoService) UploadPhoto(upload domain.PhotoUpload) (*domain.Photo, error) {
+	args := m.Called(upload)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Photo), args.Error(1)
+}
+
 func (m *MockSearchPhotoService) SavePhotos(photos []domain.PhotoFile) error {
 	args := m.Called(photos)
 	return args.Error(0)

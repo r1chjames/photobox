@@ -1998,3 +1998,30 @@ func TestListMemories(t *testing.T) {
 		mockRepo.AssertExpectations(t)
 	})
 }
+
+// TestUploadPhoto tests the upload flow (write file + save)
+func TestUploadPhoto(t *testing.T) {
+	t.Run("writes file and saves photo", func(t *testing.T) {
+		mockRepo := new(MockPhotoRepository)
+		mockAlbumSvc := new(MockAlbumService)
+		mockFsSvc := new(MockFilesystemService)
+		config := appconfig.AppConfig{}
+
+		upload := domain.PhotoUpload{Name: "test.jpg", AlbumName: "General", BinaryContent: "data:image/jpeg;base64,AAAA"}
+		photoFile := domain.PhotoFile{Path: "/photos/General/test.jpg", Name: "test.jpg", Directory: "General"}
+		mockFsSvc.On("WriteFileToFilesystem", upload).Return(photoFile)
+		mockFsSvc.On("GenerateThumbnail", "/photos/General/test.jpg", mock.Anything, 600, 600).Return([]byte{})
+		mockAlbumSvc.On("GetAlbumByName", "General").Return(&domain.Album{ID: "album-1", Name: "General"}, nil)
+		mockRepo.On("CreatePhotoInfo", mock.Anything).Return(nil)
+		mockRepo.On("GetPhotoById", mock.Anything, false).Return(&domain.Photo{ID: "photo-1", Name: "test.jpg"}, nil)
+
+		service := NewPhotoService(mockRepo, mockAlbumSvc, mockFsSvc, new(MockCacheService), nil, config, new(MockThumbnailStorage), nil, nil)
+		photo, err := service.UploadPhoto(upload)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, photo)
+		assert.Equal(t, "test.jpg", photo.Name)
+		mockFsSvc.AssertExpectations(t)
+		mockRepo.AssertExpectations(t)
+	})
+}

@@ -468,6 +468,20 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 	return nil
 }
 
+// UploadPhoto writes an uploaded photo (base64 payload) to the filesystem
+// and indexes it. Returns the created photo.
+func (ps *PhotoService) UploadPhoto(upload domain.PhotoUpload) (*domain.Photo, error) {
+	photoFile := ps.filesystemSvc.WriteFileToFilesystem(upload)
+	if photoFile.Path == "" {
+		return nil, domain.ErrInternal
+	}
+	if err := ps.SavePhoto(photoFile); err != nil {
+		return nil, err
+	}
+	photoHash := b64.StdEncoding.EncodeToString([]byte(photoFile.Path))
+	return ps.photoRepo.GetPhotoById(photoHash, false)
+}
+
 func (ps *PhotoService) analyzeAndTagPhoto(photoId string, imagePath string) {
 	startedAt := time.Now()
 	analysis, err := ps.aiSvc.AnalyzeImage(imagePath)
