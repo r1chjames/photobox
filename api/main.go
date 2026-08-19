@@ -79,6 +79,7 @@ type AppServices struct {
 	utilityService    *service.UtilityService
 	filesystemService *service.FilesystemService
 	shareService      *service.ShareService
+	apiKeyService     *service.ApiKeyService
 	cacheService      *service.CacheService
 	wsHub             *ws.Hub
 }
@@ -154,6 +155,10 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 	shareRepo := repository.NewShareRepository(dbEnv)
 	shareService := service.NewShareService(shareRepo, photoService, albumService)
 
+	// API keys
+	apiKeyRepo := repository.NewApiKeyRepository(dbEnv)
+	apiKeyService := service.NewApiKeyService(apiKeyRepo)
+
 	// Cron
 	return &AppServices{
 		components.NewScheduler(utilityService, jobService, photoService, *config),
@@ -166,6 +171,7 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 		utilityService,
 		filesystemService,
 		shareService,
+		apiKeyService,
 		cacheService,
 		wsHub,
 	}
@@ -188,7 +194,11 @@ func setupHttpHandlers(
 	)
 	searchHandler := http.NewSearchHandler(appServices.photoService, appServices.albumService)
 	shareHandler := http.NewShareHandler(appServices.shareService)
+	apiKeyHandler := http.NewApiKeyHandler(appServices.apiKeyService)
 	wsHandler := http.NewWebSocketHandler(appServices.wsHub)
+
+	// Register the API key service so authMiddleware can validate X-API-Key.
+	http.SetApiKeyService(appServices.apiKeyService)
 
 	return http.NewRouter(
 		*config,
@@ -201,6 +211,7 @@ func setupHttpHandlers(
 		*userHandler,
 		*searchHandler,
 		*shareHandler,
+		apiKeyHandler,
 		wsHandler,
 	)
 }

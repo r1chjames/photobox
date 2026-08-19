@@ -18,7 +18,17 @@ const (
 	authorizationHeaderKey        = "Authorization"
 	authorizationHeaderBearerType = "bearer"
 	authorizationPayloadKey       = "authorization_payload"
+	apiKeyHeaderKey               = "X-API-Key"
 )
+
+// globalApiKeySvc is set once at startup so authMiddleware can validate
+// X-API-Key headers without threading the service through every route.
+var globalApiKeySvc port.ApiKeyService
+
+// SetApiKeyService registers the API key service used by authMiddleware.
+func SetApiKeyService(svc port.ApiKeyService) {
+	globalApiKeySvc = svc
+}
 
 func GetAuthHeader(ctx *gin.Context) string {
 	return ctx.GetHeader(authorizationHeaderKey)
@@ -33,8 +43,30 @@ func GetAuthPayload(ctx *gin.Context) *domain.TokenPayload {
 	return payload.(*domain.TokenPayload)
 }
 
-func authMiddleware(token port.TokenService) gin.HandlerFunc {
+func authMiddleware(token port.TokenService, apiKeySvc ...port.ApiKeyService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		// API key auth (programmatic access, issue #112): X-API-Key header.
+		svc := globalApiKeySvc
+		if len(apiKeySvc) > 0 && apiKeySvc[0] != nil {
+			svc = apiKeySvc[0]
+		}
+		if apiKey := ctx.GetHeader(apiKeyHeaderKey); apiKey != "" && svc != nil {
+			key, err := svc.ValidateKey(apiKey)
+			if err != nil {
+				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid API key"})
+				return
+			}
+			// Build a token payload from the key's scope so downstream
+			// role checks work. API keys are not tied to a user session.
+			payload := &domain.TokenPayload{
+				ID:   uuid.MustParse("00000000-0000-0000-0000-000000000000"),
+				Role: apiKeyRoleToUserRole(key.Scope),
+			}
+			ctx.Set(authorizationPayloadKey, payload)
+			ctx.Next()
+			return
+		}
+
 		accessToken := ""
 
 		// Try Authorization header first (standard HTTP requests)
@@ -65,6 +97,19 @@ func authMiddleware(token port.TokenService) gin.HandlerFunc {
 		// Store the payload in the context for downstream handlers
 		ctx.Set(authorizationPayloadKey, payload)
 		ctx.Next()
+	}
+}
+
+// apiKeyRoleToUserRole maps an API key scope to a user role so existing
+// requireRole checks apply to API-key-authenticated requests.
+func apiKeyRoleToUserRole(scope domain.ApiKeyScope) domain.UserRole {
+	switch scope {
+	case domain.ApiKeyAdmin:
+		return domain.ADMINISTRATOR
+	case domain.ApiKeyReadWrite:
+		return domain.CONTRIBUTOR
+	default:
+		return domain.VIEWER
 	}
 }
 

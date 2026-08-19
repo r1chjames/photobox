@@ -118,6 +118,28 @@ type MemoryGroup struct {
 	Photos   []*Photo `json:"photos"`
 }
 
+// ApiKeyScope is the permission scope of an API key.
+type ApiKeyScope string
+
+const (
+	ApiKeyReadOnly  ApiKeyScope = "read_only"
+	ApiKeyReadWrite ApiKeyScope = "read_write"
+	ApiKeyAdmin     ApiKeyScope = "admin"
+)
+
+// ApiKey is a programmatic access credential. The key itself is only shown
+// once at creation; only its hash is stored.
+type ApiKey struct {
+	ID        string      `gorm:"primaryKey" json:"id"`
+	Name      string      `gorm:"size:100" json:"name"`
+	KeyHash   string      `gorm:"size:255" json:"-"`
+	Scope     ApiKeyScope `gorm:"size:20" json:"scope"`
+	CreatedBy string      `gorm:"size:36" json:"createdBy"`
+	CreatedAt time.Time   `json:"createdAt"`
+	LastUsed  *time.Time  `json:"lastUsed"`
+	Revoked   bool        `gorm:"default:false" json:"revoked"`
+}
+
 type PhotoUpload struct {
 	Name          string `json:"name"`
 	AlbumName     string `json:"albumName"`

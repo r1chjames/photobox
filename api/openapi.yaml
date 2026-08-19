@@ -31,6 +31,11 @@ components:
       scheme: bearer
       bearerFormat: PASETO
       description: PASETO token authentication. Use the /api/login endpoint to obtain a token.
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key authentication for programmatic access. Create keys via POST /api/api-keys (admin). Keys are scoped read_only / read_write / admin.
 
   schemas:
     User:
@@ -814,3 +819,63 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api-keys:
+    post:
+      summary: Create an API key
+      description: Generates a new API key. The plaintext key is returned once. Admin only.
+      security:
+        - bearerAuth: []
+      tags: [API Keys]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, scope]
+              properties:
+                name:
+                  type: string
+                scope:
+                  type: string
+                  enum: [read_only, read_write, admin]
+      responses:
+        '200':
+          description: API key created (plaintext returned once)
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (non-admin)
+    get:
+      summary: List API keys
+      description: Returns all API keys (hashes only, never plaintext). Admin only.
+      security:
+        - bearerAuth: []
+      tags: [API Keys]
+      responses:
+        '200':
+          description: List of API keys
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (non-admin)
+  /api-keys/{id}:
+    delete:
+      summary: Revoke an API key
+      description: Revokes an API key by ID. Admin only.
+      security:
+        - bearerAuth: []
+      tags: [API Keys]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: API key revoked
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (non-admin)
