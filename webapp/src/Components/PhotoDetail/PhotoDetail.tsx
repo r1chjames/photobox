@@ -8,6 +8,7 @@ import {ISharesAdapter} from '../../Adapters/ISharesAdapter';
 import {ShareModal} from '../ShareModal/ShareModal';
 import {useNavigate, useParams} from "react-router-dom";
 import {fetchPhotoBinWithAuth, revokeBlobUrl} from "../../utils/ImageUtils";
+import {fetchThumbnailWithAuth, revokeThumbnail} from "../../utils/ThumbnailUtils";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {notifications} from '@mantine/notifications';
 import {optimisticallyUpdatePhoto} from '../../utils/queryClientHelpers';
@@ -76,6 +77,22 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
         queryFn: fetchPhotoBin,
         enabled: !!id && !!photo,
     });
+
+    // Poster frame for videos — the generated thumbnail shown before playback.
+    const [posterUrl, setPosterUrl] = useState<string | undefined>(undefined);
+    useEffect(() => {
+        let active = true;
+        if (photo?.mediaType === 'video' && id) {
+            fetchThumbnailWithAuth(props.photosAdapter, id).then(url => {
+                if (active && url) setPosterUrl(url);
+            }).catch(() => { /* non-fatal */ });
+        }
+        return () => {
+            active = false;
+            if (posterUrl) revokeThumbnail(id!);
+        };
+        // NOTE: react-hooks plugin not registered; deps intentionally [photo?.mediaType, id, props.photosAdapter].
+    }, [photo?.mediaType, id, props.photosAdapter]);
 
     useEffect(() => {
         if (photo) {
@@ -194,6 +211,8 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                         <video
                             src={photoUrl}
                             controls
+                            poster={posterUrl}
+                            preload="metadata"
                             style={{ maxHeight: '600px', width: '100%', borderRadius: '8px' }}
                         />
                     ) : (

@@ -171,7 +171,27 @@ func (ph *PhotoHandler) GetPhotoBin(ctx *gin.Context) {
 	}
 
 	// Unescape single quotes in filesystem path
-	unescapedPath := strings.ReplaceAll(photoBinary, `\'`, `'`) 
+	unescapedPath := strings.ReplaceAll(photoBinary, `\'`, `'`)
+
+	// Enable HTTP range requests (seeking) for all binary content. gin's
+	// ctx.File uses http.ServeFile which honours Range headers, but we set
+	// Accept-Ranges explicitly so video players/clients know seeking is
+	// supported (issue #103).
+	ctx.Header("Accept-Ranges", "bytes")
+
+	// Set a correct Content-Type for videos so browsers stream/seek rather
+	// than download. http.ServeFile would infer from extension, but MOV/WebM
+	// sometimes fall back to application/octet-stream.
+	if strings.HasSuffix(strings.ToLower(unescapedPath), ".mp4") {
+		ctx.Header("Content-Type", "video/mp4")
+	} else if strings.HasSuffix(strings.ToLower(unescapedPath), ".mov") {
+		ctx.Header("Content-Type", "video/quicktime")
+	} else if strings.HasSuffix(strings.ToLower(unescapedPath), ".webm") {
+		ctx.Header("Content-Type", "video/webm")
+	} else if strings.HasSuffix(strings.ToLower(unescapedPath), ".mkv") {
+		ctx.Header("Content-Type", "video/x-matroska")
+	}
+
 	ctx.File(unescapedPath)
 }
 
