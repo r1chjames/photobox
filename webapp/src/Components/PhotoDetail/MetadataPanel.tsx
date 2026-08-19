@@ -80,6 +80,19 @@ function formatBytes(value: unknown): string {
 }
 
 /**
+ * Formats a duration in seconds as m:ss (or h:mm:ss for long videos).
+ */
+function formatDuration(seconds: number): string {
+    if (!Number.isFinite(seconds) || seconds <= 0) return String(seconds ?? '');
+    const s = Math.floor(seconds);
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+    return `${m}:${String(sec).padStart(2, '0')}`;
+}
+
+/**
  * Builds the structured metadata sections for a photo from its stored
  * metadata JSONB payload and top-level photo fields.
  */
@@ -132,6 +145,11 @@ function buildSections(photo: Photo): MetadataSection[] {
     if (meta.width && meta.height) fileRows.push({ label: 'Dimensions', value: `${meta.width} × ${meta.height}` });
     if (meta.extension) fileRows.push({ label: 'Extension', value: String(meta.extension) });
     if (meta.md5) fileRows.push({ label: 'File hash', value: String(meta.md5).slice(0, 16) + '…' });
+    // Video metadata (issue #103): duration + codec from the stored metadata.
+    if (photo.mediaType === 'video' || meta.mediaType === 'video') {
+        if (photo.duration) fileRows.push({ label: 'Duration', value: formatDuration(photo.duration) });
+        if (meta.codec) fileRows.push({ label: 'Codec', value: String(meta.codec) });
+    }
     if (fileRows.length) sections.push({ title: 'File', rows: fileRows });
 
     // Orientation
