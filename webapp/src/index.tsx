@@ -32,15 +32,34 @@ root.render(
     </React.StrictMode>
 );
 
-// Register service worker for PWA support
+// One-time migration (issue #164): the legacy hand-written service worker at
+// /service-worker.js was cache-first with no update logic, freezing browsers on
+// the build that was current when it first installed. It is removed from the
+// app; unregister any surviving registration and drop its cache so
+// already-poisoned browsers self-heal on the next load. The workbox worker at
+// /sw.js (registered by the injected /registerSW.js) is the only SW from now on.
 if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-            .then(() => {
-                console.log('Service Worker registered');
-            })
-            .catch((err) => {
-                console.log('Service Worker registration failed', err);
-            });
-    });
+    const legacyScript = '/service-worker.js';
+    navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) =>
+            Promise.all(
+                registrations
+                    .filter(
+                        (r) =>
+                            r.active?.scriptURL.endsWith(legacyScript) ||
+                            r.waiting?.scriptURL.endsWith(legacyScript) ||
+                            r.installing?.scriptURL.endsWith(legacyScript),
+                    )
+                    .map((r) => r.unregister()),
+            ),
+        )
+        .catch(() => {
+            // Non-critical cleanup; ignore failures.
+        });
+}
+
+// Remove the legacy worker's cache ('photobox-v2') left behind by old builds.
+if ('caches' in window) {
+    caches.delete('photobox-v2').catch(() => {});
 }
