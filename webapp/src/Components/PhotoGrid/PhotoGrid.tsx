@@ -300,6 +300,26 @@ const GridImageItem = React.memo(
                             )}
                         </>
                     )}
+                    {photo.livePhotoPath && effectiveThumbnailUrl && !hasError && (
+                        <div style={{
+                            position: 'absolute',
+                            top: 6,
+                            right: 6,
+                            background: 'rgba(0,0,0,0.7)',
+                            color: 'white',
+                            fontSize: 10,
+                            fontWeight: 600,
+                            padding: '2px 6px',
+                            borderRadius: 4,
+                            pointerEvents: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 3,
+                        }}>
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#e53935', display: 'inline-block' }} />
+                            Live
+                        </div>
+                    )}
                     {!isSelectionMode && effectiveThumbnailUrl && !hasError && (
                         <div className="photo-hover-overlay" style={{
                             position: 'absolute',
@@ -337,7 +357,8 @@ const GridImageItem = React.memo(
         prevProps.photo.favorite === nextProps.photo.favorite &&
         prevProps.isSelectionMode === nextProps.isSelectionMode &&
         prevProps.isSelected === nextProps.isSelected &&
-        prevProps.thumbnailUrl === nextProps.thumbnailUrl
+        prevProps.thumbnailUrl === nextProps.thumbnailUrl &&
+        prevProps.photo.livePhotoPath === nextProps.photo.livePhotoPath
 );
 GridImageItem.displayName = 'GridImageItem';
 

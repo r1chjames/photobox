@@ -15,6 +15,16 @@ export const fetchPhotoBinWithAuth = async (photosAdapter: IPhotosAdapter, id: s
     return URL.createObjectURL(blob);
 }
 
+export const fetchLiveVideoWithAuth = async (photosAdapter: IPhotosAdapter, id: string) => {
+    const data = await photosAdapter.getPhotoLiveVideo(id);
+
+    if (!data) return undefined;
+    if (typeof data === 'string') return data;
+
+    const blob = new Blob([data], { type: 'video/quicktime' });
+    return URL.createObjectURL(blob);
+}
+
 export const revokeBlobUrl = (url: string | undefined) => {
     if (url && url.startsWith('blob:')) {
         URL.revokeObjectURL(url);

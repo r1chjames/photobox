@@ -1057,6 +1057,21 @@ func (mr *MockPhotoServiceMockRecorder) PhotoThumbnailPath(photoId interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PhotoThumbnailPath", reflect.TypeOf((*MockPhotoService)(nil).PhotoThumbnailPath), photoId)
 }
 
+// PhotoLiveVideoPath mocks base method.
+func (m *MockPhotoService) PhotoLiveVideoPath(photoId string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PhotoLiveVideoPath", photoId)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PhotoLiveVideoPath indicates an expected call of PhotoLiveVideoPath.
+func (mr *MockPhotoServiceMockRecorder) PhotoLiveVideoPath(photoId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PhotoLiveVideoPath", reflect.TypeOf((*MockPhotoService)(nil).PhotoLiveVideoPath), photoId)
+}
+
 // PhotoThumbnails mocks base method.
 func (m *MockPhotoService) PhotoThumbnails(photoIds []string) (map[string][]byte, error) {
 	m.ctrl.T.Helper()

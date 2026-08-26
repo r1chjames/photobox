@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -236,22 +237,29 @@ func (fss *FilesystemService) getMetaData(path string, name string, fileInfo os.
 		}
 	}
 
+	// Detect Live Photo pairing (HEIC + MOV)
+	livePhotoPath := ""
+	if mediaType == "image" && strings.EqualFold(utils.GetExtension(path), "heic") {
+		livePhotoPath = findLivePhotoPair(path)
+	}
+
 	return domain.PhotoFile{
-		MD5:          md5Sum,
-		Path:         path,
-		Directory:    photoDirectory,
-		Size:         fileInfo.Size(),
-		Extension:    utils.GetExtension(path),
-		Name:         name,
-		Exif:         exifData,
-		Mime:         mimeType,
-		MediaType:    mediaType,
-		Duration:     duration,
-		Width:        width,
-		Height:       height,
-		ModifiedTime: fileInfo.ModTime().Unix(),
-		Latitude:     lat,
-		Longitude:    lng,
+		MD5:           md5Sum,
+		Path:          path,
+		Directory:     photoDirectory,
+		Size:          fileInfo.Size(),
+		Extension:     utils.GetExtension(path),
+		Name:          name,
+		Exif:          exifData,
+		Mime:          mimeType,
+		MediaType:     mediaType,
+		Duration:      duration,
+		Width:         width,
+		Height:        height,
+		ModifiedTime:  fileInfo.ModTime().Unix(),
+		Latitude:      lat,
+		Longitude:     lng,
+		LivePhotoPath: livePhotoPath,
 	}
 }
 
@@ -308,4 +316,31 @@ func convertGPSCoordinate(tag *tiff.Tag) float64 {
 	seconds := float64(num) / float64(den)
 
 	return degrees + minutes/60 + seconds/3600
+}
+
+// findLivePhotoPair checks if a paired MOV video exists for an HEIC Live Photo.
+// iPhone convention: IMG_1234.HEIC pairs with MOV_1234.MOV (same directory).
+func findLivePhotoPair(heicPath string) string {
+	dir := filepath.Dir(heicPath)
+	base := filepath.Base(heicPath)
+
+	// Strip extension to get the name portion (e.g., "IMG_1234" from "IMG_1234.HEIC")
+	nameNoExt := strings.TrimSuffix(base, filepath.Ext(base))
+
+	// Extract the numeric portion after the last underscore
+	lastUnderscore := strings.LastIndex(nameNoExt, "_")
+	if lastUnderscore == -1 {
+		return ""
+	}
+	numberPart := nameNoExt[lastUnderscore+1:]
+
+	// Try candidate MOV filenames (both cases)
+	for _, ext := range []string{".mov", ".MOV"} {
+		candidate := filepath.Join(dir, "MOV_"+numberPart+ext)
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate
+		}
+	}
+
+	return ""
 }

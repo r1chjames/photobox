@@ -421,6 +421,11 @@ func (m *MockPhotoService) TriggerAIAnalysis() error {
 
 func (m *MockPhotoService) RegenerateThumbnails(ctx context.Context) {}
 
+func (m *MockPhotoService) PhotoLiveVideoPath(photoId string) (string, error) {
+	args := m.Called(photoId)
+	return args.String(0), args.Error(1)
+}
+
 // TestNewScheduler tests scheduler creation
 func TestNewScheduler(t *testing.T) {
 	mockUtil := new(MockUtilityService)

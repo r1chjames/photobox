@@ -223,6 +223,27 @@ func (ph *PhotoHandler) GetPhotoBin(ctx *gin.Context) {
 	ctx.File(unescapedPath)
 }
 
+// GetPhotoLiveVideo serves the paired Live Photo video for a given photo.
+func (ph *PhotoHandler) GetPhotoLiveVideo(ctx *gin.Context) {
+	photoId := ctx.Param("id")
+	if photoId == "" {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "photo ID is required"})
+		return
+	}
+
+	liveVideoPath, err := ph.photoSvc.PhotoLiveVideoPath(photoId)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	ctx.Header("Accept-Ranges", "bytes")
+	ctx.Header("Content-Type", "video/quicktime")
+
+	unescapedPath := strings.ReplaceAll(liveVideoPath, `\'`, `'`)
+	ctx.File(unescapedPath)
+}
+
 func (ph *PhotoHandler) GetPhotoThumbnail(ctx *gin.Context) {
 	photoId := ctx.Param("id")[1:] // Strip leading slash from catch-all parameter
 	if photoId == "" {
