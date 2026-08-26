@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActionIcon, Button, Group, Text, Tooltip } from '@mantine/core';
+import { Menu } from '@mantine/core';
 import {
     IconDownload,
     IconHeart,
@@ -28,7 +28,6 @@ interface BulkActionsToolbarProps {
 
 export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
     selectedCount,
-    totalCount,
     onSelectAll,
     onDeselectAll,
     onFavorite,
@@ -40,64 +39,52 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
     onCancel,
 }) => {
     return (
-        <Group justify="space-between" p="sm" style={{ background: 'var(--mantine-color-body)', borderBottom: '1px solid var(--mantine-color-default-border)' }}>
-            <Group gap="sm">
-                <Text size="sm" fw={500}>
-                    {selectedCount} selected
-                </Text>
-                {selectedCount < totalCount ? (
-                    <Button variant="subtle" size="compact-sm" leftSection={<IconSelectAll size={14} />} onClick={onSelectAll}>
-                        Select all
-                    </Button>
-                ) : (
-                    <Button variant="subtle" size="compact-sm" leftSection={<IconSquare size={14} />} onClick={onDeselectAll}>
-                        Deselect all
-                    </Button>
-                )}
-            </Group>
-            <Group gap="xs">
-                <Tooltip label="Favorite">
-                    <ActionIcon variant="light" color="pink" onClick={onFavorite} disabled={selectedCount === 0}>
-                        <IconHeart size="1.25rem" />
-                    </ActionIcon>
-                </Tooltip>
-                {onAddTag && (
-                    <Tooltip label="Add tag">
-                        <ActionIcon variant="light" color="green" onClick={onAddTag} disabled={selectedCount === 0}>
-                            <IconTag size="1.25rem" />
-                        </ActionIcon>
-                    </Tooltip>
-                )}
-                {onRemoveTag && (
-                    <Tooltip label="Remove tag">
-                        <ActionIcon variant="light" color="orange" onClick={onRemoveTag} disabled={selectedCount === 0}>
-                            <IconTagOff size="1.25rem" />
-                        </ActionIcon>
-                    </Tooltip>
-                )}
-                {onAddToAlbum && (
-                    <Tooltip label="Add to album">
-                        <ActionIcon variant="light" color="violet" onClick={onAddToAlbum} disabled={selectedCount === 0}>
-                            <IconPhotoPlus size="1.25rem" />
-                        </ActionIcon>
-                    </Tooltip>
-                )}
-                <Tooltip label="Download">
-                    <ActionIcon variant="light" color="blue" onClick={onDownload} disabled={selectedCount === 0}>
-                        <IconDownload size="1.25rem" />
-                    </ActionIcon>
-                </Tooltip>
-                <Tooltip label="Delete">
-                    <ActionIcon variant="light" color="red" onClick={onDelete} disabled={selectedCount === 0}>
-                        <IconTrash size="1.25rem" />
-                    </ActionIcon>
-                </Tooltip>
-                <Tooltip label="Cancel">
-                    <ActionIcon variant="default" onClick={onCancel}>
-                        <IconX size="1.25rem" />
-                    </ActionIcon>
-                </Tooltip>
-            </Group>
-        </Group>
+        <div className="selection-bar">
+            <span className="selection-bar-count">
+                {selectedCount} photo{selectedCount !== 1 ? 's' : ''} selected
+            </span>
+            <span className="selection-bar-divider" />
+            <button type="button" className="selection-bar-btn" onClick={onDownload} title="Download">
+                <IconDownload size={16} stroke={1.8} /> Download
+            </button>
+            <button type="button" className="selection-bar-btn" onClick={onFavorite} title="Favorite">
+                <IconHeart size={16} stroke={1.8} /> Favorite
+            </button>
+            {onAddToAlbum && (
+                <button type="button" className="selection-bar-btn" onClick={onAddToAlbum} title="Add to album">
+                    <IconPhotoPlus size={16} stroke={1.8} /> Add to album
+                </button>
+            )}
+            {(onAddTag || onRemoveTag) && (
+                <Menu withinPortal position="top" offset={8}>
+                    <Menu.Target>
+                        <button type="button" className="selection-bar-btn" title="Tags">
+                            <IconTag size={16} stroke={1.8} /> Tags
+                        </button>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                        {onAddTag && (
+                            <Menu.Item leftSection={<IconTag size={14} />} onClick={onAddTag}>Add tags</Menu.Item>
+                        )}
+                        {onRemoveTag && (
+                            <Menu.Item leftSection={<IconTagOff size={14} />} onClick={onRemoveTag}>Remove tags</Menu.Item>
+                        )}
+                    </Menu.Dropdown>
+                </Menu>
+            )}
+            <button type="button" className="selection-bar-btn" onClick={onSelectAll} title="Select all">
+                <IconSelectAll size={16} stroke={1.8} /> All
+            </button>
+            <button type="button" className="selection-bar-btn" onClick={onDeselectAll} title="Deselect all">
+                <IconSquare size={16} stroke={1.8} /> None
+            </button>
+            <button type="button" className="selection-bar-btn selection-bar-btn-danger" onClick={onDelete} title="Delete">
+                <IconTrash size={16} stroke={1.8} /> Delete
+            </button>
+            <span className="selection-bar-divider" />
+            <button type="button" className="selection-bar-close" onClick={onCancel} aria-label="Cancel selection">
+                <IconX size={16} stroke={2} />
+            </button>
+        </div>
     );
 };

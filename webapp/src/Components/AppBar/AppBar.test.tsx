@@ -1,105 +1,60 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '../../test/test-utils';
+import userEvent from '@testing-library/user-event';
 import { AppBar } from './AppBar';
-
-// Mock Mantine hooks
-vi.mock('@mantine/hooks', () => ({
-    useDisclosure: () => [false, { toggle: vi.fn() }],
-    useMantineColorScheme: () => ({
-        colorScheme: 'light',
-        setColorScheme: vi.fn()
-    }),
-    useComputedColorScheme: () => 'light'
-}));
 
 describe('AppBar', () => {
     beforeEach(() => {
-        // Clear localStorage before each test
         localStorage.clear();
+        vi.clearAllMocks();
     });
 
     it('should render app name "Photobox"', () => {
-        render(<AppBar><div>Content</div></AppBar>);
-
+        render(<AppBar><div>content</div></AppBar>);
         expect(screen.getByText('Photobox')).toBeInTheDocument();
     });
 
     it('should render navigation links', () => {
-        render(<AppBar><div>Content</div></AppBar>);
-
-        // Use getAllByText because breadcrumbs also contain these labels
-        expect(screen.getAllByText('Dashboard').length).toBeGreaterThanOrEqual(1);
-        expect(screen.getAllByText('Photos').length).toBeGreaterThanOrEqual(1);
-        expect(screen.getAllByText('Albums').length).toBeGreaterThanOrEqual(1);
-        expect(screen.getAllByText('Settings').length).toBeGreaterThanOrEqual(1);
+        render(<AppBar><div>content</div></AppBar>);
+        expect(screen.getByRole('button', { name: 'Dashboard' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Photos' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Albums' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument();
     });
 
-    it('should render user avatar and name', () => {
-        render(<AppBar><div>Content</div></AppBar>);
-
-        expect(screen.getByText('User')).toBeInTheDocument();
+    it('should render user pill with stored username', () => {
+        localStorage.setItem('pb-username', 'rich');
+        render(<AppBar><div>content</div></AppBar>);
+        expect(screen.getByText('rich')).toBeInTheDocument();
     });
 
     it('should render children content', () => {
-        render(
-            <AppBar>
-                <div>Test Content</div>
-            </AppBar>
-        );
-
-        expect(screen.getByText('Test Content')).toBeInTheDocument();
+        render(<AppBar><div>page body</div></AppBar>);
+        expect(screen.getByText('page body')).toBeInTheDocument();
     });
 
-    it('should highlight active navigation link', () => {
-        const { container } = render(<AppBar><div>Content</div></AppBar>);
-
-        // Find nav links and check if Photos is active
-        const navLinks = container.querySelectorAll('.mantine-NavLink-root');
-        expect(navLinks.length).toBeGreaterThan(0);
+    it('should highlight active navigation link for the root path', () => {
+        render(<AppBar><div>content</div></AppBar>);
+        const dashboard = screen.getByRole('button', { name: 'Dashboard' });
+        expect(dashboard.className).toContain('active');
+        expect(screen.getByRole('button', { name: 'Albums' }).className).not.toContain('active');
     });
 
     it('should render color scheme toggle button', () => {
-        const { container } = render(<AppBar><div>Content</div></AppBar>);
-
-        const toggleButton = container.querySelector('[aria-label="Toggle color scheme"]');
-        expect(toggleButton).toBeInTheDocument();
+        render(<AppBar><div>content</div></AppBar>);
+        expect(screen.getByRole('button', { name: 'Toggle color scheme' })).toBeInTheDocument();
     });
 
-    it('should render burger menu for mobile', () => {
-        const { container } = render(<AppBar><div>Content</div></AppBar>);
-
-        const burger = container.querySelector('.mantine-Burger-root');
-        expect(burger).toBeInTheDocument();
+    it('should render keyboard shortcuts button', () => {
+        render(<AppBar><div>content</div></AppBar>);
+        expect(screen.getByRole('button', { name: 'Keyboard shortcuts' })).toBeInTheDocument();
     });
 
-    it('should render user menu trigger', () => {
-        render(<AppBar><div>Content</div></AppBar>);
-
-        // Menu items are only rendered when menu is opened due to withinPortal
-        // Just verify the user name trigger is present
-        expect(screen.getByText('User')).toBeInTheDocument();
-    });
-
-    it('should render menu component', () => {
-        const { container } = render(<AppBar><div>Content</div></AppBar>);
-
-        // Verify menu structure exists (items are in portal, not visible until opened)
-        expect(container).toBeInTheDocument();
-    });
-
-    it('should render navigation with correct descriptions', () => {
-        render(<AppBar><div>Content</div></AppBar>);
-
-        expect(screen.getByText('All photos & albums')).toBeInTheDocument();
-        expect(screen.getByText('All photos')).toBeInTheDocument();
-        expect(screen.getByText('All albums')).toBeInTheDocument();
-    });
-
-    it('should render app logo icon', () => {
-        const { container } = render(<AppBar><div>Content</div></AppBar>);
-
-        // Check forIconLibraryPhoto
-        const svgs = container.querySelectorAll('svg');
-        expect(svgs.length).toBeGreaterThan(0);
+    it('should open the user menu with logout', async () => {
+        const user = userEvent.setup();
+        render(<AppBar><div>content</div></AppBar>);
+        await user.click(screen.getByRole('button', { name: /^US User$/ }));
+        expect(screen.getByText('Logout')).toBeInTheDocument();
+        expect(screen.getByText('Account settings')).toBeInTheDocument();
     });
 });

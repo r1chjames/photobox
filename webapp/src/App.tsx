@@ -16,7 +16,7 @@ interface IProps {
 export const App: React.FunctionComponent<IProps> = (props) => {
 
     return (
-        <MantineProvider theme={theme}>
+        <MantineProvider theme={theme} defaultColorScheme="dark">
             <NetworkStatusBanner baseApiUrl={props.baseApiUrl}/>
             <Notifications position="top-right" zIndex={1000}/>
             <ModalsProvider>

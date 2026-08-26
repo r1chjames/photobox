@@ -89,7 +89,7 @@ describe('PhotoDetail', () => {
 
         // Wait for component to finish loading
         await waitFor(() => {
-            expect(screen.getByText('Metadata')).toBeInTheDocument();
+            expect(screen.getByText('Details')).toBeInTheDocument();
         });
     });
 
@@ -97,7 +97,7 @@ describe('PhotoDetail', () => {
         render(<PhotoDetail photosAdapter={mockPhotosAdapter} />);
 
         await waitFor(() => {
-            expect(screen.getByText('Metadata')).toBeInTheDocument();
+            expect(screen.getByText('Details')).toBeInTheDocument();
         });
     });
 

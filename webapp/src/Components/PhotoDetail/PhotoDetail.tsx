@@ -1,35 +1,63 @@
 import React, {useCallback, useEffect, useState} from 'react';
-import {useDisclosure, useHotkeys} from '@mantine/hooks';
-import {ActionIcon, Button, Chip, Dialog, Drawer, Group, Image, Loader, Modal, ScrollArea, TextInput} from '@mantine/core';
-import {useMediaQuery} from '@mantine/hooks';
-import {IconArrowLeftDashed, IconArrowRightDashed, IconDownload, IconHeart, IconHeartFilled, IconListDetails, IconPhotoEdit, IconRotateClockwise, IconShare2, IconTag} from '@tabler/icons-react';
+import {useHotkeys} from '@mantine/hooks';
+import {Button, Loader, Modal, TextInput} from '@mantine/core';
+import {IconChevronLeft, IconChevronRight, IconDownload, IconHeart, IconHeartFilled, IconPhotoEdit, IconRotateClockwise, IconShare2, IconX} from '@tabler/icons-react';
 import {IPhotosAdapter} from '../../Adapters/IPhotosAdapter';
 import {ISharesAdapter} from '../../Adapters/ISharesAdapter';
 import {ShareModal} from '../ShareModal/ShareModal';
 import {useNavigate, useParams} from "react-router-dom";
 import {fetchPhotoBinWithAuth, revokeBlobUrl} from "../../utils/ImageUtils";
-import {fetchThumbnailWithAuth, revokeThumbnail} from "../../utils/ThumbnailUtils";
+import {fetchThumbnailWithAuth, getCachedThumbnail, revokeThumbnail} from "../../utils/ThumbnailUtils";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {notifications} from '@mantine/notifications';
 import {optimisticallyUpdatePhoto} from '../../utils/queryClientHelpers';
 import {MetadataPanel} from './MetadataPanel';
 import {EditPanel} from './EditPanel';
+import {Photo} from '../../Models/Photo';
 
 interface IProps {
     photosAdapter: IPhotosAdapter;
     sharesAdapter?: ISharesAdapter;
 }
 
+const FilmstripThumb: React.FC<{ photo: Photo; active: boolean; photosAdapter: IPhotosAdapter; onClick: () => void }> = ({photo, active, photosAdapter, onClick}) => {
+    const [url, setUrl] = useState<string | undefined>(photo.thumbnailUrl ?? getCachedThumbnail(photo.id) ?? undefined);
+
+    useEffect(() => {
+        let alive = true;
+        const cached = getCachedThumbnail(photo.id);
+        if (cached) {
+            setUrl(cached);
+            return;
+        }
+        fetchThumbnailWithAuth(photosAdapter, photo.id)
+            .then(u => { if (alive && u) setUrl(u); })
+            .catch(() => { /* thumbnail may be missing; leave blank */ });
+        return () => { alive = false; };
+    }, [photo.id, photosAdapter]);
+
+    return (
+        <div
+            className={active ? 'filmstrip-thumb active' : 'filmstrip-thumb'}
+            onClick={onClick}
+            role="button"
+            tabIndex={0}
+            aria-label={photo.name}
+            onKeyDown={(e) => e.key === 'Enter' && onClick()}
+        >
+            {url && <img src={url} alt={photo.name} loading="lazy" />}
+        </div>
+    );
+};
+
 export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
     const {id} = useParams();
     const navigate = useNavigate();
-    const [opened, {toggle, close}] = useDisclosure(true);
     const [isFavorite, setIsFavorite] = useState(false);
     const [showShareModal, setShowShareModal] = useState(false);
     const [showTagModal, setShowTagModal] = useState(false);
     const [showEditPanel, setShowEditPanel] = useState(false);
     const [tagInput, setTagInput] = useState('');
-    const isMobile = useMediaQuery('(max-width: 50em)');
     const queryClient = useQueryClient();
     // Fetch surrounding photos to determine prev/next navigation
     const {data: allPhotos} = useQuery({
@@ -52,10 +80,12 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
 
     const handlePrevious = useCallback(() => navigateToPhoto(prevPhotoId), [navigateToPhoto, prevPhotoId]);
     const handleNext = useCallback(() => navigateToPhoto(nextPhotoId), [navigateToPhoto, nextPhotoId]);
+    const handleClose = useCallback(() => navigate(-1), [navigate]);
 
     useHotkeys([
         ['ArrowLeft', handlePrevious],
         ['ArrowRight', handleNext],
+        ['Escape', handleClose],
     ]);
 
     const fetchPhoto = async () => {
@@ -163,7 +193,7 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
         if (!photo) return;
         queryClient.invalidateQueries({queryKey: ['fetchPhoto', photo.id]});
         queryClient.invalidateQueries({queryKey: ['fetchPhotoBin', photo.id]});
-    }, [photo, queryClient]);
+    }, [photo]);
 
     const handleSaveTags = useCallback(async () => {
         if (!photo) return;
@@ -191,6 +221,15 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
         }
     }, [photo]);
 
+    // Keep the active filmstrip thumbnail centered as navigation changes.
+    useEffect(() => {
+        document.querySelector('.filmstrip-thumb.active')?.scrollIntoView({
+            behavior: 'smooth',
+            inline: 'center',
+            block: 'nearest',
+        });
+    }, [id]);
+
     const blobUrlRef = React.useRef<string | undefined>(undefined);
 
     useEffect(() => {
@@ -203,118 +242,96 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
         };
     }, [photoUrl]);
 
+    const tags = photo?.tags ? photo.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+
     return (
         photo && photoUrl ?
-            <>
-                <div style={{ position: 'relative' }}>
-                    {photo.mediaType === 'video' ? (
-                        <video
-                            src={photoUrl}
-                            controls
-                            poster={posterUrl}
-                            preload="metadata"
-                            style={{ maxHeight: '600px', width: '100%', borderRadius: '8px' }}
-                        />
-                    ) : (
-                        <Image
-                            radius={"md"}
-                            mah="600px"
-                            fit="scale-down"
-                            src={photoUrl}
-                        />
-                    )}
-                    {!isFirstPhoto && (
-                        <ActionIcon
-                            variant="light"
-                            size="xl"
-                            onClick={handlePrevious}
-                            aria-label="Previous photo"
-                            style={{
-                                position: 'absolute',
-                                left: 8,
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                zIndex: 10,
-                            }}
-                        >
-                            <IconArrowLeftDashed size="2.125rem" />
-                        </ActionIcon>
-                    )}
-                    {!isLastPhoto && (
-                        <ActionIcon
-                            variant="light"
-                            size="xl"
-                            onClick={handleNext}
-                            aria-label="Next photo"
-                            style={{
-                                position: 'absolute',
-                                right: 8,
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                zIndex: 10,
-                            }}
-                        >
-                            <IconArrowRightDashed size="2.125rem" />
-                        </ActionIcon>
-                    )}
-                </div>
-                <Group justify="center" mt="md" gap="md">
-                    <Button onClick={handleFavorite} leftSection={isFavorite ? <IconHeartFilled size={16} /> : <IconHeart size={16} />} color={isFavorite ? 'pink' : undefined}>
-                        {isFavorite ? 'Favorited' : 'Favorite'}
-                    </Button>
+            <div className="lightbox-overlay active">
+                <div className="lightbox-header">
+                    <button type="button" className="icon-btn" title="Edit" aria-label="Edit photo" onClick={() => setShowEditPanel(prev => !prev)}>
+                        <IconPhotoEdit size={18} stroke={1.8} />
+                    </button>
+                    <button type="button" className="icon-btn" title={isFavorite ? 'Remove from favorites' : 'Add to favorites'} aria-label="Toggle favorite" onClick={handleFavorite}>
+                        {isFavorite ? <IconHeartFilled size={18} color="var(--pb-favorite)" /> : <IconHeart size={18} stroke={1.8} />}
+                    </button>
                     {props.sharesAdapter && (
-                        <Button onClick={() => setShowShareModal(true)} leftSection={<IconShare2 size={16} />} variant="light">
-                            Share
-                        </Button>
+                        <button type="button" className="icon-btn" title="Share" aria-label="Share photo" onClick={() => setShowShareModal(true)}>
+                            <IconShare2 size={18} stroke={1.8} />
+                        </button>
                     )}
-                    <Button onClick={() => handleRotate('cw')} leftSection={<IconRotateClockwise size={16} />} variant="light">
-                        Rotate
-                    </Button>
-                    <Button onClick={() => setShowEditPanel(prev => !prev)} leftSection={<IconPhotoEdit size={16} />} variant={showEditPanel ? 'filled' : 'light'}>
-                        Edit
-                    </Button>
-                    <Button onClick={handleDownload} leftSection={<IconDownload size={16} />}>Download</Button>
-                    <Button onClick={toggle} leftSection={<IconListDetails size={16} />} variant="light">Metadata</Button>
-                </Group>
-                {showEditPanel && photo && (
-                    <div style={{maxWidth: 420, margin: '0 auto', marginTop: '1rem'}}>
-                        <EditPanel photo={photo} photosAdapter={props.photosAdapter} onSaved={handleEditSaved} />
+                    <button type="button" className="icon-btn" title="Rotate" aria-label="Rotate photo" onClick={() => handleRotate('cw')}>
+                        <IconRotateClockwise size={18} stroke={1.8} />
+                    </button>
+                    <button type="button" className="icon-btn" title="Download" aria-label="Download photo" onClick={handleDownload}>
+                        <IconDownload size={18} stroke={1.8} />
+                    </button>
+                    <button type="button" className="icon-btn" title="Close" aria-label="Close viewer" onClick={handleClose}>
+                        <IconX size={18} stroke={1.8} />
+                    </button>
+                </div>
+
+                <div className="lightbox-body">
+                    {!isFirstPhoto && (
+                        <button type="button" className="lightbox-nav-btn" onClick={handlePrevious} aria-label="Previous photo">
+                            <IconChevronLeft size={22} stroke={2} />
+                        </button>
+                    )}
+
+                    <div className="lightbox-main-image-container">
+                        {photo.mediaType === 'video' ? (
+                            <video
+                                src={photoUrl}
+                                controls
+                                poster={posterUrl}
+                                preload="metadata"
+                                className="lightbox-main-image"
+                            />
+                        ) : (
+                            <img className="lightbox-main-image" src={photoUrl} alt={photo.name} />
+                        )}
                     </div>
-                )}
-                {isMobile ? (
-                    <Drawer opened={opened} onClose={close} title="Metadata" position="bottom" size="md">
-                        <ScrollArea>
-                            <Group gap="xs" mb="sm">
-                                <Button size="compact-sm" variant="light" leftSection={<IconTag size={14} />} onClick={() => setShowTagModal(true)}>Edit tags</Button>
-                            </Group>
-                            {photo.tags && (
-                                <Group gap="xs" mb="sm">
-                                    {photo.tags.split(',').map(t => t.trim()).filter(Boolean).map(tag => (
-                                        <Chip key={tag} size="xs" checked={false} onClick={() => {}}>{tag}</Chip>
-                                    ))}
-                                </Group>
-                            )}
+
+                    {!isLastPhoto && (
+                        <button type="button" className="lightbox-nav-btn" onClick={handleNext} aria-label="Next photo">
+                            <IconChevronRight size={22} stroke={2} />
+                        </button>
+                    )}
+
+                    <div className="metadata-drawer">
+                        <div className="drawer-section">
+                            <div className="drawer-title-row">Details</div>
                             <MetadataPanel photo={photo} photosAdapter={props.photosAdapter} />
-                        </ScrollArea>
-                    </Drawer>
-                ) : (
-                    <Dialog opened={opened} withCloseButton onClose={close} size="lg" radius="md" mah="50%"
-                            position={{top: "30%", right: 50, bottom: 50}}>
-                        <ScrollArea h={400}>
-                            <Group gap="xs" mb="sm">
-                                <Button size="compact-sm" variant="light" leftSection={<IconTag size={14} />} onClick={() => setShowTagModal(true)}>Edit tags</Button>
-                            </Group>
-                            {photo.tags && (
-                                <Group gap="xs" mb="sm">
-                                    {photo.tags.split(',').map(t => t.trim()).filter(Boolean).map(tag => (
-                                        <Chip key={tag} size="xs" checked={false} onClick={() => {}}>{tag}</Chip>
-                                    ))}
-                                </Group>
+                            {showEditPanel && (
+                                <EditPanel photo={photo} photosAdapter={props.photosAdapter} onSaved={handleEditSaved} />
                             )}
-                            <MetadataPanel photo={photo} photosAdapter={props.photosAdapter} />
-                        </ScrollArea>
-                    </Dialog>
-                )}
+                        </div>
+                        {tags.length > 0 && (
+                            <div className="drawer-section">
+                                <div className="drawer-title-row">Tags</div>
+                                <div className="tags-container">
+                                    {tags.map(tag => (
+                                        <button type="button" key={tag} className="tag-chip" onClick={() => setShowTagModal(true)}>
+                                            {tag}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="lightbox-filmstrip">
+                    {(allPhotos ?? []).map(p => (
+                        <FilmstripThumb
+                            key={p.id}
+                            photo={p}
+                            active={p.id === id}
+                            photosAdapter={props.photosAdapter}
+                            onClick={() => navigateToPhoto(p.id)}
+                        />
+                    ))}
+                </div>
+
                 {props.sharesAdapter && photo && (
                     <ShareModal
                         opened={showShareModal}
@@ -343,7 +360,7 @@ export const PhotoDetail: React.FunctionComponent<IProps> = (props) => {
                         <Button onClick={handleSaveTags}>Save tags</Button>
                     </div>
                 </Modal>
-            </>
+            </div>
             : <Loader size={"md"}/>
     );
 };
