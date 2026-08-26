@@ -420,6 +420,14 @@ func (m *MockFilesystemService) WriteFileToFilesystem(photo domain.PhotoUpload) 
 	return args.Get(0).(domain.PhotoFile)
 }
 
+func (m *MockFilesystemService) GetPhotoMetadata(path string) domain.PhotoFile {
+	args := m.Called(path)
+	if args.Get(0) == nil {
+		return domain.PhotoFile{}
+	}
+	return args.Get(0).(domain.PhotoFile)
+}
+
 func (m *MockFilesystemService) MoveToTrash(path string) (string, error) {
 	args := m.Called(path)
 	return args.String(0), args.Error(1)
