@@ -194,7 +194,7 @@ describe('AlbumGrid', () => {
         expect(container).toBeInTheDocument();
     });
 
-    it('should render with correct flex layout', () => {
+    it('should render with correct grid layout', () => {
         const { container } = render(
             <AlbumGrid
                 albumsAdapter={mockAlbumsAdapter}
@@ -202,8 +202,8 @@ describe('AlbumGrid', () => {
             />
         );
 
-        const flexContainer = container.querySelector('.mantine-Flex-root');
-        expect(flexContainer).toBeInTheDocument();
+        const gridContainer = container.querySelector('.albums-grid');
+        expect(gridContainer).toBeInTheDocument();
     });
 
     it('should call useAlbumGrid hook with correct adapter', () => {

@@ -3,7 +3,7 @@ import { Album } from '../../Models/Album';
 import { AlbumCard } from '../AlbumCard/AlbumCard';
 import { EmptyState } from '../EmptyState/EmptyState';
 import { InputModal } from '../InputModal/InputModal';
-import {Button, Flex, TextInput} from '@mantine/core';
+import {Button, TextInput} from '@mantine/core';
 import {useNavigate} from "react-router-dom";
 import useAlbumGrid from "./useAlbumGrid";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
@@ -16,6 +16,7 @@ interface IProps {
   photosAdapter: IPhotosAdapter;
   initialDisplayCount?: number;
   loadMoreIncrement?: number;
+  showTitleBar?: boolean;
 }
 
 const defaultProps = {
@@ -80,16 +81,18 @@ export const AlbumGrid: React.FunctionComponent<IProps> = (propsIn) => {
             onChange={e => handleNewAlbumNameValueChange(e.target.value)}
           />
         </InputModal>
+        {props.showTitleBar && (
+            <div className="view-title-bar">
+                <h1 className="view-title">Albums</h1>
+                <div className="view-actions">
+                    <button type="button" className="action-btn primary" onClick={() => setShowNewAlbumModal(true)}>
+                        + New Album
+                    </button>
+                </div>
+            </div>
+        )}
         <section className="albumIndexView__cardContainer">
-          <Flex
-              direction={{ base: 'column', sm: 'row' }}
-              gap={{ base: 'lg', sm: 'lg' }}
-              justify={{ sm: 'flex-start' }}
-              mih={50}
-              bg="rgba(0, 0, 0, 0)"
-              align="flex-start"
-              wrap="wrap"
-          >
+          <div className="albums-grid">
           {albums && albums.length > 0 ? albums.slice(0, displayCount).map((album: Album) => {
             return(
               <article key={album.id}>
@@ -113,13 +116,13 @@ export const AlbumGrid: React.FunctionComponent<IProps> = (propsIn) => {
                   }}
               />
           )}
-          </Flex>
+          </div>
           {albums && albums.length > displayCount && (
               <Button
                   variant="light"
                   fullWidth
                   mt="md"
-                  onClick={() => setDisplayCount(prev => Math.min(prev + props.loadMoreIncrement, albums.length))}
+                  onClick={() => setDisplayCount((prev: number) => Math.min(prev + props.loadMoreIncrement, albums.length))}
               >
                   Load More
               </Button>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {Album, isSmartAlbum} from '../../Models/Album';
-import {ActionIcon, Badge, Text, Card, Group, Image, Loader, Menu, TextInput} from '@mantine/core';
+import {ActionIcon, Badge, Loader, Menu, TextInput} from '@mantine/core';
 import {IconDotsVertical, IconPencil, IconTrash, IconPhotoOff} from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
@@ -17,7 +17,7 @@ interface IProps {
 }
 
 export const AlbumCard: React.FunctionComponent<IProps> = (props) => {
-  const { thumbnailUrl, photoCount, isLoading } = useAlbumCard(props.photosAdapter, props.source);
+  const { thumbnailUrl, subThumbnailUrls = [], photoCount, isLoading } = useAlbumCard(props.photosAdapter, props.source);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(props.source.name);
 
@@ -58,12 +58,21 @@ export const AlbumCard: React.FunctionComponent<IProps> = (props) => {
     return <Loader size="md" />;
   }
 
+  const subThumb = (url: string | undefined, key: string) => (
+    <div
+      key={key}
+      className="album-sub-thumb"
+      style={url ? { backgroundImage: `url(${url})` } : undefined}
+      aria-hidden="true"
+    />
+  );
+
   return (
-    <Card shadow="sm" radius="md" withBorder mb="10px" mr="10px" w="200px" style={{ position: 'relative' }}>
-      <div style={{ position: 'absolute', top: 4, right: 4, zIndex: 2 }}>
+    <div className="album-card" onClick={() => !isRenaming && props.albumViewCallback(props.source.id)}>
+      <div style={{ position: 'absolute', top: 8, right: 8, zIndex: 3 }} onClick={(e) => e.stopPropagation()}>
         <Menu withinPortal position="bottom-end">
           <Menu.Target>
-            <ActionIcon variant="white" size="sm" opacity={0.8} onClick={(e) => e.stopPropagation()}>
+            <ActionIcon variant="transparent" size="sm" radius="xl" color="gray" aria-label="Album actions">
               <IconDotsVertical size="1rem" />
             </ActionIcon>
           </Menu.Target>
@@ -77,23 +86,33 @@ export const AlbumCard: React.FunctionComponent<IProps> = (props) => {
           </Menu.Dropdown>
         </Menu>
       </div>
-      <Card.Section onClick={() => props.albumViewCallback(props.source.id)} style={{ cursor: 'pointer' }}>
-        {thumbnailUrl ? (
-          <Image src={thumbnailUrl} w="200px" h="150px" />
-        ) : (
-          <div style={{
-            width: '200px',
-            height: '150px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'var(--mantine-color-gray-2)',
-          }}>
-            <IconPhotoOff size={32} color="var(--mantine-color-gray-5)" />
-          </div>
-        )}
-      </Card.Section>
-      <Group justify="space-between" mt="md" mb="xs" onClick={() => !isRenaming && props.albumViewCallback(props.source.id)} style={{ cursor: 'pointer' }}>
+
+      <div className="album-media-grid">
+        <div className="album-main-thumb">
+          {thumbnailUrl ? (
+            <img src={thumbnailUrl} alt={props.source.name} loading="lazy" />
+          ) : (
+            <div
+              style={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'var(--pb-surface-hover)',
+              }}
+            >
+              <IconPhotoOff size={32} color="var(--pb-muted)" />
+            </div>
+          )}
+        </div>
+        <div className="album-sub-thumbs">
+          {subThumb(subThumbnailUrls[0], 'sub-0')}
+          {subThumb(subThumbnailUrls[1], 'sub-1')}
+        </div>
+      </div>
+
+      <div className="album-info-overlay">
         {isRenaming ? (
           <TextInput
             size="xs"
@@ -103,17 +122,20 @@ export const AlbumCard: React.FunctionComponent<IProps> = (props) => {
             onBlur={handleRename}
             autoFocus
             style={{ flex: 1 }}
+            onClick={(e) => e.stopPropagation()}
           />
         ) : (
-          <Text fw={500} lineClamp={1}>{props.source.name}</Text>
+          <span className="album-title">{props.source.name}</span>
         )}
-        <Badge color="blue" variant="light" size="xs">
-          {photoCount} photos
-        </Badge>
-        {isSmartAlbum(props.source) && (
-          <Badge color="teal" variant="light" size="xs">Smart</Badge>
-        )}
-      </Group>
-    </Card>
+        <span style={{ display: 'inline-flex', gap: 6 }}>
+          {isSmartAlbum(props.source) && (
+            <Badge color="teal" variant="light" size="xs" radius="xl">Smart</Badge>
+          )}
+          <Badge className="album-count-badge" variant="light" color="gray" size="sm" radius="xl">
+            {photoCount} photos
+          </Badge>
+        </span>
+      </div>
+    </div>
   );
 };

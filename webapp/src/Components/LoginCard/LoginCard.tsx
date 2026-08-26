@@ -104,6 +104,7 @@ export const LoginCard: React.FunctionComponent<IProps> = (props) => {
                 result = await props.usersAdapter.login({ username, email: "", password });
             }
             login(result.token, result.expires_at);
+            localStorage.setItem('pb-username', username || 'User');
             navigate("/")
         } catch (e) {
             const message = e instanceof Error ? e.message : 'Authentication failed';

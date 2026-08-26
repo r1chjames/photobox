@@ -66,7 +66,6 @@ export const Photos: Story = {
                         .withPhotos(albumWithPhotos.getPhotos())}
                     albumsAdapter={new MockAlbumsAdapter()
                         .withAlbums(albumWithPhotos.getAlbums())}
-                    maxDisplayed={20}
                 />
             </AppBar>
         </MemoryRouter>
@@ -95,7 +94,6 @@ export const Albums: Story = {
                         .withAlbums(albumWithPhotos.getAlbums())}
                     photosAdapter={new MockPhotosAdapter()
                                     .withPhotos(albumWithPhotos.getPhotos())}
-                    maxDisplayed={20}
                 />
             </AppBar>
         </MemoryRouter>

@@ -6,8 +6,8 @@ import { IPhotosAdapter } from '../../Adapters/IPhotosAdapter';
 
 // Mock AlbumGrid component
 vi.mock('../AlbumGrid/AlbumGrid', () => ({
-    AlbumGrid: ({ maxDisplayed }: any) => (
-        <div data-testid="album-grid" data-max-displayed={maxDisplayed}>
+    AlbumGrid: ({ initialDisplayCount }: { initialDisplayCount?: number }) => (
+        <div data-testid="album-grid" data-max-displayed={initialDisplayCount}>
             Mock Album Grid
         </div>
     )
@@ -15,7 +15,7 @@ vi.mock('../AlbumGrid/AlbumGrid', () => ({
 
 // Mock PhotoGrid component
 vi.mock('../PhotoGrid/PhotoGrid', () => ({
-    PhotoGrid: ({ maxDisplayed }: any) => (
+    PhotoGrid: ({ maxDisplayed }: { maxDisplayed?: number }) => (
         <div data-testid="photo-grid" data-max-displayed={maxDisplayed}>
             Mock Photo Grid
         </div>
@@ -75,7 +75,7 @@ describe('Dashboard', () => {
         expect(screen.getByTestId('photo-grid')).toBeInTheDocument();
     });
 
-    it('should pass maxDisplayed=20 to AlbumGrid', () => {
+    it('should pass initialDisplayCount=30 to AlbumGrid', () => {
         render(
             <Dashboard
                 albumsAdapter={mockAlbumsAdapter}
@@ -84,7 +84,7 @@ describe('Dashboard', () => {
         );
 
         const albumGrid = screen.getByTestId('album-grid');
-        expect(albumGrid).toHaveAttribute('data-max-displayed', '20');
+        expect(albumGrid).toHaveAttribute('data-max-displayed', '30');
     });
 
     it('should pass maxDisplayed=50 to PhotoGrid', () => {

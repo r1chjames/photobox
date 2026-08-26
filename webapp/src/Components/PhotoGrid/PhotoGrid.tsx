@@ -13,7 +13,7 @@ import {EmptyState} from "../EmptyState/EmptyState";
 import {BulkActionsToolbar} from "../BulkActionsToolbar/BulkActionsToolbar";
 import {KeyboardShortcutsHelp} from "../KeyboardShortcutsHelp/KeyboardShortcutsHelp";
 import {TimelineScrubber} from "../TimelineScrubber/TimelineScrubber";
-import {ActionIcon, Button, Card, Checkbox, Group, Loader, Modal, Paper, Progress, SegmentedControl, Skeleton, Stack, Table, Text, TextInput, Title, Tooltip} from "@mantine/core";
+import {ActionIcon, Button, Card, Checkbox, Group, Loader, Modal, Paper, Progress, SegmentedControl, Skeleton, Stack, Table, Text, TextInput, Tooltip} from "@mantine/core";
 import {useHotkeys, useMediaQuery} from "@mantine/hooks";
 import {IconLayoutGrid, IconList, IconPhotoOff, IconPlayerPlay, IconRefresh, IconSelect} from "@tabler/icons-react";
 import { notifications } from '@mantine/notifications';
@@ -22,6 +22,7 @@ import './PhotoGrid.css';
 import {Photo} from "../../Models/Photo";
 import {fetchThumbnailsBatch, getCachedThumbnail, fetchThumbnailWithAuth, revokeThumbnail} from "../../utils/ThumbnailUtils";
 import {BlurhashCanvas} from "../BlurhashCanvas/BlurhashCanvas";
+import {optimisticallyUpdatePhoto} from "../../utils/queryClientHelpers";
 import {GridSkeleton} from "../GridSkeleton/GridSkeleton";
 import {useWebSocket} from "../../hooks/useWebSocket";
 
@@ -185,13 +186,14 @@ interface GridImageItemProps {
     isSelected: boolean;
     onImageClick: (id: string) => void;
     onToggleSelect: (id: string) => void;
+    onToggleFavorite: (id: string) => void;
     onRetry?: (id: string) => void;
     onLongPress?: (id: string) => void;
 }
 
 // By adding a custom comparison function to React.memo, we prevent re-renders unless the photo's ID changes.
 const GridImageItem = React.memo(
-    ({photo, isSelectionMode, isSelected, onImageClick, onToggleSelect, onRetry, onLongPress, thumbnailUrl}: GridImageItemProps & { thumbnailUrl: string | undefined }) => {
+    ({photo, isSelectionMode, isSelected, onImageClick, onToggleSelect, onToggleFavorite, onRetry, onLongPress, thumbnailUrl}: GridImageItemProps & { thumbnailUrl: string | undefined }) => {
         const [isLoaded, setIsLoaded] = useState(false);
         const [hasError, setHasError] = useState(false);
         const effectiveThumbnailUrl = thumbnailUrl || photo.thumbnailUrl;
@@ -241,18 +243,37 @@ const GridImageItem = React.memo(
 
         return (
             <div
-                className="item"
+                className={`photo-tile${isSelected ? ' selected' : ''}${photo.favorite ? ' favorited' : ''}`}
                 onClick={handleClick}
                 onTouchStart={handleTouchStart}
                 onTouchMove={cancelLongPress}
                 onTouchEnd={cancelLongPress}
                 style={{ position: 'relative' }}
             >
-                {isSelectionMode && (
-                    <div style={{ position: 'absolute', top: 4, left: 4, zIndex: 2 }} onClick={(e) => { e.stopPropagation(); onToggleSelect(photo.id); }}>
-                        <Checkbox checked={isSelected} onChange={() => {}} size="md" />
-                    </div>
-                )}
+                <div className="photo-controls">
+                    <button
+                        type="button"
+                        className={`control-pill${isSelected ? ' active' : ''}`}
+                        title="Select"
+                        aria-label={isSelected ? 'Deselect photo' : 'Select photo'}
+                        onClick={(e) => { e.stopPropagation(); onToggleSelect(photo.id); }}
+                    >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                    </button>
+                    <button
+                        type="button"
+                        className={`control-pill${photo.favorite ? ' favorited' : ''}`}
+                        title="Favorite"
+                        aria-label={photo.favorite ? 'Remove from favorites' : 'Add to favorites'}
+                        onClick={(e) => { e.stopPropagation(); onToggleFavorite(photo.id); }}
+                    >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill={photo.favorite ? '#f43f5e' : 'none'} stroke="currentColor" strokeWidth="2">
+                            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+                        </svg>
+                    </button>
+                </div>
                 <div className="thumbnail" style={{ aspectRatio: '4 / 3' }}>
                     {/* Placeholder stays beneath the image and fades out via
                         the img's opacity transition — no pop-in (issue #144). */}
@@ -377,7 +398,7 @@ const GridImageItem = React.memo(
                     )}
                 </div>
                 <style>{`
-                    .item:hover .photo-hover-overlay {
+                    .photo-tile:hover .photo-hover-overlay {
                         opacity: 1 !important;
                     }
                 `}</style>
@@ -386,6 +407,7 @@ const GridImageItem = React.memo(
     },
     (prevProps, nextProps) =>
         prevProps.photo.id === nextProps.photo.id &&
+        prevProps.photo.favorite === nextProps.photo.favorite &&
         prevProps.isSelectionMode === nextProps.isSelectionMode &&
         prevProps.isSelected === nextProps.isSelected &&
         prevProps.thumbnailUrl === nextProps.thumbnailUrl
@@ -658,6 +680,21 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         });
     }, []);
 
+    const onToggleFavorite = useCallback(async (photoId: string) => {
+        const photo = photosRef.current.find(p => p.id === photoId);
+        const newFavorite = !(photo?.favorite ?? false);
+        try {
+            await props.photosAdapter.favoritePhoto(photoId, newFavorite);
+            optimisticallyUpdatePhoto(queryClient, photoId, { favorite: newFavorite });
+        } catch (e) {
+            notifications.show({
+                title: 'Failed to update favorite',
+                message: e instanceof Error ? e.message : 'An error occurred',
+                color: 'red',
+            });
+        }
+    }, [props.photosAdapter, queryClient]);
+
     const handleRetryThumbnail = useCallback(async (photoId: string) => {
         revokeThumbnail(photoId);
         setThumbnailUrls(prev => {
@@ -868,9 +905,9 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     ]);
 
     const AlbumTitle = () => (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-            <Title size="h4">{albumName}</Title>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="view-title-bar">
+            <h1 className="view-title">{albumName}</h1>
+            <div className="view-actions">
                 {photos.length > 0 && !isMobile && viewMode === 'grid' && (
                     <SegmentedControl
                         size="xs"
@@ -884,31 +921,34 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                     />
                 )}
                 {photos.length > 0 && !isMobile && (
-                    <ActionIcon
-                        variant={viewMode === 'grid' ? 'filled' : 'light'}
-                        size="sm"
+                    <button
+                        type="button"
+                        className={viewMode === 'grid' ? 'action-btn active' : 'action-btn'}
                         onClick={() => setViewMode('grid')}
                         aria-label="Grid view"
                     >
-                        <IconLayoutGrid size="1rem" />
-                    </ActionIcon>
+                        <IconLayoutGrid size="1rem" /> Grid
+                    </button>
                 )}
                 {photos.length > 0 && !isMobile && (
-                    <ActionIcon
-                        variant={viewMode === 'list' ? 'filled' : 'light'}
-                        size="sm"
+                    <button
+                        type="button"
+                        className={viewMode === 'list' ? 'action-btn active' : 'action-btn'}
                         onClick={() => setViewMode('list')}
                         aria-label="List view"
                     >
-                        <IconList size="1rem" />
-                    </ActionIcon>
+                        <IconList size="1rem" /> List
+                    </button>
                 )}
                 {photos.length > 0 && (
-                    <Tooltip label="Select photos">
-                        <ActionIcon variant="light" onClick={() => setIsSelectionMode(prev => !prev)} aria-label="Select photos">
-                            <IconSelect size="1.25rem" />
-                        </ActionIcon>
-                    </Tooltip>
+                    <button
+                        type="button"
+                        className={isSelectionMode ? 'action-btn active' : 'action-btn'}
+                        onClick={() => setIsSelectionMode(prev => !prev)}
+                        aria-label="Select photos"
+                    >
+                        <IconSelect size="1rem" /> Select
+                    </button>
                 )}
             </div>
         </div>
@@ -997,6 +1037,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                                                 isSelected={selectedIds.has(photo.id)}
                                                 onImageClick={onImageClick}
                                                 onToggleSelect={onToggleSelect}
+                                                onToggleFavorite={onToggleFavorite}
                                                 onRetry={handleRetryThumbnail}
                                                 onLongPress={handleLongPress}
                                             />
