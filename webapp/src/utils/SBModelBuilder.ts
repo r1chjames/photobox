@@ -55,6 +55,14 @@ export const newPhoto = (photoId: string, albumId: string): Photo => {
         "exif": "[{\"DateTime\": \"2024-01-01T10:00.000\"}, {\"ApertureValue\": \"101/32\"}]",
         "camera": "A7Cii"
     };
+    // Varied native dimensions so the masonry grid shows mixed tile sizes:
+    // ~60% landscape, ~20% portrait, ~20% square — mirroring a real library.
+    const layouts: Array<[number, number]> = [
+        [1920, 1280], [1280, 1920], [1920, 1080], [1080, 1080],
+        [2400, 1600], [1600, 2400], [1920, 1280], [1080, 1920],
+        [2048, 1536], [1200, 1200],
+    ];
+    const [width, height] = layouts[getRandomInt(layouts.length - 1)];
     return {
         id: `p${photoId}`,
         name: `Photo ${photoId}`,
@@ -64,7 +72,9 @@ export const newPhoto = (photoId: string, albumId: string): Photo => {
         tags: "",
         metadata,
         createdAt: "2024-01-01T10:00.000",
-        thumbnailUrl: randomPhotoImage
+        thumbnailUrl: randomPhotoImage,
+        width,
+        height,
     };
 }
 

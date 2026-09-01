@@ -195,7 +195,73 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.nav-item.active svg {
+/* "More" submenu — collapses secondary nav destinations (Trash, Quality,
+   Shares, Map, Tags, Duplicates, Videos) into a single sidebar entry. */
+.nav-more {
+  position: relative;
+}
+
+.nav-more-chevron {
+  margin-left: auto;
+  transition: transform 0.2s ease;
+}
+
+.nav-more[data-open='true'] .nav-more-chevron {
+  transform: rotate(180deg);
+}
+
+.nav-more-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  z-index: 30;
+}
+
+.nav-more-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: var(--transition);
+  background: transparent;
+  width: 100%;
+  text-align: left;
+}
+
+.nav-more-item svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.8;
+  transition: var(--transition);
+}
+
+.nav-more-item:hover {
+  background-color: var(--surface-hover);
+  color: var(--fg);
+}
+
+.nav-more-item.active {
+  background-color: var(--surface-hover);
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.nav-more-item.active svg {
   stroke: var(--accent);
 }
 
@@ -794,8 +860,11 @@ body {
   transition: var(--transition);
 }
 
+/* Varied-aspect masonry: portrait photos span two rows, panoramas span two
+   columns — the prototype's mixed-size grid. JS quantum-masonry computes
+   exact row spans per tile (see PhotoGrid layoutMasonry), overriding the
+   static spans below, so every tile edge lands on the 16px rhythm. */
 .photo-tile.tall {
-  grid-row: span 2;
   aspect-ratio: 10 / 14;
 }
 
@@ -808,6 +877,11 @@ body {
    vertical gap between photos is always exactly the grid gap. */
 .photo-masonry-grid.masonry-quantized .photo-tile {
   aspect-ratio: auto;
+}
+
+.photo-tile .thumbnail {
+  width: 100%;
+  height: 100%;
 }
 
 .photo-tile img {

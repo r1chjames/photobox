@@ -4,8 +4,10 @@ import {
     IconAlbum,
     IconChevronDown,
     IconCopy,
+    IconDots,
     IconHeart,
     IconHelp,
+    IconHome2,
     IconInfoCircle,
     IconLibraryPhoto,
     IconLink,
@@ -26,6 +28,8 @@ import {
 import {useLocation, useNavigate} from "react-router-dom";
 import {useMantineColorScheme} from "@mantine/core";
 import {useAuth} from "../../Routing/AuthContext";
+import {useAdapters} from "../../Routing/AdapterContext";
+import {DragUploadOverlay} from "../DragUploadOverlay/DragUploadOverlay";
 import {KeyboardShortcutsHelp} from "../KeyboardShortcutsHelp/KeyboardShortcutsHelp";
 
 interface IProps {
@@ -33,7 +37,7 @@ interface IProps {
 }
 
 export enum Labels {
-    Dashboard = "Dashboard",
+    Home = "Home",
     Photos = "Photos",
     Albums = "Albums",
     Favorites = "Favorites",
@@ -46,27 +50,30 @@ export enum Labels {
     Videos = "Videos",
     Quality = "Quality",
     Memories = "Memories",
-    Settings = "Settings"
+    Settings = "Settings",
+    More = "More"
 }
 
-const navLinkData = [
-    { icon: IconLibraryPhoto, label: Labels.Dashboard, href: '/' },
+const primaryNavLinkData = [
+    { icon: IconHome2, label: Labels.Home, href: '/' },
     { icon: IconPhoto, label: Labels.Photos, href: "/photos" },
     { icon: IconAlbum, label: Labels.Albums, href: '/albums' },
+    { icon: IconClock, label: Labels.Memories, href: '/memories' },
+    { icon: IconSettings, label: Labels.Settings, href: '/settings' },
+];
+
+const moreNavLinkData = [
     { icon: IconTrash, label: Labels.Trash, href: '/trash' },
     { icon: IconPhotoOff, label: Labels.Quality, href: '/quality' },
-    { icon: IconClock, label: Labels.Memories, href: '/memories' },
     { icon: IconLink, label: Labels.Shares, href: '/shares' },
-    { icon: IconUsers, label: Labels.Users, href: '/users' },
     { icon: IconMap, label: Labels.Map, href: '/map' },
     { icon: IconTag, label: Labels.Tags, href: '/tags' },
     { icon: IconCopy, label: Labels.Duplicates, href: '/duplicates' },
     { icon: IconVideo, label: Labels.Videos, href: '/videos' },
-    { icon: IconSettings, label: Labels.Settings, href: '/settings' },
 ];
 
 const getActiveLinkFromPath = (pathname: string): Labels => {
-    if (pathname === '/') return Labels.Dashboard;
+    if (pathname === '/') return Labels.Home;
     if (pathname.startsWith('/photo/')) return Labels.Photos;
     if (pathname.startsWith('/photos') || pathname.startsWith('/search') || pathname.startsWith('/favorites') || pathname.startsWith('/trash') || pathname.startsWith('/videos')) return Labels.Photos;
     if (pathname.startsWith('/album/')) return Labels.Albums;
@@ -78,8 +85,8 @@ const getActiveLinkFromPath = (pathname: string): Labels => {
     if (pathname.startsWith('/duplicates')) return Labels.Duplicates;
     if (pathname.startsWith('/quality')) return Labels.Quality;
     if (pathname.startsWith('/memories')) return Labels.Memories;
-    if (pathname.startsWith('/settings')) return Labels.Settings;
-    return Labels.Dashboard;
+    if (pathname.startsWith('/settings') || pathname.startsWith('/account-settings')) return Labels.Settings;
+    return Labels.Home;
 };
 
 const USERNAME_STORAGE_KEY = 'pb-username';
@@ -95,14 +102,17 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
     const navigate = useNavigate();
     const activeLink = getActiveLinkFromPath(location.pathname);
     const {logout} = useAuth();
+    const {photosAdapter} = useAdapters();
     const {colorScheme, setColorScheme} = useMantineColorScheme();
     const [searchValue, setSearchValue] = useState('');
     const [showHelp, setShowHelp] = useState(false);
     const [showAbout, setShowAbout] = useState(false);
     const [appVersion, setAppVersion] = useState<string>('');
     const [menuOpen, setMenuOpen] = useState(false);
+    const [moreOpen, setMoreOpen] = useState(false);
     const [username] = useState<string>(() => localStorage.getItem(USERNAME_STORAGE_KEY) || 'User');
     const clusterRef = useRef<HTMLDivElement>(null);
+    const moreRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         // Fetch app version from health endpoint
@@ -142,6 +152,18 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
         return () => document.removeEventListener('mousedown', onDown);
     }, [menuOpen]);
 
+    // Close the More submenu on outside click
+    useEffect(() => {
+        if (!moreOpen) return;
+        const onDown = (e: MouseEvent) => {
+            if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+                setMoreOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', onDown);
+        return () => document.removeEventListener('mousedown', onDown);
+    }, [moreOpen]);
+
     const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && searchValue.trim()) {
             navigate(`/search?q=${encodeURIComponent(searchValue.trim())}`);
@@ -155,6 +177,8 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
     };
 
     const isDark = colorScheme !== 'light';
+
+    const moreActive = moreNavLinkData.some(item => activeLink === item.label);
 
     return (
         <div className="app-shell">
@@ -174,7 +198,7 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
                 </a>
 
                 <nav className="nav-group">
-                    {navLinkData.map((item) => (
+                    {primaryNavLinkData.map((item) => (
                         <button
                             key={item.label}
                             type="button"
@@ -187,6 +211,38 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
                             <span>{item.label}</span>
                         </button>
                     ))}
+
+                    <div className="nav-more" data-open={moreOpen} ref={moreRef}>
+                        <button
+                            type="button"
+                            className={moreActive ? 'nav-item active' : 'nav-item'}
+                            title="More"
+                            aria-label="More"
+                            aria-expanded={moreOpen}
+                            onClick={() => setMoreOpen((open) => !open)}
+                        >
+                            <IconDots size={20} stroke={1.5} />
+                            <span>More</span>
+                            <IconChevronDown size={14} stroke={2} className="nav-more-chevron" />
+                        </button>
+                        {moreOpen && (
+                            <div className="nav-more-menu">
+                                {moreNavLinkData.map((item) => (
+                                    <button
+                                        key={item.label}
+                                        type="button"
+                                        className={activeLink === item.label ? 'nav-more-item active' : 'nav-more-item'}
+                                        title={item.label}
+                                        aria-label={item.label}
+                                        onClick={() => { setMoreOpen(false); navigate(item.href); }}
+                                    >
+                                        <item.icon size={18} stroke={1.5} />
+                                        <span>{item.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </nav>
 
                 <div className="sidebar-footer">
@@ -254,6 +310,9 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
                                 </div>
                             </div>
                             <div className="user-menu-divider" />
+                            <button type="button" className="user-menu-item" onClick={() => { setMenuOpen(false); navigate('/users'); }}>
+                                <IconUsers size={16} stroke={1.8} /> Users
+                            </button>
                             <button type="button" className="user-menu-item" onClick={() => { setMenuOpen(false); navigate('/account-settings'); }}>
                                 <IconSettings size={16} stroke={1.8} /> Account settings
                             </button>
@@ -286,6 +345,8 @@ export const AppBar: React.FunctionComponent<IProps> = (props) => {
                     Version {appVersion || 'unknown'}
                 </Text>
             </Modal>
+
+            <DragUploadOverlay photosAdapter={photosAdapter} />
         </div>
     );
 };

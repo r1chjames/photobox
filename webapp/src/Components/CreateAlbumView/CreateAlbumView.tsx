@@ -1,10 +1,10 @@
-import React, {useState} from 'react';
-import Dropzone from 'react-dropzone';
+import React, {useRef, useState} from 'react';
 import './CreateAlbumView.css';
 import {useParams} from 'react-router-dom';
 import {IPhotosAdapter} from '../../Adapters/IPhotosAdapter';
-import {notifications} from '@mantine/notifications';
-import {Progress, Text, Card, Stack} from '@mantine/core';
+import {Loader, Text} from '@mantine/core';
+import {IconPhotoPlus} from '@tabler/icons-react';
+import {usePhotoUpload} from '../../hooks/usePhotoUpload';
 
 interface IProps {
   photosAdapter: IPhotosAdapter;
@@ -14,88 +14,57 @@ type QueryParams = {
   name: string;
 }
 
-const readUploadedFileAsText = (inputFile: File) => {
-  const temporaryFileReader = new FileReader();
-
-  return new Promise<string>((resolve, reject) => {
-    temporaryFileReader.onerror = () => {
-      temporaryFileReader.abort();
-      reject(new DOMException('Problem parsing input file.'));
-    };
-
-    temporaryFileReader.onload = () => {
-      resolve(temporaryFileReader.result as string);
-    };
-    temporaryFileReader.readAsDataURL(inputFile);
-  });
-};
-
 export const CreateAlbumView: React.FunctionComponent<IProps> = (props) => {
-
   const [error, setError] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const {name} = useParams<QueryParams>();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const {handleFileUpload, isUploading} = usePhotoUpload(props.photosAdapter);
 
-  const handleFileUpload = async (acceptedFiles: File[]) => {
+  const handleFilesSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = '';
+    if (files.length === 0) return;
     setError(null);
-    setIsUploading(true);
-    setUploadProgress({ current: 0, total: acceptedFiles.length });
-    let uploadedCount = 0;
     try {
-      for (const file of acceptedFiles) {
-        const fileContent = await readUploadedFileAsText(file);
-        const photoContent = {
-          name: file.name,
-          albumName: name,
-          binaryContent: fileContent,
-        };
-        await props.photosAdapter.uploadPhoto(photoContent);
-        uploadedCount++;
-        setUploadProgress({ current: uploadedCount, total: acceptedFiles.length });
-      }
-      notifications.show({
-        title: 'Upload complete',
-        message: `${uploadedCount} photo${uploadedCount !== 1 ? 's' : ''} uploaded successfully`,
-        color: 'green',
-      });
-    } catch (e) {
-      const message = e instanceof Error ? e.message : 'Upload failed';
+      await handleFileUpload(files, name);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Upload failed';
       setError(message);
-      notifications.show({
-        title: 'Upload failed',
-        message,
-        color: 'red',
-      });
-    } finally {
-      setIsUploading(false);
-      setUploadProgress({ current: 0, total: 0 });
     }
   };
 
   return (
     <div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        style={{ display: 'none' }}
+        onChange={handleFilesSelected}
+        aria-hidden="true"
+        tabIndex={-1}
+      />
       <div className="createAlbumView__dropzone">
-        <Dropzone onDrop={acceptedFiles => handleFileUpload(acceptedFiles)} disabled={isUploading}>
-          {({getRootProps, getInputProps}) => (
-            <section>
-              <div {...getRootProps()}>
-                <input {...getInputProps()} />
-                <p>{isUploading ? `Uploading ${uploadProgress.current} of ${uploadProgress.total}...` : 'Drag photos here to upload'}</p>
-              </div>
-            </section>
-          )}
-        </Dropzone>
+        <button
+          type="button"
+          className="action-btn primary"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isUploading}
+        >
+          <IconPhotoPlus size="1rem" /> Add photos to {name ?? 'album'}
+        </button>
+        <p style={{ color: 'var(--muted)', marginTop: 12 }}>
+          {isUploading ? 'Uploading…' : 'or drag photos anywhere on this window to upload'}
+        </p>
+        {isUploading && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center', marginTop: 12 }}>
+            <Loader size="sm" />
+            <Text size="sm">Uploading photos…</Text>
+          </div>
+        )}
       </div>
-      {isUploading && uploadProgress.total > 0 && (
-        <Card mt="md" p="sm" withBorder>
-          <Stack gap="xs">
-            <Text size="sm">Uploading {uploadProgress.current} of {uploadProgress.total} photos...</Text>
-            <Progress value={(uploadProgress.current / uploadProgress.total) * 100} size="lg" />
-          </Stack>
-        </Card>
-      )}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p style={{ color: 'red', textAlign: 'center' }}>{error}</p>}
     </div>
   );
 };
