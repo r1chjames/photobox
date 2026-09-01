@@ -9,28 +9,6 @@ vi.mock('react-router-dom', async (importOriginal) => ({
     useParams: () => ({ name: 'test-album' }),
 }));
 
-// Mock react-dropzone
-vi.mock('react-dropzone', () => ({
-    default: ({ children, onDrop }: any) => {
-        const mockFile = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-        return (
-            <div data-testid="dropzone" onClick={() => onDrop([mockFile])}>
-                {children({
-                    getRootProps: () => ({ 'data-testid': 'dropzone-root' }),
-                    getInputProps: () => ({ 'data-testid': 'dropzone-input' }),
-                })}
-            </div>
-        );
-    }
-}));
-
-// Mock InfoSnackbar
-vi.mock('../Snackbar/InfoSnackbar', () => ({
-    InfoSnackbar: ({ text, show }: any) => (
-        show ? <div data-testid="snackbar">{text}</div> : null
-    )
-}));
-
 describe('CreateAlbumView', () => {
     let mockPhotosAdapter: IPhotosAdapter;
 
@@ -40,22 +18,10 @@ describe('CreateAlbumView', () => {
         } as unknown as IPhotosAdapter;
     });
 
-    it('should render dropzone area', () => {
+    it('should render Add photos button with album name', () => {
         render(<CreateAlbumView photosAdapter={mockPhotosAdapter} />);
 
-        expect(screen.getByTestId('dropzone')).toBeInTheDocument();
-    });
-
-    it('should display drag and drop message', () => {
-        render(<CreateAlbumView photosAdapter={mockPhotosAdapter} />);
-
-        expect(screen.getByText('Drag photos here to upload')).toBeInTheDocument();
-    });
-
-    it('should not show snackbar initially', () => {
-        render(<CreateAlbumView photosAdapter={mockPhotosAdapter} />);
-
-        expect(screen.queryByTestId('snackbar')).not.toBeInTheDocument();
+        expect(screen.getByText('Add photos to test-album')).toBeInTheDocument();
     });
 
     it('should render within a container div', () => {
@@ -71,38 +37,15 @@ describe('CreateAlbumView', () => {
         expect(container).toBeInTheDocument();
     });
 
-    it('should render Dropzone component', () => {
+    it('should render drag hint text', () => {
         render(<CreateAlbumView photosAdapter={mockPhotosAdapter} />);
 
-        const dropzone = screen.getByTestId('dropzone');
-        expect(dropzone).toBeInTheDocument();
+        expect(screen.getByText(/or drag photos anywhere on this window to upload/i)).toBeInTheDocument();
     });
 
-    it('should render input element for file selection', () => {
+    it('should not show error initially', () => {
         render(<CreateAlbumView photosAdapter={mockPhotosAdapter} />);
 
-        const input = screen.getByTestId('dropzone-input');
-        expect(input).toBeInTheDocument();
-    });
-
-    it('should render root props container', () => {
-        render(<CreateAlbumView photosAdapter={mockPhotosAdapter} />);
-
-        const root = screen.getByTestId('dropzone-root');
-        expect(root).toBeInTheDocument();
-    });
-
-    it('should render section element', () => {
-        const { container } = render(<CreateAlbumView photosAdapter={mockPhotosAdapter} />);
-
-        const section = container.querySelector('section');
-        expect(section).toBeInTheDocument();
-    });
-
-    it('should render paragraph with instructions', () => {
-        render(<CreateAlbumView photosAdapter={mockPhotosAdapter} />);
-
-        const paragraph = screen.getByText(/Drag photos here to upload/i);
-        expect(paragraph).toBeInTheDocument();
+        expect(screen.queryByText(/failed/i)).not.toBeInTheDocument();
     });
 });

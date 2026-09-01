@@ -59,3 +59,7 @@ export const IconShare2 = MockIcon;
 export const IconX = MockIcon;
 export const IconRestore = MockIcon;
 export const IconPhotoPlus = MockIcon;
+export const IconDots = MockIcon;
+export const IconClock = MockIcon;
+export const IconInfoCircle = MockIcon;
+export const IconHome2 = MockIcon;

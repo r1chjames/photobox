@@ -1,8 +1,6 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {useDropzone} from 'react-dropzone';
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useQueryClient } from '@tanstack/react-query';
-import {useVirtualizer} from '@tanstack/react-virtual';
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 import {ISharesAdapter} from "../../Adapters/ISharesAdapter";
@@ -13,9 +11,9 @@ import {EmptyState} from "../EmptyState/EmptyState";
 import {BulkActionsToolbar} from "../BulkActionsToolbar/BulkActionsToolbar";
 import {KeyboardShortcutsHelp} from "../KeyboardShortcutsHelp/KeyboardShortcutsHelp";
 import {TimelineScrubber} from "../TimelineScrubber/TimelineScrubber";
-import {ActionIcon, Button, Card, Checkbox, Group, Loader, Modal, Paper, Progress, SegmentedControl, Skeleton, Stack, Table, Text, TextInput, Tooltip} from "@mantine/core";
+import {ActionIcon, Button, Checkbox, Group, Loader, Modal, SegmentedControl, Skeleton, Table, Text, TextInput, Tooltip} from "@mantine/core";
 import {useHotkeys, useMediaQuery} from "@mantine/hooks";
-import {IconLayoutGrid, IconList, IconPhotoOff, IconPlayerPlay, IconRefresh, IconSelect} from "@tabler/icons-react";
+import {IconLayoutGrid, IconList, IconPhotoOff, IconPhotoPlus, IconPlayerPlay, IconRefresh, IconSelect} from "@tabler/icons-react";
 import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
 import './PhotoGrid.css';
@@ -25,6 +23,7 @@ import {BlurhashCanvas} from "../BlurhashCanvas/BlurhashCanvas";
 import {optimisticallyUpdatePhoto} from "../../utils/queryClientHelpers";
 import {GridSkeleton} from "../GridSkeleton/GridSkeleton";
 import {useWebSocket} from "../../hooks/useWebSocket";
+import {usePhotoUpload} from "../../hooks/usePhotoUpload";
 
 const getPhotoDisplayDate = (photo: Photo): string => {
     // Try top-level dateTaken first
@@ -65,100 +64,6 @@ const getPhotoDisplayDate = (photo: Photo): string => {
     }
 };
 
-const readUploadedFileAsText = (inputFile: File) => {
-    const temporaryFileReader = new FileReader();
-
-    return new Promise<string>((resolve, reject) => {
-        temporaryFileReader.onerror = () => {
-            temporaryFileReader.abort();
-            reject(new DOMException('Problem parsing input file.'));
-        };
-
-        temporaryFileReader.onload = () => {
-            resolve(temporaryFileReader.result as string);
-        };
-        temporaryFileReader.readAsDataURL(inputFile);
-    });
-};
-
-const PhotoGridUploadDropzone: React.FunctionComponent<{ photosAdapter: IPhotosAdapter }> = ({ photosAdapter }) => {
-    const [isUploading, setIsUploading] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
-
-    const handleFileUpload = useCallback(async (acceptedFiles: File[]) => {
-        setIsUploading(true);
-        setUploadProgress({ current: 0, total: acceptedFiles.length });
-        let uploadedCount = 0;
-        try {
-            for (const file of acceptedFiles) {
-                const fileContent = await readUploadedFileAsText(file);
-                const photoContent = {
-                    name: file.name,
-                    albumName: 'General',
-                    binaryContent: fileContent,
-                };
-                await photosAdapter.uploadPhoto(photoContent);
-                uploadedCount++;
-                setUploadProgress({ current: uploadedCount, total: acceptedFiles.length });
-            }
-            notifications.show({
-                title: 'Upload complete',
-                message: `${uploadedCount} photo${uploadedCount !== 1 ? 's' : ''} uploaded successfully`,
-                color: 'green',
-            });
-        } catch (e) {
-            const message = e instanceof Error ? e.message : 'Upload failed';
-            notifications.show({
-                title: 'Upload failed',
-                message,
-                color: 'red',
-            });
-        } finally {
-            setIsUploading(false);
-            setUploadProgress({ current: 0, total: 0 });
-        }
-    }, [photosAdapter]);
-
-    const onDrop = useCallback((acceptedFiles: File[]) => {
-        handleFileUpload(acceptedFiles);
-    }, [handleFileUpload]);
-
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({
-        onDrop,
-        accept: { 'image/*': [] },
-        disabled: isUploading,
-    });
-
-    return (
-        <Card mb="md" p="md" withBorder>
-            <Paper
-                {...getRootProps()}
-                p="xl"
-                withBorder
-                style={{
-                    border: isDragActive ? '2px dashed var(--mantine-color-blue-6)' : '2px dashed var(--mantine-color-gray-4)',
-                    borderRadius: 'var(--mantine-radius-md)',
-                    textAlign: 'center',
-                    cursor: isUploading ? 'default' : 'pointer',
-                    background: isDragActive ? 'var(--mantine-color-blue-light)' : 'transparent',
-                    transition: 'all 0.2s ease',
-                }}
-            >
-                <input {...getInputProps()} />
-                <Text size="lg" c={isDragActive ? 'blue' : 'dimmed'}>
-                    {isDragActive ? 'Drop photos here...' : 'Drag photos here or click to upload'}
-                </Text>
-            </Paper>
-            {isUploading && uploadProgress.total > 0 && (
-                <Stack gap="xs" mt="md">
-                    <Text size="sm">Uploading {uploadProgress.current} of {uploadProgress.total} photos...</Text>
-                    <Progress value={(uploadProgress.current / uploadProgress.total) * 100} size="lg" />
-                </Stack>
-            )}
-        </Card>
-    );
-};
-
 interface IProps {
     photosAdapter: IPhotosAdapter;
     albumsAdapter: IAlbumsAdapter;
@@ -189,11 +94,26 @@ interface GridImageItemProps {
     onToggleFavorite: (id: string) => void;
     onRetry?: (id: string) => void;
     onLongPress?: (id: string) => void;
+    /** Quantum-masonry row span (in 16px auto-row tracks). */
+    rowSpan?: number;
 }
+
+// Classify a photo into the prototype's varied-aspect layouts based on its
+// native dimensions. Photos without dimensions fall back to the standard
+// landscape tile.
+const photoLayout = (photo: Photo): 'tall' | 'wide' | '' => {
+    const w = photo.width ?? 0;
+    const h = photo.height ?? 0;
+    if (w <= 0 || h <= 0) return '';
+    const ratio = w / h;
+    if (ratio < 0.85) return 'tall';
+    if (ratio > 1.35) return 'wide';
+    return '';
+};
 
 // By adding a custom comparison function to React.memo, we prevent re-renders unless the photo's ID changes.
 const GridImageItem = React.memo(
-    ({photo, isSelectionMode, isSelected, onImageClick, onToggleSelect, onToggleFavorite, onRetry, onLongPress, thumbnailUrl}: GridImageItemProps & { thumbnailUrl: string | undefined }) => {
+    ({photo, isSelectionMode, isSelected, onImageClick, onToggleSelect, onToggleFavorite, onRetry, onLongPress, thumbnailUrl, rowSpan}: GridImageItemProps & { thumbnailUrl: string | undefined }) => {
         const [isLoaded, setIsLoaded] = useState(false);
         const [hasError, setHasError] = useState(false);
         const effectiveThumbnailUrl = thumbnailUrl || photo.thumbnailUrl;
@@ -202,6 +122,8 @@ const GridImageItem = React.memo(
             setIsLoaded(false);
             setHasError(false);
         }, [effectiveThumbnailUrl]);
+
+        const cameraModel = photo.metadata && typeof photo.metadata === 'object' && 'Model' in photo.metadata ? String(photo.metadata.Model) : undefined;
 
         // Long-press (mobile) enters selection mode, matching Google Photos.
         const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -239,16 +161,21 @@ const GridImageItem = React.memo(
             }
         };
 
-        const cameraModel = photo.metadata && typeof photo.metadata === 'object' && 'Model' in photo.metadata ? String(photo.metadata.Model) : undefined;
-
         return (
             <div
-                className={`photo-tile${isSelected ? ' selected' : ''}${photo.favorite ? ' favorited' : ''}`}
+                className={`photo-tile${photoLayout(photo) ? ' ' + photoLayout(photo) : ''}${isSelected ? ' selected' : ''}${photo.favorite ? ' favorited' : ''}`}
                 onClick={handleClick}
                 onTouchStart={handleTouchStart}
                 onTouchMove={cancelLongPress}
                 onTouchEnd={cancelLongPress}
-                style={{ position: 'relative' }}
+                style={{
+                    position: 'relative',
+                    // Neutralize the CSS .tall/.wide grid-row shorthand so the
+                    // JS quantum span (gridRowEnd) is the sole row placement —
+                    // same as the prototype's `gridRowStart = 'auto'`.
+                    gridRowStart: 'auto',
+                    gridRowEnd: rowSpan ? `span ${rowSpan}` : undefined,
+                }}
             >
                 <div className="photo-controls">
                     <button
@@ -274,7 +201,7 @@ const GridImageItem = React.memo(
                         </svg>
                     </button>
                 </div>
-                <div className="thumbnail" style={{ aspectRatio: '4 / 3' }}>
+                <div className="thumbnail">
                     {/* Placeholder stays beneath the image and fades out via
                         the img's opacity transition — no pop-in (issue #144). */}
                     {!hasError && (
@@ -416,7 +343,6 @@ GridImageItem.displayName = 'GridImageItem';
 
 export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const { id } = useParams<{ id: string }>();
-    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const props = {...defaultProps, ...propsIn};
     const [isImageModalOpen, setImageModalOpen] = useState(false);
@@ -432,6 +358,8 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         } catch { /* ignore */ }
         return 'comfortable';
     });
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const { handleFileUpload: handlePhotosUpload, isUploading: photosUploading } = usePhotoUpload(props.photosAdapter);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
         try {
             const saved = localStorage.getItem('photobox-view-mode');
@@ -598,22 +526,24 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         fetchNextPage();
     }, [isFetchingNextPage, allRetrieved, fetchNextPage]);
 
-    // --- Virtualized grid (issue #92) ---
-    // Row-based virtualization keeps the DOM bounded (<~500 nodes) regardless of
-    // library size, replacing the previous infinite-grid that kept every loaded
-    // photo in the DOM.
+    // --- Quantum masonry grid (Open Design prototype) ---
+    // A single CSS grid with 16px auto-rows and dense flow. JS assigns each
+    // tile a row span computed from its display aspect (tall 10/14, wide
+    // 28/11, standard 16/11) so every tile edge lands on the 16px rhythm and
+    // dense flow backfills holes — no dead space, no row stretching. Offscreen
+    // tiles skip layout via content-visibility: auto, keeping the DOM bounded.
     const [gridColumns, setGridColumns] = useState(5);
     const [containerWidth, setContainerWidth] = useState(0);
+    const QUANTUM = 16;
     const gridGap = density === 'compact' ? 4 : density === 'large' ? 20 : 10;
-    const cardAspectRatio = 4 / 3;
 
     useEffect(() => {
         const el = containerRef.current;
         if (!el) return;
         const compute = (entries?: ResizeObserverEntry[]) => {
-            // Prefer the observed content width; fall back to clientWidth for
-            // the synchronous first call (and test environments that stub
-            // ResizeObserver with a fixed entry).
+            // Prefer the observed content width (test stubs and first paints
+            // report it); fall back to the live element width on window
+            // resize, where the observer entry is absent.
             const width = entries && entries.length > 0 ? entries[0].contentRect.width : el.clientWidth;
             if (width <= 0) return;
             const targetCardWidth = density === 'compact' ? 160 : density === 'large' ? 300 : 220;
@@ -624,34 +554,35 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         compute();
         const ro = new ResizeObserver((entries) => compute(entries));
         ro.observe(el);
-        return () => ro.disconnect();
+        // The container may be mid-layout when the effect first runs (sidebar
+        // + timeline not yet settled); re-measure once content paints so the
+        // column count reflects the real width, not a transient narrow one.
+        requestAnimationFrame(() => compute());
+        window.addEventListener('resize', compute);
+        return () => {
+            ro.disconnect();
+            window.removeEventListener('resize', compute);
+        };
     }, [density, gridGap]);
 
     const cardWidth = Math.max(80, (containerWidth - (gridColumns - 1) * gridGap) / gridColumns);
-    const cardHeight = cardWidth / cardAspectRatio;
-    const rowCount = Math.ceil(photos.length / gridColumns);
 
-    // TanStack Virtual captures `estimateSize` when the virtualizer is first
-    // created, so a closure over cardHeight would freeze at the initial
-    // 80px-floor value. Keep the live height in a ref and read it inside a
-    // stable function so rows always measure at the settled card size.
-    const rowHeightRef = useRef(cardHeight + gridGap);
-    rowHeightRef.current = cardHeight + gridGap;
+    // Quantum-masonry row spans (prototype layoutMasonrySpans): rows = the
+    // number of 16px auto-row tracks a tile occupies, rounding so the tile's
+    // display aspect fits its column span.
+    const tileRowSpans = React.useMemo(() => {
+        if (cardWidth <= 0) return new Map<string, number>();
+        const spans = new Map<string, number>();
+        photos.forEach(photo => {
+            const spanCols = photoLayout(photo) === 'wide' ? 2 : 1;
+            const tw = spanCols * cardWidth + (spanCols - 1) * gridGap;
+            const ar = photoLayout(photo) === 'tall' ? 14 / 10 : photoLayout(photo) === 'wide' ? 11 / 28 : 11 / 16;
+            spans.set(photo.id, Math.max(1, Math.round((tw * ar + gridGap) / (QUANTUM + gridGap))));
+        });
+        return spans;
+    }, [photos, cardWidth, gridGap]);
 
-    const virtualizer = useVirtualizer({
-        count: rowCount,
-        getScrollElement: () => containerRef.current,
-        estimateSize: () => rowHeightRef.current,
-        overscan: 4,
-    });
-
-    // Re-measure when the card geometry settles so the initial batch renders
-    // at the real row height instead of the 80px floor (issue #143).
-    useEffect(() => {
-        virtualizer.measure();
-    }, [cardHeight, gridColumns, gridGap, virtualizer]);
-
-    // Load the next page when scrolling near the bottom of the virtualized grid.
+    // Load the next page when scrolling near the bottom of the grid.
     const handleGridScroll = useCallback(() => {
         const el = containerRef.current;
         if (!el) return;
@@ -950,9 +881,27 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                         <IconSelect size="1rem" /> Select
                     </button>
                 )}
+                {photos.length > 0 && !isMobile && (
+                    <button
+                        type="button"
+                        className="action-btn primary"
+                        onClick={() => fileInputRef.current?.click()}
+                        aria-label="Add photos"
+                    >
+                        <IconPhotoPlus size="1rem" /> Add Photos
+                    </button>
+                )}
             </div>
         </div>
     );
+
+    const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files ?? []);
+        e.target.value = '';
+        if (files.length > 0) {
+            handlePhotosUpload(files, albumName === 'All Photos' ? 'General' : (albumName ?? 'General'));
+        }
+    };
 
     // Initial load: paint skeleton cards immediately instead of a spinner
     // so the grid never shows a loading animation (issues #143/#144). The
@@ -966,23 +915,33 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
 
     return (
         <div style={{ display: 'flex', height: 'calc(100vh - 112px)', flexDirection: 'column' }}>
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                style={{ display: 'none' }}
+                onChange={handleFilesSelected}
+                aria-hidden="true"
+                tabIndex={-1}
+            />
+            {photosUploading && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', marginBottom: 12, background: 'var(--surface-card)', borderRadius: 'var(--radius-md)' }}>
+                    <Loader size="sm" />
+                    <Text size="sm">Uploading photos…</Text>
+                </div>
+            )}
             <AlbumTitle/>
             {showEmpty && (
-                <>
-                    <PhotoGridUploadDropzone photosAdapter={props.photosAdapter} />
-                    <EmptyState
-                        title={id ? "This album is empty" : props.mediaType === 'video' ? "No videos yet" : "No photos yet"}
-                        description={id ? "Upload photos to see them here." : props.mediaType === 'video' ? "Your video library is empty. Upload videos or configure your photo directory." : "Your photo library is empty. Upload photos or configure your photo directory."}
-                        icon={<IconPhotoOff size="2rem" />}
-                        action={{
-                            label: props.mediaType === 'video' ? "Upload videos" : "Upload photos",
-                            onClick: () => navigate('/album/new/General'),
-                        }}
-                    />
-                </>
-            )}
-            {!showEmpty && (
-                <PhotoGridUploadDropzone photosAdapter={props.photosAdapter} />
+                <EmptyState
+                    title={id ? "This album is empty" : props.mediaType === 'video' ? "No videos yet" : "No photos yet"}
+                    description={id ? "Upload photos to see them here." : props.mediaType === 'video' ? "Your video library is empty. Upload videos or configure your photo directory." : "Your photo library is empty. Upload photos or configure your photo directory."}
+                    icon={<IconPhotoOff size="2rem" />}
+                    action={{
+                        label: props.mediaType === 'video' ? "Upload videos" : "Upload photos",
+                        onClick: () => fileInputRef.current?.click(),
+                    }}
+                />
             )}
             {isSelectionMode && (
                 <BulkActionsToolbar
@@ -1009,44 +968,32 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                     {showEmpty ? null : showSkeleton ? (
                         <GridSkeleton columns={gridColumns} rows={3} gap={gridGap} />
                     ) : viewMode === 'grid' ? (
-                        <div className="virtual-grid" data-testid="virtual-grid" style={{ height: virtualizer.getTotalSize(), position: 'relative', width: '100%' }}>
-                            {virtualizer.getVirtualItems().map((virtualRow) => {
-                                const startIndex = virtualRow.index * gridColumns;
-                                const rowPhotos = photos.slice(startIndex, startIndex + gridColumns);
-                                return (
-                                    <div
-                                        key={virtualRow.key}
-                                        style={{
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            width: '100%',
-                                            height: virtualRow.size,
-                                            transform: `translateY(${virtualRow.start}px)`,
-                                            display: 'grid',
-                                            gridTemplateColumns: `repeat(${gridColumns}, 1fr)`,
-                                            gap: gridGap,
-                                        }}
-                                    >
-                                        {rowPhotos.map((photo: Photo) => (
-                                            <GridImageItem
-                                                key={photo.id}
-                                                photo={photo}
-                                                thumbnailUrl={mergedThumbnailUrls.get(photo.id)}
-                                                isSelectionMode={isSelectionMode}
-                                                isSelected={selectedIds.has(photo.id)}
-                                                onImageClick={onImageClick}
-                                                onToggleSelect={onToggleSelect}
-                                                onToggleFavorite={onToggleFavorite}
-                                                onRetry={handleRetryThumbnail}
-                                                onLongPress={handleLongPress}
-                                            />
-                                        ))}
-                                    </div>
-                                );
-                            })}
+                        <div
+                            className="photo-masonry-grid masonry-quantized"
+                            data-testid="virtual-grid"
+                            style={{
+                                gridTemplateColumns: `repeat(${gridColumns}, 1fr)`,
+                                gridAutoRows: `${QUANTUM}px`,
+                                gap: gridGap,
+                            }}
+                        >
+                            {photos.map((photo: Photo) => (
+                                <GridImageItem
+                                    key={photo.id}
+                                    photo={photo}
+                                    thumbnailUrl={mergedThumbnailUrls.get(photo.id)}
+                                    isSelectionMode={isSelectionMode}
+                                    isSelected={selectedIds.has(photo.id)}
+                                    onImageClick={onImageClick}
+                                    onToggleSelect={onToggleSelect}
+                                    onToggleFavorite={onToggleFavorite}
+                                    onRetry={handleRetryThumbnail}
+                                    onLongPress={handleLongPress}
+                                    rowSpan={isMobile ? undefined : tileRowSpans.get(photo.id)}
+                                />
+                            ))}
                             {isFetchingNextPage && (
-                                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, textAlign: 'center', padding: 16 }}>
+                                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 16 }}>
                                     <Loader size="sm" />
                                 </div>
                             )}
