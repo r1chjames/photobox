@@ -14,6 +14,7 @@ const AuthProbe = () => {
             <span data-testid="token">{token ?? 'none'}</span>
             <button data-testid="logout" onClick={logout}>logout</button>
             <button data-testid="login" onClick={() => login('test-token', new Date(Date.now() + 60_000).toISOString())}>login</button>
+            <button data-testid="login-long" onClick={() => login('long-token', new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString())}>login long</button>
         </div>
     );
 };
@@ -69,6 +70,22 @@ describe('AuthContext', () => {
         });
         expect(screen.getByTestId('authenticated').textContent).toBe('false');
         expect(localStorage.getItem(TOKEN_STORAGE_KEY)).toBeNull();
+    });
+
+    it('stays authenticated for long-lived tokens whose delay exceeds the max setTimeout range', () => {
+        renderProvider();
+        act(() => {
+            screen.getByTestId('login-long').click();
+        });
+        expect(screen.getByTestId('authenticated').textContent).toBe('true');
+        // A 30-day token used to schedule setTimeout with a delay beyond the
+        // 32-bit signed range, which browsers clamp to ~1ms — logging the
+        // user out the instant they logged in. No timers must fire early.
+        act(() => {
+            vi.advanceTimersByTime(1000);
+        });
+        expect(screen.getByTestId('authenticated').textContent).toBe('true');
+        expect(localStorage.getItem(TOKEN_STORAGE_KEY)).toBe('long-token');
     });
 
     it('logout clears token and expiry', () => {
