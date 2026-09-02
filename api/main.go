@@ -81,6 +81,7 @@ type AppServices struct {
 	shareService      *service.ShareService
 	apiKeyService     *service.ApiKeyService
 	cacheService      *service.CacheService
+	takeoutImporter   *service.TakeoutImporter
 	wsHub             *ws.Hub
 }
 
@@ -159,6 +160,9 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 	apiKeyRepo := repository.NewApiKeyRepository(dbEnv)
 	apiKeyService := service.NewApiKeyService(apiKeyRepo)
 
+	// Takeout importer (issue #106)
+	takeoutImporter := service.NewTakeoutImporter(photoService, filesystemService, photoRepo, config, wsHub)
+
 	// Cron
 	return &AppServices{
 		components.NewScheduler(utilityService, jobService, photoService, *config),
@@ -173,6 +177,7 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 		shareService,
 		apiKeyService,
 		cacheService,
+		takeoutImporter,
 		wsHub,
 	}
 }
@@ -195,6 +200,7 @@ func setupHttpHandlers(
 	searchHandler := http.NewSearchHandler(appServices.photoService, appServices.albumService)
 	shareHandler := http.NewShareHandler(appServices.shareService)
 	apiKeyHandler := http.NewApiKeyHandler(appServices.apiKeyService)
+	importHandler := http.NewImportHandler(appServices.takeoutImporter)
 	wsHandler := http.NewWebSocketHandler(appServices.wsHub)
 
 	// Register the API key service so authMiddleware can validate X-API-Key.
@@ -212,6 +218,7 @@ func setupHttpHandlers(
 		*searchHandler,
 		*shareHandler,
 		apiKeyHandler,
+		importHandler,
 		wsHandler,
 	)
 }

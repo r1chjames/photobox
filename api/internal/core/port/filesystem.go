@@ -28,6 +28,8 @@ type FilesystemService interface {
 	PerformPhotoIndex(ctx context.Context, save func([]domain.PhotoFile) error, indexCache map[string]struct{FileHash string; FileModifiedTime int64})
 	// WriteFileToFilesystem writes a photo to the filesystem
 	WriteFileToFilesystem(photo domain.PhotoUpload) domain.PhotoFile
+	// GetPhotoMetadata extracts metadata for an existing file on disk (used by importers)
+	GetPhotoMetadata(path string) domain.PhotoFile
 	GenerateThumbnail(path string, exifData exif.Exif, width, height int) []byte
 	MoveToTrash(path string) (string, error)
 	RestoreFromTrash(trashPath, originalPath string) error

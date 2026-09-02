@@ -7,6 +7,8 @@ const (
 	EventIndexComplete  = "index:complete"
 	EventPhotoNew       = "photo:new"
 	EventSystemHealth   = "system:health"
+	EventImportProgress = "import:progress"
+	EventImportComplete = "import:complete"
 )
 
 // Event is the JSON envelope for all WebSocket messages.
@@ -44,4 +46,21 @@ type SystemHealthPayload struct {
 	Status  string `json:"status"`
 	Uptime  int64  `json:"uptime"`
 	Version string `json:"version"`
+}
+
+// ImportProgressPayload is sent periodically during a Google Takeout import.
+type ImportProgressPayload struct {
+	Status   string `json:"status"` // "running" | "complete" | "error"
+	Phase    string `json:"phase"`  // "copying" | "indexing" | "done"
+	Current  int    `json:"current"`
+	Total    int    `json:"total"`
+	Imported int    `json:"imported"`
+	Skipped  int    `json:"skipped"`
+}
+
+// ImportCompletePayload is sent when a Google Takeout import finishes.
+type ImportCompletePayload struct {
+	Imported int      `json:"imported"`
+	Skipped  int      `json:"skipped"`
+	Errors   []string `json:"errors,omitempty"`
 }

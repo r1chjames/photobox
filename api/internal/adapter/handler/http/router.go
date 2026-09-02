@@ -30,6 +30,7 @@ func NewRouter(
 	searchHandler SearchHandler,
 	shareHandler ShareHandler,
 	apiKeyHandler *ApiKeyHandler,
+	importHandler *ImportHandler,
 	wsHandler *WebSocketHandler) (*Router, error) {
 
 	router := gin.New()
@@ -78,7 +79,7 @@ func NewRouter(
 	// Dedicated rate limiter for thumbnail endpoints: 30 req/s with burst of 60
 	thumbnailLimiter := NewIPRateLimiter(30, 60)
 
-	defineResources(appConfig, router, token, authHandler, photoHandler, albumHandler, utilityHandler, healthHandler, userHandler, searchHandler, shareHandler, apiKeyHandler, authLimiter, thumbnailLimiter, wsHandler)
+	defineResources(appConfig, router, token, authHandler, photoHandler, albumHandler, utilityHandler, healthHandler, userHandler, searchHandler, shareHandler, apiKeyHandler, importHandler, authLimiter, thumbnailLimiter, wsHandler)
 
 	return &Router{
 		router,
@@ -98,6 +99,7 @@ func defineResources(
 	searchHandler SearchHandler,
 	shareHandler ShareHandler,
 	apiKeyHandler *ApiKeyHandler,
+	importHandler *ImportHandler,
 	authLimiter *IPRateLimiter,
 	thumbnailLimiter *IPRateLimiter,
 	wsHandler *WebSocketHandler) {
@@ -230,6 +232,14 @@ func defineResources(
 		apiKeys.POST("", apiKeyHandler.CreateApiKey)
 		apiKeys.GET("", apiKeyHandler.ListApiKeys)
 		apiKeys.DELETE("/:id", apiKeyHandler.RevokeApiKey)
+	}
+
+	// Google Takeout import (admin-only, issue #106)
+	importGroup := router.Group(fmt.Sprintf("%s/import", urlBasePath)).Use(authMiddleware(token), requireRole(domain.ADMINISTRATOR))
+	{
+		importGroup.POST("/takeout", importHandler.ImportTakeout)
+		importGroup.POST("/takeout/scan", importHandler.ScanTakeout)
+		importGroup.GET("/takeout/progress", importHandler.GetProgress)
 	}
 
 }

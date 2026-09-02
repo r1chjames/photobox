@@ -278,3 +278,17 @@ func (mr *MockFilesystemServiceMockRecorder) WriteFileToFilesystem(photo interfa
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteFileToFilesystem", reflect.TypeOf((*MockFilesystemService)(nil).WriteFileToFilesystem), photo)
 }
+
+// GetPhotoMetadata mocks base method.
+func (m *MockFilesystemService) GetPhotoMetadata(path string) domain.PhotoFile {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPhotoMetadata", path)
+	ret0, _ := ret[0].(domain.PhotoFile)
+	return ret0
+}
+
+// GetPhotoMetadata indicates an expected call of GetPhotoMetadata.
+func (mr *MockFilesystemServiceMockRecorder) GetPhotoMetadata(path interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPhotoMetadata", reflect.TypeOf((*MockFilesystemService)(nil).GetPhotoMetadata), path)
+}

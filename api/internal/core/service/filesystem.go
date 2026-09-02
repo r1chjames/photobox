@@ -147,6 +147,18 @@ func (fss *FilesystemService) WriteFileToFilesystem(photo domain.PhotoUpload) do
 
 }
 
+// GetPhotoMetadata extracts metadata for an existing file on disk, reusing the
+// same extraction logic as the indexer. Used by third-party importers (e.g.
+// Google Takeout) that stage files into PhotoDir before saving them to the DB.
+func (fss *FilesystemService) GetPhotoMetadata(path string) domain.PhotoFile {
+	fileInfo, err := os.Lstat(path)
+	if err != nil {
+		slog.Warn("GetPhotoMetadata: unable to stat file", "path", path, "error", err)
+		return domain.PhotoFile{Path: path}
+	}
+	return fss.getMetaData(path, fileInfo.Name(), fileInfo)
+}
+
 func (fss *FilesystemService) getMetaData(path string, name string, fileInfo os.FileInfo) domain.PhotoFile {
 	slashIndices := utils.AllIndicesOfChar(path, "/")
 	photoDirectory := path[slashIndices[len(slashIndices)-2]+1 : slashIndices[len(slashIndices)-1]]
