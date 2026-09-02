@@ -21,7 +21,8 @@ type PhotoFile struct {
 	Duration  int       `json:"duration"`
 	Width     int   `json:"width"`
 	Height    int   `json:"height"`
-	ModifiedTime int64 `json:"modifiedTime" gorm:"-"`
-	Latitude     float64 `json:"latitude" gorm:"-"`
-	Longitude    float64 `json:"longitude" gorm:"-"`
+	ModifiedTime  int64   `json:"modifiedTime" gorm:"-"`
+	Latitude      float64 `json:"latitude" gorm:"-"`
+	Longitude     float64 `json:"longitude" gorm:"-"`
+	LivePhotoPath string  `json:"livePhotoPath"`
 }

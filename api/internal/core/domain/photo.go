@@ -33,6 +33,7 @@ type Photo struct {
 	Latitude       float64        `json:"latitude" gorm:"index"`
 	Longitude      float64        `json:"longitude" gorm:"index"`
 	Hidden         bool           `json:"hidden" gorm:"default:false;index"`
+	LivePhotoPath  string         `json:"livePhotoPath" gorm:"index"`
 	Description    string         `json:"description" gorm:"type:text"`
 	QualityScore   int            `json:"qualityScore" gorm:"default:0"`
 	BlurScore      float64        `json:"blurScore" gorm:"default:0"`

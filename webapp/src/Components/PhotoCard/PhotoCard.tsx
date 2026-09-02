@@ -10,7 +10,7 @@ import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
 import {ISharesAdapter} from "../../Adapters/ISharesAdapter";
 import {ShareModal} from "../ShareModal/ShareModal";
-import {fetchPhotoBinWithAuth, revokeBlobUrl} from "../../utils/ImageUtils";
+import {fetchLiveVideoWithAuth, fetchPhotoBinWithAuth, revokeBlobUrl} from "../../utils/ImageUtils";
 import {fetchThumbnailWithAuth} from "../../utils/ThumbnailUtils";
 import {optimisticallyUpdatePhoto} from "../../utils/queryClientHelpers";
 
@@ -42,6 +42,9 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
     const touchStartRef = useRef<{ x: number; y: number } | null>(null);
     const isSwipingRef = useRef(false);
     const isSharingRef = useRef(false);
+    const liveVideoUrlRef = useRef<string | undefined>(undefined);
+    const liveVideoRef = useRef<HTMLVideoElement>(null);
+    const [isPlayingLivePhoto, setIsPlayingLivePhoto] = useState(false);
 
     const fetchImage = useCallback(async () => {
         const imageUrl = await fetchPhotoBinWithAuth(props.photosAdapter, props.source.id, props.source.mediaType);
@@ -280,8 +283,46 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
         if (props.source.mediaType === 'video') {
             return;
         }
+        // Don't navigate on live photo press-and-hold release
+        if (isPlayingLivePhoto) {
+            setIsPlayingLivePhoto(false);
+            return;
+        }
         navigate(`/photo/${props.source.id}`);
-    }, [navigate, props.source.id, props.source.mediaType]);
+    }, [navigate, props.source.id, props.source.mediaType, isPlayingLivePhoto]);
+
+    const startLivePhotoPlayback = useCallback(async () => {
+        if (!props.source.livePhotoPath) return;
+        // Lazily fetch video on first press
+        if (!liveVideoUrlRef.current) {
+            try {
+                const url = await fetchLiveVideoWithAuth(props.photosAdapter, props.source.id);
+                liveVideoUrlRef.current = url;
+            } catch (e) {
+                console.error('Failed to fetch live photo video:', e);
+                return;
+            }
+        }
+        setIsPlayingLivePhoto(true);
+    }, [props.photosAdapter, props.source.id, props.source.livePhotoPath]);
+
+    const stopLivePhotoPlayback = useCallback(() => {
+        if (!isPlayingLivePhoto) return;
+        const video = liveVideoRef.current;
+        if (video) {
+            video.pause();
+            video.currentTime = 0;
+        }
+        setIsPlayingLivePhoto(false);
+    }, [isPlayingLivePhoto]);
+
+    // Clean up live video blob URL on unmount or photo change
+    useEffect(() => {
+        return () => {
+            revokeBlobUrl(liveVideoUrlRef.current);
+            liveVideoUrlRef.current = undefined;
+        };
+    }, [props.source.id]);
 
     return (
         <>
@@ -292,15 +333,21 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}>
                 <Card.Section inheritPadding={false} withBorder={false}>
-                    {fetchedImage ?
-                        (props.source.mediaType === 'video' ? (
-                            <video
-                                ref={img as React.Ref<HTMLVideoElement>}
-                                src={fetchedImage}
-                                controls
-                                style={{ maxHeight: '75vh', maxWidth: '100%', width: 'auto', height: 'auto', objectFit: 'contain', borderRadius: 'var(--mantine-radius-md)' }}
-                            />
-                        ) : (
+                {fetchedImage ?
+                    (props.source.mediaType === 'video' ? (
+                        <video
+                            ref={img as React.Ref<HTMLVideoElement>}
+                            src={fetchedImage}
+                            controls
+                            style={{ maxHeight: '75vh', maxWidth: '100%', width: 'auto', height: 'auto', objectFit: 'contain', borderRadius: 'var(--mantine-radius-md)' }}
+                        />
+                    ) : (props.source.livePhotoPath ? (
+                        <div
+                            style={{ position: 'relative', display: 'inline-block' }}
+                            onPointerDown={() => void startLivePhotoPlayback()}
+                            onPointerUp={stopLivePhotoPlayback}
+                            onPointerLeave={stopLivePhotoPlayback}
+                        >
                             <Image
                                 mah="75vh"
                                 fit="contain"
@@ -309,8 +356,34 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                                 ref={img}
                                 src={fetchedImage}
                                 alt={props.source.name}
+                                style={{ opacity: isPlayingLivePhoto ? 0 : 1 }}
                             />
-                        )) :
+                            <video
+                                ref={liveVideoRef}
+                                src={liveVideoUrlRef.current}
+                                muted
+                                playsInline
+                                loop={false}
+                                style={{
+                                    position: 'absolute', top: 0, left: 0,
+                                    maxHeight: '75vh', maxWidth: '100%', width: 'auto', height: 'auto',
+                                    objectFit: 'contain', borderRadius: 'var(--mantine-radius-md)',
+                                    display: isPlayingLivePhoto ? 'block' : 'none',
+                                }}
+                                onLoadedData={() => { liveVideoRef.current?.play(); }}
+                            />
+                        </div>
+                    ) : (
+                        <Image
+                            mah="75vh"
+                            fit="contain"
+                            maw="100%"
+                            radius="md"
+                            ref={img}
+                            src={fetchedImage}
+                            alt={props.source.name}
+                        />
+                    ))) :
                         <Image
                             mah="75vh"
                             fit="contain"
@@ -396,6 +469,11 @@ export const PhotoCard: React.FunctionComponent<IProps> = (props) => {
                         {props.source.isLowQuality && (
                             <Badge leftSection={<IconPhotoOff size={14} />} variant="light" color="red">
                                 Low quality
+                            </Badge>
+                        )}
+                        {props.source.livePhotoPath && (
+                            <Badge leftSection={<span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--mantine-color-red-filled)' }} />} variant="light" color="red">
+                                Live Photo
                             </Badge>
                         )}
                     </Group>

@@ -66,6 +66,11 @@ export class MockPhotosAdapter implements IPhotosAdapter {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public getPhotoLiveVideo = async (photoId: string) => {
+    return undefined;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public downloadPhoto = async (photoId: string, filename: string) => {
     return;
   }

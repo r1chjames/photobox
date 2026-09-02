@@ -12,6 +12,7 @@ export interface Photo {
   favorite?: boolean;
   fileHash?: string;
   mediaType?: 'image' | 'video';
+  livePhotoPath?: string;
   duration?: number;
   width?: number;
   height?: number;

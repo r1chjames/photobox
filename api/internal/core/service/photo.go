@@ -217,6 +217,26 @@ func (ps *PhotoService) PhotoBinary(photoId string) (string, error) {
 	return unescapedPath, nil
 }
 
+// PhotoLiveVideoPath returns the filesystem path for a photo's paired Live Photo video.
+// Returns an empty string if the photo has no associated Live Photo video.
+func (ps *PhotoService) PhotoLiveVideoPath(photoId string) (string, error) {
+	photoInfo, err := ps.photoRepo.GetPhotoById(photoId, false)
+	if err != nil {
+		return "", err
+	}
+	if photoInfo.LivePhotoPath == "" {
+		return "", domain.ErrDataNotFound
+	}
+	// Validate path is within photo directory
+	absBase, _ := filepath.Abs(ps.config.PhotoDir)
+	unescapedPath := utils.UnescapeInvalidCharacters(photoInfo.LivePhotoPath)
+	absReq, _ := filepath.Abs(unescapedPath)
+	if !strings.HasPrefix(absReq, absBase) {
+		return "", domain.ErrForbidden
+	}
+	return unescapedPath, nil
+}
+
 func (ps *PhotoService) PhotoThumbnail(photoId string) ([]byte, error) {
 	photoInfo, err := ps.photoRepo.GetPhotoById(photoId, true)
 	if err != nil {
@@ -329,6 +349,7 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 			Height:         photo.Height,
 			Latitude:       photo.Latitude,
 			Longitude:      photo.Longitude,
+			LivePhotoPath:  photo.LivePhotoPath,
 			DominantColor:  computeDominantColor(photo.Path),
 		}
 		photoInfo.Year, photoInfo.Month = getPhotoYearMonth(photo.Exif, photo.ModifiedTime)

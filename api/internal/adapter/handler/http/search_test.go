@@ -326,6 +326,11 @@ func (m *MockSearchPhotoService) TriggerAIAnalysis() error {
 
 func (m *MockSearchPhotoService) RegenerateThumbnails(ctx context.Context) {}
 
+func (m *MockSearchPhotoService) PhotoLiveVideoPath(photoId string) (string, error) {
+	args := m.Called(photoId)
+	return args.String(0), args.Error(1)
+}
+
 // MockSearchAlbumService is a mock implementation of port.AlbumService for search tests
 type MockSearchAlbumService struct {
 	mock.Mock

@@ -112,6 +112,8 @@ type PhotoService interface {
 	PhotoCount(albumId string) (int64, error)
 	//PhotoBinary returns the binary photo from disk
 	PhotoBinary(photoId string) (string, error)
+	//PhotoLiveVideoPath returns the filesystem path for a photo's Live Photo video
+	PhotoLiveVideoPath(photoId string) (string, error)
 	//PhotoThumbnail returns the binary photo from disk
 	PhotoThumbnail(photoId string) ([]byte, error)
 	//PhotoThumbnailBytes returns thumbnail bytes directly from DB
