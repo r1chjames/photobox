@@ -2,6 +2,7 @@ import React, {createContext, useCallback, useContext, useEffect, useMemo, useRe
 
 const TOKEN_STORAGE_KEY = 'token';
 const TOKEN_EXPIRY_STORAGE_KEY = 'tokenExpiry';
+const MAX_TIMEOUT_MS = 2 ** 31 - 1; // largest setTimeout delay browsers honor (~24.8 days)
 
 interface AuthContextType {
     token: string | null;
@@ -79,12 +80,21 @@ export const AuthProvider: React.FunctionComponent<{ children: React.ReactNode }
         if (!token) return;
         const expiryMs = expiryMsRef.current;
         if (expiryMs === null) return;
-        const delay = expiryMs - Date.now();
-        if (delay <= 0) {
-            logout();
-            return;
-        }
-        logoutTimerRef.current = setTimeout(logout, delay);
+
+        const armLogoutTimer = () => {
+            const remaining = expiryMs - Date.now();
+            if (remaining <= 0) {
+                logout();
+                return;
+            }
+            // Browsers fire setTimeout immediately when the delay overflows
+            // the 32-bit signed range (~24.8 days). A long-lived token (e.g.
+            // 30 days) must therefore be armed in sub-max chunks that re-arm
+            // until the token genuinely expires.
+            logoutTimerRef.current = setTimeout(armLogoutTimer, Math.min(remaining, MAX_TIMEOUT_MS));
+        };
+        armLogoutTimer();
+
         return () => {
             if (logoutTimerRef.current) {
                 clearTimeout(logoutTimerRef.current);
