@@ -103,6 +103,17 @@ export default defineConfig({
         outDir: 'build',
         sourcemap: true,
     },
+    server: {
+        // Dev proxy: forward /api to the locally-running API so the dev
+        // server can reach the backend without CORS issues. The API_URL
+        // env (default /api in dev) keeps fetch calls same-origin.
+        proxy: {
+            '/api': {
+                target: 'http://localhost:8080',
+                changeOrigin: true,
+            },
+        },
+    },
     test: {
         setupFiles: ['./src/test/setup.ts'],
         environment: 'jsdom',

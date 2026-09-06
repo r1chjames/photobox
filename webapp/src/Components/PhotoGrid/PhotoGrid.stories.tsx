@@ -72,6 +72,41 @@ export const AllPhotosMobile: Story = {
     }
 };
 
+// Adversarial composition (issue #174): extreme aspect ratios — panoramas,
+// very tall portraits, squares and landscapes in a fixed cycle — stress the
+// planner's featured/tall budgets and consecutive-variant limits. The grid
+// must stay aligned to the 16px rhythm with no runaway repeats.
+const adversarialDims: Array<[number, number]> = [
+    [6000, 2000],   // panorama -> featured (2-col)
+    [4032, 3024],   // landscape -> standard
+    [1500, 4000],   // very tall portrait -> tall
+    [3024, 4032],   // portrait
+    [3000, 3000],   // square
+    [4032, 3024],   // landscape -> standard
+];
+const adversarialBuilder = new SBModelBuilder().newAlbumWithPhotos(90);
+const adversarialPhotos = adversarialBuilder
+    .getPhotos()
+    .map((photo, index) => {
+        const [width, height] = adversarialDims[index % adversarialDims.length];
+        return {...photo, width, height};
+    });
+
+export const AdversarialMixedDimensions: Story = {
+    args: {
+        photosAdapter: new MockPhotosAdapter()
+            .withPhotos(adversarialPhotos),
+        albumsAdapter: new MockAlbumsAdapter()
+            .withAlbums(adversarialBuilder.getAlbums()),
+    },
+    parameters: {
+        reactRouter: {
+            initialEntries: ['/'],
+            routePath: '/',
+        }
+    }
+};
+
 const emptyAlbum = new SBModelBuilder().newEmptyAlbum();
 export const EmptyAlbumPhotos: Story = {
     args: {
