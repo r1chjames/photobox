@@ -15,6 +15,12 @@ interface TimelineScrubberProps {
 const THROTTLE_MS = 100;
 const TRACK_WIDTH = 2;
 const HANDLE_SIZE = 12;
+// Desktop overlay rail (issue #174): absolute over the grid's right gutter.
+// RAIL_WIDTH must match PhotoGrid's TIMELINE_RAIL_INSET so the rail covers
+// only reserved padding and never photo content. RAIL_LINE_CENTER is the
+// line's x position measured from the strip's right edge.
+const RAIL_WIDTH = 48;
+const RAIL_LINE_CENTER = 24;
 
 export const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
   photosAdapter,
@@ -31,7 +37,7 @@ export const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
   const [scrubberPercent, setScrubberPercent] = useState(0);
   const [hoveredMonth, setHoveredMonth] = useState<{ year: number; month: number } | null>(null);
 
-  const isMobile = useMediaQuery('(max-width: 48em)');
+  const isMobile = useMediaQuery('(max-width: 50em)');
   const trackRef = useRef<HTMLDivElement>(null);
   const throttleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSelectRef = useRef<{ year: number; month: number } | null>(null);
@@ -190,9 +196,35 @@ export const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
     };
   }, [isDragging, handleDragMove, handleDragEnd]);
 
+  // Keyboard scrubbing (issue #174): the rail is a vertical slider. Entries
+  // are newest-first with index 0 at the top, so ArrowUp moves toward newer
+  // months and Home/End jump to the extremes. Declared before the early
+  // returns below so the hook count stays stable across renders (React #310).
+  const handleRailKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const count = flatMonths.length;
+    if (count === 0) return;
+    const currentIdx = getIndexForPercent(scrubberPercent);
+    let nextIdx = currentIdx;
+    switch (e.key) {
+      case 'ArrowUp': nextIdx = Math.max(0, currentIdx - 1); break;
+      case 'ArrowDown': nextIdx = Math.min(count - 1, currentIdx + 1); break;
+      case 'Home': nextIdx = 0; break;
+      case 'End': nextIdx = count - 1; break;
+      default: return;
+    }
+    e.preventDefault();
+    setScrubberPercent(getPercentForIndex(nextIdx));
+    const entry = flatMonths[nextIdx];
+    if (entry) {
+      lastSelectRef.current = null; // keyboard steps must not be deduped away
+      onSelectMonth(entry.year, entry.month);
+    }
+  }, [flatMonths, getIndexForPercent, getPercentForIndex, scrubberPercent, onSelectMonth]);
+
   if (loading || entries.length === 0) {
     return null;
   }
+
 
   const monthName = (month: number) => {
     return new Date(2000, month - 1, 1).toLocaleString('default', { month: 'short' });
@@ -212,7 +244,7 @@ export const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
 
   // Build the track content: month labels positioned along the track
   // Only visible during drag or hover
-  const renderTrackLabels = () => {
+  const renderTrackLabels = (labelRight: string) => {
     if (!isDragging && !isHovering) return null;
 
     // Limit to ~12 labels to avoid crowding
@@ -237,7 +269,7 @@ export const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
           style={{
             position: 'absolute',
             top: `${percent}%`,
-            right: 'calc(50% + 8px)',
+            right: labelRight,
             transform: 'translateY(-50%)',
             display: 'flex',
             alignItems: 'center',
@@ -334,7 +366,7 @@ export const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
         />
 
         {/* Month labels */}
-        {renderTrackLabels()}
+        {renderTrackLabels('calc(50% + 8px)')}
 
         {/* Draggable handle - small circle, prominent only during interaction */}
         <div
@@ -410,22 +442,142 @@ export const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
   }
 
   const isInteracting = isDragging || isHovering;
+  const railTrackIndex = getIndexForPercent(scrubberPercent);
+  const railEntry = entries[railTrackIndex];
 
-  // Desktop: fixed-width panel to the right of the grid
+  // Desktop: overlaid right-edge rail (issue #174). The wrapper is
+  // pointer-events:none so photos underneath stay interactive; only the
+  // narrow strip itself captures input. Month labels float left over the
+  // grid with a translucent chip background.
   return (
     <div
+      className="timeline-rail"
       style={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        paddingTop: 8,
-        paddingBottom: 8,
-        background: isInteracting ? 'var(--mantine-color-body)' : 'transparent',
-        borderLeft: isInteracting ? '1px solid var(--mantine-color-default-border)' : '1px solid transparent',
-        transition: 'background 0.15s, border-color 0.15s',
+        position: 'absolute',
+        top: 8,
+        bottom: 8,
+        right: 0,
+        width: RAIL_WIDTH,
+        pointerEvents: 'none',
+        zIndex: 20,
       }}
     >
-      {scrubberContent}
+      <div
+        role="slider"
+        aria-label="Timeline scrubber"
+        aria-valuemin={0}
+        aria-valuemax={Math.max(0, entries.length - 1)}
+        aria-valuenow={Math.max(0, entries.length - 1 - railTrackIndex)}
+        aria-valuetext={railEntry ? `${monthName(railEntry.month)} ${railEntry.year}` : undefined}
+        tabIndex={0}
+        onKeyDown={handleRailKeyDown}
+        ref={trackRef}
+        style={{
+          position: 'relative',
+          height: '100%',
+          width: '100%',
+          cursor: isDragging ? 'grabbing' : 'pointer',
+          pointerEvents: 'auto',
+          borderRadius: 8,
+        }}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          handleDragStart(e.clientY);
+        }}
+        onTouchStart={(e) => {
+          handleDragStart(e.touches[0].clientY);
+        }}
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => {
+          setIsHovering(false);
+          setHoveredMonth(null);
+        }}
+      >
+        {/* Track line - slim dotted line */}
+        <div
+          style={{
+            position: 'absolute',
+            right: RAIL_LINE_CENTER - TRACK_WIDTH / 2,
+            top: 0,
+            bottom: 0,
+            width: TRACK_WIDTH,
+            borderRight: `${TRACK_WIDTH}px dotted var(--mantine-color-default-border)`,
+            opacity: isInteracting ? 0.8 : 0.4,
+            transition: 'opacity 0.15s',
+          }}
+        />
+
+        {/* Month labels - float left of the line over the photos */}
+        {renderTrackLabels(`${RAIL_LINE_CENTER + 8}px`)}
+
+        {/* Draggable handle */}
+        <div
+          style={{
+            position: 'absolute',
+            right: RAIL_LINE_CENTER - HANDLE_SIZE / 2,
+            top: `${scrubberPercent}%`,
+            transform: 'translateY(-50%)',
+            width: HANDLE_SIZE,
+            height: HANDLE_SIZE,
+            background: isDragging ? 'var(--mantine-primary-color-filled)' : (isHovering ? 'var(--mantine-primary-color-filled-hover)' : 'var(--mantine-color-default-border)'),
+            borderRadius: '50%',
+            cursor: 'grab',
+            boxShadow: isInteracting ? '0 1px 4px rgba(0,0,0,0.3)' : 'none',
+            opacity: isInteracting ? 1 : 0.6,
+            transition: isDragging ? 'none' : 'top 0.2s ease-out, opacity 0.15s, background 0.15s',
+            zIndex: 10,
+          }}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            handleDragStart(e.clientY);
+          }}
+          onTouchStart={(e) => {
+            e.stopPropagation();
+            handleDragStart(e.touches[0].clientY);
+          }}
+        />
+      </div>
+
+      {/* Floating month chip - visible while scrubbing or when a filter is active.
+          Floats over the grid (left of the rail) with a translucent background;
+          pointer-events auto only on this element so photos stay clickable. */}
+      {displayMonth && (isInteracting || (activeYear !== undefined && activeMonth !== undefined)) && (
+        <div
+          style={{
+            position: 'absolute',
+            top: `${scrubberPercent}%`,
+            right: RAIL_WIDTH + 8,
+            transform: 'translateY(-50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            padding: '2px 6px',
+            background: 'rgba(18, 19, 22, 0.85)',
+            borderRadius: 10,
+            whiteSpace: 'nowrap',
+            pointerEvents: 'auto',
+            zIndex: 10,
+          }}
+        >
+          <Text size="xs" fw={700} c="white">
+            {monthName(displayMonth.month)} {displayMonth.year}
+          </Text>
+          {(activeYear !== undefined && activeMonth !== undefined) && (
+            <ActionIcon
+              size="xs"
+              variant="subtle"
+              color="white"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClear();
+              }}
+            >
+              <IconX size={10} />
+            </ActionIcon>
+          )}
+        </div>
+      )}
     </div>
   );
 };

@@ -19,6 +19,7 @@ import { modals } from '@mantine/modals';
 import './PhotoGrid.css';
 import {Photo} from "../../Models/Photo";
 import {fetchThumbnailsBatch, getCachedThumbnail, fetchThumbnailWithAuth, revokeThumbnail} from "../../utils/ThumbnailUtils";
+import {planGridLayout, PlannedTileLayout, GRID_QUANTUM} from './gridLayoutPlanner';
 import {BlurhashCanvas} from "../BlurhashCanvas/BlurhashCanvas";
 import {optimisticallyUpdatePhoto} from "../../utils/queryClientHelpers";
 import {GridSkeleton} from "../GridSkeleton/GridSkeleton";
@@ -85,6 +86,10 @@ const defaultProps = {
     maxDisplayed: 20000000
 }
 
+// Right-edge inset for the overlaid desktop timeline rail (issue #174):
+// keeps the last photo column clear of the 40px-wide rail.
+const TIMELINE_RAIL_INSET = 48;
+
 interface GridImageItemProps {
     photo: Photo;
     isSelectionMode: boolean;
@@ -94,26 +99,18 @@ interface GridImageItemProps {
     onToggleFavorite: (id: string) => void;
     onRetry?: (id: string) => void;
     onLongPress?: (id: string) => void;
-    /** Quantum-masonry row span (in 16px auto-row tracks). */
-    rowSpan?: number;
+    /** Planned quantum-masonry layout (variant + spans, issue #174). */
+    layout?: PlannedTileLayout;
 }
 
-// Classify a photo into the prototype's varied-aspect layouts based on its
-// native dimensions. Photos without dimensions fall back to the standard
-// landscape tile.
-const photoLayout = (photo: Photo): 'tall' | 'wide' | '' => {
-    const w = photo.width ?? 0;
-    const h = photo.height ?? 0;
-    if (w <= 0 || h <= 0) return '';
-    const ratio = w / h;
-    if (ratio < 0.85) return 'tall';
-    if (ratio > 1.35) return 'wide';
-    return '';
-};
-
-// By adding a custom comparison function to React.memo, we prevent re-renders unless the photo's ID changes.
+// By adding a custom comparison function to React.memo, we prevent re-renders
+// unless a tile's visible inputs change. The comparator MUST cover every
+// prop that affects rendered output: layout (rowSpan/variant drive inline
+// grid styles and the class name) and photo.width/height (they feed the
+// planner; a dimension refresh re-plans the tile). Stale layout props here
+// were a source of post-resize misalignment (issue #174).
 const GridImageItem = React.memo(
-    ({photo, isSelectionMode, isSelected, onImageClick, onToggleSelect, onToggleFavorite, onRetry, onLongPress, thumbnailUrl, rowSpan}: GridImageItemProps & { thumbnailUrl: string | undefined }) => {
+    ({photo, isSelectionMode, isSelected, onImageClick, onToggleSelect, onToggleFavorite, onRetry, onLongPress, thumbnailUrl, layout}: GridImageItemProps & { thumbnailUrl: string | undefined }) => {
         const [isLoaded, setIsLoaded] = useState(false);
         const [hasError, setHasError] = useState(false);
         const effectiveThumbnailUrl = thumbnailUrl || photo.thumbnailUrl;
@@ -163,18 +160,22 @@ const GridImageItem = React.memo(
 
         return (
             <div
-                className={`photo-tile${photoLayout(photo) ? ' ' + photoLayout(photo) : ''}${isSelected ? ' selected' : ''}${photo.favorite ? ' favorited' : ''}`}
+                className={`photo-tile${layout ? ' ' + layout.variant : ''}${isSelected ? ' selected' : ''}${photo.favorite ? ' favorited' : ''}`}
+                data-layout-variant={layout?.variant}
+                data-column-span={layout?.columnSpan}
+                data-row-span={layout?.rowSpan}
                 onClick={handleClick}
                 onTouchStart={handleTouchStart}
                 onTouchMove={cancelLongPress}
                 onTouchEnd={cancelLongPress}
                 style={{
                     position: 'relative',
-                    // Neutralize the CSS .tall/.wide grid-row shorthand so the
-                    // JS quantum span (gridRowEnd) is the sole row placement —
-                    // same as the prototype's `gridRowStart = 'auto'`.
+                    // The planned quantum span (gridRowEnd) is the sole row
+                    // placement — CSS never sets row/column spans for the
+                    // quantized grid (issue #174, one source of truth).
                     gridRowStart: 'auto',
-                    gridRowEnd: rowSpan ? `span ${rowSpan}` : undefined,
+                    gridRowEnd: layout?.rowSpan ? `span ${layout.rowSpan}` : undefined,
+                    gridColumnEnd: layout?.columnSpan === 2 ? 'span 2' : undefined,
                 }}
             >
                 <div className="photo-controls">
@@ -355,10 +356,15 @@ const GridImageItem = React.memo(
     (prevProps, nextProps) =>
         prevProps.photo.id === nextProps.photo.id &&
         prevProps.photo.favorite === nextProps.photo.favorite &&
+        prevProps.photo.width === nextProps.photo.width &&
+        prevProps.photo.height === nextProps.photo.height &&
+        prevProps.photo.livePhotoPath === nextProps.photo.livePhotoPath &&
         prevProps.isSelectionMode === nextProps.isSelectionMode &&
         prevProps.isSelected === nextProps.isSelected &&
         prevProps.thumbnailUrl === nextProps.thumbnailUrl &&
-        prevProps.photo.livePhotoPath === nextProps.photo.livePhotoPath
+        prevProps.layout?.variant === nextProps.layout?.variant &&
+        prevProps.layout?.columnSpan === nextProps.layout?.columnSpan &&
+        prevProps.layout?.rowSpan === nextProps.layout?.rowSpan
 );
 GridImageItem.displayName = 'GridImageItem';
 
@@ -555,7 +561,6 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
     // tiles skip layout via content-visibility: auto, keeping the DOM bounded.
     const [gridColumns, setGridColumns] = useState(5);
     const [containerWidth, setContainerWidth] = useState(0);
-    const QUANTUM = 16;
     const gridGap = density === 'compact' ? 4 : density === 'large' ? 20 : 10;
 
     useEffect(() => {
@@ -579,29 +584,28 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
         // + timeline not yet settled); re-measure once content paints so the
         // column count reflects the real width, not a transient narrow one.
         requestAnimationFrame(() => compute());
-        window.addEventListener('resize', compute);
+        const onResize = () => compute();
+        window.addEventListener('resize', onResize);
         return () => {
             ro.disconnect();
-            window.removeEventListener('resize', compute);
+            window.removeEventListener('resize', onResize);
         };
     }, [density, gridGap]);
 
-    const cardWidth = Math.max(80, (containerWidth - (gridColumns - 1) * gridGap) / gridColumns);
-
-    // Quantum-masonry row spans (prototype layoutMasonrySpans): rows = the
-    // number of 16px auto-row tracks a tile occupies, rounding so the tile's
-    // display aspect fits its column span.
-    const tileRowSpans = React.useMemo(() => {
-        if (cardWidth <= 0) return new Map<string, number>();
-        const spans = new Map<string, number>();
-        photos.forEach(photo => {
-            const spanCols = photoLayout(photo) === 'wide' ? 2 : 1;
-            const tw = spanCols * cardWidth + (spanCols - 1) * gridGap;
-            const ar = photoLayout(photo) === 'tall' ? 14 / 10 : photoLayout(photo) === 'wide' ? 11 / 28 : 11 / 16;
-            spans.set(photo.id, Math.max(1, Math.round((tw * ar + gridGap) / (QUANTUM + gridGap))));
-        });
-        return spans;
-    }, [photos, cardWidth, gridGap]);
+    // Planned quantum-masonry layout (issue #174): pure, deterministic, and
+    // memoized on the inputs that feed it. The planner preserves photo order,
+    // respects source aspect ratios, and applies a pattern budget so the grid
+    // varies without repeating or misaligning.
+    const tileLayouts: Map<string, PlannedTileLayout> = React.useMemo(
+        () => planGridLayout({
+            photos,
+            containerWidth,
+            columns: gridColumns,
+            gap: gridGap,
+            mode: isMobile ? 'mobile' : 'desktop',
+        }),
+        [photos, containerWidth, gridColumns, gridGap, isMobile]
+    );
 
     // Load the next page when scrolling near the bottom of the grid.
     const handleGridScroll = useCallback(() => {
@@ -979,12 +983,19 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                     onCancel={() => { setIsSelectionMode(false); setSelectedIds(new Set()); }}
                 />
             )}
-            <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+            <div style={{ flex: 1, display: 'flex', minHeight: 0, position: 'relative' }}>
                 <div
                     ref={containerRef}
                     className={`density-${density}`}
                     onScroll={handleGridScroll}
-                    style={{ flex: 1, overflowY: 'auto', position: 'relative' }}
+                    style={{
+                        flex: 1,
+                        overflowY: 'auto',
+                        position: 'relative',
+                        // Desktop only: keep the last column clear of the
+                        // overlaid timeline rail (issue #174).
+                        paddingRight: !isMobile && viewMode === 'grid' ? TIMELINE_RAIL_INSET : undefined,
+                    }}
                 >
                     {showEmpty ? null : showSkeleton ? (
                         <GridSkeleton columns={gridColumns} rows={3} gap={gridGap} />
@@ -994,7 +1005,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                             data-testid="virtual-grid"
                             style={{
                                 gridTemplateColumns: `repeat(${gridColumns}, 1fr)`,
-                                gridAutoRows: `${QUANTUM}px`,
+                                gridAutoRows: `${GRID_QUANTUM}px`,
                                 gap: gridGap,
                             }}
                         >
@@ -1010,7 +1021,7 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                                     onToggleFavorite={onToggleFavorite}
                                     onRetry={handleRetryThumbnail}
                                     onLongPress={handleLongPress}
-                                    rowSpan={isMobile ? undefined : tileRowSpans.get(photo.id)}
+                                    layout={tileLayouts.get(photo.id)}
                                 />
                             ))}
                             {isFetchingNextPage && (
@@ -1081,16 +1092,14 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                     </div>
                 )}
                 </div>
-                {!id && (
-                    <div style={{ width: 200, flexShrink: 0, position: 'relative' }}>
-                        <TimelineScrubber
-                            photosAdapter={props.photosAdapter}
-                            onSelectMonth={(year, month) => setDateFilter({ year, month })}
-                            onClear={() => setDateFilter(null)}
-                            activeYear={dateFilter?.year}
-                            activeMonth={dateFilter?.month}
-                        />
-                    </div>
+                {!id && viewMode === 'grid' && (
+                    <TimelineScrubber
+                        photosAdapter={props.photosAdapter}
+                        onSelectMonth={(year, month) => setDateFilter({ year, month })}
+                        onClear={() => setDateFilter(null)}
+                        activeYear={dateFilter?.year}
+                        activeMonth={dateFilter?.month}
+                    />
                 )}
             </div>
           {isImageModalOpen && (
