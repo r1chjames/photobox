@@ -120,12 +120,32 @@ const GridImageItem = React.memo(
     ({photo, isSelectionMode, isSelected, onImageClick, onToggleSelect, onToggleFavorite, onRetry, onLongPress, thumbnailUrl, layout}: GridImageItemProps & { thumbnailUrl: string | undefined }) => {
         const [isLoaded, setIsLoaded] = useState(false);
         const [hasError, setHasError] = useState(false);
-        const effectiveThumbnailUrl = thumbnailUrl || photo.thumbnailUrl;
+        // Only render an <img> once a real blob URL exists (thumbnailUrl prop
+        // from the batch fetch). photo.thumbnailUrl is a server-relative API
+        // path that nginx serves as SPA index.html (HTTP 200 HTML) — using it
+        // as an img src always fires onError and shows the retry arrow before
+        // the blob lands (issue #173 follow-up).
+        const effectiveThumbnailUrl = thumbnailUrl;
+        // Transient blob failures (rate limit, on-demand generation delay)
+        // must NOT flip the tile to the retry UI: keep the placeholder and
+        // quietly re-fetch until the failure looks definitive.
+        const errorCountRef = useRef(0);
 
         useEffect(() => {
             setIsLoaded(false);
             setHasError(false);
+            errorCountRef.current = 0;
         }, [effectiveThumbnailUrl]);
+
+        const handleImageError = useCallback(() => {
+            errorCountRef.current += 1;
+            if (errorCountRef.current < 2) {
+                // Quiet retry: keep the placeholder, re-request the blob.
+                onRetry?.(photo.id);
+            } else {
+                setHasError(true);
+            }
+        }, [onRetry, photo.id]);
 
         const cameraModel = photo.metadata && typeof photo.metadata === 'object' && 'Model' in photo.metadata ? String(photo.metadata.Model) : undefined;
 
@@ -228,7 +248,7 @@ const GridImageItem = React.memo(
                             loading="lazy"
                             decoding="async"
                             onLoad={() => setIsLoaded(true)}
-                            onError={() => setHasError(true)}
+                            onError={handleImageError}
                             style={{
                                 position: 'relative',
                                 opacity: isLoaded ? 1 : 0,

@@ -288,6 +288,17 @@ func computeDominantColor(path string) string {
 	if err != nil {
 		return ""
 	}
+	return dominantColorFromImage(img)
+}
+
+// dominantColorFromImage resizes an already-decoded image to 1x1 to extract
+// the average color, returning a hex string like "#aabbcc". Returns empty
+// string on failure. Used on in-hand thumbnail bytes so no second file read
+// (and no original-file decode) is needed (issue #173 follow-up).
+func dominantColorFromImage(img image.Image) string {
+	if img == nil {
+		return ""
+	}
 	// Resize to 1x1 to get the average color of the entire image
 	onePixel := imaging.Resize(img, 1, 1, imaging.Box)
 	r, g, b, _ := onePixel.At(0, 0).RGBA()
@@ -741,15 +752,22 @@ func (ps *PhotoService) GenerateThumbnailForPhoto(photoId string) (string, error
 		cacheKey := fmt.Sprintf("thumbnail:%s:%s", photoId, sizeCode)
 		_ = ps.cacheSvc.Set(cacheKey, "", 24*time.Hour)
 		if sizeCode == "m" {
-			// Encode blurhash from medium thumbnail for grid placeholders
-			if img, _, err := image.Decode(bytes.NewReader(thumbnail)); err == nil {
-				if blurhashStr, err := blurhash.Encode(4, 3, img); err == nil {
+			// Encode blurhash + dominant color from medium thumbnail for grid
+			// placeholders (issue #173 follow-up). Decoded once, reused for both.
+			img, _, err := image.Decode(bytes.NewReader(thumbnail))
+			if err == nil {
+				if blurhashStr, berr := blurhash.Encode(4, 3, img); berr == nil {
 					photo.Blurhash = blurhashStr
 				} else {
-					slog.Warn("Failed to encode blurhash", "photo", photoId, "error", err)
+					slog.Warn("Failed to encode blurhash", "photo", photoId, "error", berr)
+				}
+				if colorHex := dominantColorFromImage(img); colorHex != "" {
+					photo.DominantColor = colorHex
+				} else {
+					slog.Warn("Failed to compute dominant color", "photo", photoId)
 				}
 			} else {
-				slog.Warn("Failed to decode thumbnail for blurhash", "photo", photoId, "error", err)
+				slog.Warn("Failed to decode thumbnail for placeholders", "photo", photoId, "error", err)
 			}
 		}
 	}
@@ -758,8 +776,11 @@ func (ps *PhotoService) GenerateThumbnailForPhoto(photoId string) (string, error
 		return "", domain.ErrDataNotFound
 	}
 
-	// Update DB
-	_ = ps.photoRepo.UpdatePhoto(*photo)
+	// Update DB — persist blurhash/dominantColor so the next list response
+	// returns them; surface failures instead of swallowing them.
+	if err := ps.photoRepo.UpdatePhoto(*photo); err != nil {
+		slog.Error("Failed to persist photo metadata after thumbnail generation", "photo", photoId, "error", err)
+	}
 
 	return "", nil
 }
