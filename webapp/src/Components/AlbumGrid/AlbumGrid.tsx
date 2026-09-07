@@ -1,6 +1,7 @@
-import React, { useCallback, useState } from 'react';
+import React, {useCallback, useState} from 'react';
 import { Album } from '../../Models/Album';
 import { AlbumCard } from '../AlbumCard/AlbumCard';
+import { AlbumCardSkeleton } from './AlbumCardSkeleton';
 import { EmptyState } from '../EmptyState/EmptyState';
 import { InputModal } from '../InputModal/InputModal';
 import {Button, TextInput} from '@mantine/core';
@@ -26,21 +27,22 @@ const defaultProps = {
 
 export const AlbumGrid: React.FunctionComponent<IProps> = (propsIn) => {
     const props = {...defaultProps, ...propsIn};
-    const navigate = useNavigate()
+    const navigate = useNavigate();
     const [showNewAlbumModal, setShowNewAlbumModal] = useState(false);
     const [albumKey, setAlbumKey] = useState(0);
-    const [{albums, createAlbumModalAlbumNameErrorText, newAlbumName, handleNewAlbumNameValueChange}] = useAlbumGrid(props.albumsAdapter);
-    const [displayCount, setDisplayCount] = useState(props.initialDisplayCount ?? albums?.length ?? 0);
+    const [{albums, isLoading, isError, refetch, createAlbumModalAlbumNameErrorText, newAlbumName, handleNewAlbumNameValueChange}] = useAlbumGrid(props.albumsAdapter);
+    // Paging applies only when a caller supplies an initial page size (e.g.
+    // the Dashboard's 30); the standalone /albums view always shows every
+    // album. displayCount starts at the page size and grows via "Load More".
+    const [displayCount, setDisplayCount] = useState(props.initialDisplayCount ?? 0);
 
-    // Sync display count once albums arrive. Previously initialized to 0 when
-    // albums was still loading, leaving the /albums view empty ("Load More"
-    // shown but no cards) until a manual increment — the Dashboard passed an
-    // initialDisplayCount so it was masked there.
-    React.useEffect(() => {
-        if (props.initialDisplayCount === undefined && albums && albums.length > 0) {
-            setDisplayCount(albums.length);
-        }
-    }, [albums, props.initialDisplayCount]);
+    const isPaged = props.initialDisplayCount !== undefined;
+    // The slice shown at any moment; recomputed each render so "Load More"
+    // visibility and the rendered cards can never disagree, and an empty
+    // grid never flashes between albums arriving and state catching up.
+    const visibleAlbums = albums && !isLoading
+        ? albums.slice(0, isPaged ? displayCount : albums.length)
+        : [];
 
   const newAlbumModalSaveClick = useCallback(async () => {
     try {
@@ -64,6 +66,60 @@ export const AlbumGrid: React.FunctionComponent<IProps> = (propsIn) => {
   const handleAlbumUpdated = useCallback(() => {
     setAlbumKey(prev => prev + 1);
   }, []);
+
+  const renderGridContent = () => {
+    if (isLoading && !albums) {
+      // First load (no cached albums yet): skeleton cards in the same 3-col
+      // grid so real cards replace them without layout shift (issue #173).
+      const skeletonCount = Math.min(props.initialDisplayCount ?? 6, 6);
+      return Array.from({length: skeletonCount}).map((_, i) => (
+        <article key={`skeleton-${i}`}>
+          <AlbumCardSkeleton />
+        </article>
+      ));
+    }
+
+    if (isError && !albums) {
+      return (
+        <EmptyState
+            title="Failed to load albums"
+            description="Albums could not be loaded. Check your connection and try again."
+            icon={<IconAlbumOff size="2rem" />}
+            action={{
+                label: "Try again",
+                onClick: () => { refetch(); },
+            }}
+        />
+      );
+    }
+
+    if (albums && albums.length > 0) {
+      return visibleAlbums.map((album: Album) => (
+        <article key={album.id}>
+          <AlbumCard
+            photosAdapter={props.photosAdapter}
+            albumsAdapter={props.albumsAdapter}
+            source={album}
+            albumViewCallback={() => navigate(`../album/${album.id}`)}
+            onAlbumUpdated={handleAlbumUpdated}
+          />
+        </article>
+      ));
+    }
+
+    // Loaded successfully but no albums yet.
+    return (
+        <EmptyState
+            title="No albums yet"
+            description="Albums appear automatically from your photo folders, or create one manually."
+            icon={<IconAlbumOff size="2rem" />}
+            action={{
+                label: "Create album",
+                onClick: () => setShowNewAlbumModal(true),
+            }}
+        />
+    );
+  };
 
   return (
     <div key={albumKey}>
@@ -93,31 +149,9 @@ export const AlbumGrid: React.FunctionComponent<IProps> = (propsIn) => {
         )}
         <section className="albumIndexView__cardContainer">
           <div className="albums-grid">
-          {albums && albums.length > 0 ? albums.slice(0, displayCount).map((album: Album) => {
-            return(
-              <article key={album.id}>
-                <AlbumCard
-                  photosAdapter={props.photosAdapter}
-                  albumsAdapter={props.albumsAdapter}
-                  source={album}
-                  albumViewCallback={() => navigate(`../album/${album.id}`)}
-                  onAlbumUpdated={handleAlbumUpdated}
-                />
-              </article>
-            );
-          }) : (
-              <EmptyState
-                  title="No albums yet"
-                  description="Albums appear automatically from your photo folders, or create one manually."
-                  icon={<IconAlbumOff size="2rem" />}
-                  action={{
-                      label: "Create album",
-                      onClick: () => setShowNewAlbumModal(true),
-                  }}
-              />
-          )}
+            {renderGridContent()}
           </div>
-          {albums && albums.length > displayCount && (
+          {!isLoading && isPaged && albums && albums.length > displayCount && (
               <Button
                   variant="light"
                   fullWidth

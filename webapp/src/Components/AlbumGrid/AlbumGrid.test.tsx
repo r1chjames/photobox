@@ -62,6 +62,9 @@ describe('AlbumGrid', () => {
         // Default mock implementation
         (useAlbumGrid as ReturnType<typeof vi.fn>).mockReturnValue([{
             albums: mockAlbums,
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
             createAlbumModalAlbumNameErrorText: '',
             newAlbumName: '',
             handleNewAlbumNameValueChange: vi.fn()
@@ -156,6 +159,9 @@ describe('AlbumGrid', () => {
     it('should handle empty album list', async () => {
         (useAlbumGrid as ReturnType<typeof vi.fn>).mockReturnValue([{
             albums: [],
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
             createAlbumModalAlbumNameErrorText: '',
             newAlbumName: '',
             handleNewAlbumNameValueChange: vi.fn()
@@ -178,6 +184,9 @@ describe('AlbumGrid', () => {
     it('should handle undefined albums', () => {
         (useAlbumGrid as ReturnType<typeof vi.fn>).mockReturnValue([{
             albums: undefined,
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
             createAlbumModalAlbumNameErrorText: '',
             newAlbumName: '',
             handleNewAlbumNameValueChange: vi.fn()
@@ -222,6 +231,9 @@ describe('AlbumGrid', () => {
 
         (useAlbumGrid as ReturnType<typeof vi.fn>).mockReturnValue([{
             albums: mockAlbums,
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
             createAlbumModalAlbumNameErrorText: '',
             newAlbumName: 'New Album Name',
             handleNewAlbumNameValueChange: mockHandleChange
@@ -264,6 +276,9 @@ describe('AlbumGrid', () => {
 
         (useAlbumGrid as ReturnType<typeof vi.fn>).mockReturnValue([{
             albums: manyAlbums,
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
             createAlbumModalAlbumNameErrorText: '',
             newAlbumName: '',
             handleNewAlbumNameValueChange: vi.fn()
@@ -290,6 +305,9 @@ describe('AlbumGrid', () => {
 
         (useAlbumGrid as ReturnType<typeof vi.fn>).mockReturnValue([{
             albums: manyAlbums,
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
             createAlbumModalAlbumNameErrorText: '',
             newAlbumName: '',
             handleNewAlbumNameValueChange: vi.fn()
@@ -320,6 +338,9 @@ describe('AlbumGrid', () => {
 
         (useAlbumGrid as ReturnType<typeof vi.fn>).mockReturnValue([{
             albums: manyAlbums,
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
             createAlbumModalAlbumNameErrorText: '',
             newAlbumName: '',
             handleNewAlbumNameValueChange: vi.fn()
@@ -364,6 +385,9 @@ describe('AlbumGrid', () => {
 
         (useAlbumGrid as ReturnType<typeof vi.fn>).mockReturnValue([{
             albums: manyAlbums,
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
             createAlbumModalAlbumNameErrorText: '',
             newAlbumName: '',
             handleNewAlbumNameValueChange: vi.fn()
@@ -380,5 +404,162 @@ describe('AlbumGrid', () => {
         await waitFor(() => {
             expect(screen.queryByText('Load More')).not.toBeInTheDocument();
         });
+    });
+
+    it('should render skeleton cards while first load is pending and hide the empty state', async () => {
+        (useAlbumGrid as ReturnType<typeof vi.fn>).mockReturnValue([{
+            albums: undefined,
+            isLoading: true,
+            isError: false,
+            refetch: vi.fn(),
+            createAlbumModalAlbumNameErrorText: '',
+            newAlbumName: '',
+            handleNewAlbumNameValueChange: vi.fn()
+        }]);
+
+        const { container } = render(
+            <AlbumGrid
+                albumsAdapter={mockAlbumsAdapter}
+                photosAdapter={mockPhotosAdapter}
+            />
+        );
+
+        // Skeletons render inside articles matching the real grid
+        const skeletonCards = container.querySelectorAll('[data-testid="album-card-skeleton"]');
+        expect(skeletonCards.length).toBe(6);
+
+        // No empty state, no "Load More", no real album cards while loading
+        expect(screen.queryByText('No albums yet')).not.toBeInTheDocument();
+        expect(screen.queryByText('Load More')).not.toBeInTheDocument();
+        expect(container.querySelectorAll('[data-testid^="album-card-album-"]').length).toBe(0);
+    });
+
+    it('should cap the initial skeleton count to 6 when initialDisplayCount is larger', () => {
+        (useAlbumGrid as ReturnType<typeof vi.fn>).mockReturnValue([{
+            albums: undefined,
+            isLoading: true,
+            isError: false,
+            refetch: vi.fn(),
+            createAlbumModalAlbumNameErrorText: '',
+            newAlbumName: '',
+            handleNewAlbumNameValueChange: vi.fn()
+        }]);
+
+        const { container } = render(
+            <AlbumGrid
+                albumsAdapter={mockAlbumsAdapter}
+                photosAdapter={mockPhotosAdapter}
+                initialDisplayCount={30}
+            />
+        );
+
+        expect(container.querySelectorAll('[data-testid="album-card-skeleton"]').length).toBe(6);
+    });
+
+    it('should show the error state with a working Try again button when the fetch failed', async () => {
+        const user = userEvent.setup();
+        const mockRefetch = vi.fn();
+
+        (useAlbumGrid as ReturnType<typeof vi.fn>).mockReturnValue([{
+            albums: undefined,
+            isLoading: false,
+            isError: true,
+            refetch: mockRefetch,
+            createAlbumModalAlbumNameErrorText: '',
+            newAlbumName: '',
+            handleNewAlbumNameValueChange: vi.fn()
+        }]);
+
+        render(
+            <AlbumGrid
+                albumsAdapter={mockAlbumsAdapter}
+                photosAdapter={mockPhotosAdapter}
+            />
+        );
+
+        // Error state is distinct from the empty state and offers a retry
+        expect(screen.getByText('Failed to load albums')).toBeInTheDocument();
+        expect(screen.queryByText('No albums yet')).not.toBeInTheDocument();
+
+        const retryButton = screen.getByRole('button', { name: 'Try again' });
+        await user.click(retryButton);
+
+        expect(mockRefetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('should transition from skeleton cards to populated cards once albums load', async () => {
+        const mockHook = useAlbumGrid as ReturnType<typeof vi.fn>;
+
+        // First render: first load still in flight
+        mockHook.mockReturnValueOnce([{
+            albums: undefined,
+            isLoading: true,
+            isError: false,
+            refetch: vi.fn(),
+            createAlbumModalAlbumNameErrorText: '',
+            newAlbumName: '',
+            handleNewAlbumNameValueChange: vi.fn()
+        }]);
+
+        const { rerender, container } = render(
+            <AlbumGrid
+                albumsAdapter={mockAlbumsAdapter}
+                photosAdapter={mockPhotosAdapter}
+            />
+        );
+
+        // Loading: skeletons in the grid, no albums, no empty/error state
+        expect(container.querySelectorAll('[data-testid="album-card-skeleton"]').length).toBe(6);
+        expect(screen.queryByText('Summer Vacation')).not.toBeInTheDocument();
+        expect(screen.queryByText('No albums yet')).not.toBeInTheDocument();
+        expect(screen.queryByText('Failed to load albums')).not.toBeInTheDocument();
+
+        // Albums resolve: hook flips to loaded, real cards replace skeletons
+        mockHook.mockReturnValueOnce([{
+            albums: mockAlbums,
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
+            createAlbumModalAlbumNameErrorText: '',
+            newAlbumName: '',
+            handleNewAlbumNameValueChange: vi.fn()
+        }]);
+
+        rerender(
+            <AlbumGrid
+                albumsAdapter={mockAlbumsAdapter}
+                photosAdapter={mockPhotosAdapter}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText('Summer Vacation')).toBeInTheDocument();
+        });
+        expect(container.querySelectorAll('[data-testid="album-card-skeleton"]').length).toBe(0);
+        expect(screen.queryByText('No albums yet')).not.toBeInTheDocument();
+    });
+
+    it('should not render skeletons when albums are undefined but the load already finished', () => {
+        (useAlbumGrid as ReturnType<typeof vi.fn>).mockReturnValue([{
+            albums: undefined,
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
+            createAlbumModalAlbumNameErrorText: '',
+            newAlbumName: '',
+            handleNewAlbumNameValueChange: vi.fn()
+        }]);
+
+        const { container } = render(
+            <AlbumGrid
+                albumsAdapter={mockAlbumsAdapter}
+                photosAdapter={mockPhotosAdapter}
+            />
+        );
+
+        // Nothing is loading and nothing errored, so fall through to the
+        // empty state without crashing — no skeletons.
+        expect(container.querySelectorAll('[data-testid="album-card-skeleton"]').length).toBe(0);
+        expect(screen.getByText('No albums yet')).toBeInTheDocument();
     });
 });

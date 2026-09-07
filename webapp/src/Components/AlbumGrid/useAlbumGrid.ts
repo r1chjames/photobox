@@ -20,12 +20,12 @@ const useAlbumGrid = (albumsAdapter: IAlbumsAdapter) => {
         return albumsAdapter.getAllAlbumsInfo();
     };
 
-    const {data: albums} = useQuery({
+    const {data: albums, isLoading, isError, refetch} = useQuery({
         queryKey: ['getAllAlbums'],
         queryFn: getAllAlbums
     });
 
-    return [{albums, createAlbumModalAlbumNameErrorText, newAlbumName, handleNewAlbumNameValueChange}]
+    return [{albums, isLoading, isError, refetch, createAlbumModalAlbumNameErrorText, newAlbumName, handleNewAlbumNameValueChange}]
 };
 
 export default useAlbumGrid;

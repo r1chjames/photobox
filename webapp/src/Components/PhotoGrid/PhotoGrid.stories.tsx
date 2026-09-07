@@ -141,3 +141,76 @@ export const Favorites: Story = {
         }
     }
 };
+
+// Valid 3x4-component blurhash — decodes to a blurred placeholder the
+// sharp thumbnail crossfades over (issue #173).
+const VALID_BLURHASH = 'LEHV6nWB2yk8pyo0adR*.7kCMdnj';
+
+// Photo placeholders (issue #173): SBModelBuilder fixtures carry no
+// blurhash/dominantColor, so those tiles fall back to skeletons. These
+// stories exercise the PhotoMediaPlaceholder precedence — decoded blurhash
+// canvas, then dominantColor layer, then skeleton.
+const blurhashBuilder = new SBModelBuilder().newAlbumWithPhotos(24);
+const blurhashPhotos = blurhashBuilder.getPhotos()
+    .map((photo, index) => ({
+        ...photo,
+        blurhash: VALID_BLURHASH,
+        dominantColor: index % 2 === 0 ? '#667788' : '#4a5568',
+    }));
+
+export const PhotosWithBlurhashPlaceholders: Story = {
+    args: {
+        photosAdapter: new MockPhotosAdapter()
+            .withPhotos(blurhashPhotos),
+        albumsAdapter: new MockAlbumsAdapter()
+            .withAlbums(blurhashBuilder.getAlbums()),
+    },
+    parameters: {
+        reactRouter: {
+            initialEntries: ['/'],
+            routePath: '/',
+        }
+    }
+};
+
+const dominantColorBuilder = new SBModelBuilder().newAlbumWithPhotos(24);
+const dominantColorPalette = ['#5b6b7c', '#7c5b6b', '#6b7c5b', '#8a7b5b'];
+const dominantColorPhotos = dominantColorBuilder.getPhotos()
+    .map((photo, index) => ({
+        ...photo,
+        dominantColor: dominantColorPalette[index % dominantColorPalette.length],
+    }));
+
+export const PhotosWithDominantColorPlaceholders: Story = {
+    args: {
+        photosAdapter: new MockPhotosAdapter()
+            .withPhotos(dominantColorPhotos),
+        albumsAdapter: new MockAlbumsAdapter()
+            .withAlbums(dominantColorBuilder.getAlbums()),
+    },
+    parameters: {
+        reactRouter: {
+            initialEntries: ['/'],
+            routePath: '/',
+        }
+    }
+};
+
+const invalidHashBuilder = new SBModelBuilder().newAlbumWithPhotos(24);
+const invalidHashPhotos = invalidHashBuilder.getPhotos()
+    .map((photo) => ({ ...photo, blurhash: 'invalid!!!', dominantColor: undefined }));
+
+export const PhotosWithInvalidBlurhash: Story = {
+    args: {
+        photosAdapter: new MockPhotosAdapter()
+            .withPhotos(invalidHashPhotos),
+        albumsAdapter: new MockAlbumsAdapter()
+            .withAlbums(invalidHashBuilder.getAlbums()),
+    },
+    parameters: {
+        reactRouter: {
+            initialEntries: ['/'],
+            routePath: '/',
+        }
+    }
+};
