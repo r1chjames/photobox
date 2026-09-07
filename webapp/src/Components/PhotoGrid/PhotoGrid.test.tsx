@@ -351,4 +351,85 @@ describe('PhotoGrid', () => {
         expect(grid.querySelector('canvas')).toBeNull();
         expect(grid.querySelector('.mantine-Skeleton-root')).not.toBeNull();
     });
+
+    it('does not render an img from the server-relative thumbnailUrl before a blob arrives', async () => {
+        // The photo carries ONLY a relative thumbnailUrl (what the list API
+        // returns). No blob is available (the batch fetch has not resolved
+        // and the blob cache is empty), so the tile must render its
+        // placeholder — never an <img src="photo/..."> that nginx answers
+        // with SPA HTML and that would fire onError → retry arrows.
+        const relativeOnlyAdapter = {
+            getPhotosInfoInAlbum: vi.fn().mockResolvedValue([
+                {
+                    id: 'photo-rel',
+                    name: 'rel.jpg',
+                    thumbnailUrl: '/api/photo/thumbnail/photo-rel',
+                    createdAt: '2024-01-01',
+                },
+            ]),
+            getThumbnailUrl: vi.fn((photoId: string) => `/api/photo/thumbnail/${photoId}`),
+            // Never resolves a blob for this photo — the fetch stays pending.
+            getPhotoThumbnailBlob: vi.fn().mockReturnValue(new Promise(() => undefined)),
+        } as unknown as IPhotosAdapter;
+
+        render(
+            <PhotoGrid
+                photosAdapter={relativeOnlyAdapter}
+                albumsAdapter={mockAlbumsAdapter}
+            />
+        );
+
+        const grid = await screen.findByTestId('virtual-grid');
+        await waitFor(() => {
+            expect(grid.querySelector('.photo-tile')).not.toBeNull();
+        });
+
+        // No <img> at all (the relative URL must never become an img src),
+        // and no retry arrow. The tile shows the placeholder skeleton only.
+        expect(grid.querySelectorAll('img').length).toBe(0);
+        expect(grid.querySelector('.mantine-Skeleton-root')).not.toBeNull();
+        expect(grid.querySelector('button[aria-label="Retry loading thumbnail"]')).toBeNull();
+    });
+
+    it('keeps the placeholder (no retry arrow) after a single transient img error', async () => {
+        // One blob fetch succeeds; make the produced blob URL fail to load
+        // once (transient), then succeed on the quiet retry.
+        let blobFails = true;
+        const flakyBlobAdapter = {
+            getPhotosInfoInAlbum: vi.fn().mockResolvedValue([
+                {
+                    id: 'photo-flaky',
+                    name: 'flaky.jpg',
+                    thumbnailUrl: '/api/photo/thumbnail/photo-flaky',
+                    createdAt: '2024-01-01',
+                },
+            ]),
+            getThumbnailUrl: vi.fn((photoId: string) => `/api/photo/thumbnail/${photoId}`),
+            getPhotoThumbnailBlob: vi.fn().mockImplementation(() => {
+                if (blobFails) {
+                    blobFails = false;
+                    return Promise.resolve('data:image/png;base64,corrupt');
+                }
+                return Promise.resolve('data:image/png;base64,mockthumb');
+            }),
+        } as unknown as IPhotosAdapter;
+
+        const { container } = render(
+            <PhotoGrid
+                photosAdapter={flakyBlobAdapter}
+                albumsAdapter={mockAlbumsAdapter}
+            />
+        );
+
+        const img = await screen.findByAltText('flaky.jpg') as HTMLImageElement;
+        // First load fails (corrupt data URI) → quiet retry, no retry arrow.
+        fireEvent.error(img);
+
+        // The quiet retry re-fetches the blob; the retry arrow must NOT show.
+        expect(container.querySelector('button[aria-label="Retry loading thumbnail"]')).toBeNull();
+
+        // The placeholder remains beneath (never a blank or arrow tile).
+        const grid = screen.getByTestId('virtual-grid');
+        expect(grid.querySelector('.photo-tile')).not.toBeNull();
+    });
 });

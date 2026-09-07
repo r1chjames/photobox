@@ -316,6 +316,7 @@ func (pr *PhotoRepository) UpdatePhoto(photo domain.Photo) error {
 	result := pr.dbEnv.Db.Model(&domain.Photo{}).Where("id = ?", photo.ID).Updates(map[string]interface{}{
 		"thumbnail_path": photo.ThumbnailPath,
 		"blurhash":       photo.Blurhash,
+		"dominant_color": photo.DominantColor,
 		"updated_at":     time.Now(),
 	})
 	return result.Error
