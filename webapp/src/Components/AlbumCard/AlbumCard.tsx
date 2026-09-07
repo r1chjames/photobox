@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {Album, isSmartAlbum} from '../../Models/Album';
-import {ActionIcon, Badge, Loader, Menu, TextInput} from '@mantine/core';
+import {ActionIcon, Badge, Menu, Skeleton, TextInput} from '@mantine/core';
 import {IconDotsVertical, IconPencil, IconTrash, IconPhotoOff} from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import useAlbumCard from "./useAlbumCard";
 import {IPhotosAdapter} from "../../Adapters/IPhotosAdapter";
 import {IAlbumsAdapter} from "../../Adapters/IAlbumsAdapter";
+import {PhotoMediaPlaceholder} from "../PhotoMediaPlaceholder/PhotoMediaPlaceholder";
 
 interface IProps {
   photosAdapter: IPhotosAdapter;
@@ -16,8 +17,47 @@ interface IProps {
   onAlbumUpdated?: () => void;
 }
 
+// Absolute-fill overlay so the placeholder underneath shows through until the
+// blob has loaded, then the image crossfades in. Reuses the grid item's
+// pattern: opacity 0 -> 1 on load, reset when the source changes (issue #173).
+const CrossfadeImage: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    setIsLoaded(false);
+  }, [src]);
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      onLoad={() => setIsLoaded(true)}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+        opacity: isLoaded ? 1 : 0,
+        transition: 'opacity 0.3s ease-in-out, transform 0.4s ease',
+      }}
+    />
+  );
+};
+
 export const AlbumCard: React.FunctionComponent<IProps> = (props) => {
-  const { thumbnailUrl, subThumbnailUrls = [], photoCount, isLoading } = useAlbumCard(props.photosAdapter, props.source);
+  const {
+    photos,
+    heroBlobUrl,
+    subBlobUrls,
+    photoCount,
+    isMetadataLoading,
+    isCountLoading,
+    isError,
+  } = useAlbumCard(props.photosAdapter, props.source);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(props.source.name);
 
@@ -54,18 +94,10 @@ export const AlbumCard: React.FunctionComponent<IProps> = (props) => {
     });
   };
 
-  if (isLoading) {
-    return <Loader size="md" />;
-  }
-
-  const subThumb = (url: string | undefined, key: string) => (
-    <div
-      key={key}
-      className="album-sub-thumb"
-      style={url ? { backgroundImage: `url(${url})` } : undefined}
-      aria-hidden="true"
-    />
-  );
+  const heroPhoto = photos[0];
+  // Only a failed metadata query turns an empty result into an error frame —
+  // a count/blob error must not disguise a genuinely populated album.
+  const metadataFailed = photos.length === 0 && isError;
 
   return (
     <div className="album-card" onClick={() => !isRenaming && props.albumViewCallback(props.source.id)}>
@@ -88,9 +120,21 @@ export const AlbumCard: React.FunctionComponent<IProps> = (props) => {
       </div>
 
       <div className="album-media-grid">
-        <div className="album-main-thumb">
-          {thumbnailUrl ? (
-            <img src={thumbnailUrl} alt={props.source.name} loading="lazy" />
+        <div className="album-main-thumb" style={{ position: 'relative' }}>
+          {isMetadataLoading ? (
+            <Skeleton height="100%" width="100%" />
+          ) : heroPhoto ? (
+            <>
+              <PhotoMediaPlaceholder
+                blurhash={heroPhoto.blurhash}
+                dominantColor={heroPhoto.dominantColor}
+              />
+              {heroBlobUrl && (
+                <CrossfadeImage src={heroBlobUrl} alt={props.source.name} />
+              )}
+            </>
+          ) : metadataFailed ? (
+            <Skeleton height="100%" width="100%" />
           ) : (
             <div
               style={{
@@ -107,8 +151,35 @@ export const AlbumCard: React.FunctionComponent<IProps> = (props) => {
           )}
         </div>
         <div className="album-sub-thumbs">
-          {subThumb(subThumbnailUrls[0], 'sub-0')}
-          {subThumb(subThumbnailUrls[1], 'sub-1')}
+          {[0, 1].map((index) => {
+            const photo = photos[index + 1];
+            const blobUrl = photo ? subBlobUrls[index] : undefined;
+            return (
+              <div key={index} className="album-sub-thumb" style={{ position: 'relative' }} aria-hidden="true">
+                {isMetadataLoading || (!photo && metadataFailed) ? (
+                  <Skeleton height="100%" width="100%" />
+                ) : !photo ? (
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      background: 'var(--pb-surface-hover)',
+                    }}
+                  />
+                ) : (
+                  <>
+                    <PhotoMediaPlaceholder
+                      blurhash={photo.blurhash}
+                      dominantColor={photo.dominantColor}
+                    />
+                    {blobUrl && (
+                      <CrossfadeImage src={blobUrl} alt="" />
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -131,9 +202,13 @@ export const AlbumCard: React.FunctionComponent<IProps> = (props) => {
           {isSmartAlbum(props.source) && (
             <Badge color="teal" variant="light" size="xs" radius="xl">Smart</Badge>
           )}
-          <Badge className="album-count-badge" variant="light" color="gray" size="sm" radius="xl">
-            {photoCount} photos
-          </Badge>
+          {isCountLoading ? (
+            <Skeleton height={26} width={72} radius="xl" />
+          ) : (
+            <Badge className="album-count-badge" variant="light" color="gray" size="sm" radius="xl">
+              {photoCount} photos
+            </Badge>
+          )}
         </span>
       </div>
     </div>

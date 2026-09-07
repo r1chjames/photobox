@@ -20,7 +20,7 @@ import './PhotoGrid.css';
 import {Photo} from "../../Models/Photo";
 import {fetchThumbnailsBatch, getCachedThumbnail, fetchThumbnailWithAuth, revokeThumbnail} from "../../utils/ThumbnailUtils";
 import {planGridLayout, PlannedTileLayout, GRID_QUANTUM} from './gridLayoutPlanner';
-import {BlurhashCanvas} from "../BlurhashCanvas/BlurhashCanvas";
+import {PhotoMediaPlaceholder} from "../PhotoMediaPlaceholder/PhotoMediaPlaceholder";
 import {optimisticallyUpdatePhoto} from "../../utils/queryClientHelpers";
 import {GridSkeleton} from "../GridSkeleton/GridSkeleton";
 import {useWebSocket} from "../../hooks/useWebSocket";
@@ -89,6 +89,13 @@ const defaultProps = {
 // Right-edge inset for the overlaid desktop timeline rail (issue #174):
 // keeps the last photo column clear of the 40px-wide rail.
 const TIMELINE_RAIL_INSET = 48;
+
+// Height pattern (in 16px grid quanta) for the photo-shaped skeleton tiles
+// appended while the next page is fetching. A small deterministic cycle of
+// plausible tile heights, mirroring standard/portrait footprints — the
+// pattern's total (11+13+11+16+13 = 64) is a multiple of 16, so tiles land
+// on the grid's quantum rhythm with no drifting gaps (issue #173).
+const ROW_SPAN_CYCLE = [11, 13, 11, 16, 13];
 
 interface GridImageItemProps {
     photo: Photo;
@@ -204,31 +211,15 @@ const GridImageItem = React.memo(
                 </div>
                 <div className="thumbnail">
                     {/* Placeholder stays beneath the image and fades out via
-                        the img's opacity transition — no pop-in (issue #144). */}
+                        the img's opacity transition — no pop-in (issue #144).
+                        PhotoMediaPlaceholder picks blurhash → dominantColor →
+                        skeleton so an invalid hash never leaves a blank tile
+                        (issue #173). */}
                     {!hasError && (
-                        photo.blurhash ? (
-                            <BlurhashCanvas
-                                hash={photo.blurhash}
-                                style={{ position: 'absolute', top: 0, left: 0 }}
-                            />
-                        ) : photo.dominantColor ? (
-                            <div
-                                style={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    backgroundColor: photo.dominantColor,
-                                }}
-                            />
-                        ) : (
-                            <Skeleton
-                                height="100%"
-                                width="100%"
-                                style={{position: 'absolute', top: 0, left: 0}}
-                            />
-                        )
+                        <PhotoMediaPlaceholder
+                            blurhash={photo.blurhash}
+                            dominantColor={photo.dominantColor}
+                        />
                     )}
                     {effectiveThumbnailUrl && !hasError && (
                         <img
@@ -1024,9 +1015,36 @@ export const PhotoGrid: React.FunctionComponent<IProps> = (propsIn) => {
                                     layout={tileLayouts.get(photo.id)}
                                 />
                             ))}
-                            {isFetchingNextPage && (
-                                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 16 }}>
-                                    <Loader size="sm" />
+                            {/* Scrolling to the end must never flash a
+                                spinning pagination loader: while the next page
+                                is in flight we append a bounded batch of
+                                photo-shaped skeleton tiles inside the same
+                                grid. They adopt the parent's quantum auto-row
+                                rhythm (row spans are 16px multiples) and
+                                unmount atomically when the page metadata
+                                arrives and isFetchingNextPage flips false.
+                                Skipped while the initial-load GridSkeleton is
+                                showing and in list view (issue #173). The
+                                wrapper is display:contents so its tile
+                                children join the parent grid as direct
+                                auto-placed items — CSS grid only places
+                                direct children — while keeping a queryable
+                                testid. */}
+                            {viewMode === 'grid' && !showSkeleton && isFetchingNextPage && (
+                                <div data-testid="pagination-skeleton" style={{display: 'contents'}}>
+                                    {Array.from({ length: gridColumns * 2 }).map((_, i) => (
+                                        <div
+                                            key={i}
+                                            style={{
+                                                gridRowEnd: `span ${ROW_SPAN_CYCLE[i % ROW_SPAN_CYCLE.length]}`,
+                                                gridColumnEnd: i % 4 === 3 ? 'span 2' : undefined,
+                                                borderRadius: 8,
+                                                overflow: 'hidden',
+                                            }}
+                                        >
+                                            <Skeleton height="100%" width="100%" />
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                         </div>

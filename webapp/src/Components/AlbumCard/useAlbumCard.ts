@@ -6,61 +6,71 @@ import { fetchThumbnailWithAuth, getCachedThumbnail } from "../../utils/Thumbnai
 // Drives the prototype's 3-image album card: one hero thumbnail plus two
 // stacked secondary thumbnails, all fetched through the authenticated
 // thumbnail pipeline with its IndexedDB/blob caching.
+//
+// The metadata query returns the raw cover photos (blurhash/dominantColor
+// included) so the card can paint placeholder-first frames immediately and
+// crossfade the fetched blobs in on top (issue #173). Blob failures keep the
+// placeholder visible per-slot instead of leaving a blank frame.
 const useAlbumCard = (photosAdapter: IPhotosAdapter, source: Album) => {
-    const { data: photoIds, isLoading: isThumbnailLoading } = useQuery({
+    const { data: photos, isLoading: isMetadataLoading, isError: isMetadataError } = useQuery({
         queryKey: ['albumThumbnail', source.id],
         queryFn: async () => {
-            const photos = await photosAdapter.getPhotosInfoInAlbum(source.id, "", 3, false);
-            return photos ? photos.map(p => p.id) : [];
+            const result = await photosAdapter.getPhotosInfoInAlbum(source.id, "", 3, false);
+            return result ?? [];
         },
         staleTime: 60_000,
     });
 
-    const firstPhotoId = photoIds?.[0] ?? null;
+    const heroPhotoId = photos?.[0]?.id ?? null;
 
-    const { data: thumbnailBlobUrl } = useQuery({
-        queryKey: ['albumThumbnailBlob', firstPhotoId],
+    const { data: heroBlobUrl, isError: isHeroBlobError } = useQuery({
+        queryKey: ['albumThumbnailBlob', heroPhotoId],
         queryFn: async () => {
-            if (!firstPhotoId) return 'no_image.png';
-            const cached = getCachedThumbnail(firstPhotoId);
+            if (!heroPhotoId) return undefined;
+            const cached = getCachedThumbnail(heroPhotoId);
             if (cached) return cached;
-            return fetchThumbnailWithAuth(photosAdapter, firstPhotoId);
+            return fetchThumbnailWithAuth(photosAdapter, heroPhotoId);
         },
-        enabled: !!firstPhotoId,
+        enabled: !!heroPhotoId,
         staleTime: 60_000,
     });
 
-    const { data: subThumbnailUrls } = useQuery({
-        queryKey: ['albumSubThumbnails', source.id, (photoIds ?? []).slice(1).join(',')],
+    const { data: subBlobUrls, isError: isSubBlobsError } = useQuery({
+        queryKey: ['albumSubThumbnails', source.id, (photos ?? []).slice(1, 3).map(p => p.id).join(',')],
         queryFn: async () => {
-            const ids = (photoIds ?? []).slice(1, 3);
-            return Promise.all(ids.map(async (id) => {
-                const cached = getCachedThumbnail(id);
+            // Keep the result aligned to photos[1..2]: a failed id resolves to
+            // null so that slot keeps its placeholder instead of shifting.
+            const subs = (photos ?? []).slice(1, 3);
+            return Promise.all(subs.map(async (photo) => {
+                const cached = getCachedThumbnail(photo.id);
                 if (cached) return cached;
                 try {
-                    return await fetchThumbnailWithAuth(photosAdapter, id);
+                    return await fetchThumbnailWithAuth(photosAdapter, photo.id);
                 } catch {
                     return null;
                 }
             }));
         },
-        enabled: (photoIds?.length ?? 0) > 1,
+        enabled: (photos?.length ?? 0) > 1,
         staleTime: 60_000,
     });
 
-    const { data: photoCount, isLoading: isCountLoading } = useQuery({
+    const { data: photoCount, isLoading: isCountLoading, isError: isCountError } = useQuery({
         queryKey: ['albumPhotoCount', source.id],
         queryFn: () => photosAdapter.getPhotoCountInAlbum(source.id),
         staleTime: 60_000,
     });
 
-    const isLoading = isThumbnailLoading || isCountLoading;
-    const thumbnailUrl = thumbnailBlobUrl ?? undefined;
+    const isLoading = isMetadataLoading || isCountLoading;
 
     return {
-        thumbnailUrl,
-        subThumbnailUrls: (subThumbnailUrls ?? []).filter((u): u is string => !!u),
+        photos: photos ?? [],
+        heroBlobUrl,
+        subBlobUrls: subBlobUrls ?? [],
         photoCount: photoCount ?? 0,
+        isMetadataLoading,
+        isCountLoading,
+        isError: isMetadataError || isCountError || isHeroBlobError || isSubBlobsError,
         isLoading,
     };
 };

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '../../test/test-utils';
+import { render, screen, waitFor, fireEvent } from '../../test/test-utils';
 import { PhotoGrid } from './PhotoGrid';
 import { IPhotosAdapter } from '../../Adapters/IPhotosAdapter';
 import { IAlbumsAdapter } from '../../Adapters/IAlbumsAdapter';
@@ -225,5 +225,130 @@ describe('PhotoGrid', () => {
             const images = screen.getAllByRole('img');
             expect(images.length).toBe(65);
         });
+    });
+
+    it('shows photo-shaped skeleton tiles, not a spinning loader, while the next page is fetching', async () => {
+        // First call resolves a full page (60 photos => nextCursor set);
+        // the second page hangs on a deferred promise so we can assert the
+        // mid-fetch state.
+        const pageOne = Array.from({ length: 60 }, (_, i) => ({
+            id: `photo-${i}`,
+            name: `photo${i}.jpg`,
+            thumbnailUrl: `/api/photo/thumbnail/photo-${i}`,
+            createdAt: '2024-01-01',
+        }));
+        // Second page hangs forever so we can assert the mid-fetch state.
+        const secondPagePromise = new Promise(() => {});
+        const pagingAdapter = {
+            getPhotosInfoInAlbum: vi.fn()
+                .mockResolvedValueOnce(pageOne)
+                .mockImplementationOnce(() => secondPagePromise),
+            getThumbnailUrl: vi.fn((photoId: string) => `/api/photo/thumbnail/${photoId}`),
+            getPhotoThumbnailBlob: vi.fn().mockResolvedValue('data:image/png;base64,mockthumb'),
+        } as unknown as IPhotosAdapter;
+
+        const { container } = render(
+            <PhotoGrid
+                photosAdapter={pagingAdapter}
+                albumsAdapter={mockAlbumsAdapter}
+            />
+        );
+
+        // First page rendered, so gridColumns > 0 (no initial skeleton).
+        await waitFor(() => {
+            expect(screen.getAllByRole('img').length).toBe(60);
+        });
+
+        const scrollContainer = container.querySelector('[class^="density-"]') as HTMLElement;
+        expect(scrollContainer).not.toBeNull();
+        fireEvent.scroll(scrollContainer);
+
+        await waitFor(() => {
+            expect(screen.getByTestId('pagination-skeleton')).toBeInTheDocument();
+        });
+
+        // Photo-shaped skeleton tiles inside the masonry grid — never the
+        // spinning pagination Loader (issue #173).
+        const grid = screen.getByTestId('virtual-grid');
+        expect(grid.querySelector('[data-testid="pagination-skeleton"]')).not.toBeNull();
+        expect(grid.querySelectorAll('.mantine-Skeleton-root').length).toBeGreaterThan(0);
+        expect(container.querySelector('.mantine-Loader-root')).toBeNull();
+    });
+
+    it('replaces pagination skeleton tiles with new photos when the next page resolves', async () => {
+        const pageOne = Array.from({ length: 60 }, (_, i) => ({
+            id: `photo-${i}`,
+            name: `photo${i}.jpg`,
+            thumbnailUrl: `/api/photo/thumbnail/photo-${i}`,
+            createdAt: '2024-01-01',
+        }));
+        const pageTwo = Array.from({ length: 10 }, (_, i) => ({
+            id: `photo-${i + 60}`,
+            name: `photo${i + 60}.jpg`,
+            thumbnailUrl: `/api/photo/thumbnail/photo-${i + 60}`,
+            createdAt: '2024-01-02',
+        }));
+        const pagingAdapter = {
+            getPhotosInfoInAlbum: vi.fn()
+                .mockResolvedValueOnce(pageOne)
+                .mockResolvedValueOnce(pageTwo),
+            getThumbnailUrl: vi.fn((photoId: string) => `/api/photo/thumbnail/${photoId}`),
+            getPhotoThumbnailBlob: vi.fn().mockResolvedValue('data:image/png;base64,mockthumb'),
+        } as unknown as IPhotosAdapter;
+
+        const { container } = render(
+            <PhotoGrid
+                photosAdapter={pagingAdapter}
+                albumsAdapter={mockAlbumsAdapter}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.getAllByRole('img').length).toBe(60);
+        });
+
+        const scrollContainer = container.querySelector('[class^="density-"]') as HTMLElement;
+        fireEvent.scroll(scrollContainer);
+
+        // Page 2 lands: the skeleton batch unmounts atomically and the new
+        // photo tiles render in its place (issue #173).
+        await waitFor(() => {
+            expect(screen.getAllByRole('img').length).toBe(70);
+        });
+        expect(screen.queryByTestId('pagination-skeleton')).toBeNull();
+        expect(screen.getByAltText('photo60.jpg')).toBeInTheDocument();
+    });
+
+    it('renders no canvas and falls back to a skeleton for a tile with an invalid blurhash', async () => {
+        const invalidBlurhashAdapter = {
+            getPhotosInfoInAlbum: vi.fn().mockResolvedValue([
+                {
+                    id: 'photo-bad-hash',
+                    name: 'badhash.jpg',
+                    thumbnailUrl: '/api/photo/thumbnail/photo-bad-hash',
+                    createdAt: '2024-01-01',
+                    blurhash: 'invalid!!!',
+                },
+            ]),
+            getThumbnailUrl: vi.fn((photoId: string) => `/api/photo/thumbnail/${photoId}`),
+            getPhotoThumbnailBlob: vi.fn().mockResolvedValue('data:image/png;base64,mockthumb'),
+        } as unknown as IPhotosAdapter;
+
+        render(
+            <PhotoGrid
+                photosAdapter={invalidBlurhashAdapter}
+                albumsAdapter={mockAlbumsAdapter}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.getByAltText('badhash.jpg')).toBeInTheDocument();
+        });
+
+        // The invalid hash must never produce an (empty) canvas tile; the
+        // placeholder falls back to the Mantine skeleton (issue #173).
+        const grid = screen.getByTestId('virtual-grid');
+        expect(grid.querySelector('canvas')).toBeNull();
+        expect(grid.querySelector('.mantine-Skeleton-root')).not.toBeNull();
     });
 });
