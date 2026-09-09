@@ -9,7 +9,9 @@ import (
 
 type Album struct {
 	ID           string         `gorm:"primarykey" json:"id"`
-	Name         string         `json:"name" gorm:"uniqueIndex"`
+	// Name is unique per workspace (composite unique idx_albums_ws_name),
+	// not globally — two tenants may both have "Holidays" (issue #74).
+	Name         string         `json:"name"`
 	Description  string         `json:"description"`
 	Tags         string         `json:"tags"`
 	Metadata     datatypes.JSON `json:"metadata"`
