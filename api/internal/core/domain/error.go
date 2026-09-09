@@ -41,4 +41,8 @@ var (
 	ErrSharedLinkExpired = errors.New("shared link has expired")
 	// ErrSharedLinkPasswordRequired is an error for when a shared link requires a password
 	ErrSharedLinkPasswordRequired = errors.New("shared link requires a password")
+	// ErrFaceRecognitionDisabled is an error for when face recognition is disabled
+	ErrFaceRecognitionDisabled = errors.New("face recognition is disabled")
+	// ErrFaceEngineUnavailable is an error for when the face engine cannot be reached
+	ErrFaceEngineUnavailable = errors.New("face engine is unavailable")
 )

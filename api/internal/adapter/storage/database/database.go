@@ -59,7 +59,7 @@ func (dbEnv *Env) PerformDbSetup() {
 	}
 
 	// Migrate the schema
-	err := dbEnv.Db.AutoMigrate(&domain.Album{}, &domain.Photo{}, &domain.PhotoTag{}, &domain.PhotoAnalysis{}, &domain.Setting{}, &domain.Job{}, &domain.User{}, &domain.SharedLink{}, &domain.ApiKey{})
+	err := dbEnv.Db.AutoMigrate(&domain.Album{}, &domain.Photo{}, &domain.PhotoTag{}, &domain.PhotoAnalysis{}, &domain.FaceDetection{}, &domain.FacePerson{}, &domain.FaceCluster{}, &domain.Setting{}, &domain.Job{}, &domain.User{}, &domain.SharedLink{}, &domain.ApiKey{})
 	if err != nil {
 		slog.Error("Failed to perform database migration", "error", err)
 		os.Exit(1)
@@ -95,6 +95,50 @@ func (dbEnv *Env) PerformDbSetup() {
 	} {
 		if err := dbEnv.Db.Exec(stmt).Error; err != nil {
 			slog.Error("Failed to add column to photo_analysis", "error", err)
+			os.Exit(1)
+		}
+	}
+
+	// Face recognition tables (issue #80). AutoMigrate covers column drift but
+	// the explicit CREATEs keep the schema reproducible on fresh databases.
+	for _, stmt := range []string{
+		`CREATE TABLE IF NOT EXISTS photobox.face_detections (
+			id TEXT PRIMARY KEY,
+			photo_id TEXT NOT NULL,
+			person_id TEXT,
+			box_x DOUBLE PRECISION DEFAULT 0,
+			box_y DOUBLE PRECISION DEFAULT 0,
+			box_w DOUBLE PRECISION DEFAULT 0,
+			box_h DOUBLE PRECISION DEFAULT 0,
+			score DOUBLE PRECISION DEFAULT 0,
+			embedding BYTEA,
+			status TEXT DEFAULT 'detected',
+			quality DOUBLE PRECISION DEFAULT 0,
+			created_at TIMESTAMP,
+			updated_at TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS photobox.face_persons (
+			id TEXT PRIMARY KEY,
+			name TEXT NOT NULL DEFAULT '',
+			cover_face_id TEXT,
+			created_at TIMESTAMP,
+			updated_at TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS photobox.face_clusters (
+			id TEXT PRIMARY KEY,
+			person_id TEXT,
+			centroid BYTEA,
+			face_count INTEGER DEFAULT 0,
+			needs_review BOOLEAN DEFAULT FALSE,
+			updated_at TIMESTAMP
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_face_detections_photo ON photobox.face_detections (photo_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_face_detections_person ON photobox.face_detections (person_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_face_detections_status ON photobox.face_detections (status)`,
+		`CREATE INDEX IF NOT EXISTS idx_face_clusters_person ON photobox.face_clusters (person_id)`,
+	} {
+		if err := dbEnv.Db.Exec(stmt).Error; err != nil {
+			slog.Error("Failed to create face recognition table", "error", err)
 			os.Exit(1)
 		}
 	}

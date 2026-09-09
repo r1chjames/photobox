@@ -88,6 +88,8 @@ type PhotoRepository interface {
 	ListPhotosWithoutAITags(limit int) ([]*domain.Photo, error)
 	// ListPhotosPendingAnalysis returns photos that need AI analysis (not completed, not failed-with-backoff)
 	ListPhotosPendingAnalysis(limit int) ([]*domain.Photo, error)
+	// ListPhotosPendingFaceDetection returns photos that have no stored face detections yet
+	ListPhotosPendingFaceDetection(limit int) ([]*domain.Photo, error)
 	// SavePhotoAnalysis saves or updates the AI analysis result for a photo
 	SavePhotoAnalysis(analysis domain.PhotoAnalysis) error
 	// GetPhotoAnalysis retrieves the AI analysis for a photo

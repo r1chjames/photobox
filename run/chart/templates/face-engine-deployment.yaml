@@ -1,0 +1,65 @@
+{{- if .Values.faceEngine.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "photobox.fullname" . }}-face-engine
+  labels:
+    {{- include "photobox.labels" . | nindent 4 }}
+    app.kubernetes.io/component: face-engine
+spec:
+  replicas: {{ .Values.faceEngine.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "photobox.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: face-engine
+  template:
+    metadata:
+      labels:
+        {{- include "photobox.labels" . | nindent 8 }}
+        app.kubernetes.io/component: face-engine
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "photobox.serviceAccountName" . }}
+      containers:
+        - name: face-engine
+          image: "{{ .Values.faceEngine.image.repository }}:{{ .Values.faceEngine.image.tag }}"
+          imagePullPolicy: {{ .Values.faceEngine.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.faceEngine.service.port }}
+              protocol: TCP
+          env:
+            - name: FACE_MODELS_DIR
+              value: /app/models
+            - name: FACE_PORT
+              value: {{ .Values.faceEngine.service.port | quote }}
+          resources:
+            {{- toYaml .Values.faceEngine.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

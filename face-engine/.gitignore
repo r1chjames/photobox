@@ -1,0 +1,5 @@
+# Model weights are large binaries, never committed to git. They are
+# downloaded at container build time (Dockerfile) or on first start (app.py).
+models/
+__pycache__/
+*.pyc
