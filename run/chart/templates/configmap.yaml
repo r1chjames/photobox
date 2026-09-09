@@ -14,6 +14,8 @@ data:
   AI_ENABLED: {{ .Values.env.AI_ENABLED | quote }}
   OLLAMA_HOST: {{ default (printf "http://%s-ollama:%d" (include "photobox.fullname" .) (int .Values.ollama.service.port)) .Values.env.OLLAMA_HOST | quote }}
   OLLAMA_MODEL: {{ .Values.env.OLLAMA_MODEL | quote }}
+  FACE_ENGINE_ENABLED: {{ .Values.env.FACE_ENGINE_ENABLED | quote }}
+  FACE_ENGINE_URL: {{ default (printf "http://%s-face-engine:%d" (include "photobox.fullname" .) (int .Values.faceEngine.service.port)) .Values.env.FACE_ENGINE_URL | quote }}
   DEFAULT_ADMIN_USERNAME: {{ .Values.env.DEFAULT_ADMIN_USERNAME | quote }}
   CORS_ALLOWED_ORIGINS: {{ .Values.env.CORS_ALLOWED_ORIGINS | quote }}
   TOKEN_DURATION: {{ .Values.env.TOKEN_DURATION | quote }}

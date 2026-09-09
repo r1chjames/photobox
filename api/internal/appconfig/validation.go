@@ -106,6 +106,10 @@ func (c *AppConfig) validate() (error, []string) {
 		v.Errorf("AI_ENABLED is true but OLLAMA_HOST is empty")
 	}
 
+	if c.FaceEngineEnabled && strings.TrimSpace(c.FaceEngineURL) == "" {
+		v.Errorf("FACE_ENGINE_ENABLED is true but FACE_ENGINE_URL is empty")
+	}
+
 	if len(c.CorsAllowedOrigins) == 0 {
 		v.Warnf("CORS_ALLOWED_ORIGINS is empty; cross-origin requests will be rejected")
 	}
@@ -127,6 +131,7 @@ func (c *AppConfig) logEffectiveConfig() {
 		"admin_password", redact(c.AdminPassword),
 		"cache_enabled", c.CacheEnabled,
 		"ai_enabled", c.AIEnabled,
+		"face_engine_enabled", c.FaceEngineEnabled,
 		"thumbnail_storage", c.ThumbnailStorage,
 		"photo_index_workers", c.PhotoIndexWorkers,
 	)

@@ -37,6 +37,25 @@ services:
     #           count: 1
     #           capabilities: [gpu]
 
+  face-engine:
+    build:
+      context: ./face-engine
+      dockerfile: Dockerfile
+    container_name: photobox-face-engine
+    environment:
+      FACE_MODELS_DIR: /models
+      FACE_PORT: "5010"
+    ports:
+      - "5010:5010"
+    networks:
+      - photobox
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://localhost:5010/health')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   api:
     build:
       context: ./api
@@ -45,6 +64,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      face-engine:
+        condition: service_started
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -56,6 +77,8 @@ services:
       AI_ENABLED: true
       OLLAMA_HOST: http://ollama:11434
       OLLAMA_MODEL: moondream
+      FACE_ENGINE_ENABLED: true
+      FACE_ENGINE_URL: http://face-engine:5010
       DEFAULT_ADMIN_USERNAME: admin
       # Must satisfy the API's login validation (password min=8 chars) and not
       # be on the weak-password denylist (see api/internal/appconfig/validation.go).

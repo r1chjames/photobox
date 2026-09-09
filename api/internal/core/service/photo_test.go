@@ -294,6 +294,14 @@ func (m *MockPhotoRepository) ListPhotosPendingAnalysis(limit int) ([]*domain.Ph
 	return args.Get(0).([]*domain.Photo), args.Error(1)
 }
 
+func (m *MockPhotoRepository) ListPhotosPendingFaceDetection(limit int) ([]*domain.Photo, error) {
+	args := m.Called(limit)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Photo), args.Error(1)
+}
+
 func (m *MockPhotoRepository) SavePhotoAnalysis(analysis domain.PhotoAnalysis) error {
 	args := m.Called(analysis)
 	return args.Error(0)

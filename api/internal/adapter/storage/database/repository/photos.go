@@ -653,6 +653,19 @@ func (pr *PhotoRepository) ListPhotosPendingAnalysis(limit int) ([]*domain.Photo
 	return photos, result.Error
 }
 
+// ListPhotosPendingFaceDetection returns non-deleted photos that have no
+// stored face detections yet (face recognition batch processing).
+func (pr *PhotoRepository) ListPhotosPendingFaceDetection(limit int) ([]*domain.Photo, error) {
+	var photos []*domain.Photo
+	result := pr.dbEnv.Db.Model(&domain.Photo{}).
+		Where("deleted_at IS NULL").
+		Where("NOT EXISTS (SELECT 1 FROM photobox.face_detections WHERE photobox.face_detections.photo_id = photobox.photos.id)").
+		Limit(limit).
+		Omit("thumbnail").
+		Find(&photos)
+	return photos, result.Error
+}
+
 func (pr *PhotoRepository) SavePhotoAnalysis(analysis domain.PhotoAnalysis) error {
 	// Use explicit schema-qualified table to bypass GORM's TablePrefix quoting issue
 	return pr.dbEnv.Db.Table("photobox.photo_analysis").Clauses(clause.OnConflict{

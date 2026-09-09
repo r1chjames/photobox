@@ -32,6 +32,8 @@ type AppConfig struct {
 	AIEnabled          bool
 	OllamaHost         string
 	OllamaModel        string
+	FaceEngineEnabled  bool
+	FaceEngineURL      string
 	ThumbnailStorage   string
 	ThumbnailDir       string
 	S3Endpoint         string
@@ -102,6 +104,9 @@ func load() *AppConfig {
 
 	aiEnabled, _ := strconv.ParseBool(utils.GetEnv("AI_ENABLED", "false"))
 
+	faceEngineEnabled, _ := strconv.ParseBool(utils.GetEnv("FACE_ENGINE_ENABLED", "false"))
+	faceEngineURL := utils.GetEnv("FACE_ENGINE_URL", "http://localhost:5010")
+
 	thumbnailStorage := utils.GetEnv("THUMBNAIL_STORAGE", "filesystem")
 	thumbnailDir := utils.GetEnv("THUMBNAIL_DIR", "/thumbnails")
 
@@ -160,6 +165,8 @@ func load() *AppConfig {
 		AIEnabled:          aiEnabled,
 		OllamaHost:         utils.GetEnv("OLLAMA_HOST", "http://localhost:11434"),
 		OllamaModel:        utils.GetEnv("OLLAMA_MODEL", "moondream"),
+		FaceEngineEnabled:  faceEngineEnabled,
+		FaceEngineURL:      faceEngineURL,
 		ThumbnailStorage:   thumbnailStorage,
 		ThumbnailDir:       thumbnailDir,
 		S3Endpoint:         s3Endpoint,
