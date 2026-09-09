@@ -159,9 +159,8 @@ func (f *fakeFaceRepo) AllDetections(int) ([]domain.FaceDetection, error) {
 	return f.dets, nil
 }
 func (f *fakeFaceRepo) SetDetectionPerson(_ string, _ *string) error { return nil }
-func (f *fakeFaceRepo) FaceCount() (int64, error)                    { return int64(len(f.dets)), nil }
-func (f *fakeFaceRepo) SetCoverFace(_, _ string) error               { return nil }
-func (f *fakeFaceRepo) FaceSetting() (bool, error)                   { return true, nil }
+func (f *fakeFaceRepo) FaceCount() (int64, error) { return int64(len(f.dets)), nil }
+func (f *fakeFaceRepo) FaceSetting() (bool, error) { return true, nil }
 func (f *fakeFaceRepo) SetFaceSetting(bool) error                    { return nil }
 
 func TestGroupUnassigned_SeparatesPeople(t *testing.T) {
