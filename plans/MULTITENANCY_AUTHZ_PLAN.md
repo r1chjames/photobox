@@ -257,7 +257,7 @@ Confirmed 2026-09-09 (Rich). D1/D2/D5/D6/D7/D8 adopted as recommended; D3 delete
 |---|---|---|---|
 | D1 | §13.4 → thumbnail capability route with separate random `thumb_cap` (never the path-hash photo ID) | Adopt | ✅ |
 | D2 | Thumbnails transiently in CF global edge; originals/metadata/DB strictly EU — accept + disclose in ToS, EU-only caching as config flag | Accept + disclose | ✅ |
-| D3 | No-auth `GET /api/album/:id`: delete (if unused) or capability-ize | Verify webapp usage, likely delete | ✅ delete — verified unused outside shared flow |
+| D3 | No-auth `GET /api/album/:id`: delete (if unused) or capability-ize | Verify webapp usage, likely delete | ✅ require auth — webapp uses the path with a bearer token, so it is not unused |
 | D4 | Per-tenant B2 keys rejected; 3-key process scheme (API / backup-readonly / sweep) | Confirm to close | ✅ rejected per §4.2 |
 | D5 | `workspaces` + membership table from Phase 1 (not a `users.workspace_id` column) | Adopt | ✅ |
 | D6 | Backfill: all existing users into one default workspace (preserves shared-library semantics) | Adopt | ✅ |

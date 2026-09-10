@@ -148,6 +148,8 @@ func TestAuthZ_Unauthenticated_401(t *testing.T) {
 		{http.MethodGet, "/api/shares"},
 		{http.MethodGet, "/api/users"},
 		{http.MethodGet, "/api/settings"},
+		// Previously public; now requires auth (issue #74 D3).
+		{http.MethodGet, "/api/album/album1"},
 	}
 	for _, ep := range endpoints {
 		w := httptest.NewRecorder()

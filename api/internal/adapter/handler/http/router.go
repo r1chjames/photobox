@@ -147,8 +147,11 @@ func defineResources(
 	users.DELETE("/:id", userHandler.DeleteUser)
 	}
 
-	// Public album get (no auth)
-	router.GET(fmt.Sprintf("%s/album/:id", urlBasePath), albumHandler.GetAlbum)
+	// Album get. Previously unauthenticated (a public read of any album by
+	// ID — a cross-tenant exposure once tenancy exists, plan D3). The webapp
+	// already sends a bearer token on this path, so requiring auth is not a
+	// client-visible break.
+	router.GET(fmt.Sprintf("%s/album/:id", urlBasePath), authMiddleware(token), workspaceMiddleware(workspaceService), albumHandler.GetAlbum)
 
 	albums := router.Group(fmt.Sprintf("%s/albums", urlBasePath)).Use(authMiddleware(token))
 	{
