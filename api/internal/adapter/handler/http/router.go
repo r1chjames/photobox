@@ -230,8 +230,8 @@ func defineResources(
 		workspaces.PATCH("/:id/members/:userId", workspaceHandler.UpdateMemberRole)
 	}
 
-	// Search (workspace middleware is applied together with query scoping)
-	search := router.Group(fmt.Sprintf("%s/search", urlBasePath)).Use(authMiddleware(token))
+	// Search — results are filtered to the caller's workspace (issue #74).
+	search := router.Group(fmt.Sprintf("%s/search", urlBasePath)).Use(authMiddleware(token), workspaceMiddleware(workspaceService))
 	{
 		search.GET("", searchHandler.Search)
 	}

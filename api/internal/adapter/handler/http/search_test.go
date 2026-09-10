@@ -435,16 +435,18 @@ func TestSearchHandler_Search_Success(t *testing.T) {
 	handler := NewSearchHandler(mockPhotoSvc, mockAlbumSvc)
 
 	mockPhotoSvc.On("Search", "test", 30).Return([]*domain.Photo{
-		{ID: "p1", Name: "Photo 1"},
+		{ID: "p1", Name: "Photo 1", WorkspaceID: "ws-test"},
 	}, nil)
 
 	mockAlbumSvc.On("ListAlbums", "", 30).Return([]*domain.Album{
-		{ID: "a1", Name: "Album 1", Metadata: datatypes.JSON([]byte("{}"))},
+		{ID: "a1", Name: "Album 1", Metadata: datatypes.JSON([]byte("{}")), WorkspaceID: "ws-test"},
 	}, nil)
 
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 
+	// Search results are filtered to the caller's workspace (issue #74).
+	ctx.Set(workspaceContextKey, &WorkspaceContext{WorkspaceID: "ws-test", Role: domain.WorkspaceMemberRole})
 	ctx.Request = httptest.NewRequest(http.MethodGet, "/search?q=test", nil)
 
 	handler.Search(ctx)
