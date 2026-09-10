@@ -17,30 +17,34 @@ Implements GitHub **issue #74** (Multi-tenancy support) and **issue #148** (owne
 | 2 | Workspace CRUD + membership API; `workspaceMiddleware` (server-side resolution, fail-closed) | ✅ shipped |
 | 2 | Per-workspace WebSocket delivery (hub no longer broadcasts tenant events to all clients) | ✅ shipped |
 | 2 | No-auth `GET /api/album/:id` closed (D3: auth required, not deleted — the webapp uses it) | ✅ shipped |
-| 2 | **Query-scoping sweep**: every repository query filtered by workspace | ⬜ pending |
+| 2 | **Query-scoping sweep**: every repository query filtered by workspace | 🟡 single-resource closed; list/search filtered post-query |
 | 2 | HTTP upload route; originals/regen cutover to S3; cache-key namespacing | ⬜ pending |
 | 2 | Webapp `X-Workspace-ID` header + `<img src>` capability thumbnails | ⬜ pending |
-| 2 | Cross-tenant content matrix (403/404 on every endpoint) | 🟡 harness shipped, **6 leaks open** |
+| 2 | Cross-tenant content matrix (403/404 on every endpoint) | ✅ harness shipped, **0 measured leaks** |
 | 3 | Per-workspace cron/WS; orphan sweep; backup key split | ⬜ pending |
 | 4 | Postgres RLS hardening | ⬜ pending |
 | 5 | Multi-member product UI, invitations, paid tiers | ⬜ pending |
 
-**Enforcement boundary:** the workspace *identity* layer is complete and tested, but content queries are not yet filtered by workspace. Until the Phase 2 sweep lands, a caller cannot act outside a workspace they belong to, but a query inside their own workspace can still return rows belonging to another workspace. Do not enable open signup until the sweep and its cross-tenant matrix are green.
+**Enforcement boundary (narrowed, not removed):** single-resource access is now closed and verified — handlers resolve the resource's workspace and 404 on mismatch, and the matrix reports zero breaches across photos, albums, thumbnails, trash, search, timeline, tags, and duplicates. What remains is **list/search pagination correctness**: those results are filtered *after* the repository query, so a pre-filter `limit` can return fewer rows than requested under multiple tenants. Closing that requires the query-level sweep. Do not enable open signup until the sweep lands.
 
 #### Measured leak surface (matrix run, 2026-09-09)
 
-`TENANCY_MATRIX=1 go test -tags=integration -run TestCrossTenantContentMatrix ./test/integration/ -v` — tenant A targeting tenant B's resources. Confirmed breaches:
+`TENANCY_MATRIX=1 go test -tags=integration -run TestCrossTenantContentMatrix ./test/integration/ -v` — tenant A targeting tenant B's resources.
 
-| Endpoint | Result | Impact |
-|---|---|---|
-| `GET /api/photo/info/{id}` | 200, B's photo | read |
-| `GET /api/photo/thumbnail/{id}` | 200, B's thumbnail | read |
-| `PATCH /api/photos/{id}/favorite` | 200 | **mutation** |
-| `GET /api/album/{id}` | 200, B's album | read |
-| `DELETE /api/albums/{id}` | 200 | **destructive** |
-| `GET /api/photos/trash` | B's photo in response | read |
+**Before the handler guards:** 6 confirmed breaches, including a mutation (`PATCH /api/photos/{id}/favorite`) and a destructive one (`DELETE /api/albums/{id}`):
 
-The remaining matrix cases returned no other-tenant marker, which is **not** proof of isolation — the matrix logs them as `UNVERIFIED`. The matrix is gated behind `TENANCY_MATRIX=1` so CI stays green while the gap is tracked; drop the gate when the sweep lands.
+| Endpoint | Result |
+|---|---|
+| `GET /api/photo/info/{id}` | 200, B's photo |
+| `GET /api/photo/thumbnail/{id}` | 200, B's thumbnail |
+| `PATCH /api/photos/{id}/favorite` | 200 (mutation) |
+| `GET /api/album/{id}` | 200, B's album |
+| `DELETE /api/albums/{id}` | 200 (destructive) |
+| `GET /api/photos/trash` | B's photo in response |
+
+**After:** zero. Cases that return no other-tenant marker are logged `UNVERIFIED` by the matrix — absence of a marker is not proof of isolation, so treat any new endpoint as unverified until the sweep moves filtering into the queries.
+
+The matrix is gated behind `TENANCY_MATRIX=1` so CI stays green while the residual pagination gap is tracked; drop the gate when the sweep lands.
 
 #### Deferred: thumbnail/cache key namespacing
 
