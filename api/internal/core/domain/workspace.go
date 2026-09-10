@@ -32,7 +32,7 @@ type Workspace struct {
 	StorageUsedBytes int64 `json:"storageUsedBytes" gorm:"default:0"`
 	// StorageLimitBytes caps the workspace; 0 = unlimited. Quota columns ship
 	// in Phase 1 but enforcement lands with the upload path (Phase 2).
-	StorageLimitBytes int64 `json:"storageLimitBytes" gorm:"default:0"`
+	StorageLimitBytes int64     `json:"storageLimitBytes" gorm:"default:0"`
 	Settings          *string   `json:"settings" gorm:"type:jsonb"`
 	CreatedAt         time.Time `json:"createdAt"`
 	UpdatedAt         time.Time `json:"updatedAt"`

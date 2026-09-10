@@ -181,7 +181,7 @@ func (wh *WorkspaceHandler) ListMembers(ctx *gin.Context) {
 }
 
 type addMemberRequest struct {
-	UserID string              `json:"userId" binding:"required"`
+	UserID string               `json:"userId" binding:"required"`
 	Role   domain.WorkspaceRole `json:"role" binding:"required,oneof=owner admin member viewer"`
 }
 
