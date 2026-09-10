@@ -30,21 +30,24 @@ func NewWebSocketHandler(hub *ws.Hub) *WebSocketHandler {
 // HandleUpgrade upgrades the HTTP connection to a WebSocket and registers
 // the client with the hub. The connection is kept alive for the duration
 // of the client's session via read/write pumps.
+//
+// The connection is bound to the caller's resolved workspace: the hub only
+// delivers that workspace's events to it (issue #74). A request without a
+// workspace context is rejected before the upgrade — fail closed.
 func (h *WebSocketHandler) HandleUpgrade(c *gin.Context) {
+	wsCtx := GetWorkspaceContext(c)
+	if wsCtx == nil || wsCtx.WorkspaceID == "" {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "No workspace context"})
+		return
+	}
+
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		slog.Warn("websocket upgrade failed", "error", err)
 		return
 	}
 
-	h.hub.Register(buildClient(h.hub, conn))
+	h.hub.Register(ws.NewClient(h.hub, conn, wsCtx.WorkspaceID))
 
-	slog.Debug("websocket connection upgraded", "remote", c.Request.RemoteAddr)
-}
-
-// buildClient creates a Client with the proper internals set.
-// This avoids exporting the Client struct fields while keeping
-// the package boundary clean.
-func buildClient(hub *ws.Hub, conn *websocket.Conn) *ws.Client {
-	return ws.NewClient(hub, conn)
+	slog.Debug("websocket connection upgraded", "remote", c.Request.RemoteAddr, "workspace", wsCtx.WorkspaceID)
 }

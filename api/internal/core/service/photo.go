@@ -177,9 +177,12 @@ func (ps *PhotoService) GetPhotoByThumbCap(thumbCap string) (*domain.Photo, erro
 }
 
 func (ps *PhotoService) PerformPhotoIndex(ctx context.Context) {
-	// Notify clients that indexing has started
+	// Notify clients that indexing has started. Filesystem indexing operates
+	// on the shared default workspace until per-workspace indexing lands
+	// (Phase 3), so the event is scoped there rather than broadcast globally
+	// (issue #74).
 	if ps.wsHub != nil {
-		ps.wsHub.BroadcastEvent(ws.Event{
+		ps.wsHub.BroadcastWorkspaceEvent(domain.DefaultWorkspaceID, ws.Event{
 			Type: ws.EventIndexProgress,
 			Payload: ws.IndexProgressPayload{
 				Phase: "started",
@@ -190,9 +193,10 @@ func (ps *PhotoService) PerformPhotoIndex(ctx context.Context) {
 	cache, _ := ps.photoRepo.GetPhotoIndexCache()
 	ps.filesystemSvc.PerformPhotoIndex(ctx, ps.SavePhotos, cache)
 
-	// Notify clients that indexing has completed
+	// Notify clients that indexing has completed (scoped: the payload may
+	// carry error strings derived from filesystem paths).
 	if ps.wsHub != nil {
-		ps.wsHub.BroadcastEvent(ws.Event{
+		ps.wsHub.BroadcastWorkspaceEvent(domain.DefaultWorkspaceID, ws.Event{
 			Type: ws.EventIndexComplete,
 			Payload: ws.IndexCompletePayload{},
 		})
@@ -378,6 +382,10 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 			// Random 128-bit capability for the thumbnail route; immutable
 			// once assigned (upsert excludes thumb_cap from updates).
 			ThumbCap: uuid.NewString(),
+			// Filesystem-scanned photos belong to the shared default
+			// workspace — the home instance's single library (issue #74 D6).
+			// SaaS uploads carry their caller's workspace instead.
+			WorkspaceID: domain.DefaultWorkspaceID,
 		}
 		photoInfo.Year, photoInfo.Month = getPhotoYearMonth(photo.Exif, photo.ModifiedTime)
 
@@ -413,7 +421,9 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 			}
 			// Notify connected clients that a thumbnail is ready
 			if ps.wsHub != nil {
-				ps.wsHub.BroadcastEvent(ws.Event{
+				// Tenant-scoped: the payload carries a photo identifier, so it
+				// must not reach clients in other workspaces (issue #74).
+				ps.wsHub.BroadcastWorkspaceEvent(photoInfo.WorkspaceID, ws.Event{
 					Type: ws.EventThumbnailReady,
 					Payload: ws.ThumbnailReadyPayload{
 						PhotoID: photoHash,
@@ -481,6 +491,9 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 		// Random 128-bit capability for the thumbnail route; immutable once
 		// assigned (upsert excludes thumb_cap from updates).
 		ThumbCap: uuid.NewString(),
+		// Filesystem-scanned photos belong to the shared default workspace
+		// (issue #74 D6).
+		WorkspaceID: domain.DefaultWorkspaceID,
 	}
 	photoInfo.Year, photoInfo.Month = getPhotoYearMonth(photo.Exif, photo.ModifiedTime)
 
@@ -497,7 +510,8 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 		}
 		// Notify connected clients that a thumbnail is ready
 		if ps.wsHub != nil {
-			ps.wsHub.BroadcastEvent(ws.Event{
+			// Tenant-scoped (payload carries a photo identifier).
+			ps.wsHub.BroadcastWorkspaceEvent(photoInfo.WorkspaceID, ws.Event{
 				Type: ws.EventThumbnailReady,
 				Payload: ws.ThumbnailReadyPayload{
 					PhotoID: photoHash,

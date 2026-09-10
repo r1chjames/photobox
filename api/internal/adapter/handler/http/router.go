@@ -118,8 +118,11 @@ func defineResources(
 		health.GET("/healthz", healthHandler.Startup)
 	}
 
-	// WebSocket endpoint — upgrades after auth
-	router.GET(fmt.Sprintf("%s/ws", urlBasePath), authMiddleware(token), wsHandler.HandleUpgrade)
+	// WebSocket endpoint — upgrades after auth. The workspace middleware
+	// binds the connection to a workspace (via the workspace_id query param,
+	// since browsers cannot set headers on a WS upgrade); the hub then
+	// delivers only that workspace's events (issue #74).
+	router.GET(fmt.Sprintf("%s/ws", urlBasePath), authMiddleware(token), workspaceMiddleware(workspaceService), wsHandler.HandleUpgrade)
 
 	// Apply strict rate limiting to login endpoint to prevent brute force attacks
 	router.POST(fmt.Sprintf("%s/login", urlBasePath), rateLimitMiddleware(authLimiter), authHandler.Login)
