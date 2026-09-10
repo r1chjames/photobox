@@ -36,11 +36,15 @@ type AppConfig struct {
 	FaceEngineURL      string
 	ThumbnailStorage   string
 	ThumbnailDir       string
-	S3Endpoint         string
-	S3AccessKey        string
-	S3SecretKey        string
-	S3Bucket           string
-	S3UseSSL           bool
+	// OriginalsStorage selects the originals backend: "filesystem" (default,
+	// the home instance) or "s3" (SaaS/Wasabi).
+	OriginalsStorage string
+	S3Endpoint       string
+	S3Region         string
+	S3AccessKey      string
+	S3SecretKey      string
+	S3Bucket         string
+	S3UseSSL         bool
 	PhotoIndexWorkers  int
 	TrashRetentionDays int
 	GeocodeEndpoint    string
@@ -110,16 +114,21 @@ func load() *AppConfig {
 	thumbnailStorage := utils.GetEnv("THUMBNAIL_STORAGE", "filesystem")
 	thumbnailDir := utils.GetEnv("THUMBNAIL_DIR", "/thumbnails")
 
+	// Originals backend (issue #74): filesystem for the home instance, s3 for
+	// the SaaS deployment (Wasabi et al.).
+	originalsStorage := utils.GetEnv("ORIGINALS_STORAGE", "filesystem")
+
 	// S3/MinIO config — optional, only used when THUMBNAIL_STORAGE=s3.
 	// Use os.Getenv (not utils.GetEnv) so they don't panic when unset.
 	s3Endpoint := os.Getenv("S3_ENDPOINT")
+	s3Region := os.Getenv("S3_REGION")
 	s3AccessKey := os.Getenv("S3_ACCESS_KEY")
 	s3SecretKey := os.Getenv("S3_SECRET_KEY")
 	s3Bucket := os.Getenv("S3_BUCKET")
 	if s3Bucket == "" {
 		s3Bucket = "photobox-thumbnails"
 	}
-	s3UseSSL, _ := strconv.ParseBool(os.Getenv("S3_USE_SSL"))
+	s3UseSSL, _ := strconv.ParseBool(utils.GetEnv("S3_USE_SSL", "true"))
 
 	indexWorkers, _ := strconv.Atoi(utils.GetEnv("PHOTO_INDEX_WORKERS", fmt.Sprintf("%d", runtime.NumCPU())))
 	if indexWorkers < 1 {
@@ -169,7 +178,9 @@ func load() *AppConfig {
 		FaceEngineURL:      faceEngineURL,
 		ThumbnailStorage:   thumbnailStorage,
 		ThumbnailDir:       thumbnailDir,
+		OriginalsStorage:   originalsStorage,
 		S3Endpoint:         s3Endpoint,
+		S3Region:           s3Region,
 		S3AccessKey:        s3AccessKey,
 		S3SecretKey:        s3SecretKey,
 		S3Bucket:           s3Bucket,
