@@ -17,15 +17,15 @@ Implements GitHub **issue #74** (Multi-tenancy support) and **issue #148** (owne
 | 2 | Workspace CRUD + membership API; `workspaceMiddleware` (server-side resolution, fail-closed) | ✅ shipped |
 | 2 | Per-workspace WebSocket delivery (hub no longer broadcasts tenant events to all clients) | ✅ shipped |
 | 2 | No-auth `GET /api/album/:id` closed (D3: auth required, not deleted — the webapp uses it) | ✅ shipped |
-| 2 | **Query-scoping sweep**: every repository query filtered by workspace | 🟡 single-resource closed; list/search filtered post-query |
+| 2 | **Query-scoping sweep**: every repository query filtered by workspace | ✅ shipped (photos/albums/shares, fail-closed) |
 | 2 | HTTP upload route; originals/regen cutover to S3; cache-key namespacing | ⬜ pending |
 | 2 | Webapp `X-Workspace-ID` header + `<img src>` capability thumbnails | ⬜ pending |
 | 2 | Cross-tenant content matrix (403/404 on every endpoint) | ✅ harness shipped, **0 measured leaks** |
-| 3 | Per-workspace cron/WS; orphan sweep; backup key split | ⬜ pending |
+| 3 | Per-workspace cron; orphan sweep; backup key split | ⬜ pending |
 | 4 | Postgres RLS hardening | ⬜ pending |
 | 5 | Multi-member product UI, invitations, paid tiers | ⬜ pending |
 
-**Enforcement boundary (narrowed, not removed):** single-resource access is now closed and verified — handlers resolve the resource's workspace and 404 on mismatch, and the matrix reports zero breaches across photos, albums, thumbnails, trash, search, timeline, tags, and duplicates. What remains is **list/search pagination correctness**: those results are filtered *after* the repository query, so a pre-filter `limit` can return fewer rows than requested under multiple tenants. Closing that requires the query-level sweep. Do not enable open signup until the sweep lands.
+**Enforcement status:** the Phase 2 sweep has landed for photos, albums, and shares. Tenant-facing queries are filtered in the repository, the filter is fail-closed once a repository is bound to a workspace, and the cross-tenant matrix reports zero breaches across photos, albums, thumbnails, trash, search, timeline, tags, and duplicates. Pagination correctness is covered by a dedicated test proving a scoped limit is filled from the caller's own rows. Remaining before open signup: per-workspace background jobs (Phase 3) and RLS (Phase 4).
 
 #### Measured leak surface (matrix run, 2026-09-09)
 
