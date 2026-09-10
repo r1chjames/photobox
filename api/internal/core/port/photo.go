@@ -14,6 +14,9 @@ import (
 type PhotoRepository interface {
 	// GetPhotoById inserts a new user into the database
 	GetPhotoById(photoId string, includeThumbnail bool) (*domain.Photo, error)
+	// GetPhotoByThumbCap resolves a photo by its random capability
+	// (issue #74 D1). Returns ErrDataNotFound for unknown caps.
+	GetPhotoByThumbCap(thumbCap string) (*domain.Photo, error)
 	// ListAllPhotos selects a list of users with pagination
 	ListAllPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error)
 	// ListAllPhotosInAlbum selects a user by id
@@ -106,6 +109,9 @@ type PhotoRepository interface {
 type PhotoService interface {
 	//GetPhoto returns a photo
 	GetPhoto(photoId string, includeThumbnail bool) (*domain.Photo, error)
+	// GetPhotoByThumbCap resolves a photo by its random capability
+	// (issue #74 D1); ErrDataNotFound for unknown caps.
+	GetPhotoByThumbCap(thumbCap string) (*domain.Photo, error)
 	// ListPhotos registers a new user
 	ListPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error)
 	// ListPhotosInAlbum registers a new user

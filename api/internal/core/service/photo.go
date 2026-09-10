@@ -22,6 +22,7 @@ import (
 
 	"github.com/buckket/go-blurhash"
 	"github.com/disintegration/imaging"
+	"github.com/google/uuid"
 	"github.com/rwcarlsen/goexif/exif"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	ws "gitlab.com/r1chjames/photobox/api/internal/components/websocket"
@@ -161,6 +162,18 @@ func (ps *PhotoService) GetPhoto(photoId string, includeThumbnail bool) (*domain
 	}
 	ps.setPhotoSourcePath(resp)
 	return resp, nil
+}
+
+// GetPhotoByThumbCap resolves a photo by capability for the unauthenticated
+// thumbnail route. It returns the photo row (never the thumbnail bytes) so
+// the handler can serve the thumbnail from the workspace-scoped storage
+// using the photo ID; ErrDataNotFound for unknown caps (no existence oracle).
+func (ps *PhotoService) GetPhotoByThumbCap(thumbCap string) (*domain.Photo, error) {
+	photo, err := ps.photoRepo.GetPhotoByThumbCap(thumbCap)
+	if err != nil {
+		return nil, domain.ErrDataNotFound
+	}
+	return photo, nil
 }
 
 func (ps *PhotoService) PerformPhotoIndex(ctx context.Context) {
@@ -362,6 +375,9 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 			Longitude:      photo.Longitude,
 			LivePhotoPath:  photo.LivePhotoPath,
 			DominantColor:  computeDominantColor(photo.Path),
+			// Random 128-bit capability for the thumbnail route; immutable
+			// once assigned (upsert excludes thumb_cap from updates).
+			ThumbCap: uuid.NewString(),
 		}
 		photoInfo.Year, photoInfo.Month = getPhotoYearMonth(photo.Exif, photo.ModifiedTime)
 
@@ -462,6 +478,9 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 		Latitude:       photo.Latitude,
 		Longitude:      photo.Longitude,
 		DominantColor:  computeDominantColor(photo.Path),
+		// Random 128-bit capability for the thumbnail route; immutable once
+		// assigned (upsert excludes thumb_cap from updates).
+		ThumbCap: uuid.NewString(),
 	}
 	photoInfo.Year, photoInfo.Month = getPhotoYearMonth(photo.Exif, photo.ModifiedTime)
 

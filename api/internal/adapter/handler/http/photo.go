@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -298,6 +299,59 @@ func (ph *PhotoHandler) GetPhotoThumbnail(ctx *gin.Context) {
 	}
 
 	handleError(ctx, domain.ErrDataNotFound)
+}
+
+// thumbCapRegex is a strict UUIDv4 pattern for capability URLs. Rejecting
+// anything else up front keeps the DB lookup and any logging clean.
+var thumbCapRegex = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+
+// GetThumbnailByCap serves thumbnails by capability URL:
+// GET /t/{thumb_cap}/{size}.webp (issue #74 D1).
+//
+// The route is unauthenticated: the cap itself is the credential (random
+// 128-bit UUID, immutable, unenumerable). Unknown or malformed caps return
+// 404 — identical to a missing thumbnail — so the route leaks nothing.
+// Responses are immutable-cacheable so a CDN edge can absorb reads.
+func (ph *PhotoHandler) GetThumbnailByCap(ctx *gin.Context) {
+	cap := ctx.Param("cap")
+	if !thumbCapRegex.MatchString(cap) {
+		ctx.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+
+	size := strings.TrimSuffix(ctx.Param("size"), ".webp")
+	if size != "s" && size != "m" && size != "l" {
+		ctx.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+
+	photo, err := ph.photoSvc.GetPhotoByThumbCap(cap)
+	if err != nil {
+		// Unknown cap = 404 (same as missing thumbnail; no existence oracle).
+		ctx.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+
+	// Serve from thumbnail storage. If the thumbnail is missing (e.g. not yet
+	// generated for a just-indexed photo), generate on demand once.
+	thumbnailBytes, err := ph.photoSvc.PhotoThumbnailBytesForSize(photo.ID, size)
+	if err != nil || len(thumbnailBytes) == 0 {
+		if _, genErr := ph.photoSvc.GenerateThumbnailForPhoto(photo.ID); genErr != nil {
+			ctx.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+		thumbnailBytes, err = ph.photoSvc.PhotoThumbnailBytesForSize(photo.ID, size)
+		if err != nil || len(thumbnailBytes) == 0 {
+			ctx.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+	}
+
+	ctx.Header("Content-Type", "image/webp")
+	// Capability URLs never change per photo: cache forever at the edge.
+	ctx.Header("Cache-Control", "public, max-age=31536000, immutable")
+	ctx.Header("ETag", fmt.Sprintf(`"%s:%s"`, photo.ThumbCap, size))
+	ctx.Data(http.StatusOK, "image/webp", thumbnailBytes)
 }
 
 func (ph *PhotoHandler) StartJob(c *gin.Context) {

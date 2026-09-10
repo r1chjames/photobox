@@ -138,6 +138,14 @@ func (m *MockPhotoService) GetPhoto(photoId string, includeThumbnail bool) (*dom
 	return args.Get(0).(*domain.Photo), args.Error(1)
 }
 
+func (m *MockPhotoService) GetPhotoByThumbCap(thumbCap string) (*domain.Photo, error) {
+	args := m.Called(thumbCap)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Photo), args.Error(1)
+}
+
 func (m *MockPhotoService) PerformPhotoIndex(ctx context.Context) {
 	m.Called(ctx)
 }

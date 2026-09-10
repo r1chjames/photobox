@@ -165,6 +165,11 @@ func defineResources(
 	// Thumbnail endpoint with dedicated stricter rate limiter
 	router.GET(fmt.Sprintf("%s/photo/thumbnail/*id", urlBasePath), authMiddleware(token), rateLimitMiddleware(thumbnailLimiter), photoHandler.GetPhotoThumbnail)
 
+	// Capability-URL thumbnails (issue #74 D1): unauthenticated by design —
+	// the random thumb_cap is the credential. Immutable-cacheable so a CDN
+	// edge can absorb thumbnail reads.
+	router.GET(fmt.Sprintf("%s/t/:cap/:size", urlBasePath), photoHandler.GetThumbnailByCap)
+
 	photos := router.Group(fmt.Sprintf("%s/photos", urlBasePath)).Use(authMiddleware(token))
 	{
 		photos.GET("", photoHandler.ListPhotos)

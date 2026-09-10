@@ -3,6 +3,7 @@ package repository
 import (
 	db "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -61,6 +62,27 @@ func (ur *UserRepository) CreateUser(user *domain.User) (*domain.User, error) {
 		DoNothing: true,
 	}).Create(&user)
 	return user, nil
+}
+
+// CreateUserWithPersonalWorkspace inserts a user, their personal workspace,
+// and the owner membership in one transaction (issue #74 §8). If the
+// personal-workspace insert fails (e.g. slug conflict), the user insert
+// rolls back so no half-registered account survives.
+func (ur *UserRepository) CreateUserWithPersonalWorkspace(user *domain.User, workspace *domain.Workspace) error {
+	return ur.dbEnv.Db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(user).Error; err != nil {
+			return err
+		}
+		if err := tx.Create(workspace).Error; err != nil {
+			return err
+		}
+		member := &domain.WorkspaceMember{
+			WorkspaceID: workspace.ID,
+			UserID:      user.ID,
+			Role:        domain.WorkspaceOwner,
+		}
+		return tx.Create(member).Error
+	})
 }
 
 func (ur *UserRepository) UpdateUser(user *domain.User) error {

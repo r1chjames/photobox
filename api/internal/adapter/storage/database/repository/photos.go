@@ -36,6 +36,20 @@ func (pr *PhotoRepository) GetPhotoById(photoId string, includeThumbnail bool) (
 	return &photo, nil
 }
 
+// GetPhotoByThumbCap resolves a photo by its capability (issue #74 D1). The
+// cap is a random UUID, never derivable from the photo ID. Not-found maps to
+// ErrDataNotFound so the unauthenticated capability route returns 404 (no
+// existence oracle) for both unknown and wrong caps.
+func (pr *PhotoRepository) GetPhotoByThumbCap(thumbCap string) (*domain.Photo, error) {
+	var photo domain.Photo
+	result := pr.dbEnv.Db.Omit("thumbnail").First(&photo, "thumb_cap = ?", thumbCap)
+	err := db.HandleError(result)
+	if err != nil {
+		return nil, err
+	}
+	return &photo, nil
+}
+
 // ListMemories returns photos taken on the given month/day in previous years
 // ("On This Day"), ordered by year descending. Excludes the current year.
 func (pr *PhotoRepository) ListMemories(month, day int, limit int) ([]*domain.Photo, error) {
@@ -212,7 +226,18 @@ func (pr *PhotoRepository) GetPhotosInAlbumCount(albumId string) (int64, error) 
 
 func (pr *PhotoRepository) CreatePhotoInfo(photo domain.Photo) error {
 	result := pr.dbEnv.Db.Clauses(clause.OnConflict{
-		UpdateAll: true,
+		// thumb_cap is immutable once assigned (issue #74 D1): re-indexing an
+		// existing photo must not rotate its capability URL. Exclude it from
+		// the conflict update set.
+		DoUpdates: clause.AssignmentColumns([]string{
+			"name", "filesystem_path", "source_path", "album_id", "metadata",
+			"created_at", "created_epoch", "year", "month", "updated_at",
+			"thumbnail", "thumbnail_path", "favorite", "deleted_at", "blurhash",
+			"dominant_color", "file_hash", "file_modified_time", "media_type",
+			"duration", "width", "height", "latitude", "longitude", "hidden",
+			"live_photo_path", "description", "quality_score", "blur_score",
+			"is_low_quality", "trash_path", "edit_params", "workspace_id",
+		}),
 	}).Create(&photo)
 	return result.Error
 }
@@ -223,7 +248,15 @@ func (pr *PhotoRepository) CreatePhotosInfo(photos []domain.Photo) error {
 		return nil
 	}
 	result := pr.dbEnv.Db.Clauses(clause.OnConflict{
-		UpdateAll: true,
+		DoUpdates: clause.AssignmentColumns([]string{
+			"name", "filesystem_path", "source_path", "album_id", "metadata",
+			"created_at", "created_epoch", "year", "month", "updated_at",
+			"thumbnail", "thumbnail_path", "favorite", "deleted_at", "blurhash",
+			"dominant_color", "file_hash", "file_modified_time", "media_type",
+			"duration", "width", "height", "latitude", "longitude", "hidden",
+			"live_photo_path", "description", "quality_score", "blur_score",
+			"is_low_quality", "trash_path", "edit_params", "workspace_id",
+		}),
 	}).Create(&photos)
 	return result.Error
 }

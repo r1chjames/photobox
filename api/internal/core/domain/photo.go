@@ -38,6 +38,10 @@ type Photo struct {
 	QualityScore   int            `json:"qualityScore" gorm:"default:0"`
 	BlurScore      float64        `json:"blurScore" gorm:"default:0"`
 	IsLowQuality   bool           `json:"isLowQuality" gorm:"default:false;index"`
+	// ThumbCap is a random 128-bit capability (UUIDv4) that authorizes
+	// thumbnail reads via the unauthenticated /t/{cap}/{size} route. It is
+	// immutable per photo and never derived from the photo ID (issue #74 D1).
+	ThumbCap string `gorm:"uniqueIndex;size:36" json:"thumbCap"`
 	// TrashPath records where the original file was moved when the photo was
 	// soft-deleted, so RestorePhoto can move it back. Empty for photos that
 	// were never deleted (or have no filesystem file).

@@ -27,6 +27,18 @@ func (m *MockUserService) Register(user *domain.User) (*domain.User, error) {
 	return args.Get(0).(*domain.User), args.Error(1)
 }
 
+func (m *MockUserService) RegisterWithPersonalWorkspace(user *domain.User, workspaceName string) (*domain.User, *domain.Workspace, error) {
+	args := m.Called(user, workspaceName)
+	if args.Get(0) == nil {
+		return nil, nil, args.Error(2)
+	}
+	var ws *domain.Workspace
+	if args.Get(1) != nil {
+		ws = args.Get(1).(*domain.Workspace)
+	}
+	return args.Get(0).(*domain.User), ws, args.Error(2)
+}
+
 func (m *MockUserService) CreateUser(user *domain.User) (*domain.User, error) {
 	args := m.Called(user)
 	if args.Get(0) == nil {
@@ -77,9 +89,13 @@ func TestUserHandler_Register_Success(t *testing.T) {
 		Password: "password123",
 	}
 
-	mockService.On("Register", mock.MatchedBy(func(u *domain.User) bool {
+	mockService.On("RegisterWithPersonalWorkspace", mock.MatchedBy(func(u *domain.User) bool {
 		return u.Username == "newuser" && u.Email == "newuser@example.com"
-	})).Return(&domain.User{ID: "generated-id"}, nil)
+	}), mock.Anything).Return(
+		&domain.User{ID: "generated-id", Username: "newuser", Email: "newuser@example.com"},
+		&domain.Workspace{ID: "ws-1", Name: "newuser's Photos", Slug: "newusers-photos"},
+		nil,
+	)
 
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
@@ -93,16 +109,20 @@ func TestUserHandler_Register_Success(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response struct {
-		Success bool         `json:"success"`
-		Message string       `json:"message"`
-		Data    userResponse `json:"data"`
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+		Data    struct {
+			User      userResponse      `json:"user"`
+			Workspace workspaceResponse `json:"workspace"`
+		} `json:"data"`
 	}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.True(t, response.Success)
-	// Note: Handler ignores returned user from service, uses input user instead
-	assert.Equal(t, "newuser", response.Data.Username)
-	assert.Equal(t, "newuser@example.com", response.Data.Email)
+	assert.Equal(t, "newuser", response.Data.User.Username)
+	assert.Equal(t, "newuser@example.com", response.Data.User.Email)
+	assert.Equal(t, "ws-1", response.Data.Workspace.ID)
+	assert.Equal(t, "newuser's Photos", response.Data.Workspace.Name)
 
 	mockService.AssertExpectations(t)
 }

@@ -29,6 +29,14 @@ func (m *MockPhotoService) GetPhoto(photoId string, includeThumbnail bool) (*dom
 	return args.Get(0).(*domain.Photo), args.Error(1)
 }
 
+func (m *MockPhotoService) GetPhotoByThumbCap(thumbCap string) (*domain.Photo, error) {
+	args := m.Called(thumbCap)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Photo), args.Error(1)
+}
+
 func (m *MockPhotoService) ListPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error) {
 	args := m.Called(fromId, limit, includeThumbnail, startDate, endDate, mediaType)
 	if args.Get(0) == nil {
@@ -313,7 +321,11 @@ func (m *MockPhotoService) PhotoThumbnailPathForSize(photoId string, size string
 }
 
 func (m *MockPhotoService) PhotoThumbnailBytesForSize(photoId string, size string) ([]byte, error) {
-	return nil, nil
+	args := m.Called(photoId, size)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]byte), args.Error(1)
 }
 
 func (m *MockPhotoService) AnalyzeExistingPhotos() error {
@@ -374,6 +386,102 @@ func (m *MockJobService) CreateBaseJobs() error {
 func (m *MockJobService) StartJobIfNotRunning(name string) error {
 	args := m.Called(name)
 	return args.Error(0)
+}
+
+
+// capUUID is a well-formed capability value used across the capability-route
+// tests (issue #74 D1).
+const capUUID = "11111111-2222-3333-4444-555555555555"
+
+// TestPhotoHandler_GetThumbnailByCap_Success verifies a valid capability
+// serves the thumbnail bytes with immutable caching headers.
+func TestPhotoHandler_GetThumbnailByCap_Success(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockPhotoSvc := new(MockPhotoService)
+	mockJobSvc := new(MockJobService)
+	handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+	mockPhotoSvc.On("GetPhotoByThumbCap", capUUID).
+		Return(&domain.Photo{ID: "photo-1", ThumbCap: capUUID}, nil)
+	mockPhotoSvc.On("PhotoThumbnailBytesForSize", "photo-1", "m").
+		Return([]byte("webp-bytes"), nil)
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Params = gin.Params{{Key: "cap", Value: capUUID}, {Key: "size", Value: "m.webp"}}
+
+	handler.GetThumbnailByCap(ctx)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "image/webp", w.Header().Get("Content-Type"))
+	assert.Contains(t, w.Header().Get("Cache-Control"), "immutable")
+	assert.Equal(t, []byte("webp-bytes"), w.Body.Bytes())
+	mockPhotoSvc.AssertExpectations(t)
+}
+
+// TestPhotoHandler_GetThumbnailByCap_UnknownCap tests that an unknown (but
+// well-formed) capability returns 404 and performs no thumbnail lookup.
+func TestPhotoHandler_GetThumbnailByCap_UnknownCap(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockPhotoSvc := new(MockPhotoService)
+	mockJobSvc := new(MockJobService)
+	handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+	mockPhotoSvc.On("GetPhotoByThumbCap", capUUID).
+		Return(nil, domain.ErrDataNotFound)
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Params = gin.Params{{Key: "cap", Value: capUUID}, {Key: "size", Value: "m.webp"}}
+
+	handler.GetThumbnailByCap(ctx)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	mockPhotoSvc.AssertNotCalled(t, "PhotoThumbnailBytesForSize", mock.Anything, mock.Anything)
+	mockPhotoSvc.AssertExpectations(t)
+}
+
+// TestPhotoHandler_GetThumbnailByCap_MalformedCap tests that a malformed
+// capability is rejected with 404 before any storage/database access — the
+// route must never act as an existence oracle.
+func TestPhotoHandler_GetThumbnailByCap_MalformedCap(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockPhotoSvc := new(MockPhotoService)
+	mockJobSvc := new(MockJobService)
+	handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+	for _, badCap := range []string{"", "not-a-uuid", "11111111-2222-3333-4444", "../../etc/passwd"} {
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		ctx.Params = gin.Params{{Key: "cap", Value: badCap}, {Key: "size", Value: "m.webp"}}
+
+		handler.GetThumbnailByCap(ctx)
+
+		assert.Equal(t, http.StatusNotFound, w.Code, "cap %q should be rejected", badCap)
+	}
+	mockPhotoSvc.AssertNotCalled(t, "GetPhotoByThumbCap", mock.Anything)
+}
+
+// TestPhotoHandler_GetThumbnailByCap_InvalidSize tests that an unsupported
+// size is rejected with 404 and no capability lookup happens.
+func TestPhotoHandler_GetThumbnailByCap_InvalidSize(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockPhotoSvc := new(MockPhotoService)
+	mockJobSvc := new(MockJobService)
+	handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Params = gin.Params{{Key: "cap", Value: capUUID}, {Key: "size", Value: "xl.webp"}}
+
+	handler.GetThumbnailByCap(ctx)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	mockPhotoSvc.AssertNotCalled(t, "GetPhotoByThumbCap", mock.Anything)
 }
 
 // TestPhotoHandler_DeletePhoto_Success tests successful photo deletion
