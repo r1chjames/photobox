@@ -31,7 +31,9 @@ func NewRouter(
 	shareHandler ShareHandler,
 	apiKeyHandler *ApiKeyHandler,
 	importHandler *ImportHandler,
-	wsHandler *WebSocketHandler) (*Router, error) {
+	wsHandler *WebSocketHandler,
+	workspaceHandler *WorkspaceHandler,
+	workspaceService port.WorkspaceService) (*Router, error) {
 
 	router := gin.New()
 	router.MaxMultipartMemory = 32 << 20 // 32 MB
@@ -49,7 +51,7 @@ func NewRouter(
 	config := cors.DefaultConfig()
 	config.AllowOrigins = appConfig.CorsAllowedOrigins
 	config.AllowMethods = []string{"POST", "GET", "PUT", "PATCH", "DELETE", "OPTIONS"}
-	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization", "Accept", "User-Agent", "Cache-Control", "Pragma"}
+	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization", "Accept", "User-Agent", "Cache-Control", "Pragma", "X-Workspace-ID"}
 	config.ExposeHeaders = []string{"Content-Length"}
 	config.AllowCredentials = true
 	config.MaxAge = 12 * time.Hour
@@ -79,7 +81,7 @@ func NewRouter(
 	// Dedicated rate limiter for thumbnail endpoints: 30 req/s with burst of 60
 	thumbnailLimiter := NewIPRateLimiter(30, 60)
 
-	defineResources(appConfig, router, token, authHandler, photoHandler, albumHandler, utilityHandler, healthHandler, userHandler, searchHandler, shareHandler, apiKeyHandler, importHandler, authLimiter, thumbnailLimiter, wsHandler)
+	defineResources(appConfig, router, token, authHandler, photoHandler, albumHandler, utilityHandler, healthHandler, userHandler, searchHandler, shareHandler, apiKeyHandler, importHandler, authLimiter, thumbnailLimiter, wsHandler, workspaceHandler, workspaceService)
 
 	return &Router{
 		router,
@@ -102,7 +104,9 @@ func defineResources(
 	importHandler *ImportHandler,
 	authLimiter *IPRateLimiter,
 	thumbnailLimiter *IPRateLimiter,
-	wsHandler *WebSocketHandler) {
+	wsHandler *WebSocketHandler,
+	workspaceHandler *WorkspaceHandler,
+	workspaceService port.WorkspaceService) {
 
 	urlBasePath := strings.TrimSpace(appConfig.ApiBasePath)
 
@@ -204,7 +208,23 @@ func defineResources(
 	router.GET(fmt.Sprintf("%s/photos/jobs", urlBasePath), authMiddleware(token), requireRole(domain.ADMINISTRATOR), photoHandler.GetJobStatuses)
 	router.POST(fmt.Sprintf("%s/photos/jobs/stop", urlBasePath), authMiddleware(token), requireRole(domain.ADMINISTRATOR), photoHandler.StopAllJobs)
 
-	// Search
+	// Workspaces (issue #74). Listing/creating workspaces needs only auth —
+	// the middleware is not applied because these routes operate across the
+	// caller's workspaces, not within one.
+	workspaces := router.Group(fmt.Sprintf("%s/workspaces", urlBasePath)).Use(authMiddleware(token))
+	{
+		workspaces.GET("", workspaceHandler.List)
+		workspaces.POST("", workspaceHandler.Create)
+		workspaces.GET("/:id", workspaceHandler.Get)
+		workspaces.PATCH("/:id", workspaceHandler.Update)
+		workspaces.DELETE("/:id", workspaceHandler.Delete)
+		workspaces.GET("/:id/members", workspaceHandler.ListMembers)
+		workspaces.POST("/:id/members", workspaceHandler.AddMember)
+		workspaces.DELETE("/:id/members/:userId", workspaceHandler.RemoveMember)
+		workspaces.PATCH("/:id/members/:userId", workspaceHandler.UpdateMemberRole)
+	}
+
+	// Search (workspace middleware is applied together with query scoping)
 	search := router.Group(fmt.Sprintf("%s/search", urlBasePath)).Use(authMiddleware(token))
 	{
 		search.GET("", searchHandler.Search)

@@ -76,6 +76,9 @@ func buildAuthzRouter(t *testing.T, env *database.Env, config *appconfig.AppConf
 	apiKeyHandler := httpHandler.NewApiKeyHandler(apiKeyService)
 	importHandler := httpHandler.NewImportHandler(service.NewTakeoutImporter(photoService, filesystemService, photoRepo, config, wsHub))
 	wsHandler := httpHandler.NewWebSocketHandler(wsHub)
+	workspaceRepo := repository.NewWorkspaceRepository(env)
+	workspaceService := service.NewWorkspaceService(workspaceRepo)
+	workspaceHandler := httpHandler.NewWorkspaceHandler(workspaceService)
 
 	router, err := httpHandler.NewRouter(
 		*config,
@@ -91,6 +94,8 @@ func buildAuthzRouter(t *testing.T, env *database.Env, config *appconfig.AppConf
 		apiKeyHandler,
 		importHandler,
 		wsHandler,
+		workspaceHandler,
+		workspaceService,
 	)
 	assert.NoError(t, err)
 	return router

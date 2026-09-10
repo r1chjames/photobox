@@ -138,7 +138,10 @@ func (s *WorkspaceService) RemoveMember(workspaceID, actorUserID, targetUserID s
 	if target == nil {
 		return domain.ErrDataNotFound
 	}
-	if target.Role == domain.WorkspaceOwner && targetUserID != actorUserID {
+	// Last-owner rule (issue #74 open question): an owner may not be removed
+	// while no other owner remains — including when they remove themselves,
+	// which would otherwise orphan the workspace.
+	if target.Role == domain.WorkspaceOwner {
 		remaining, err := s.countOwners(workspaceID, targetUserID)
 		if err != nil {
 			return err

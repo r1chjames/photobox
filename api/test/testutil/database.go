@@ -52,6 +52,8 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 		&domain.User{},
 		&domain.SharedLink{},
 		&domain.ApiKey{},
+		&domain.Workspace{},
+		&domain.WorkspaceMember{},
 	)
 	if err != nil {
 		t.Fatalf("Failed to run migrations: %v", err)
@@ -65,7 +67,12 @@ func TeardownTestDB(t *testing.T, db *gorm.DB) {
 	t.Helper()
 
 	// Clean all tables
-	tables := []string{"photobox.photos", "photobox.albums", "photobox.users", "photobox.jobs", "photobox.settings"}
+	tables := []string{
+		"photobox.photos", "photobox.albums", "photobox.users", "photobox.jobs", "photobox.settings",
+		// Tenancy tables (issue #74) — must be cleaned so workspace slugs and
+		// memberships do not leak between tests.
+		"photobox.workspace_members", "photobox.workspaces",
+	}
 	for _, table := range tables {
 		db.Exec(fmt.Sprintf("TRUNCATE TABLE %s CASCADE", table))
 	}

@@ -84,4 +84,4 @@ CREATE INDEX IF NOT EXISTS idx_photos_ws_deleted_epoch ON photos (workspace_id, 
 CREATE INDEX IF NOT EXISTS idx_photos_ws_album_deleted_epoch ON photos (workspace_id, album_id, deleted_at, created_epoch);
 CREATE INDEX IF NOT EXISTS idx_albums_ws_created ON albums (workspace_id, created_epoch);
 CREATE INDEX IF NOT EXISTS idx_shared_links_ws ON shared_links (workspace_id);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_photos_thumb_cap ON photos (thumb_cap);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_photos_thumb_cap ON photos (thumb_cap) WHERE thumb_cap IS NOT NULL AND thumb_cap <> '';

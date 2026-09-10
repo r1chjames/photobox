@@ -233,6 +233,7 @@ func setupHttpHandlers(
 	apiKeyHandler := http.NewApiKeyHandler(appServices.apiKeyService)
 	importHandler := http.NewImportHandler(appServices.takeoutImporter)
 	wsHandler := http.NewWebSocketHandler(appServices.wsHub)
+	workspaceHandler := http.NewWorkspaceHandler(appServices.workspaceService)
 
 	// Register the API key service so authMiddleware can validate X-API-Key.
 	http.SetApiKeyService(appServices.apiKeyService)
@@ -251,5 +252,7 @@ func setupHttpHandlers(
 		apiKeyHandler,
 		importHandler,
 		wsHandler,
+		workspaceHandler,
+		appServices.workspaceService,
 	)
 }

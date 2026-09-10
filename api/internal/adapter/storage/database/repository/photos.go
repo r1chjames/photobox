@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	db "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gorm.io/gorm/clause"
@@ -19,6 +21,12 @@ func NewPhotoRepository(dbEnv *db.Env) *PhotoRepository {
 	return &PhotoRepository{
 		dbEnv,
 	}
+}
+
+// newThumbCap returns a fresh random capability for a photo's thumbnail URL
+// (issue #74 D1). Random 128-bit UUID, never derived from the photo ID.
+func newThumbCap() string {
+	return uuid.NewString()
 }
 
 func (pr *PhotoRepository) GetPhotoById(photoId string, includeThumbnail bool) (*domain.Photo, error) {
@@ -225,7 +233,11 @@ func (pr *PhotoRepository) GetPhotosInAlbumCount(albumId string) (int64, error) 
 }
 
 func (pr *PhotoRepository) CreatePhotoInfo(photo domain.Photo) error {
+	if photo.ThumbCap == "" {
+		photo.ThumbCap = newThumbCap()
+	}
 	result := pr.dbEnv.Db.Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "id"}},
 		// thumb_cap is immutable once assigned (issue #74 D1): re-indexing an
 		// existing photo must not rotate its capability URL. Exclude it from
 		// the conflict update set.
@@ -247,7 +259,13 @@ func (pr *PhotoRepository) CreatePhotosInfo(photos []domain.Photo) error {
 	if len(photos) == 0 {
 		return nil
 	}
+	for i := range photos {
+		if photos[i].ThumbCap == "" {
+			photos[i].ThumbCap = newThumbCap()
+		}
+	}
 	result := pr.dbEnv.Db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "id"}},
 		DoUpdates: clause.AssignmentColumns([]string{
 			"name", "filesystem_path", "source_path", "album_id", "metadata",
 			"created_at", "created_epoch", "year", "month", "updated_at",

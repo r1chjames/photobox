@@ -5,7 +5,9 @@ import (
 )
 
 type SharedLink struct {
-	Token        string     `gorm:"primaryKey;size:64" json:"token"`
+	Token string `gorm:"primaryKey;size:64" json:"token"`
+	// WorkspaceID scopes this share to a workspace (issue #74).
+	WorkspaceID  string     `json:"workspaceId" gorm:"index;size:36"`
 	ResourceType string     `gorm:"size:20;not null" json:"resourceType"`
 	ResourceId   string     `gorm:"size:255;not null" json:"resourceId"`
 	CreatedBy    string     `gorm:"size:36" json:"createdBy"`
