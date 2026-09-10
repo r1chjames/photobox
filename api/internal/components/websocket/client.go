@@ -26,15 +26,19 @@ type Client struct {
 	hub  *Hub
 	conn *websocket.Conn
 	send chan []byte
+	// workspaceID is the workspace this connection is scoped to (issue #74).
+	// The hub delivers only matching workspace events to it.
+	workspaceID string
 }
 
-// NewClient creates a Client, wires it to the hub, and starts
-// its read and write pumps in background goroutines.
-func NewClient(hub *Hub, conn *websocket.Conn) *Client {
+// NewClient creates a Client bound to a workspace, wires it to the hub, and
+// starts its read and write pumps in background goroutines.
+func NewClient(hub *Hub, conn *websocket.Conn, workspaceID string) *Client {
 	c := &Client{
-		hub:  hub,
-		conn: conn,
-		send: make(chan []byte, 64),
+		hub:         hub,
+		conn:        conn,
+		send:        make(chan []byte, 64),
+		workspaceID: workspaceID,
 	}
 	go c.writePump()
 	go c.readPump()

@@ -20,6 +20,16 @@ func NewAlbumHandler(svc port.AlbumService) *AlbumHandler {
 	}
 }
 
+// scopedSvc returns the album service scoped to the request's workspace
+// (issue #74). Fail-closed when no workspace is resolved. Named distinctly
+// from the `svc` field so both can coexist.
+func (ah *AlbumHandler) scopedSvc(ctx *gin.Context) port.AlbumService {
+	if wc := GetWorkspaceContext(ctx); wc != nil {
+		return ah.svc.WithWorkspace(wc.WorkspaceID)
+	}
+	return ah.svc.WithWorkspace("")
+}
+
 func (ah *AlbumHandler) GetAlbum(ctx *gin.Context) {
 	albumId := ctx.Param("id")
 	if albumId == "" {
@@ -27,9 +37,13 @@ func (ah *AlbumHandler) GetAlbum(ctx *gin.Context) {
 		return
 	}
 
-	resp, err := ah.svc.GetAlbumById(albumId)
+	resp, err := ah.scopedSvc(ctx).GetAlbumById(albumId)
 	if err != nil {
 		handleError(ctx, err)
+		return
+	}
+	// Cross-tenant guard (issue #74).
+	if !resourceInWorkspace(ctx, resp.WorkspaceID) {
 		return
 	}
 	handleSuccess(ctx, resp)
@@ -53,18 +67,27 @@ func (ah *AlbumHandler) ListAlbums(ctx *gin.Context) {
 		limit = maxPageLimit
 	}
 
-	resp, err := ah.svc.ListAlbums(fromId, limit)
+	resp, err := ah.scopedSvc(ctx).ListAlbums(fromId, limit)
 	if err != nil {
 		handleError(ctx, err)
 		return
 	}
+
+	// Scope to the caller's workspace (issue #74). Post-query filter is a
+	// stopgap until the Phase 2 query-scoping sweep moves it into the query.
+	wc := GetWorkspaceContext(ctx)
+	if wc == nil {
+		ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Not found"})
+		return
+	}
+	resp = filterByWorkspace(resp, wc.WorkspaceID, func(a *domain.Album) string { return a.WorkspaceID })
 
 	fromId, toId, nextPage := albumPaginationParams(resp)
 	handlePaginatedSuccess(ctx, resp, fromId, toId, len(resp), nextPage)
 }
 
 func (ah *AlbumHandler) AlbumCount(ctx *gin.Context) {
-	resp, err := ah.svc.AlbumCount()
+	resp, err := ah.scopedSvc(ctx).AlbumCount()
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -84,14 +107,14 @@ func (ah *AlbumHandler) CreateAlbum(ctx *gin.Context) {
 		return
 	}
 
-	album, err := ah.svc.CreateAlbum(req.Name)
+	album, err := ah.scopedSvc(ctx).CreateAlbum(req.Name)
 	if err != nil {
 		handleError(ctx, err)
 		return
 	}
 
 	if req.Description != "" {
-		album, err = ah.svc.UpdateAlbum(album.ID, map[string]any{"description": req.Description})
+		album, err = ah.scopedSvc(ctx).UpdateAlbum(album.ID, map[string]any{"description": req.Description})
 		if err != nil {
 			handleError(ctx, err)
 			return
@@ -115,7 +138,7 @@ func (ah *AlbumHandler) CreateSmartAlbum(ctx *gin.Context) {
 		return
 	}
 
-	album, err := ah.svc.CreateSmartAlbum(req.Name, req.Rules)
+	album, err := ah.scopedSvc(ctx).CreateSmartAlbum(req.Name, req.Rules)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -142,7 +165,7 @@ func (ah *AlbumHandler) UpdateSmartAlbum(ctx *gin.Context) {
 		return
 	}
 
-	album, err := ah.svc.UpdateSmartAlbum(albumId, req.Rules)
+	album, err := ah.scopedSvc(ctx).UpdateSmartAlbum(albumId, req.Rules)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -184,7 +207,7 @@ func (ah *AlbumHandler) UpdateAlbum(ctx *gin.Context) {
 		updates["tags"] = req.Tags
 	}
 
-	album, err := ah.svc.UpdateAlbum(albumId, updates)
+	album, err := ah.scopedSvc(ctx).UpdateAlbum(albumId, updates)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -202,7 +225,18 @@ func (ah *AlbumHandler) DeleteAlbum(ctx *gin.Context) {
 
 	deletePhotos, _ := strconv.ParseBool(ctx.DefaultQuery("deletePhotos", "false"))
 
-	err := ah.svc.DeleteAlbum(albumId, deletePhotos)
+	// Cross-tenant guard (issue #74): verify ownership before deleting. The
+	// album's workspace is immutable, so the check cannot be raced.
+	existing, err := ah.scopedSvc(ctx).GetAlbumById(albumId)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	if !resourceInWorkspace(ctx, existing.WorkspaceID) {
+		return
+	}
+
+	err = ah.scopedSvc(ctx).DeleteAlbum(albumId, deletePhotos)
 	if err != nil {
 		handleError(ctx, err)
 		return

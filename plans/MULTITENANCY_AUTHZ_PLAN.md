@@ -1,8 +1,54 @@
 # Multi-Tenancy & AuthZ Architecture Plan
 
-## Status: v0.2 — decisions confirmed (2026-09-09). Phases 0–2 in implementation on `issue-74-multitenancy`.
+## Status: v0.2 — decisions confirmed (2026-09-09). Phases 0–1 implemented; Phase 2 identity layer implemented, query-scoping sweep pending.
 
 Implements GitHub **issue #74** (Multi-tenancy support) and **issue #148** (owner scoping) against the product strategy in `plans/CLOUD_HOSTING_PLAN.md` (open SaaS: "Google Photos convenience, without Google", EU-hosted, open signup with approval tooling, 10GB free quota, B2 object storage, Cloudflare CDN).
+
+### Implementation status (branch `issue-74-multitenancy`)
+
+| Phase | Item | Status |
+|---|---|---|
+| 0 | golang-migrate adoption (embedded, advisory-locked; `000001_baseline` adopts AutoMigrate DBs without data change) | ✅ shipped |
+| 1 | `workspaces` + `workspace_members`; `000002_workspaces` backfills all pre-existing content + users into the default workspace | ✅ shipped |
+| 1 | Signup creates an isolated personal workspace; admin-created users join the shared default workspace | ✅ shipped |
+| 1 | `thumb_cap` capability column + unauth `/t/{cap}/{size}.webp` route (immutable caching) | ✅ shipped |
+| 1 | `ObjectStore` + workspace-bound `WorkspaceStore` (structural prefix isolation) | ✅ shipped |
+| 1 | S3 originals adapter (minio-go; Wasabi/AWS/MinIO) behind `ORIGINALS_STORAGE` | ✅ shipped |
+| 2 | Workspace CRUD + membership API; `workspaceMiddleware` (server-side resolution, fail-closed) | ✅ shipped |
+| 2 | Per-workspace WebSocket delivery (hub no longer broadcasts tenant events to all clients) | ✅ shipped |
+| 2 | No-auth `GET /api/album/:id` closed (D3: auth required, not deleted — the webapp uses it) | ✅ shipped |
+| 2 | **Query-scoping sweep**: every repository query filtered by workspace | ✅ shipped (photos/albums/shares, fail-closed) |
+| 2 | HTTP upload route; originals/regen cutover to S3; cache-key namespacing | ⬜ pending |
+| 2 | Webapp `X-Workspace-ID` header + `<img src>` capability thumbnails | ⬜ pending |
+| 2 | Cross-tenant content matrix (403/404 on every endpoint) | ✅ harness shipped, **0 measured leaks** |
+| 3 | Per-workspace cron; orphan sweep; backup key split | ⬜ pending |
+| 4 | Postgres RLS hardening | ⬜ pending |
+| 5 | Multi-member product UI, invitations, paid tiers | ⬜ pending |
+
+**Enforcement status:** the Phase 2 sweep has landed for photos, albums, and shares. Tenant-facing queries are filtered in the repository, the filter is fail-closed once a repository is bound to a workspace, and the cross-tenant matrix reports zero breaches across photos, albums, thumbnails, trash, search, timeline, tags, and duplicates. Pagination correctness is covered by a dedicated test proving a scoped limit is filled from the caller's own rows. Remaining before open signup: per-workspace background jobs (Phase 3) and RLS (Phase 4).
+
+#### Measured leak surface (matrix run, 2026-09-09)
+
+`TENANCY_MATRIX=1 go test -tags=integration -run TestCrossTenantContentMatrix ./test/integration/ -v` — tenant A targeting tenant B's resources.
+
+**Before the handler guards:** 6 confirmed breaches, including a mutation (`PATCH /api/photos/{id}/favorite`) and a destructive one (`DELETE /api/albums/{id}`):
+
+| Endpoint | Result |
+|---|---|
+| `GET /api/photo/info/{id}` | 200, B's photo |
+| `GET /api/photo/thumbnail/{id}` | 200, B's thumbnail |
+| `PATCH /api/photos/{id}/favorite` | 200 (mutation) |
+| `GET /api/album/{id}` | 200, B's album |
+| `DELETE /api/albums/{id}` | 200 (destructive) |
+| `GET /api/photos/trash` | B's photo in response |
+
+**After:** zero. Cases that return no other-tenant marker are logged `UNVERIFIED` by the matrix — absence of a marker is not proof of isolation, so treat any new endpoint as unverified until the sweep moves filtering into the queries.
+
+The matrix is gated behind `TENANCY_MATRIX=1` so CI stays green while the residual pagination gap is tracked; drop the gate when the sweep lands.
+
+#### Deferred: thumbnail/cache key namespacing
+
+Photo IDs are already globally unique (`base64(path)` on the home instance, UUIDv4 on SaaS uploads), so namespacing thumbnail and cache keys adds no isolation — a key collision across tenants is impossible. It would also force an extra DB read on the thumbnail hot path (~80% of reads) to learn a photo's workspace, and a full thumbnail re-layout/regen. The S3 *originals* layout already namespaces via `WorkspaceStore` (`originals/{ws}/{id}`). Revisit only if photo IDs ever become workspace-relative.
 
 Supersedes the tenancy sketches in `plans/ideas-implementation-plan.md` §1 and `plans/CLOUD_HOSTING_PLAN.md` §7. Design direction from Rich: **authN/authZ built through the product so users only ever access their own media, with credentials applied at the resource layer** (the AWS Cognito pattern: identity pool + scoped credentials against `s3:prefix/{customer-id}/*`).
 
@@ -236,7 +282,7 @@ Confirmed 2026-09-09 (Rich). D1/D2/D5/D6/D7/D8 adopted as recommended; D3 delete
 |---|---|---|---|
 | D1 | §13.4 → thumbnail capability route with separate random `thumb_cap` (never the path-hash photo ID) | Adopt | ✅ |
 | D2 | Thumbnails transiently in CF global edge; originals/metadata/DB strictly EU — accept + disclose in ToS, EU-only caching as config flag | Accept + disclose | ✅ |
-| D3 | No-auth `GET /api/album/:id`: delete (if unused) or capability-ize | Verify webapp usage, likely delete | ✅ delete — verified unused outside shared flow |
+| D3 | No-auth `GET /api/album/:id`: delete (if unused) or capability-ize | Verify webapp usage, likely delete | ✅ require auth — webapp uses the path with a bearer token, so it is not unused |
 | D4 | Per-tenant B2 keys rejected; 3-key process scheme (API / backup-readonly / sweep) | Confirm to close | ✅ rejected per §4.2 |
 | D5 | `workspaces` + membership table from Phase 1 (not a `users.workspace_id` column) | Adopt | ✅ |
 | D6 | Backfill: all existing users into one default workspace (preserves shared-library semantics) | Adopt | ✅ |

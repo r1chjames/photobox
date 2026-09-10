@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -21,6 +22,11 @@ func (m *MockUserRepository) CreateUser(user *domain.User) (*domain.User, error)
 		return user, args.Error(1)
 	}
 	return args.Get(0).(*domain.User), args.Error(1)
+}
+
+func (m *MockUserRepository) CreateUserWithPersonalWorkspace(user *domain.User, workspace *domain.Workspace) error {
+	args := m.Called(user, workspace)
+	return args.Error(0)
 }
 
 func (m *MockUserRepository) ListUsers(pageNumber, pageSize int) ([]domain.User, error) {
@@ -63,6 +69,59 @@ func (m *MockUserRepository) UpdateUser(user *domain.User) error {
 func (m *MockUserRepository) DeleteUser(id string) error {
 	args := m.Called(id)
 	return args.Error(0)
+}
+
+// TestRegisterWithPersonalWorkspace tests the signup flow that atomically
+// creates a user + personal workspace + owner membership (issue #74 §8).
+func TestRegisterWithPersonalWorkspace(t *testing.T) {
+	mockRepo := new(MockUserRepository)
+	mockRepo.On("CreateUserWithPersonalWorkspace", mock.Anything, mock.Anything).
+		Run(func(args mock.Arguments) {
+			user := args.Get(0).(*domain.User)
+			user.ID = "user-123"
+			ws := args.Get(1).(*domain.Workspace)
+			ws.ID = "ws-123"
+			ws.CreatedAt = time.Now()
+		}).Return(nil)
+
+	service := NewUserService(mockRepo)
+	user, ws, err := service.RegisterWithPersonalWorkspace(&domain.User{
+		Username: "alice",
+		Email:    "alice@example.com",
+		Password: "password123",
+	}, "Alice's Photos")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, user)
+	assert.Equal(t, "alice", user.Username)
+	assert.Equal(t, domain.VIEWER, user.Role)
+	assert.NotEqual(t, "password123", user.Password, "password should be hashed")
+	assert.NotNil(t, ws)
+	assert.Equal(t, "Alice's Photos", ws.Name)
+	assert.Equal(t, "alices-photos", ws.Slug)
+	assert.NotEmpty(t, ws.ID)
+	mockRepo.AssertExpectations(t)
+}
+
+// TestRegisterWithPersonalWorkspace_RepoError asserts a repository failure
+// surfaces as ErrInternal and no partial registration is reported.
+func TestRegisterWithPersonalWorkspace_RepoError(t *testing.T) {
+	mockRepo := new(MockUserRepository)
+	mockRepo.On("CreateUserWithPersonalWorkspace", mock.Anything, mock.Anything).
+		Return(errors.New("tx failed"))
+
+	service := NewUserService(mockRepo)
+	user, ws, err := service.RegisterWithPersonalWorkspace(&domain.User{
+		Username: "bob",
+		Email:    "bob@example.com",
+		Password: "password123",
+	}, "Bob's Photos")
+
+	assert.Error(t, err)
+	assert.True(t, errors.Is(err, domain.ErrInternal))
+	assert.Nil(t, user)
+	assert.Nil(t, ws)
+	mockRepo.AssertExpectations(t)
 }
 
 // TestRegister tests the user registration functionality

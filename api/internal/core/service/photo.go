@@ -2,9 +2,9 @@ package service
 
 import (
 	archivezip "archive/zip"
-	b64 "encoding/base64"
 	"bytes"
 	"context"
+	b64 "encoding/base64"
 	"fmt"
 	json "github.com/goccy/go-json"
 	"hash/fnv"
@@ -22,6 +22,7 @@ import (
 
 	"github.com/buckket/go-blurhash"
 	"github.com/disintegration/imaging"
+	"github.com/google/uuid"
 	"github.com/rwcarlsen/goexif/exif"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	ws "gitlab.com/r1chjames/photobox/api/internal/components/websocket"
@@ -103,6 +104,18 @@ func NewPhotoService(photoRepo port.PhotoRepository, albumRepo port.AlbumService
 
 // SetGeocoder installs the reverse-geocoder used by the metadata location
 // enrichment. Optional: when nil, location lookups return empty.
+// WithWorkspace returns a copy of the service whose tenant reads and writes
+// are scoped to the given workspace (issue #74). Handlers must use this so
+// every query they trigger carries the caller's workspace.
+func (ps *PhotoService) WithWorkspace(workspaceID string) port.PhotoService {
+	c := *ps
+	c.photoRepo = ps.photoRepo.WithWorkspace(workspaceID)
+	if ps.albumSvc != nil {
+		c.albumSvc = ps.albumSvc.WithWorkspace(workspaceID)
+	}
+	return &c
+}
+
 func (ps *PhotoService) SetGeocoder(g *Geocoder) {
 	ps.geocoder = g
 }
@@ -163,10 +176,25 @@ func (ps *PhotoService) GetPhoto(photoId string, includeThumbnail bool) (*domain
 	return resp, nil
 }
 
+// GetPhotoByThumbCap resolves a photo by capability for the unauthenticated
+// thumbnail route. It returns the photo row (never the thumbnail bytes) so
+// the handler can serve the thumbnail from the workspace-scoped storage
+// using the photo ID; ErrDataNotFound for unknown caps (no existence oracle).
+func (ps *PhotoService) GetPhotoByThumbCap(thumbCap string) (*domain.Photo, error) {
+	photo, err := ps.photoRepo.GetPhotoByThumbCap(thumbCap)
+	if err != nil {
+		return nil, domain.ErrDataNotFound
+	}
+	return photo, nil
+}
+
 func (ps *PhotoService) PerformPhotoIndex(ctx context.Context) {
-	// Notify clients that indexing has started
+	// Notify clients that indexing has started. Filesystem indexing operates
+	// on the shared default workspace until per-workspace indexing lands
+	// (Phase 3), so the event is scoped there rather than broadcast globally
+	// (issue #74).
 	if ps.wsHub != nil {
-		ps.wsHub.BroadcastEvent(ws.Event{
+		ps.wsHub.BroadcastWorkspaceEvent(domain.DefaultWorkspaceID, ws.Event{
 			Type: ws.EventIndexProgress,
 			Payload: ws.IndexProgressPayload{
 				Phase: "started",
@@ -177,10 +205,11 @@ func (ps *PhotoService) PerformPhotoIndex(ctx context.Context) {
 	cache, _ := ps.photoRepo.GetPhotoIndexCache()
 	ps.filesystemSvc.PerformPhotoIndex(ctx, ps.SavePhotos, cache)
 
-	// Notify clients that indexing has completed
+	// Notify clients that indexing has completed (scoped: the payload may
+	// carry error strings derived from filesystem paths).
 	if ps.wsHub != nil {
-		ps.wsHub.BroadcastEvent(ws.Event{
-			Type: ws.EventIndexComplete,
+		ps.wsHub.BroadcastWorkspaceEvent(domain.DefaultWorkspaceID, ws.Event{
+			Type:    ws.EventIndexComplete,
 			Payload: ws.IndexCompletePayload{},
 		})
 	}
@@ -343,25 +372,32 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 		photoHash := b64.StdEncoding.EncodeToString([]byte(photo.Path))
 		photoMetadata, _ := json.Marshal(&photo)
 		photoInfo := domain.Photo{
-			ID:             photoHash,
-			Name:           utils.EscapeInvalidCharacters(photo.Name),
-			FilesystemPath: photo.Path,
-			AlbumId:        albumId,
-			Metadata:       photoMetadata,
-			Thumbnail:      photo.Thumbnail,
-			CreatedEpoch:   getPhotoEpoch(photo.Exif, photo.ModifiedTime),
-			Year:           0,
-			Month:          0,
-			FileHash:       computeFileHash(photo.Path),
+			ID:               photoHash,
+			Name:             utils.EscapeInvalidCharacters(photo.Name),
+			FilesystemPath:   photo.Path,
+			AlbumId:          albumId,
+			Metadata:         photoMetadata,
+			Thumbnail:        photo.Thumbnail,
+			CreatedEpoch:     getPhotoEpoch(photo.Exif, photo.ModifiedTime),
+			Year:             0,
+			Month:            0,
+			FileHash:         computeFileHash(photo.Path),
 			FileModifiedTime: photo.ModifiedTime,
-			MediaType:      photo.MediaType,
-			Duration:       photo.Duration,
-			Width:          photo.Width,
-			Height:         photo.Height,
-			Latitude:       photo.Latitude,
-			Longitude:      photo.Longitude,
-			LivePhotoPath:  photo.LivePhotoPath,
-			DominantColor:  computeDominantColor(photo.Path),
+			MediaType:        photo.MediaType,
+			Duration:         photo.Duration,
+			Width:            photo.Width,
+			Height:           photo.Height,
+			Latitude:         photo.Latitude,
+			Longitude:        photo.Longitude,
+			LivePhotoPath:    photo.LivePhotoPath,
+			DominantColor:    computeDominantColor(photo.Path),
+			// Random 128-bit capability for the thumbnail route; immutable
+			// once assigned (upsert excludes thumb_cap from updates).
+			ThumbCap: uuid.NewString(),
+			// Filesystem-scanned photos belong to the shared default
+			// workspace — the home instance's single library (issue #74 D6).
+			// SaaS uploads carry their caller's workspace instead.
+			WorkspaceID: domain.DefaultWorkspaceID,
 		}
 		photoInfo.Year, photoInfo.Month = getPhotoYearMonth(photo.Exif, photo.ModifiedTime)
 
@@ -397,7 +433,9 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 			}
 			// Notify connected clients that a thumbnail is ready
 			if ps.wsHub != nil {
-				ps.wsHub.BroadcastEvent(ws.Event{
+				// Tenant-scoped: the payload carries a photo identifier, so it
+				// must not reach clients in other workspaces (issue #74).
+				ps.wsHub.BroadcastWorkspaceEvent(photoInfo.WorkspaceID, ws.Event{
 					Type: ws.EventThumbnailReady,
 					Payload: ws.ThumbnailReadyPayload{
 						PhotoID: photoHash,
@@ -444,24 +482,30 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 	photoHash := b64.StdEncoding.EncodeToString([]byte(photo.Path))
 	photoMetadata, _ := json.Marshal(&photo)
 	photoInfo := domain.Photo{
-		ID:             photoHash,
-		Name:           utils.EscapeInvalidCharacters(photo.Name),
-		FilesystemPath: photo.Path,
-		AlbumId:        albumId,
-		Metadata:       photoMetadata,
-		Thumbnail:      photo.Thumbnail,
-		CreatedEpoch:   getPhotoEpoch(photo.Exif, photo.ModifiedTime),
-		Year:           0,
-		Month:          0,
-		FileHash:       computeFileHash(photo.Path),
+		ID:               photoHash,
+		Name:             utils.EscapeInvalidCharacters(photo.Name),
+		FilesystemPath:   photo.Path,
+		AlbumId:          albumId,
+		Metadata:         photoMetadata,
+		Thumbnail:        photo.Thumbnail,
+		CreatedEpoch:     getPhotoEpoch(photo.Exif, photo.ModifiedTime),
+		Year:             0,
+		Month:            0,
+		FileHash:         computeFileHash(photo.Path),
 		FileModifiedTime: photo.ModifiedTime,
-		MediaType:      photo.MediaType,
-		Duration:       photo.Duration,
-		Width:          photo.Width,
-		Height:         photo.Height,
-		Latitude:       photo.Latitude,
-		Longitude:      photo.Longitude,
-		DominantColor:  computeDominantColor(photo.Path),
+		MediaType:        photo.MediaType,
+		Duration:         photo.Duration,
+		Width:            photo.Width,
+		Height:           photo.Height,
+		Latitude:         photo.Latitude,
+		Longitude:        photo.Longitude,
+		DominantColor:    computeDominantColor(photo.Path),
+		// Random 128-bit capability for the thumbnail route; immutable once
+		// assigned (upsert excludes thumb_cap from updates).
+		ThumbCap: uuid.NewString(),
+		// Filesystem-scanned photos belong to the shared default workspace
+		// (issue #74 D6).
+		WorkspaceID: domain.DefaultWorkspaceID,
 	}
 	photoInfo.Year, photoInfo.Month = getPhotoYearMonth(photo.Exif, photo.ModifiedTime)
 
@@ -478,7 +522,8 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 		}
 		// Notify connected clients that a thumbnail is ready
 		if ps.wsHub != nil {
-			ps.wsHub.BroadcastEvent(ws.Event{
+			// Tenant-scoped (payload carries a photo identifier).
+			ps.wsHub.BroadcastWorkspaceEvent(photoInfo.WorkspaceID, ws.Event{
 				Type: ws.EventThumbnailReady,
 				Payload: ws.ThumbnailReadyPayload{
 					PhotoID: photoHash,

@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
+	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 	"gorm.io/datatypes"
 )
 
@@ -20,9 +21,23 @@ import (
 type MockSearchPhotoService struct {
 	mock.Mock
 }
+// WithWorkspace satisfies the workspace-scoped port interface (issue #74).
+// These mocks do not model scoping, so they return themselves unchanged.
+func (m *MockSearchPhotoService) WithWorkspace(workspaceID string) port.PhotoService {
+	return m
+}
+
 
 func (m *MockSearchPhotoService) GetPhoto(photoId string, includeThumbnail bool) (*domain.Photo, error) {
 	args := m.Called(photoId, includeThumbnail)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Photo), args.Error(1)
+}
+
+func (m *MockSearchPhotoService) GetPhotoByThumbCap(thumbCap string) (*domain.Photo, error) {
+	args := m.Called(thumbCap)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -335,6 +350,12 @@ func (m *MockSearchPhotoService) PhotoLiveVideoPath(photoId string) (string, err
 type MockSearchAlbumService struct {
 	mock.Mock
 }
+// WithWorkspace satisfies the workspace-scoped port interface (issue #74).
+// These mocks do not model scoping, so they return themselves unchanged.
+func (m *MockSearchAlbumService) WithWorkspace(workspaceID string) port.AlbumService {
+	return m
+}
+
 
 func (m *MockSearchAlbumService) GetAlbumById(id string) (*domain.Album, error) {
 	args := m.Called(id)
@@ -427,16 +448,18 @@ func TestSearchHandler_Search_Success(t *testing.T) {
 	handler := NewSearchHandler(mockPhotoSvc, mockAlbumSvc)
 
 	mockPhotoSvc.On("Search", "test", 30).Return([]*domain.Photo{
-		{ID: "p1", Name: "Photo 1"},
+		{ID: "p1", Name: "Photo 1", WorkspaceID: "ws-test"},
 	}, nil)
 
 	mockAlbumSvc.On("ListAlbums", "", 30).Return([]*domain.Album{
-		{ID: "a1", Name: "Album 1", Metadata: datatypes.JSON([]byte("{}"))},
+		{ID: "a1", Name: "Album 1", Metadata: datatypes.JSON([]byte("{}")), WorkspaceID: "ws-test"},
 	}, nil)
 
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 
+	// Search results are filtered to the caller's workspace (issue #74).
+	ctx.Set(workspaceContextKey, &WorkspaceContext{WorkspaceID: "ws-test", Role: domain.WorkspaceMemberRole})
 	ctx.Request = httptest.NewRequest(http.MethodGet, "/search?q=test", nil)
 
 	handler.Search(ctx)

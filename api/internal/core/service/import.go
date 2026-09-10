@@ -190,7 +190,10 @@ func (ti *TakeoutImporter) ImportTakeout(ctx context.Context, req domain.Takeout
 		}
 		ti.mu.Unlock()
 		if ti.wsHub != nil {
-			ti.wsHub.BroadcastEvent(ws.Event{
+			// Takeout import targets the shared default workspace until
+			// per-workspace import lands; scope the event so it reaches only
+			// that workspace's clients (issue #74).
+			ti.wsHub.BroadcastWorkspaceEvent(domain.DefaultWorkspaceID, ws.Event{
 				Type: ws.EventImportProgress,
 				Payload: ws.ImportProgressPayload{
 					Status: "running", Phase: phase, Current: current, Total: len(items),
@@ -301,7 +304,9 @@ func (ti *TakeoutImporter) finalize(status string, total, imported, skipped int,
 	ti.mu.Unlock()
 
 	if ti.wsHub != nil {
-		ti.wsHub.BroadcastEvent(ws.Event{
+		// Scoped: the completion payload may carry error strings derived from
+		// filesystem paths (issue #74).
+		ti.wsHub.BroadcastWorkspaceEvent(domain.DefaultWorkspaceID, ws.Event{
 			Type: ws.EventImportComplete,
 			Payload: ws.ImportCompletePayload{
 				Imported: imported, Skipped: skipped, Errors: errors,

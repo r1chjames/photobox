@@ -168,6 +168,21 @@ func (mr *MockPhotoRepositoryMockRecorder) GetPhotoById(photoId, includeThumbnai
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPhotoById", reflect.TypeOf((*MockPhotoRepository)(nil).GetPhotoById), photoId, includeThumbnail)
 }
 
+// GetPhotoByThumbCap mocks base method.
+func (m *MockPhotoRepository) GetPhotoByThumbCap(thumbCap string) (*domain.Photo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPhotoByThumbCap", thumbCap)
+	ret0, _ := ret[0].(*domain.Photo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPhotoByThumbCap indicates an expected call of GetPhotoByThumbCap.
+func (mr *MockPhotoRepositoryMockRecorder) GetPhotoByThumbCap(thumbCap interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPhotoByThumbCap", reflect.TypeOf((*MockPhotoRepository)(nil).GetPhotoByThumbCap), thumbCap)
+}
+
 // GetPhotoThumbnails mocks base method.
 func (m *MockPhotoRepository) GetPhotoThumbnails(photoIds []string) (map[string][]byte, error) {
 	m.ctrl.T.Helper()
@@ -803,6 +818,21 @@ func (m *MockPhotoService) GetPhoto(photoId string, includeThumbnail bool) (*dom
 func (mr *MockPhotoServiceMockRecorder) GetPhoto(photoId, includeThumbnail interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPhoto", reflect.TypeOf((*MockPhotoService)(nil).GetPhoto), photoId, includeThumbnail)
+}
+
+// GetPhotoByThumbCap mocks base method.
+func (m *MockPhotoService) GetPhotoByThumbCap(thumbCap string) (*domain.Photo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPhotoByThumbCap", thumbCap)
+	ret0, _ := ret[0].(*domain.Photo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPhotoByThumbCap indicates an expected call of GetPhotoByThumbCap.
+func (mr *MockPhotoServiceMockRecorder) GetPhotoByThumbCap(thumbCap interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPhotoByThumbCap", reflect.TypeOf((*MockPhotoService)(nil).GetPhotoByThumbCap), thumbCap)
 }
 
 // GetTimeline mocks base method.

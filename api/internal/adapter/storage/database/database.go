@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database/migrations"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
 	"gorm.io/driver/postgres"
@@ -17,6 +18,10 @@ import (
 
 type Env struct {
 	Db *gorm.DB
+	// DbUrl is the lib/pq key=value DSN used to open this connection. It is
+	// retained so startup migrations can open their own short-lived
+	// connection (golang-migrate manages its own pool + advisory lock).
+	DbUrl string
 }
 
 func InitDbConnection(appConfig *appconfig.AppConfig) *Env {
@@ -48,7 +53,7 @@ func InitDbConnection(appConfig *appconfig.AppConfig) *Env {
 	// Set maximum lifetime of a connection (reuse connections for up to 1 hour)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
-	return &Env{Db: db}
+	return &Env{Db: db, DbUrl: appConfig.DbUrl}
 }
 
 func (dbEnv *Env) PerformDbSetup() {
@@ -58,8 +63,17 @@ func (dbEnv *Env) PerformDbSetup() {
 		os.Exit(1)
 	}
 
+	// Versioned schema migrations (golang-migrate, issue #74 Phase 0). The
+	// 000001_baseline migration adopts databases created by AutoMigrate;
+	// later numbered migrations apply the tenancy changes. Runs before
+	// AutoMigrate so a fresh database is fully versioned first.
+	if err := migrations.Run(dbEnv.DbUrl); err != nil {
+		slog.Error("Failed to run schema migrations", "error", err)
+		os.Exit(1)
+	}
+
 	// Migrate the schema
-	err := dbEnv.Db.AutoMigrate(&domain.Album{}, &domain.Photo{}, &domain.PhotoTag{}, &domain.PhotoAnalysis{}, &domain.FaceDetection{}, &domain.FacePerson{}, &domain.FaceCluster{}, &domain.Setting{}, &domain.Job{}, &domain.User{}, &domain.SharedLink{}, &domain.ApiKey{})
+	err := dbEnv.Db.AutoMigrate(&domain.Album{}, &domain.Photo{}, &domain.PhotoTag{}, &domain.PhotoAnalysis{}, &domain.FaceDetection{}, &domain.FacePerson{}, &domain.FaceCluster{}, &domain.Setting{}, &domain.Job{}, &domain.User{}, &domain.SharedLink{}, &domain.ApiKey{}, &domain.Workspace{}, &domain.WorkspaceMember{})
 	if err != nil {
 		slog.Error("Failed to perform database migration", "error", err)
 		os.Exit(1)

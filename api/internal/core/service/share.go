@@ -11,9 +11,9 @@ import (
 )
 
 type ShareService struct {
-	repo      port.ShareRepository
-	photoSvc  port.PhotoService
-	albumSvc  port.AlbumService
+	repo     port.ShareRepository
+	photoSvc port.PhotoService
+	albumSvc port.AlbumService
 }
 
 func NewShareService(repo port.ShareRepository, photoSvc port.PhotoService, albumSvc port.AlbumService) *ShareService {
@@ -27,6 +27,20 @@ func (ss *ShareService) generateToken() (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(bytes), nil
+}
+
+// WithWorkspace returns a copy of the service whose share queries are scoped
+// to the given workspace (issue #74).
+func (ss *ShareService) WithWorkspace(workspaceID string) port.ShareService {
+	c := *ss
+	c.repo = ss.repo.WithWorkspace(workspaceID)
+	if ss.photoSvc != nil {
+		c.photoSvc = ss.photoSvc.WithWorkspace(workspaceID)
+	}
+	if ss.albumSvc != nil {
+		c.albumSvc = ss.albumSvc.WithWorkspace(workspaceID)
+	}
+	return &c
 }
 
 func (ss *ShareService) CreateShare(resourceType, resourceId, createdBy string, expiry *string, password *string) (*domain.SharedLink, error) {

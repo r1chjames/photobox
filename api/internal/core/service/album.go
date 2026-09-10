@@ -23,6 +23,14 @@ func NewAlbumService(repo port.AlbumRepository, config appconfig.AppConfig) *Alb
 	}
 }
 
+// WithWorkspace returns a copy of the service whose queries are scoped to the
+// given workspace (issue #74).
+func (as *AlbumService) WithWorkspace(workspaceID string) port.AlbumService {
+	c := *as
+	c.repo = as.repo.WithWorkspace(workspaceID)
+	return &c
+}
+
 func (as *AlbumService) GetAlbumById(id string) (*domain.Album, error) {
 	return as.repo.GetAlbumById(id)
 }

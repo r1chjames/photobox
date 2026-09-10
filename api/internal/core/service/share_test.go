@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"gitlab.com/r1chjames/photobox/api/internal/adapter/handler/auth"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
+	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 )
 
 func strPtr(s string) *string { return &s }
@@ -17,6 +18,12 @@ func strPtr(s string) *string { return &s }
 type MockShareRepository struct {
 	mock.Mock
 }
+// WithWorkspace satisfies the workspace-scoped port interface (issue #74).
+// These mocks do not model scoping, so they return themselves unchanged.
+func (m *MockShareRepository) WithWorkspace(workspaceID string) port.ShareRepository {
+	return m
+}
+
 
 func (m *MockShareRepository) CreateShare(share *domain.SharedLink) error {
 	args := m.Called(share)

@@ -8,8 +8,13 @@ import (
 )
 
 type Album struct {
-	ID           string         `gorm:"primarykey" json:"id"`
-	Name         string         `json:"name" gorm:"uniqueIndex"`
+	ID string `gorm:"primarykey" json:"id"`
+	// WorkspaceID scopes this album to a workspace (issue #74). Album names
+	// are unique per workspace, not globally.
+	WorkspaceID string `json:"workspaceId" gorm:"index;size:36"`
+	// Name is unique per workspace (composite unique idx_albums_ws_name),
+	// not globally — two tenants may both have "Holidays" (issue #74).
+	Name         string         `json:"name"`
 	Description  string         `json:"description"`
 	Tags         string         `json:"tags"`
 	Metadata     datatypes.JSON `json:"metadata"`
@@ -23,15 +28,15 @@ type Album struct {
 // SmartAlbumRules holds the filter criteria for a smart album. Mirrors
 // PhotoSearchFilters so saved filters can be reused directly.
 type SmartAlbumRules struct {
-	StartDate   string          `json:"startDate,omitempty"`
-	EndDate     string          `json:"endDate,omitempty"`
-	MediaType   string          `json:"mediaType,omitempty"`
-	Camera      string          `json:"camera,omitempty"`
-	HasGPS      bool            `json:"hasGps,omitempty"`
-	Orientation string          `json:"orientation,omitempty"`
-	Tags        []string        `json:"tags,omitempty"`
-	Favorite    bool            `json:"favorite,omitempty"`
-	LowQuality  bool            `json:"lowQuality,omitempty"`
+	StartDate   string   `json:"startDate,omitempty"`
+	EndDate     string   `json:"endDate,omitempty"`
+	MediaType   string   `json:"mediaType,omitempty"`
+	Camera      string   `json:"camera,omitempty"`
+	HasGPS      bool     `json:"hasGps,omitempty"`
+	Orientation string   `json:"orientation,omitempty"`
+	Tags        []string `json:"tags,omitempty"`
+	Favorite    bool     `json:"favorite,omitempty"`
+	LowQuality  bool     `json:"lowQuality,omitempty"`
 }
 
 // IsSmart reports whether the album is a smart (rule-based) album by

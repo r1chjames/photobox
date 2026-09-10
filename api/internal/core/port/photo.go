@@ -12,8 +12,14 @@ import (
 
 // PhotoRepository is an interface for interacting with photo-related data
 type PhotoRepository interface {
+	// WithWorkspace returns a repository whose tenant queries are scoped to
+	// the given workspace (issue #74). An empty workspace is fail-closed.
+	WithWorkspace(workspaceID string) PhotoRepository
 	// GetPhotoById inserts a new user into the database
 	GetPhotoById(photoId string, includeThumbnail bool) (*domain.Photo, error)
+	// GetPhotoByThumbCap resolves a photo by its random capability
+	// (issue #74 D1). Returns ErrDataNotFound for unknown caps.
+	GetPhotoByThumbCap(thumbCap string) (*domain.Photo, error)
 	// ListAllPhotos selects a list of users with pagination
 	ListAllPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error)
 	// ListAllPhotosInAlbum selects a user by id
@@ -104,8 +110,14 @@ type PhotoRepository interface {
 
 // PhotoService is an interface for interacting with photo-related business logic
 type PhotoService interface {
+	// WithWorkspace returns a service scoped to the given workspace
+	// (issue #74). Handlers must use this; empty is fail-closed.
+	WithWorkspace(workspaceID string) PhotoService
 	//GetPhoto returns a photo
 	GetPhoto(photoId string, includeThumbnail bool) (*domain.Photo, error)
+	// GetPhotoByThumbCap resolves a photo by its random capability
+	// (issue #74 D1); ErrDataNotFound for unknown caps.
+	GetPhotoByThumbCap(thumbCap string) (*domain.Photo, error)
 	// ListPhotos registers a new user
 	ListPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error)
 	// ListPhotosInAlbum registers a new user

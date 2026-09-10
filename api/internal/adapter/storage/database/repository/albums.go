@@ -5,24 +5,50 @@ import (
 	"github.com/google/uuid"
 	db "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
+	"gitlab.com/r1chjames/photobox/api/internal/core/port"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"time"
 )
 
 type AlbumRepository struct {
 	dbEnv *db.Env
+	// workspaceID scopes tenant-facing queries to one workspace (issue #74).
+	// Empty means unscoped, reserved for background/import paths and tests.
+	workspaceID string
+	// scoped records explicit binding via WithWorkspace; once scoped an empty
+	// workspace fails closed rather than widening the query.
+	scoped bool
 }
 
 func NewAlbumRepository(dbEnv *db.Env) *AlbumRepository {
 	return &AlbumRepository{
-		dbEnv,
+		dbEnv: dbEnv,
 	}
+}
+
+// WithWorkspace returns a repository scoped to workspaceID. Fail-closed: an
+// empty workspace matches nothing, so a missing workspace cannot widen a query.
+func (ar *AlbumRepository) WithWorkspace(workspaceID string) port.AlbumRepository {
+	return &AlbumRepository{dbEnv: ar.dbEnv, workspaceID: workspaceID, scoped: true}
+}
+
+// scope applies the workspace filter to an albums query. Unscoped repositories
+// pass through untouched.
+func (ar *AlbumRepository) scope(tx *gorm.DB) *gorm.DB {
+	if !ar.scoped {
+		return tx
+	}
+	if ar.workspaceID == "" {
+		return tx.Where("1 = 0") // fail closed
+	}
+	return tx.Where("albums.workspace_id = ?", ar.workspaceID)
 }
 
 func (ar *AlbumRepository) GetAlbumById(id string) (*domain.Album, error) {
 	var album domain.Album
 	album.ID = id
-	result := ar.dbEnv.Db.First(&album)
+	result := ar.scope(ar.dbEnv.Db).First(&album)
 	err := db.HandleError(result)
 	if err != nil {
 		return nil, err
@@ -32,7 +58,7 @@ func (ar *AlbumRepository) GetAlbumById(id string) (*domain.Album, error) {
 
 func (ar *AlbumRepository) GetAlbumByName(name string) (*domain.Album, error) {
 	var album *domain.Album
-	result := ar.dbEnv.Db.First(&album, "name = ?", name)
+	result := ar.scope(ar.dbEnv.Db).First(&album, "name = ?", name)
 	err := db.HandleError(result)
 	if err != nil {
 		return nil, err
@@ -72,7 +98,7 @@ func (ar *AlbumRepository) CreateAlbumIfNotExists(name string) (*domain.Album, e
 
 func (ar *AlbumRepository) ListAllAlbums(fromId string, limit int) ([]*domain.Album, error) {
 	var albums []*domain.Album
-	result := ar.dbEnv.Db.Model(&[]domain.Album{}).Order("created_epoch ASC")
+	result := ar.scope(ar.dbEnv.Db.Model(&[]domain.Album{})).Order("created_epoch ASC")
 	if fromId != "" {
 		fromEpoch, _ := b64.StdEncoding.DecodeString(fromId)
 		result = result.Where("created_epoch > ?", fromEpoch)
@@ -87,7 +113,7 @@ func (ar *AlbumRepository) ListAllAlbums(fromId string, limit int) ([]*domain.Al
 
 func (ar *AlbumRepository) AlbumCount() (int64, error) {
 	var count int64
-	result := ar.dbEnv.Db.Model(&domain.Album{}).Count(&count)
+	result := ar.scope(ar.dbEnv.Db.Model(&domain.Album{})).Count(&count)
 	err := db.HandleError(result)
 	if err != nil {
 		return 0, err
@@ -96,25 +122,33 @@ func (ar *AlbumRepository) AlbumCount() (int64, error) {
 }
 
 func (ar *AlbumRepository) UpdateAlbum(album *domain.Album) error {
-	result := ar.dbEnv.Db.Save(album)
+	// Defence in depth: scope the update to the repository's workspace when
+	// set, so a stale/hostile album value cannot rewrite another tenant's row
+	// (issue #74). Save() would upsert by primary key with no workspace check.
+	tx := ar.dbEnv.Db
+	if ar.scoped {
+		tx = tx.Where("workspace_id = ?", ar.workspaceID)
+	}
+	result := tx.Save(album)
 	return db.HandleError(result)
 }
 
 func (ar *AlbumRepository) DeleteAlbum(id string) error {
-	result := ar.dbEnv.Db.Delete(&domain.Album{}, "id = ?", id)
+	result := ar.scope(ar.dbEnv.Db).Delete(&domain.Album{}, "id = ?", id)
 	return db.HandleError(result)
 }
 
 func (ar *AlbumRepository) ReassignPhotosToAlbum(fromAlbumId, toAlbumId string) error {
 	result := ar.dbEnv.Db.Model(&domain.Photo{}).
 		Where("album_id = ? AND deleted_at IS NULL", fromAlbumId).
+		Where("workspace_id = ?", ar.workspaceID).
 		Update("album_id", toAlbumId)
 	return result.Error
 }
 
 func (ar *AlbumRepository) SearchAlbums(query string, limit int) ([]*domain.Album, error) {
 	var albums []*domain.Album
-	result := ar.dbEnv.Db.Model(&[]domain.Album{}).
+	result := ar.scope(ar.dbEnv.Db.Model(&[]domain.Album{})).
 		Limit(limit).
 		Where("to_tsvector('english', coalesce(name, '')) @@ plainto_tsquery('english', ?)", query).
 		Order("created_epoch DESC").

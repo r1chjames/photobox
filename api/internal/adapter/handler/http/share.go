@@ -25,6 +25,17 @@ type createShareRequest struct {
 	Password     *string `json:"password"`
 }
 
+// scopedSvc returns the share service scoped to the request's workspace
+// (issue #74) for the authenticated management operations. The anonymous
+// public resolution paths deliberately use the unscoped service: the share
+// token itself is the credential there.
+func (sh *ShareHandler) scopedSvc(ctx *gin.Context) port.ShareService {
+	if wc := GetWorkspaceContext(ctx); wc != nil {
+		return sh.shareSvc.WithWorkspace(wc.WorkspaceID)
+	}
+	return sh.shareSvc.WithWorkspace("")
+}
+
 func (sh *ShareHandler) CreateShare(ctx *gin.Context) {
 	var req createShareRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -38,7 +49,7 @@ func (sh *ShareHandler) CreateShare(ctx *gin.Context) {
 		return
 	}
 
-	share, err := sh.shareSvc.CreateShare(req.ResourceType, req.ResourceId, payload.ID.String(), req.Expiry, req.Password)
+	share, err := sh.scopedSvc(ctx).CreateShare(req.ResourceType, req.ResourceId, payload.ID.String(), req.Expiry, req.Password)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -126,7 +137,7 @@ func (sh *ShareHandler) ListShares(ctx *gin.Context) {
 	if payload.Role == domain.ADMINISTRATOR {
 		createdBy = ""
 	}
-	shares, err := sh.shareSvc.ListShares(createdBy)
+	shares, err := sh.scopedSvc(ctx).ListShares(createdBy)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -152,7 +163,7 @@ func (sh *ShareHandler) RevokeShare(ctx *gin.Context) {
 		createdBy = ""
 	}
 
-	err := sh.shareSvc.RevokeShare(token, createdBy)
+	err := sh.scopedSvc(ctx).RevokeShare(token, createdBy)
 	if err != nil {
 		handleError(ctx, err)
 		return

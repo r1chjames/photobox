@@ -10,6 +10,9 @@ import (
 type UserRepository interface {
 	// CreateUser inserts a new user into the database
 	CreateUser(user *domain.User) (*domain.User, error)
+	// CreateUserWithPersonalWorkspace inserts a user, their personal workspace,
+	// and the owner membership in a single transaction (issue #74 §8).
+	CreateUserWithPersonalWorkspace(user *domain.User, workspace *domain.Workspace) error
 	// ListUsers selects a list of users with pagination
 	ListUsers(pageNumber, pageSize int) ([]domain.User, error)
 	// GetUserById selects a user by id
@@ -28,6 +31,9 @@ type UserRepository interface {
 type UserService interface {
 	// Register registers a new user
 	Register(user *domain.User) (*domain.User, error)
+	// RegisterWithPersonalWorkspace registers a user plus their personal
+	// workspace and owner membership atomically (issue #74 §8).
+	RegisterWithPersonalWorkspace(user *domain.User, workspaceName string) (*domain.User, *domain.Workspace, error)
 	// CreateUser registers a new user
 	CreateUser(user *domain.User) (*domain.User, error)
 	// GetUser returns a user by id

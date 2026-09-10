@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
+	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 	"gorm.io/datatypes"
 )
 
@@ -21,9 +22,23 @@ import (
 type MockPhotoRepository struct {
 	mock.Mock
 }
+// WithWorkspace satisfies the workspace-scoped port interface (issue #74).
+// These mocks do not model scoping, so they return themselves unchanged.
+func (m *MockPhotoRepository) WithWorkspace(workspaceID string) port.PhotoRepository {
+	return m
+}
+
 
 func (m *MockPhotoRepository) GetPhotoById(photoId string, includeThumbnail bool) (*domain.Photo, error) {
 	args := m.Called(photoId, includeThumbnail)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoRepository) GetPhotoByThumbCap(thumbCap string) (*domain.Photo, error) {
+	args := m.Called(thumbCap)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -323,6 +338,12 @@ func (m *MockPhotoRepository) HidePhoto(photoId string) error {
 type MockAlbumService struct {
 	mock.Mock
 }
+// WithWorkspace satisfies the workspace-scoped port interface (issue #74).
+// These mocks do not model scoping, so they return themselves unchanged.
+func (m *MockAlbumService) WithWorkspace(workspaceID string) port.AlbumService {
+	return m
+}
+
 
 func (m *MockAlbumService) GetAlbumByName(name string) (*domain.Album, error) {
 	args := m.Called(name)

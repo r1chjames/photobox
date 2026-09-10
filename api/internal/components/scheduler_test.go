@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
+	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 )
 
 // MockJobService is a mock implementation of port.JobService
@@ -113,6 +114,12 @@ func (m *MockUtilityService) CreateBaseSettings(reset bool) error {
 type MockPhotoService struct {
 	mock.Mock
 }
+// WithWorkspace satisfies the workspace-scoped port interface (issue #74).
+// These mocks do not model scoping, so they return themselves unchanged.
+func (m *MockPhotoService) WithWorkspace(workspaceID string) port.PhotoService {
+	return m
+}
+
 
 func (m *MockPhotoService) ListPhotos(fromId string, limit int, includeThumbnail bool, startDate string, endDate string, mediaType string) ([]*domain.Photo, error) {
 	args := m.Called(fromId, limit, includeThumbnail, startDate, endDate, mediaType)
@@ -132,6 +139,14 @@ func (m *MockPhotoService) ListPhotosInAlbum(albumId string, fromId string, limi
 
 func (m *MockPhotoService) GetPhoto(photoId string, includeThumbnail bool) (*domain.Photo, error) {
 	args := m.Called(photoId, includeThumbnail)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Photo), args.Error(1)
+}
+
+func (m *MockPhotoService) GetPhotoByThumbCap(thumbCap string) (*domain.Photo, error) {
+	args := m.Called(thumbCap)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}

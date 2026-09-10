@@ -42,6 +42,35 @@ func (us *UserService) Register(user *domain.User) (*domain.User, error) {
 	return user, nil
 }
 
+// RegisterWithPersonalWorkspace registers a new user and creates their
+// personal workspace + owner membership in one transaction (issue #74 §8).
+// Used by the open-signup path: an approved-but-idle account is exactly the
+// user + workspace + membership rows — no storage objects.
+func (us *UserService) RegisterWithPersonalWorkspace(user *domain.User, workspaceName string) (*domain.User, *domain.Workspace, error) {
+	hashedPassword, err := auth.CreateHash(user.Password, auth.DefaultArgon2idHash())
+	if err != nil {
+		return nil, nil, domain.ErrInternal
+	}
+
+	user.ID = uuid.New().String()
+	user.Password = hashedPassword
+	user.Role = domain.VIEWER
+
+	slug := slugify(workspaceName)
+	ws := &domain.Workspace{
+		ID:   uuid.New().String(),
+		Name: workspaceName,
+		Slug: slug,
+	}
+	if err := us.repo.CreateUserWithPersonalWorkspace(user, ws); err != nil {
+		if errors.Is(err, domain.ErrConflictingData) {
+			return nil, nil, err
+		}
+		return nil, nil, domain.ErrInternal
+	}
+	return user, ws, nil
+}
+
 // CreateUser creates a new user
 func (us *UserService) CreateUser(user *domain.User) (*domain.User, error) {
 	hashedPassword, err := auth.CreateHash(user.Password, auth.DefaultArgon2idHash())

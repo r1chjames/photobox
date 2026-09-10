@@ -25,6 +25,9 @@ type registerRequest struct {
 	Username string `json:"username" binding:"required" example:"John Doe"`
 	Email    string `json:"email" binding:"required,email" example:"test@example.com"`
 	Password string `json:"password" binding:"required,min=8" example:"12345678"`
+	// WorkspaceName is the display name of the user's personal workspace.
+	// Defaults to the username when omitted (issue #74 §8).
+	WorkspaceName string `json:"workspaceName" example:"John's Photos"`
 }
 
 // Register godoc
@@ -55,15 +58,20 @@ func (uh *UserHandler) Register(ctx *gin.Context) {
 		Password: req.Password,
 	}
 
-	_, err := uh.svc.Register(&user)
+	// Every signup gets an isolated personal workspace (issue #74 §8).
+	workspaceName := req.WorkspaceName
+	if workspaceName == "" {
+		workspaceName = req.Username + "'s Photos"
+	}
+
+	created, ws, err := uh.svc.RegisterWithPersonalWorkspace(&user, workspaceName)
 	if err != nil {
 		handleError(ctx, err)
 		return
 	}
 
-	rsp := newUserResponse(&user)
-
-	handleSuccess(ctx, rsp)
+	rsp := newUserResponse(created)
+	handleSuccess(ctx, gin.H{"user": rsp, "workspace": newWorkspaceResponse(ws)})
 }
 
 // listUsersRequest represents the request body for listing users

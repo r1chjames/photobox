@@ -6,38 +6,48 @@ import (
 )
 
 type Photo struct {
-	ID             string         `gorm:"primarykey" json:"id"`
-	Name           string         `json:"name"`
-	FilesystemPath string         `json:"filesystemPath"`
-	SourcePath     string         `json:"sourcePath"`
-	AlbumId        string         `json:"albumId" gorm:"index:idx_album_deleted_epoch,priority:1"`
-	Metadata       datatypes.JSON `json:"metadata"`
-	CreatedAt      time.Time      `json:"createdAt"`
-	CreatedEpoch   int64          `json:"createdEpoch" gorm:"index;index:idx_album_deleted_epoch,priority:3;index:idx_deleted_epoch,priority:2"`
-	Year           int            `json:"year" gorm:"index"`
-	Month          int            `json:"month" gorm:"index"`
-	UpdatedAt      time.Time      `json:"updatedAt"`
-	Thumbnail      []byte         `json:"-"`
-	ThumbnailPath  string         `json:"-"`
-	ThumbnailUrl   string         `json:"thumbnailUrl" gorm:"-"`
-	Favorite       bool           `json:"favorite" gorm:"default:false;index"`
-	DeletedAt      *time.Time     `json:"deletedAt" gorm:"index;index:idx_album_deleted_epoch,priority:2;index:idx_deleted_epoch,priority:1"`
-	Blurhash       string         `json:"blurhash"`
-	DominantColor  string         `json:"dominantColor"`
-	FileHash       string `json:"fileHash" gorm:"index"`
-	FileModifiedTime int64 `json:"fileModifiedTime" gorm:"index"`
-	MediaType      string `json:"mediaType" gorm:"default:'image'"`
-	Duration       int            `json:"duration"`
-	Width          int            `json:"width"`
-	Height         int            `json:"height"`
-	Latitude       float64        `json:"latitude" gorm:"index"`
-	Longitude      float64        `json:"longitude" gorm:"index"`
-	Hidden         bool           `json:"hidden" gorm:"default:false;index"`
-	LivePhotoPath  string         `json:"livePhotoPath" gorm:"index"`
-	Description    string         `json:"description" gorm:"type:text"`
-	QualityScore   int            `json:"qualityScore" gorm:"default:0"`
-	BlurScore      float64        `json:"blurScore" gorm:"default:0"`
-	IsLowQuality   bool           `json:"isLowQuality" gorm:"default:false;index"`
+	ID string `gorm:"primarykey" json:"id"`
+	// WorkspaceID scopes this photo to a workspace (issue #74). Indexed
+	// together with the hot query paths (see composite indexes).
+	WorkspaceID      string         `json:"workspaceId" gorm:"index;size:36"`
+	Name             string         `json:"name"`
+	FilesystemPath   string         `json:"filesystemPath"`
+	SourcePath       string         `json:"sourcePath"`
+	AlbumId          string         `json:"albumId" gorm:"index:idx_album_deleted_epoch,priority:1"`
+	Metadata         datatypes.JSON `json:"metadata"`
+	CreatedAt        time.Time      `json:"createdAt"`
+	CreatedEpoch     int64          `json:"createdEpoch" gorm:"index;index:idx_album_deleted_epoch,priority:3;index:idx_deleted_epoch,priority:2"`
+	Year             int            `json:"year" gorm:"index"`
+	Month            int            `json:"month" gorm:"index"`
+	UpdatedAt        time.Time      `json:"updatedAt"`
+	Thumbnail        []byte         `json:"-"`
+	ThumbnailPath    string         `json:"-"`
+	ThumbnailUrl     string         `json:"thumbnailUrl" gorm:"-"`
+	Favorite         bool           `json:"favorite" gorm:"default:false;index"`
+	DeletedAt        *time.Time     `json:"deletedAt" gorm:"index;index:idx_album_deleted_epoch,priority:2;index:idx_deleted_epoch,priority:1"`
+	Blurhash         string         `json:"blurhash"`
+	DominantColor    string         `json:"dominantColor"`
+	FileHash         string         `json:"fileHash" gorm:"index"`
+	FileModifiedTime int64          `json:"fileModifiedTime" gorm:"index"`
+	MediaType        string         `json:"mediaType" gorm:"default:'image'"`
+	Duration         int            `json:"duration"`
+	Width            int            `json:"width"`
+	Height           int            `json:"height"`
+	Latitude         float64        `json:"latitude" gorm:"index"`
+	Longitude        float64        `json:"longitude" gorm:"index"`
+	Hidden           bool           `json:"hidden" gorm:"default:false;index"`
+	LivePhotoPath    string         `json:"livePhotoPath" gorm:"index"`
+	Description      string         `json:"description" gorm:"type:text"`
+	QualityScore     int            `json:"qualityScore" gorm:"default:0"`
+	BlurScore        float64        `json:"blurScore" gorm:"default:0"`
+	IsLowQuality     bool           `json:"isLowQuality" gorm:"default:false;index"`
+	// ThumbCap is a random 128-bit capability (UUIDv4) that authorizes
+	// thumbnail reads via the unauthenticated /t/{cap}/{size} route. It is
+	// immutable per photo and never derived from the photo ID (issue #74 D1).
+	// The unique index is partial: pre-existing rows backfilled by migration
+	// always carry a cap, but an empty/NULL value must not collide (legacy
+	// rows and test fixtures).
+	ThumbCap string `json:"thumbCap" gorm:"size:36;uniqueIndex:idx_photos_thumb_cap,where:thumb_cap <> ''"`
 	// TrashPath records where the original file was moved when the photo was
 	// soft-deleted, so RestorePhoto can move it back. Empty for photos that
 	// were never deleted (or have no filesystem file).
@@ -105,11 +115,11 @@ type TimelineEntry struct {
 }
 
 type PhotoGeoData struct {
-	ID          string `json:"id"`
-	Lat         float64 `json:"lat"`
-	Lng         float64 `json:"lng"`
-	Thumbnail   string `json:"thumbnail"`
-	DateTaken   string `json:"dateTaken"`
+	ID        string  `json:"id"`
+	Lat       float64 `json:"lat"`
+	Lng       float64 `json:"lng"`
+	Thumbnail string  `json:"thumbnail"`
+	DateTaken string  `json:"dateTaken"`
 }
 
 // MemoryGroup is a set of photos from one prior year for "On This Day".

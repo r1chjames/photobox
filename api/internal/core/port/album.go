@@ -8,6 +8,9 @@ import (
 
 // AlbumRepository is an interface for interacting with Album-related data
 type AlbumRepository interface {
+	// WithWorkspace returns a repository whose tenant queries are scoped to
+	// the given workspace (issue #74). An empty workspace is fail-closed.
+	WithWorkspace(workspaceID string) AlbumRepository
 	// GetAlbumById returns an album using its ID
 	GetAlbumById(id string) (*domain.Album, error)
 	// GetAlbumByName returns an album using its name
@@ -34,6 +37,9 @@ type AlbumRepository interface {
 
 // AlbumService is an interface for interacting with Album-related business logic
 type AlbumService interface {
+	// WithWorkspace returns a service scoped to the given workspace
+	// (issue #74). Handlers must use this; empty is fail-closed.
+	WithWorkspace(workspaceID string) AlbumService
 	// GetAlbumById returns an album using its ID
 	GetAlbumById(id string) (*domain.Album, error)
 	// GetAlbumByName returns an album using its name

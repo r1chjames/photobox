@@ -76,6 +76,9 @@ func buildAuthzRouter(t *testing.T, env *database.Env, config *appconfig.AppConf
 	apiKeyHandler := httpHandler.NewApiKeyHandler(apiKeyService)
 	importHandler := httpHandler.NewImportHandler(service.NewTakeoutImporter(photoService, filesystemService, photoRepo, config, wsHub))
 	wsHandler := httpHandler.NewWebSocketHandler(wsHub)
+	workspaceRepo := repository.NewWorkspaceRepository(env)
+	workspaceService := service.NewWorkspaceService(workspaceRepo)
+	workspaceHandler := httpHandler.NewWorkspaceHandler(workspaceService)
 
 	router, err := httpHandler.NewRouter(
 		*config,
@@ -91,6 +94,8 @@ func buildAuthzRouter(t *testing.T, env *database.Env, config *appconfig.AppConf
 		apiKeyHandler,
 		importHandler,
 		wsHandler,
+		workspaceHandler,
+		workspaceService,
 	)
 	assert.NoError(t, err)
 	return router
@@ -143,6 +148,8 @@ func TestAuthZ_Unauthenticated_401(t *testing.T) {
 		{http.MethodGet, "/api/shares"},
 		{http.MethodGet, "/api/users"},
 		{http.MethodGet, "/api/settings"},
+		// Previously public; now requires auth (issue #74 D3).
+		{http.MethodGet, "/api/album/album1"},
 	}
 	for _, ep := range endpoints {
 		w := httptest.NewRecorder()
@@ -248,6 +255,16 @@ func TestAuthZ_ApiKeyAuth(t *testing.T) {
 	apiKeyRepo := repository.NewApiKeyRepository(env)
 	apiKeySvc := service.NewApiKeyService(apiKeyRepo)
 	key, _, err := apiKeySvc.CreateKey("test-key", domain.ApiKeyReadOnly, "user-1")
+	assert.NoError(t, err)
+
+	// API keys resolve to the shared default workspace (issue #74), which a
+	// user creation provisions.
+	userRepo := repository.NewUserRepository(env)
+	userSvc := service.NewUserService(userRepo)
+	_, err = userSvc.CreateUser(&domain.User{
+		Username: "apikey-user", Email: "apikey@example.com",
+		Password: "password123", Role: domain.ADMINISTRATOR, Approved: true,
+	})
 	assert.NoError(t, err)
 
 	// Access a protected endpoint with the API key

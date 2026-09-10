@@ -237,9 +237,14 @@ func TestCreateUser_Success(t *testing.T) {
 		Approved: false,
 	}
 
-	// Expect INSERT with ON CONFLICT DO NOTHING
+	// Expect INSERT with ON CONFLICT DO NOTHING, then the default-workspace
+	// upsert and membership insert that accompany user creation (issue #74).
 	mock.ExpectBegin()
 	mock.ExpectExec(`INSERT INTO "users"`).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(`INSERT INTO photobox.workspaces`).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(`INSERT INTO photobox.workspace_members`).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 

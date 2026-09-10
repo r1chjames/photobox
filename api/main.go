@@ -7,6 +7,7 @@ import (
 	"gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database/repository"
 	filesystemRepos "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/filesystem/repository"
+	objS3 "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/object/s3"
 	thumbFs "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/thumbnail/filesystem"
 	thumbS3 "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/thumbnail/s3"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
@@ -83,6 +84,11 @@ type AppServices struct {
 	cacheService      *service.CacheService
 	takeoutImporter   *service.TakeoutImporter
 	wsHub             *ws.Hub
+	workspaceService  *service.WorkspaceService
+	// objectStore is the process-level S3 client (nil on filesystem
+	// deployments). Per-request workspace-scoped accessors are bound from it
+	// via workspacestore.New (issue #74 §4.3).
+	objectStore port.ObjectStore
 }
 
 func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServices {
@@ -131,6 +137,25 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 	photoRepo := repository.NewPhotoRepository(dbEnv)
 	// Thumbnail storage adapter
 	var thumbnailStorage port.ThumbnailStorage
+	var objectStore port.ObjectStore
+	// Originals/objects live in S3 when ORIGINALS_STORAGE=s3 (SaaS/Wasabi) or
+	// when thumbnails are S3-backed (issue #74 Phase 1).
+	if config.OriginalsStorage == "s3" || config.ThumbnailStorage == "s3" {
+		s3Objects, err := objS3.New(objS3.Config{
+			Endpoint:  config.S3Endpoint,
+			Region:    config.S3Region,
+			AccessKey: config.S3AccessKey,
+			SecretKey: config.S3SecretKey,
+			Bucket:    config.S3Bucket,
+			UseSSL:    config.S3UseSSL,
+		})
+		if err != nil {
+			slog.Error("Failed to create S3 object store", "error", err)
+			os.Exit(1)
+		}
+		objectStore = s3Objects
+		slog.Info("S3 object store enabled", "endpoint", config.S3Endpoint, "bucket", config.S3Bucket, "region", config.S3Region)
+	}
 	switch config.ThumbnailStorage {
 	case "s3":
 		s3store, err := thumbS3.New(thumbS3.Config{
@@ -163,6 +188,10 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 	// Takeout importer (issue #106)
 	takeoutImporter := service.NewTakeoutImporter(photoService, filesystemService, photoRepo, config, wsHub)
 
+	// Workspaces (issue #74)
+	workspaceRepo := repository.NewWorkspaceRepository(dbEnv)
+	workspaceService := service.NewWorkspaceService(workspaceRepo)
+
 	// Cron
 	return &AppServices{
 		components.NewScheduler(utilityService, jobService, photoService, *config),
@@ -179,6 +208,8 @@ func setupAppServices(dbEnv *database.Env, config *appconfig.AppConfig) *AppServ
 		cacheService,
 		takeoutImporter,
 		wsHub,
+		workspaceService,
+		objectStore,
 	}
 }
 
@@ -202,6 +233,7 @@ func setupHttpHandlers(
 	apiKeyHandler := http.NewApiKeyHandler(appServices.apiKeyService)
 	importHandler := http.NewImportHandler(appServices.takeoutImporter)
 	wsHandler := http.NewWebSocketHandler(appServices.wsHub)
+	workspaceHandler := http.NewWorkspaceHandler(appServices.workspaceService)
 
 	// Register the API key service so authMiddleware can validate X-API-Key.
 	http.SetApiKeyService(appServices.apiKeyService)
@@ -220,5 +252,7 @@ func setupHttpHandlers(
 		apiKeyHandler,
 		importHandler,
 		wsHandler,
+		workspaceHandler,
+		appServices.workspaceService,
 	)
 }

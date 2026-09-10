@@ -19,6 +19,12 @@ import (
 type MockShareService struct {
 	mock.Mock
 }
+// WithWorkspace satisfies the workspace-scoped port interface (issue #74).
+// These mocks do not model scoping, so they return themselves unchanged.
+func (m *MockShareService) WithWorkspace(workspaceID string) port.ShareService {
+	return m
+}
+
 
 func (m *MockShareService) CreateShare(resourceType, resourceId, createdBy string, expiry *string, password *string) (*domain.SharedLink, error) {
 	args := m.Called(resourceType, resourceId, createdBy, expiry, password)

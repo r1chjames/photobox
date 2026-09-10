@@ -19,6 +19,11 @@ const (
 	authorizationHeaderBearerType = "bearer"
 	authorizationPayloadKey       = "authorization_payload"
 	apiKeyHeaderKey               = "X-API-Key"
+	// apiKeyAuthContextKey marks a request authenticated by an API key. API
+	// keys are deployment-level credentials, not user sessions, so they are
+	// resolved against a workspace directly rather than via user membership
+	// (issue #74).
+	apiKeyAuthContextKey = "api_key_authenticated"
 )
 
 // globalApiKeySvc is set once at startup so authMiddleware can validate
@@ -63,6 +68,7 @@ func authMiddleware(token port.TokenService, apiKeySvc ...port.ApiKeyService) gi
 				Role: apiKeyRoleToUserRole(key.Scope),
 			}
 			ctx.Set(authorizationPayloadKey, payload)
+			ctx.Set(apiKeyAuthContextKey, true)
 			ctx.Next()
 			return
 		}

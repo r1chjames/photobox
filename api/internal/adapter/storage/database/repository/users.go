@@ -3,6 +3,7 @@ package repository
 import (
 	db "gitlab.com/r1chjames/photobox/api/internal/adapter/storage/database"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -57,10 +58,50 @@ func (ur *UserRepository) GetApprovedUserByUsername(username string) (*domain.Us
 }
 
 func (ur *UserRepository) CreateUser(user *domain.User) (*domain.User, error) {
-	ur.dbEnv.Db.Clauses(clause.OnConflict{
-		DoNothing: true,
-	}).Create(&user)
+	// Admin-created users join the shared default workspace, preserving the
+	// home-instance shared-library semantics (issue #74 D6). Signups instead
+	// create an isolated personal workspace via
+	// CreateUserWithPersonalWorkspace. Both happen in one transaction so a
+	// user is never left without a workspace.
+	err := ur.dbEnv.Db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(user).Error; err != nil {
+			return err
+		}
+		// Ensure the deterministic default workspace exists, then join it.
+		if err := tx.Exec(`INSERT INTO photobox.workspaces (id, name, slug, owner_user_id, created_at, updated_at)
+			VALUES (?, 'Default', 'default', ?, NOW(), NOW())
+			ON CONFLICT (id) DO NOTHING`, domain.DefaultWorkspaceID, user.ID).Error; err != nil {
+			return err
+		}
+		return tx.Exec(`INSERT INTO photobox.workspace_members (workspace_id, user_id, role, created_at, updated_at)
+			VALUES (?, ?, ?, NOW(), NOW())
+			ON CONFLICT (workspace_id, user_id) DO NOTHING`, domain.DefaultWorkspaceID, user.ID, domain.WorkspaceMemberRole).Error
+	})
+	if err != nil {
+		return nil, err
+	}
 	return user, nil
+}
+
+// CreateUserWithPersonalWorkspace inserts a user, their personal workspace,
+// and the owner membership in one transaction (issue #74 §8). If the
+// personal-workspace insert fails (e.g. slug conflict), the user insert
+// rolls back so no half-registered account survives.
+func (ur *UserRepository) CreateUserWithPersonalWorkspace(user *domain.User, workspace *domain.Workspace) error {
+	return ur.dbEnv.Db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(user).Error; err != nil {
+			return err
+		}
+		if err := tx.Create(workspace).Error; err != nil {
+			return err
+		}
+		member := &domain.WorkspaceMember{
+			WorkspaceID: workspace.ID,
+			UserID:      user.ID,
+			Role:        domain.WorkspaceOwner,
+		}
+		return tx.Create(member).Error
+	})
 }
 
 func (ur *UserRepository) UpdateUser(user *domain.User) error {

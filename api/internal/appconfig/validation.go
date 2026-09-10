@@ -95,11 +95,15 @@ func (c *AppConfig) validate() (error, []string) {
 		v.Errorf("CACHE_ENABLED is true but CACHE_HOST is empty")
 	}
 
-	if c.ThumbnailStorage == "s3" {
+	if c.ThumbnailStorage == "s3" || c.OriginalsStorage == "s3" {
 		v.Required("S3_ENDPOINT", c.S3Endpoint)
 		v.Required("S3_ACCESS_KEY", c.S3AccessKey)
 		v.Required("S3_SECRET_KEY", c.S3SecretKey)
 		v.Required("S3_BUCKET", c.S3Bucket)
+	}
+
+	if c.OriginalsStorage != "filesystem" && c.OriginalsStorage != "s3" {
+		v.Errorf("ORIGINALS_STORAGE must be one of filesystem, s3 (got %q)", c.OriginalsStorage)
 	}
 
 	if c.AIEnabled && strings.TrimSpace(c.OllamaHost) == "" {

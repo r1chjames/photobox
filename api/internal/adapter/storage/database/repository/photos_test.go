@@ -728,7 +728,7 @@ func TestSearchPhotos_Success(t *testing.T) {
 		AddRow("photo1", "vacation1.jpg", "/path/to/vacation1.jpg", "album1", []byte("{}"), []byte("thumb1"), time.Now().UnixMilli()).
 		AddRow("photo2", "vacation2.jpg", "/path/to/vacation2.jpg", "album1", []byte("{}"), []byte("thumb2"), time.Now().UnixMilli())
 
-	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND hidden = \$1 AND to_tsvector\('english', coalesce\(name, ''\) \|\| ' ' \|\| coalesce\(tags, ''\)\) @@ plainto_tsquery\('english', \$2\) ORDER BY created_epoch DESC LIMIT \$3`, expectedPhotos)
+	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND hidden = \$1 AND to_tsvector.+ @@ plainto_tsquery\('english', \$2\) ORDER BY created_epoch DESC LIMIT \$3`, expectedPhotos)
 
 	repo := NewPhotoRepository(env)
 	photos, err := repo.SearchPhotos(query, 10)
@@ -755,7 +755,7 @@ func TestSearchPhotos_Empty(t *testing.T) {
 	query := "nonexistent"
 	expectedPhotos := sqlmock.NewRows([]string{"id", "name", "filesystem_path", "album_id", "metadata", "thumbnail", "created_epoch"})
 
-	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND hidden = \$1 AND to_tsvector\('english', coalesce\(name, ''\) \|\| ' ' \|\| coalesce\(tags, ''\)\) @@ plainto_tsquery\('english', \$2\) ORDER BY created_epoch DESC LIMIT \$3`, expectedPhotos)
+	database.ShouldReturnRowsForQuery(mock, `SELECT .+ FROM "photos" WHERE deleted_at IS NULL AND hidden = \$1 AND to_tsvector.+ @@ plainto_tsquery\('english', \$2\) ORDER BY created_epoch DESC LIMIT \$3`, expectedPhotos)
 
 	repo := NewPhotoRepository(env)
 	photos, err := repo.SearchPhotos(query, 10)

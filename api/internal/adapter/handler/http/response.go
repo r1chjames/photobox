@@ -108,6 +108,27 @@ func newUserResponse(user *domain.User) userResponse {
 	}
 }
 
+// workspaceResponse represents a workspace response body
+type workspaceResponse struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Slug      string    `json:"slug"`
+	Role      string    `json:"role"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// newWorkspaceResponse is a helper to create a workspace response body. Role
+// is the caller's workspace role (owner of a personal workspace on signup).
+func newWorkspaceResponse(ws *domain.Workspace) workspaceResponse {
+	return workspaceResponse{
+		ID:        ws.ID,
+		Name:      ws.Name,
+		Slug:      ws.Slug,
+		Role:      string(domain.WorkspaceOwner),
+		CreatedAt: ws.CreatedAt,
+	}
+}
+
 // errorStatusMap is a map of defined error messages and their corresponding http status codes
 var errorStatusMap = map[error]int{
 	domain.ErrInternal:                   http.StatusInternalServerError,
