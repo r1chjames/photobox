@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
+	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 	"gorm.io/datatypes"
 )
 
@@ -20,6 +21,12 @@ import (
 type MockSearchPhotoService struct {
 	mock.Mock
 }
+// WithWorkspace satisfies the workspace-scoped port interface (issue #74).
+// These mocks do not model scoping, so they return themselves unchanged.
+func (m *MockSearchPhotoService) WithWorkspace(workspaceID string) port.PhotoService {
+	return m
+}
+
 
 func (m *MockSearchPhotoService) GetPhoto(photoId string, includeThumbnail bool) (*domain.Photo, error) {
 	args := m.Called(photoId, includeThumbnail)
@@ -343,6 +350,12 @@ func (m *MockSearchPhotoService) PhotoLiveVideoPath(photoId string) (string, err
 type MockSearchAlbumService struct {
 	mock.Mock
 }
+// WithWorkspace satisfies the workspace-scoped port interface (issue #74).
+// These mocks do not model scoping, so they return themselves unchanged.
+func (m *MockSearchAlbumService) WithWorkspace(workspaceID string) port.AlbumService {
+	return m
+}
+
 
 func (m *MockSearchAlbumService) GetAlbumById(id string) (*domain.Album, error) {
 	args := m.Called(id)

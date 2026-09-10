@@ -12,6 +12,9 @@ import (
 
 // PhotoRepository is an interface for interacting with photo-related data
 type PhotoRepository interface {
+	// WithWorkspace returns a repository whose tenant queries are scoped to
+	// the given workspace (issue #74). An empty workspace is fail-closed.
+	WithWorkspace(workspaceID string) PhotoRepository
 	// GetPhotoById inserts a new user into the database
 	GetPhotoById(photoId string, includeThumbnail bool) (*domain.Photo, error)
 	// GetPhotoByThumbCap resolves a photo by its random capability
@@ -107,6 +110,9 @@ type PhotoRepository interface {
 
 // PhotoService is an interface for interacting with photo-related business logic
 type PhotoService interface {
+	// WithWorkspace returns a service scoped to the given workspace
+	// (issue #74). Handlers must use this; empty is fail-closed.
+	WithWorkspace(workspaceID string) PhotoService
 	//GetPhoto returns a photo
 	GetPhoto(photoId string, includeThumbnail bool) (*domain.Photo, error)
 	// GetPhotoByThumbCap resolves a photo by its random capability

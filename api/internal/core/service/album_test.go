@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"gitlab.com/r1chjames/photobox/api/internal/appconfig"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
+	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 	"gorm.io/datatypes"
 )
 
@@ -15,6 +16,12 @@ import (
 type MockAlbumRepository struct {
 	mock.Mock
 }
+// WithWorkspace satisfies the workspace-scoped port interface (issue #74).
+// These mocks do not model scoping, so they return themselves unchanged.
+func (m *MockAlbumRepository) WithWorkspace(workspaceID string) port.AlbumRepository {
+	return m
+}
+
 
 func (m *MockAlbumRepository) GetAlbumById(id string) (*domain.Album, error) {
 	args := m.Called(id)

@@ -237,7 +237,7 @@ func defineResources(
 	}
 
 	// Sharing
-	share := router.Group(fmt.Sprintf("%s/share", urlBasePath)).Use(authMiddleware(token))
+	share := router.Group(fmt.Sprintf("%s/share", urlBasePath)).Use(authMiddleware(token), workspaceMiddleware(workspaceService))
 	{
 		share.POST("", shareHandler.CreateShare)
 	}
@@ -247,7 +247,7 @@ func defineResources(
 	router.GET(fmt.Sprintf("%s/shared/:token/resource", urlBasePath), shareHandler.GetSharedResourceData)
 
 	// Admin share management
-	shares := router.Group(fmt.Sprintf("%s/shares", urlBasePath)).Use(authMiddleware(token), requireRole(domain.ADMINISTRATOR))
+	shares := router.Group(fmt.Sprintf("%s/shares", urlBasePath)).Use(authMiddleware(token), requireRole(domain.ADMINISTRATOR), workspaceMiddleware(workspaceService))
 	{
 		shares.GET("", shareHandler.ListShares)
 		shares.DELETE("/:token", shareHandler.RevokeShare)

@@ -2,9 +2,9 @@ package service
 
 import (
 	archivezip "archive/zip"
-	b64 "encoding/base64"
 	"bytes"
 	"context"
+	b64 "encoding/base64"
 	"fmt"
 	json "github.com/goccy/go-json"
 	"hash/fnv"
@@ -104,6 +104,18 @@ func NewPhotoService(photoRepo port.PhotoRepository, albumRepo port.AlbumService
 
 // SetGeocoder installs the reverse-geocoder used by the metadata location
 // enrichment. Optional: when nil, location lookups return empty.
+// WithWorkspace returns a copy of the service whose tenant reads and writes
+// are scoped to the given workspace (issue #74). Handlers must use this so
+// every query they trigger carries the caller's workspace.
+func (ps *PhotoService) WithWorkspace(workspaceID string) port.PhotoService {
+	c := *ps
+	c.photoRepo = ps.photoRepo.WithWorkspace(workspaceID)
+	if ps.albumSvc != nil {
+		c.albumSvc = ps.albumSvc.WithWorkspace(workspaceID)
+	}
+	return &c
+}
+
 func (ps *PhotoService) SetGeocoder(g *Geocoder) {
 	ps.geocoder = g
 }
@@ -197,7 +209,7 @@ func (ps *PhotoService) PerformPhotoIndex(ctx context.Context) {
 	// carry error strings derived from filesystem paths).
 	if ps.wsHub != nil {
 		ps.wsHub.BroadcastWorkspaceEvent(domain.DefaultWorkspaceID, ws.Event{
-			Type: ws.EventIndexComplete,
+			Type:    ws.EventIndexComplete,
 			Payload: ws.IndexCompletePayload{},
 		})
 	}
@@ -360,25 +372,25 @@ func (ps *PhotoService) SavePhotos(photos []domain.PhotoFile) error {
 		photoHash := b64.StdEncoding.EncodeToString([]byte(photo.Path))
 		photoMetadata, _ := json.Marshal(&photo)
 		photoInfo := domain.Photo{
-			ID:             photoHash,
-			Name:           utils.EscapeInvalidCharacters(photo.Name),
-			FilesystemPath: photo.Path,
-			AlbumId:        albumId,
-			Metadata:       photoMetadata,
-			Thumbnail:      photo.Thumbnail,
-			CreatedEpoch:   getPhotoEpoch(photo.Exif, photo.ModifiedTime),
-			Year:           0,
-			Month:          0,
-			FileHash:       computeFileHash(photo.Path),
+			ID:               photoHash,
+			Name:             utils.EscapeInvalidCharacters(photo.Name),
+			FilesystemPath:   photo.Path,
+			AlbumId:          albumId,
+			Metadata:         photoMetadata,
+			Thumbnail:        photo.Thumbnail,
+			CreatedEpoch:     getPhotoEpoch(photo.Exif, photo.ModifiedTime),
+			Year:             0,
+			Month:            0,
+			FileHash:         computeFileHash(photo.Path),
 			FileModifiedTime: photo.ModifiedTime,
-			MediaType:      photo.MediaType,
-			Duration:       photo.Duration,
-			Width:          photo.Width,
-			Height:         photo.Height,
-			Latitude:       photo.Latitude,
-			Longitude:      photo.Longitude,
-			LivePhotoPath:  photo.LivePhotoPath,
-			DominantColor:  computeDominantColor(photo.Path),
+			MediaType:        photo.MediaType,
+			Duration:         photo.Duration,
+			Width:            photo.Width,
+			Height:           photo.Height,
+			Latitude:         photo.Latitude,
+			Longitude:        photo.Longitude,
+			LivePhotoPath:    photo.LivePhotoPath,
+			DominantColor:    computeDominantColor(photo.Path),
 			// Random 128-bit capability for the thumbnail route; immutable
 			// once assigned (upsert excludes thumb_cap from updates).
 			ThumbCap: uuid.NewString(),
@@ -470,24 +482,24 @@ func (ps *PhotoService) SavePhoto(photo domain.PhotoFile) error {
 	photoHash := b64.StdEncoding.EncodeToString([]byte(photo.Path))
 	photoMetadata, _ := json.Marshal(&photo)
 	photoInfo := domain.Photo{
-		ID:             photoHash,
-		Name:           utils.EscapeInvalidCharacters(photo.Name),
-		FilesystemPath: photo.Path,
-		AlbumId:        albumId,
-		Metadata:       photoMetadata,
-		Thumbnail:      photo.Thumbnail,
-		CreatedEpoch:   getPhotoEpoch(photo.Exif, photo.ModifiedTime),
-		Year:           0,
-		Month:          0,
-		FileHash:       computeFileHash(photo.Path),
+		ID:               photoHash,
+		Name:             utils.EscapeInvalidCharacters(photo.Name),
+		FilesystemPath:   photo.Path,
+		AlbumId:          albumId,
+		Metadata:         photoMetadata,
+		Thumbnail:        photo.Thumbnail,
+		CreatedEpoch:     getPhotoEpoch(photo.Exif, photo.ModifiedTime),
+		Year:             0,
+		Month:            0,
+		FileHash:         computeFileHash(photo.Path),
 		FileModifiedTime: photo.ModifiedTime,
-		MediaType:      photo.MediaType,
-		Duration:       photo.Duration,
-		Width:          photo.Width,
-		Height:         photo.Height,
-		Latitude:       photo.Latitude,
-		Longitude:      photo.Longitude,
-		DominantColor:  computeDominantColor(photo.Path),
+		MediaType:        photo.MediaType,
+		Duration:         photo.Duration,
+		Width:            photo.Width,
+		Height:           photo.Height,
+		Latitude:         photo.Latitude,
+		Longitude:        photo.Longitude,
+		DominantColor:    computeDominantColor(photo.Path),
 		// Random 128-bit capability for the thumbnail route; immutable once
 		// assigned (upsert excludes thumb_cap from updates).
 		ThumbCap: uuid.NewString(),

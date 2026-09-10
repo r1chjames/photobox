@@ -36,6 +36,16 @@ func NewPhotoHandler(photoSvc port.PhotoService, jobSvc port.JobService) *PhotoH
 	}
 }
 
+// svc returns the photo service scoped to the request's workspace (issue
+// #74). Fail-closed: a request without a resolved workspace gets an empty
+// (scoped) workspace, which matches nothing, rather than an unscoped service.
+func (ph *PhotoHandler) svc(ctx *gin.Context) port.PhotoService {
+	if wc := GetWorkspaceContext(ctx); wc != nil {
+		return ph.photoSvc.WithWorkspace(wc.WorkspaceID)
+	}
+	return ph.photoSvc.WithWorkspace("")
+}
+
 func photosPaginationParams(resp []*domain.Photo) (string, string, string) {
 	if len(resp) > 0 {
 		fromId := strconv.FormatInt(resp[0].CreatedEpoch, 10)
@@ -91,18 +101,18 @@ func (ph *PhotoHandler) ListPhotos(ctx *gin.Context) {
 			Favorite:    favorites,
 			LowQuality:  lowQuality,
 		}
-		photoResp, err = ph.photoSvc.SearchPhotosWithFilters(filters, fromId, limit, includeThumbnail)
+		photoResp, err = ph.svc(ctx).SearchPhotosWithFilters(filters, fromId, limit, includeThumbnail)
 	} else if tagsQuery != "" {
 		tags := strings.Split(tagsQuery, ",")
-		photoResp, err = ph.photoSvc.ListPhotosByTags(tags, fromId, limit, includeThumbnail)
+		photoResp, err = ph.svc(ctx).ListPhotosByTags(tags, fromId, limit, includeThumbnail)
 	} else if lowQuality {
-		photoResp, err = ph.photoSvc.ListLowQualityPhotos(fromId, limit, includeThumbnail)
+		photoResp, err = ph.svc(ctx).ListLowQualityPhotos(fromId, limit, includeThumbnail)
 	} else if favorites {
-		photoResp, err = ph.photoSvc.ListFavoritePhotos(fromId, limit, includeThumbnail, startDate, endDate)
+		photoResp, err = ph.svc(ctx).ListFavoritePhotos(fromId, limit, includeThumbnail, startDate, endDate)
 	} else if albumId != "" {
-		photoResp, err = ph.photoSvc.ListPhotosInAlbum(albumId, fromId, limit, includeThumbnail, startDate, endDate, mediaType)
+		photoResp, err = ph.svc(ctx).ListPhotosInAlbum(albumId, fromId, limit, includeThumbnail, startDate, endDate, mediaType)
 	} else {
-		photoResp, err = ph.photoSvc.ListPhotos(fromId, limit, includeThumbnail, startDate, endDate, mediaType)
+		photoResp, err = ph.svc(ctx).ListPhotos(fromId, limit, includeThumbnail, startDate, endDate, mediaType)
 	}
 
 	if err != nil {
@@ -145,7 +155,7 @@ func (ph *PhotoHandler) GetPhoto(ctx *gin.Context) {
 		return
 	}
 
-	photoResp, err := ph.photoSvc.GetPhoto(photoId, includeThumbnail)
+	photoResp, err := ph.svc(ctx).GetPhoto(photoId, includeThumbnail)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -166,7 +176,7 @@ func (ph *PhotoHandler) GetPhotoCount(ctx *gin.Context) {
 		return
 	}
 
-	photoCount, err := ph.photoSvc.PhotoCount(albumId)
+	photoCount, err := ph.svc(ctx).PhotoCount(albumId)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -190,7 +200,7 @@ func (ph *PhotoHandler) UploadPhoto(ctx *gin.Context) {
 		return
 	}
 
-	photo, err := ph.photoSvc.UploadPhoto(domain.PhotoUpload{
+	photo, err := ph.svc(ctx).UploadPhoto(domain.PhotoUpload{
 		Name:          req.Name,
 		AlbumName:     req.AlbumName,
 		BinaryContent: req.BinaryContent,
@@ -209,7 +219,7 @@ func (ph *PhotoHandler) GetPhotoBin(ctx *gin.Context) {
 		return
 	}
 
-	photoBinary, err := ph.photoSvc.PhotoBinary(photoId)
+	photoBinary, err := ph.svc(ctx).PhotoBinary(photoId)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -248,7 +258,7 @@ func (ph *PhotoHandler) GetPhotoLiveVideo(ctx *gin.Context) {
 		return
 	}
 
-	liveVideoPath, err := ph.photoSvc.PhotoLiveVideoPath(photoId)
+	liveVideoPath, err := ph.svc(ctx).PhotoLiveVideoPath(photoId)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -275,7 +285,7 @@ func (ph *PhotoHandler) GetPhotoThumbnail(ctx *gin.Context) {
 
 	// Cross-tenant guard (issue #74): the thumbnail is addressable by photo
 	// ID, so verify the photo is in the caller's workspace before serving.
-	owner, err := ph.photoSvc.GetPhoto(photoId, false)
+	owner, err := ph.svc(ctx).GetPhoto(photoId, false)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -291,7 +301,7 @@ func (ph *PhotoHandler) GetPhotoThumbnail(ctx *gin.Context) {
 	}
 
 	// Try unified thumbnail retrieval (handles valkey or filesystem)
-	thumbnailBytes, err := ph.photoSvc.PhotoThumbnailBytesForSize(photoId, size)
+	thumbnailBytes, err := ph.svc(ctx).PhotoThumbnailBytesForSize(photoId, size)
 	if err == nil && len(thumbnailBytes) > 0 {
 		setThumbnailHeaders()
 		ctx.Data(http.StatusOK, "image/webp", thumbnailBytes)
@@ -300,10 +310,10 @@ func (ph *PhotoHandler) GetPhotoThumbnail(ctx *gin.Context) {
 
 	// Generate on-demand if missing (always retry retrieval even if path
 	// is empty — valkey-stored thumbnails don't have a filesystem path)
-	_, err = ph.photoSvc.GenerateThumbnailForPhoto(photoId)
+	_, err = ph.svc(ctx).GenerateThumbnailForPhoto(photoId)
 	if err == nil {
 		// After generation, try again
-		thumbnailBytes, err = ph.photoSvc.PhotoThumbnailBytesForSize(photoId, size)
+		thumbnailBytes, err = ph.svc(ctx).PhotoThumbnailBytesForSize(photoId, size)
 		if err == nil && len(thumbnailBytes) > 0 {
 			setThumbnailHeaders()
 			ctx.Data(http.StatusOK, "image/webp", thumbnailBytes)
@@ -313,7 +323,7 @@ func (ph *PhotoHandler) GetPhotoThumbnail(ctx *gin.Context) {
 
 	// Fallback to DB bytes (only for medium size)
 	if size == "m" {
-		photoBinary, err := ph.photoSvc.PhotoThumbnailBytes(photoId)
+		photoBinary, err := ph.svc(ctx).PhotoThumbnailBytes(photoId)
 		if err != nil {
 			handleError(ctx, err)
 			return
@@ -352,7 +362,7 @@ func (ph *PhotoHandler) GetThumbnailByCap(ctx *gin.Context) {
 		return
 	}
 
-	photo, err := ph.photoSvc.GetPhotoByThumbCap(cap)
+	photo, err := ph.svc(ctx).GetPhotoByThumbCap(cap)
 	if err != nil {
 		// Unknown cap = 404 (same as missing thumbnail; no existence oracle).
 		ctx.AbortWithStatus(http.StatusNotFound)
@@ -361,13 +371,13 @@ func (ph *PhotoHandler) GetThumbnailByCap(ctx *gin.Context) {
 
 	// Serve from thumbnail storage. If the thumbnail is missing (e.g. not yet
 	// generated for a just-indexed photo), generate on demand once.
-	thumbnailBytes, err := ph.photoSvc.PhotoThumbnailBytesForSize(photo.ID, size)
+	thumbnailBytes, err := ph.svc(ctx).PhotoThumbnailBytesForSize(photo.ID, size)
 	if err != nil || len(thumbnailBytes) == 0 {
-		if _, genErr := ph.photoSvc.GenerateThumbnailForPhoto(photo.ID); genErr != nil {
+		if _, genErr := ph.svc(ctx).GenerateThumbnailForPhoto(photo.ID); genErr != nil {
 			ctx.AbortWithStatus(http.StatusNotFound)
 			return
 		}
-		thumbnailBytes, err = ph.photoSvc.PhotoThumbnailBytesForSize(photo.ID, size)
+		thumbnailBytes, err = ph.svc(ctx).PhotoThumbnailBytesForSize(photo.ID, size)
 		if err != nil || len(thumbnailBytes) == 0 {
 			ctx.AbortWithStatus(http.StatusNotFound)
 			return
@@ -401,7 +411,7 @@ func (ph *PhotoHandler) StartJob(c *gin.Context) {
 				ph.jobCancellersMu.Unlock()
 				cancel()
 			}()
-			ph.photoSvc.PerformPhotoIndex(ctx)
+			ph.svc(c).PerformPhotoIndex(ctx)
 		}
 	case "Thumbnail_regenerate":
 		friendlyName = "Thumbnail regeneration"
@@ -416,7 +426,7 @@ func (ph *PhotoHandler) StartJob(c *gin.Context) {
 				ph.jobCancellersMu.Unlock()
 				cancel()
 			}()
-			ph.photoSvc.RegenerateThumbnails(ctx)
+			ph.svc(c).RegenerateThumbnails(ctx)
 		}
 	case "AI_analysis":
 		friendlyName = "AI photo analysis"
@@ -429,7 +439,7 @@ func (ph *PhotoHandler) StartJob(c *gin.Context) {
 					slog.Error("Unable to complete AI analysis job", "error", err)
 				}
 			}()
-			if err := ph.photoSvc.AnalyzeExistingPhotos(); err != nil {
+			if err := ph.svc(c).AnalyzeExistingPhotos(); err != nil {
 				slog.Error("AI analysis job failed", "error", err)
 			}
 		}
@@ -444,7 +454,7 @@ func (ph *PhotoHandler) StartJob(c *gin.Context) {
 					slog.Error("Unable to complete quality analysis job", "error", err)
 				}
 			}()
-			scored, err := ph.photoSvc.ScoreAllPhotoQuality(200)
+			scored, err := ph.svc(c).ScoreAllPhotoQuality(200)
 			if err != nil {
 				slog.Error("Quality analysis job failed", "error", err)
 				return
@@ -523,7 +533,7 @@ func (ph *PhotoHandler) DeletePhoto(ctx *gin.Context) {
 		return
 	}
 
-	err := ph.photoSvc.DeletePhoto(photoId)
+	err := ph.svc(ctx).DeletePhoto(photoId)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -539,7 +549,7 @@ func (ph *PhotoHandler) RestorePhoto(ctx *gin.Context) {
 		return
 	}
 
-	err := ph.photoSvc.RestorePhoto(photoId)
+	err := ph.svc(ctx).RestorePhoto(photoId)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -558,7 +568,7 @@ func (ph *PhotoHandler) ListTrashPhotos(ctx *gin.Context) {
 	}
 	includeThumbnail, _ := strconv.ParseBool(ctx.DefaultQuery("thumbnail", "false"))
 
-	photoResp, err := ph.photoSvc.ListTrashPhotos(fromId, limit, includeThumbnail)
+	photoResp, err := ph.svc(ctx).ListTrashPhotos(fromId, limit, includeThumbnail)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -579,7 +589,7 @@ func (ph *PhotoHandler) ListTrashPhotos(ctx *gin.Context) {
 }
 
 func (ph *PhotoHandler) EmptyTrash(ctx *gin.Context) {
-	err := ph.photoSvc.EmptyTrash()
+	err := ph.svc(ctx).EmptyTrash()
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -606,7 +616,7 @@ func (ph *PhotoHandler) SetFavorite(ctx *gin.Context) {
 
 	// Cross-tenant guard (issue #74): verify ownership before mutating. The
 	// resource's workspace is immutable, so the check cannot be raced.
-	existing, err := ph.photoSvc.GetPhoto(photoId, false)
+	existing, err := ph.svc(ctx).GetPhoto(photoId, false)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -615,7 +625,7 @@ func (ph *PhotoHandler) SetFavorite(ctx *gin.Context) {
 		return
 	}
 
-	photo, err := ph.photoSvc.SetFavorite(photoId, req.Favorite)
+	photo, err := ph.svc(ctx).SetFavorite(photoId, req.Favorite)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -652,7 +662,7 @@ func (ph *PhotoHandler) UpdatePhotoMetadata(ctx *gin.Context) {
 		description = *req.Description
 	}
 
-	photo, err := ph.photoSvc.UpdatePhotoMetadata(photoId, description, req.Latitude, req.Longitude, req.DateTaken)
+	photo, err := ph.svc(ctx).UpdatePhotoMetadata(photoId, description, req.Latitude, req.Longitude, req.DateTaken)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -674,7 +684,7 @@ func (ph *PhotoHandler) GetPhotoLocation(ctx *gin.Context) {
 		return
 	}
 
-	location, err := ph.photoSvc.ReverseGeocode(ctx, photoId)
+	location, err := ph.svc(ctx).ReverseGeocode(ctx, photoId)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -723,12 +733,12 @@ func (ph *PhotoHandler) BatchPhotos(ctx *gin.Context) {
 			validationError(ctx, fmt.Errorf("albumId is required for add_to_album action"))
 			return
 		}
-		if err := ph.photoSvc.BatchAddToAlbum(req.PhotoIds, req.AlbumId); err != nil {
+		if err := ph.svc(ctx).BatchAddToAlbum(req.PhotoIds, req.AlbumId); err != nil {
 			handleError(ctx, err)
 			return
 		}
 	case "delete":
-		if err := ph.photoSvc.BatchDeletePhotos(req.PhotoIds); err != nil {
+		if err := ph.svc(ctx).BatchDeletePhotos(req.PhotoIds); err != nil {
 			handleError(ctx, err)
 			return
 		}
@@ -737,7 +747,7 @@ func (ph *PhotoHandler) BatchPhotos(ctx *gin.Context) {
 			validationError(ctx, fmt.Errorf("favorite is required for favorite action"))
 			return
 		}
-		if err := ph.photoSvc.BatchSetFavorite(req.PhotoIds, *req.Favorite); err != nil {
+		if err := ph.svc(ctx).BatchSetFavorite(req.PhotoIds, *req.Favorite); err != nil {
 			handleError(ctx, err)
 			return
 		}
@@ -746,7 +756,7 @@ func (ph *PhotoHandler) BatchPhotos(ctx *gin.Context) {
 		if operation == "" {
 			operation = "add"
 		}
-		if err := ph.photoSvc.BatchUpdatePhotoTags(req.PhotoIds, req.Tags, operation); err != nil {
+		if err := ph.svc(ctx).BatchUpdatePhotoTags(req.PhotoIds, req.Tags, operation); err != nil {
 			handleError(ctx, err)
 			return
 		}
@@ -775,7 +785,7 @@ func (ph *PhotoHandler) AddPhotosToAlbum(ctx *gin.Context) {
 		validationError(ctx, err)
 		return
 	}
-	if err := ph.photoSvc.BatchAddToAlbum(req.PhotoIds, albumId); err != nil {
+	if err := ph.svc(ctx).BatchAddToAlbum(req.PhotoIds, albumId); err != nil {
 		handleError(ctx, err)
 		return
 	}
@@ -792,7 +802,7 @@ func (ph *PhotoHandler) DownloadPhotos(ctx *gin.Context) {
 	ctx.Header("Content-Type", "application/zip")
 	ctx.Header("Content-Disposition", `attachment; filename="photobox-download.zip"`)
 
-	_ = ph.photoSvc.DownloadPhotos(req.PhotoIds, ctx.Writer)
+	_ = ph.svc(ctx).DownloadPhotos(req.PhotoIds, ctx.Writer)
 }
 
 func (ph *PhotoHandler) RotatePhoto(ctx *gin.Context) {
@@ -808,7 +818,7 @@ func (ph *PhotoHandler) RotatePhoto(ctx *gin.Context) {
 		return
 	}
 
-	photo, err := ph.photoSvc.RotatePhoto(photoId, direction)
+	photo, err := ph.svc(ctx).RotatePhoto(photoId, direction)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -851,7 +861,7 @@ func (ph *PhotoHandler) EditPhoto(ctx *gin.Context) {
 		AutoEnhance: req.AutoEnhance,
 	}
 
-	photo, err := ph.photoSvc.EditPhoto(photoId, params)
+	photo, err := ph.svc(ctx).EditPhoto(photoId, params)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -868,7 +878,7 @@ func (ph *PhotoHandler) ClearEdits(ctx *gin.Context) {
 		return
 	}
 
-	photo, err := ph.photoSvc.ClearEdits(photoId)
+	photo, err := ph.svc(ctx).ClearEdits(photoId)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -878,7 +888,7 @@ func (ph *PhotoHandler) ClearEdits(ctx *gin.Context) {
 }
 
 func (ph *PhotoHandler) GetTimeline(ctx *gin.Context) {
-	entries, err := ph.photoSvc.GetTimeline()
+	entries, err := ph.svc(ctx).GetTimeline()
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -899,7 +909,7 @@ func (ph *PhotoHandler) GetMemories(ctx *gin.Context) {
 		month, day = t.Month(), t.Day()
 	}
 
-	groups, err := ph.photoSvc.ListMemories(int(month), day, 10)
+	groups, err := ph.svc(ctx).ListMemories(int(month), day, 10)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -913,7 +923,7 @@ func (ph *PhotoHandler) GetGeodata(ctx *gin.Context) {
 	east, _ := strconv.ParseFloat(ctx.DefaultQuery("east", "180"), 64)
 	west, _ := strconv.ParseFloat(ctx.DefaultQuery("west", "-180"), 64)
 
-	entries, err := ph.photoSvc.GetGeodata(north, south, east, west)
+	entries, err := ph.svc(ctx).GetGeodata(north, south, east, west)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -922,7 +932,7 @@ func (ph *PhotoHandler) GetGeodata(ctx *gin.Context) {
 }
 
 func (ph *PhotoHandler) GetDuplicatePhotos(ctx *gin.Context) {
-	photos, err := ph.photoSvc.GetDuplicatePhotos()
+	photos, err := ph.svc(ctx).GetDuplicatePhotos()
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -938,7 +948,7 @@ func (ph *PhotoHandler) GetDuplicatePhotos(ctx *gin.Context) {
 }
 
 func (ph *PhotoHandler) GetAllTags(ctx *gin.Context) {
-	tags, err := ph.photoSvc.GetAllTags()
+	tags, err := ph.svc(ctx).GetAllTags()
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -959,7 +969,7 @@ func (ph *PhotoHandler) UpdatePhotoTags(ctx *gin.Context) {
 		return
 	}
 
-	photo, err := ph.photoSvc.UpdatePhotoTags(photoId, req.Tags)
+	photo, err := ph.svc(ctx).UpdatePhotoTags(photoId, req.Tags)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -975,7 +985,7 @@ func (ph *PhotoHandler) BatchUpdatePhotoTags(ctx *gin.Context) {
 		return
 	}
 
-	err := ph.photoSvc.BatchUpdatePhotoTags(req.PhotoIds, req.Tags, req.Operation)
+	err := ph.svc(ctx).BatchUpdatePhotoTags(req.PhotoIds, req.Tags, req.Operation)
 	if err != nil {
 		handleError(ctx, err)
 		return

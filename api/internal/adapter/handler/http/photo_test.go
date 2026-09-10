@@ -14,12 +14,19 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"gitlab.com/r1chjames/photobox/api/internal/core/domain"
+	"gitlab.com/r1chjames/photobox/api/internal/core/port"
 )
 
 // MockPhotoService is a mock implementation of port.PhotoService
 type MockPhotoService struct {
 	mock.Mock
 }
+// WithWorkspace satisfies the workspace-scoped port interface (issue #74).
+// These mocks do not model scoping, so they return themselves unchanged.
+func (m *MockPhotoService) WithWorkspace(workspaceID string) port.PhotoService {
+	return m
+}
+
 
 func (m *MockPhotoService) GetPhoto(photoId string, includeThumbnail bool) (*domain.Photo, error) {
 	args := m.Called(photoId, includeThumbnail)
