@@ -66,9 +66,13 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 func TeardownTestDB(t *testing.T, db *gorm.DB) {
 	t.Helper()
 
-	// Clean all tables
+	// Clean all tables. Every table that a test can write must be listed, or
+	// rows leak between tests (e.g. shared_links accumulating broke the share
+	// owner-scoping assertions).
 	tables := []string{
 		"photobox.photos", "photobox.albums", "photobox.users", "photobox.jobs", "photobox.settings",
+		"photobox.shared_links", "photobox.api_keys", "photobox.photo_tags", "photobox.photo_analysis",
+		"photobox.face_detections", "photobox.face_persons", "photobox.face_clusters",
 		// Tenancy tables (issue #74) — must be cleaned so workspace slugs and
 		// memberships do not leak between tests.
 		"photobox.workspace_members", "photobox.workspaces",
