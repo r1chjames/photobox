@@ -257,6 +257,16 @@ func TestAuthZ_ApiKeyAuth(t *testing.T) {
 	key, _, err := apiKeySvc.CreateKey("test-key", domain.ApiKeyReadOnly, "user-1")
 	assert.NoError(t, err)
 
+	// API keys resolve to the shared default workspace (issue #74), which a
+	// user creation provisions.
+	userRepo := repository.NewUserRepository(env)
+	userSvc := service.NewUserService(userRepo)
+	_, err = userSvc.CreateUser(&domain.User{
+		Username: "apikey-user", Email: "apikey@example.com",
+		Password: "password123", Role: domain.ADMINISTRATOR, Approved: true,
+	})
+	assert.NoError(t, err)
+
 	// Access a protected endpoint with the API key
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/api/photos", nil)

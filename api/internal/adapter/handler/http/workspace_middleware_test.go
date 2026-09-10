@@ -67,6 +67,15 @@ func (f *fakeWorkspaceService) GetMembership(wsID, userID string) (*domain.Works
 	}
 	return &domain.WorkspaceMember{WorkspaceID: wsID, UserID: userID, Role: role}, nil
 }
+func (f *fakeWorkspaceService) WorkspaceExists(workspaceID string) (bool, error) {
+	for key := range f.memberships {
+		if len(key) > len(workspaceID) && key[:len(workspaceID)+1] == workspaceID+"|" {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (f *fakeWorkspaceService) CanManage(m *domain.WorkspaceMember) bool {
 	return m != nil && (m.Role == domain.WorkspaceOwner || m.Role == domain.WorkspaceAdmin)
 }

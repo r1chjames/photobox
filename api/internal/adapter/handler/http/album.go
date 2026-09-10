@@ -32,6 +32,10 @@ func (ah *AlbumHandler) GetAlbum(ctx *gin.Context) {
 		handleError(ctx, err)
 		return
 	}
+	// Cross-tenant guard (issue #74).
+	if !resourceInWorkspace(ctx, resp.WorkspaceID) {
+		return
+	}
 	handleSuccess(ctx, resp)
 }
 
@@ -58,6 +62,15 @@ func (ah *AlbumHandler) ListAlbums(ctx *gin.Context) {
 		handleError(ctx, err)
 		return
 	}
+
+	// Scope to the caller's workspace (issue #74). Post-query filter is a
+	// stopgap until the Phase 2 query-scoping sweep moves it into the query.
+	wc := GetWorkspaceContext(ctx)
+	if wc == nil {
+		ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Not found"})
+		return
+	}
+	resp = filterByWorkspace(resp, wc.WorkspaceID, func(a *domain.Album) string { return a.WorkspaceID })
 
 	fromId, toId, nextPage := albumPaginationParams(resp)
 	handlePaginatedSuccess(ctx, resp, fromId, toId, len(resp), nextPage)
@@ -202,7 +215,18 @@ func (ah *AlbumHandler) DeleteAlbum(ctx *gin.Context) {
 
 	deletePhotos, _ := strconv.ParseBool(ctx.DefaultQuery("deletePhotos", "false"))
 
-	err := ah.svc.DeleteAlbum(albumId, deletePhotos)
+	// Cross-tenant guard (issue #74): verify ownership before deleting. The
+	// album's workspace is immutable, so the check cannot be raced.
+	existing, err := ah.svc.GetAlbumById(albumId)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	if !resourceInWorkspace(ctx, existing.WorkspaceID) {
+		return
+	}
+
+	err = ah.svc.DeleteAlbum(albumId, deletePhotos)
 	if err != nil {
 		handleError(ctx, err)
 		return

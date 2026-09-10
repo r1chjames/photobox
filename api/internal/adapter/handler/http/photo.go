@@ -122,6 +122,17 @@ func (ph *PhotoHandler) ListPhotos(ctx *gin.Context) {
 		photoResp = filtered
 	}
 
+	// Scope to the caller's workspace (issue #74). NOTE: this filters after
+	// the repository query, so a limit applied pre-filter can yield fewer rows
+	// than requested — the Phase 2 query-scoping sweep moves this into the
+	// query and removes both the filtering and the caveat.
+	wc := GetWorkspaceContext(ctx)
+	if wc == nil {
+		ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Not found"})
+		return
+	}
+	photoResp = filterByWorkspace(photoResp, wc.WorkspaceID, func(p *domain.Photo) string { return p.WorkspaceID })
+
 	fromId, toId, nextPage := photosPaginationParams(photoResp)
 	handlePaginatedSuccess(ctx, photoResp, fromId, toId, len(photoResp), nextPage)
 }
@@ -137,6 +148,11 @@ func (ph *PhotoHandler) GetPhoto(ctx *gin.Context) {
 	photoResp, err := ph.photoSvc.GetPhoto(photoId, includeThumbnail)
 	if err != nil {
 		handleError(ctx, err)
+		return
+	}
+	// Cross-tenant guard (issue #74): 404 if the photo is not in the
+	// caller's workspace.
+	if !resourceInWorkspace(ctx, photoResp.WorkspaceID) {
 		return
 	}
 
@@ -257,6 +273,17 @@ func (ph *PhotoHandler) GetPhotoThumbnail(ctx *gin.Context) {
 		size = "m"
 	}
 
+	// Cross-tenant guard (issue #74): the thumbnail is addressable by photo
+	// ID, so verify the photo is in the caller's workspace before serving.
+	owner, err := ph.photoSvc.GetPhoto(photoId, false)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	if !resourceInWorkspace(ctx, owner.WorkspaceID) {
+		return
+	}
+
 	setThumbnailHeaders := func() {
 		ctx.Header("Content-Type", "image/webp")
 		ctx.Header("Cache-Control", "public, max-age=31536000, immutable")
@@ -356,10 +383,10 @@ func (ph *PhotoHandler) GetThumbnailByCap(ctx *gin.Context) {
 
 func (ph *PhotoHandler) StartJob(c *gin.Context) {
 	jobType := c.Param("type")
-	
+
 	var friendlyName string
 	var runFunc func()
-	
+
 	switch jobType {
 	case "Photo_index":
 		friendlyName = "Photo indexing"
@@ -428,7 +455,7 @@ func (ph *PhotoHandler) StartJob(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Unknown job type: " + jobType})
 		return
 	}
-	
+
 	// Atomically start the job - returns error if already running
 	err := ph.jobSvc.StartJobIfNotRunning(jobType)
 	if err != nil {
@@ -439,7 +466,7 @@ func (ph *PhotoHandler) StartJob(c *gin.Context) {
 		handleError(c, err)
 		return
 	}
-	
+
 	c.Status(http.StatusAccepted)
 	go runFunc()
 }
@@ -537,6 +564,16 @@ func (ph *PhotoHandler) ListTrashPhotos(ctx *gin.Context) {
 		return
 	}
 
+	// Scope the listing to the caller's workspace (issue #74). The query
+	// itself is not yet workspace-filtered (Phase 2 sweep), so filter here to
+	// avoid returning other tenants' trashed photos.
+	wc := GetWorkspaceContext(ctx)
+	if wc == nil {
+		ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Not found"})
+		return
+	}
+	photoResp = filterByWorkspace(photoResp, wc.WorkspaceID, func(ph *domain.Photo) string { return ph.WorkspaceID })
+
 	fromId, toId, nextPage := photosPaginationParams(photoResp)
 	handlePaginatedSuccess(ctx, photoResp, fromId, toId, len(photoResp), nextPage)
 }
@@ -567,6 +604,17 @@ func (ph *PhotoHandler) SetFavorite(ctx *gin.Context) {
 		return
 	}
 
+	// Cross-tenant guard (issue #74): verify ownership before mutating. The
+	// resource's workspace is immutable, so the check cannot be raced.
+	existing, err := ph.photoSvc.GetPhoto(photoId, false)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	if !resourceInWorkspace(ctx, existing.WorkspaceID) {
+		return
+	}
+
 	photo, err := ph.photoSvc.SetFavorite(photoId, req.Favorite)
 	if err != nil {
 		handleError(ctx, err)
@@ -579,10 +627,10 @@ func (ph *PhotoHandler) SetFavorite(ctx *gin.Context) {
 // updateMetadataRequest carries user-editable metadata overrides. All fields
 // are optional; only provided fields are persisted.
 type updateMetadataRequest struct {
-	Description *string   `json:"description"`
-	Latitude    *float64  `json:"latitude"`
-	Longitude   *float64  `json:"longitude"`
-	DateTaken   *string   `json:"dateTaken"`
+	Description *string  `json:"description"`
+	Latitude    *float64 `json:"latitude"`
+	Longitude   *float64 `json:"longitude"`
+	DateTaken   *string  `json:"dateTaken"`
 }
 
 // UpdatePhotoMetadata persists user-editable metadata overrides for a photo.
@@ -772,12 +820,12 @@ func (ph *PhotoHandler) RotatePhoto(ctx *gin.Context) {
 // editPhotoRequest is the body for POST /photos/:id/edit. All fields are
 // optional; the edit is applied to a copy, never the original.
 type editPhotoRequest struct {
-	Rotate      *int                    `json:"rotate"`
-	Crop        *domain.CropParams      `json:"crop"`
-	Brightness  *float64                `json:"brightness"`
-	Contrast    *float64                `json:"contrast"`
-	Saturation  *float64                `json:"saturation"`
-	AutoEnhance *bool                   `json:"autoEnhance"`
+	Rotate      *int               `json:"rotate"`
+	Crop        *domain.CropParams `json:"crop"`
+	Brightness  *float64           `json:"brightness"`
+	Contrast    *float64           `json:"contrast"`
+	Saturation  *float64           `json:"saturation"`
+	AutoEnhance *bool              `json:"autoEnhance"`
 }
 
 // EditPhoto applies a non-destructive edit to a photo.
@@ -879,6 +927,13 @@ func (ph *PhotoHandler) GetDuplicatePhotos(ctx *gin.Context) {
 		handleError(ctx, err)
 		return
 	}
+	// Scope to the caller's workspace (issue #74).
+	wc := GetWorkspaceContext(ctx)
+	if wc == nil {
+		ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Not found"})
+		return
+	}
+	photos = filterByWorkspace(photos, wc.WorkspaceID, func(p *domain.Photo) string { return p.WorkspaceID })
 	handleSuccess(ctx, photos)
 }
 

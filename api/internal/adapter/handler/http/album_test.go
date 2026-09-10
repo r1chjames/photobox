@@ -114,12 +114,20 @@ func TestAlbumHandler_GetAlbum_Success(t *testing.T) {
 		Description: "Test Description",
 		Tags:        "test,album",
 		Metadata:    datatypes.JSON([]byte("{}")),
+		// Handlers require the resource to be in the caller's workspace
+		// (issue #74); the test context is seeded with the same ID.
+		WorkspaceID: "ws-test",
 	}
 
 	mockService.On("GetAlbumById", "1").Return(expectedAlbum, nil)
 
-	// Use a router to properly set up the context
+	// Use a router to properly set up the context, seeding a workspace
+	// context the way workspaceMiddleware would.
 	router := gin.Default()
+	router.Use(func(c *gin.Context) {
+		c.Set(workspaceContextKey, &WorkspaceContext{WorkspaceID: "ws-test", Role: domain.WorkspaceMemberRole})
+		c.Next()
+	})
 	router.GET("/albums/:id", handler.GetAlbum)
 
 	w := httptest.NewRecorder()
@@ -129,9 +137,9 @@ func TestAlbumHandler_GetAlbum_Success(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response struct {
-		Success bool          `json:"success"`
-		Message string        `json:"message"`
-		Data    domain.Album  `json:"data"`
+		Success bool         `json:"success"`
+		Message string       `json:"message"`
+		Data    domain.Album `json:"data"`
 	}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
@@ -369,11 +377,14 @@ func TestAlbumHandler_DeleteAlbum_Success(t *testing.T) {
 	mockService := new(MockAlbumService)
 	handler := NewAlbumHandler(mockService)
 
+	// The handler verifies ownership before deleting (issue #74).
+	mockService.On("GetAlbumById", "1").Return(&domain.Album{ID: "1", WorkspaceID: "ws-test"}, nil)
 	mockService.On("DeleteAlbum", "1", false).Return(nil)
 
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 
+	ctx.Set(workspaceContextKey, &WorkspaceContext{WorkspaceID: "ws-test", Role: domain.WorkspaceOwner})
 	ctx.Params = gin.Params{{Key: "id", Value: "1"}}
 	ctx.Request = httptest.NewRequest(http.MethodDelete, "/albums/1", nil)
 

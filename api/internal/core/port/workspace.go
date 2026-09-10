@@ -67,6 +67,9 @@ type WorkspaceService interface {
 	ListMembers(workspaceID, userID string) ([]domain.WorkspaceMember, error)
 	// GetMembership returns the user's role in a workspace (nil if none).
 	GetMembership(workspaceID, userID string) (*domain.WorkspaceMember, error)
+	// WorkspaceExists reports whether a workspace ID exists. Used to resolve
+	// deployment-level credentials (API keys), which carry no membership.
+	WorkspaceExists(workspaceID string) (bool, error)
 	// CanManage reports whether the user may manage members/settings
 	// (owner or admin).
 	CanManage(membership *domain.WorkspaceMember) bool

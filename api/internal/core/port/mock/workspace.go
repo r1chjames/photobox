@@ -319,6 +319,21 @@ func (mr *MockWorkspaceServiceMockRecorder) GetMembership(workspaceID, userID in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMembership", reflect.TypeOf((*MockWorkspaceService)(nil).GetMembership), workspaceID, userID)
 }
 
+// WorkspaceExists mocks base method.
+func (m *MockWorkspaceService) WorkspaceExists(workspaceID string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WorkspaceExists", workspaceID)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// WorkspaceExists indicates an expected call of WorkspaceExists.
+func (mr *MockWorkspaceServiceMockRecorder) WorkspaceExists(workspaceID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WorkspaceExists", reflect.TypeOf((*MockWorkspaceService)(nil).WorkspaceExists), workspaceID)
+}
+
 // GetWorkspace mocks base method.
 func (m *MockWorkspaceService) GetWorkspace(workspaceID, userID string) (*domain.Workspace, error) {
 	m.ctrl.T.Helper()

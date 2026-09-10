@@ -388,7 +388,6 @@ func (m *MockJobService) StartJobIfNotRunning(name string) error {
 	return args.Error(0)
 }
 
-
 // capUUID is a well-formed capability value used across the capability-route
 // tests (issue #74 D1).
 const capUUID = "11111111-2222-3333-4444-555555555555"
@@ -585,8 +584,8 @@ func TestPhotoHandler_ListTrashPhotos_Success(t *testing.T) {
 	handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
 
 	expectedPhotos := []*domain.Photo{
-		{ID: "p1", Name: "Trashed Photo 1", CreatedEpoch: 1000},
-		{ID: "p2", Name: "Trashed Photo 2", CreatedEpoch: 2000},
+		{ID: "p1", Name: "Trashed Photo 1", CreatedEpoch: 1000, WorkspaceID: "ws-test"},
+		{ID: "p2", Name: "Trashed Photo 2", CreatedEpoch: 2000, WorkspaceID: "ws-test"},
 	}
 
 	mockPhotoSvc.On("ListTrashPhotos", "", 10, false).Return(expectedPhotos, nil)
@@ -594,6 +593,7 @@ func TestPhotoHandler_ListTrashPhotos_Success(t *testing.T) {
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 
+	ctx.Set(workspaceContextKey, &WorkspaceContext{WorkspaceID: "ws-test", Role: domain.WorkspaceMemberRole})
 	ctx.Request = httptest.NewRequest(http.MethodGet, "/photos/trash", nil)
 
 	handler.ListTrashPhotos(ctx)
@@ -653,13 +653,18 @@ func TestPhotoHandler_SetFavorite_Success(t *testing.T) {
 		ID:       "photo123",
 		Name:     "Test Photo",
 		Favorite: true,
+		// Ownership pre-check (issue #74) compares the photo's workspace to
+		// the caller's.
+		WorkspaceID: "ws-test",
 	}
 
+	mockPhotoSvc.On("GetPhoto", "photo123", false).Return(&domain.Photo{ID: "photo123", WorkspaceID: "ws-test"}, nil)
 	mockPhotoSvc.On("SetFavorite", "photo123", true).Return(expectedPhoto, nil)
 
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 
+	ctx.Set(workspaceContextKey, &WorkspaceContext{WorkspaceID: "ws-test", Role: domain.WorkspaceMemberRole})
 	ctx.Params = gin.Params{{Key: "id", Value: "photo123"}}
 	body, _ := json.Marshal(map[string]interface{}{"favorite": true})
 	ctx.Request = httptest.NewRequest(http.MethodPost, "/photos/photo123/favorite", bytes.NewBuffer(body))
@@ -690,11 +695,14 @@ func TestPhotoHandler_SetFavorite_DefaultsToFalse(t *testing.T) {
 	mockJobSvc := new(MockJobService)
 	handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
 
+	// Ownership pre-check (issue #74).
+	mockPhotoSvc.On("GetPhoto", "photo123", false).Return(&domain.Photo{ID: "photo123", WorkspaceID: "ws-test"}, nil)
 	mockPhotoSvc.On("SetFavorite", "photo123", false).Return(&domain.Photo{ID: "photo123", Favorite: false}, nil)
 
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 
+	ctx.Set(workspaceContextKey, &WorkspaceContext{WorkspaceID: "ws-test", Role: domain.WorkspaceMemberRole})
 	ctx.Params = gin.Params{{Key: "id", Value: "photo123"}}
 	body, _ := json.Marshal(map[string]interface{}{})
 	ctx.Request = httptest.NewRequest(http.MethodPatch, "/photos/photo123/favorite", bytes.NewBuffer(body))
@@ -705,9 +713,9 @@ func TestPhotoHandler_SetFavorite_DefaultsToFalse(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response struct {
-		Success bool `json:"success"`
+		Success bool   `json:"success"`
 		Message string `json:"message"`
-		Data    any  `json:"data"`
+		Data    any    `json:"data"`
 	}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
@@ -871,7 +879,7 @@ func TestPhotoHandler_GetGeodata_Success(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response struct {
-		Success bool                `json:"success"`
+		Success bool                  `json:"success"`
 		Data    []domain.PhotoGeoData `json:"data"`
 	}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
@@ -1216,7 +1224,7 @@ func TestPhotoHandler_GetPhotoLocation(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		var response struct {
-			Success bool `json:"success"`
+			Success bool                  `json:"success"`
 			Data    PhotoLocationResponse `json:"data"`
 		}
 		err := json.Unmarshal(w.Body.Bytes(), &response)
@@ -1235,13 +1243,14 @@ func TestPhotoHandler_ListPhotos_LowQuality(t *testing.T) {
 	handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
 
 	expected := []*domain.Photo{
-		{ID: "p1", Name: "blurry.jpg", QualityScore: 12, IsLowQuality: true},
-		{ID: "p2", Name: "solid.jpg", QualityScore: 5, IsLowQuality: true},
+		{ID: "p1", Name: "blurry.jpg", QualityScore: 12, IsLowQuality: true, WorkspaceID: "ws-test"},
+		{ID: "p2", Name: "solid.jpg", QualityScore: 5, IsLowQuality: true, WorkspaceID: "ws-test"},
 	}
 	mockPhotoSvc.On("ListLowQualityPhotos", "", 10, false).Return(expected, nil)
 
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
+	ctx.Set(workspaceContextKey, &WorkspaceContext{WorkspaceID: "ws-test", Role: domain.WorkspaceMemberRole})
 	ctx.Request = httptest.NewRequest(http.MethodGet, "/photos?lowQuality=true", nil)
 
 	handler.ListPhotos(ctx)
@@ -1258,11 +1267,12 @@ func TestPhotoHandler_ListPhotos_WithoutLowQuality(t *testing.T) {
 	mockJobSvc := new(MockJobService)
 	handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
 
-	expected := []*domain.Photo{{ID: "p1", Name: "normal.jpg"}}
+	expected := []*domain.Photo{{ID: "p1", Name: "normal.jpg", WorkspaceID: "ws-test"}}
 	mockPhotoSvc.On("ListPhotos", "", 10, false, "", "", "").Return(expected, nil)
 
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
+	ctx.Set(workspaceContextKey, &WorkspaceContext{WorkspaceID: "ws-test", Role: domain.WorkspaceMemberRole})
 	ctx.Request = httptest.NewRequest(http.MethodGet, "/photos", nil)
 
 	handler.ListPhotos(ctx)
@@ -1346,7 +1356,7 @@ func TestPhotoHandler_ListPhotos_AdvancedFilters(t *testing.T) {
 		mockJobSvc := new(MockJobService)
 		handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
 
-		expected := []*domain.Photo{{ID: "p1", Name: "canon-landscape-gps.jpg"}}
+		expected := []*domain.Photo{{ID: "p1", Name: "canon-landscape-gps.jpg", WorkspaceID: "ws-test"}}
 		filters := domain.PhotoSearchFilters{
 			Camera:      "Canon",
 			HasGPS:      true,
@@ -1356,6 +1366,7 @@ func TestPhotoHandler_ListPhotos_AdvancedFilters(t *testing.T) {
 
 		w := httptest.NewRecorder()
 		ctx, _ := gin.CreateTestContext(w)
+		ctx.Set(workspaceContextKey, &WorkspaceContext{WorkspaceID: "ws-test", Role: domain.WorkspaceMemberRole})
 		ctx.Request = httptest.NewRequest(http.MethodGet, "/photos?camera=Canon&hasGps=true&orientation=landscape", nil)
 
 		handler.ListPhotos(ctx)
@@ -1369,11 +1380,12 @@ func TestPhotoHandler_ListPhotos_AdvancedFilters(t *testing.T) {
 		mockJobSvc := new(MockJobService)
 		handler := NewPhotoHandler(mockPhotoSvc, mockJobSvc)
 
-		expected := []*domain.Photo{{ID: "p1", Name: "normal.jpg"}}
+		expected := []*domain.Photo{{ID: "p1", Name: "normal.jpg", WorkspaceID: "ws-test"}}
 		mockPhotoSvc.On("ListPhotos", "", 10, false, "", "", "").Return(expected, nil)
 
 		w := httptest.NewRecorder()
 		ctx, _ := gin.CreateTestContext(w)
+		ctx.Set(workspaceContextKey, &WorkspaceContext{WorkspaceID: "ws-test", Role: domain.WorkspaceMemberRole})
 		ctx.Request = httptest.NewRequest(http.MethodGet, "/photos", nil)
 
 		handler.ListPhotos(ctx)

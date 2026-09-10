@@ -179,6 +179,22 @@ func (s *WorkspaceService) GetMembership(workspaceID, userID string) (*domain.Wo
 	return s.repo.GetMembership(workspaceID, userID)
 }
 
+// WorkspaceExists reports whether a workspace ID exists. Used to resolve
+// deployment-level credentials (API keys) that carry no user membership.
+func (s *WorkspaceService) WorkspaceExists(workspaceID string) (bool, error) {
+	if workspaceID == "" {
+		return false, nil
+	}
+	_, err := s.repo.GetWorkspaceById(workspaceID)
+	if err != nil {
+		if errors.Is(err, domain.ErrDataNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
 func (s *WorkspaceService) CanManage(m *domain.WorkspaceMember) bool {
 	if m == nil {
 		return false

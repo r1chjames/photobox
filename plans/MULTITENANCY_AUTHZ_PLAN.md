@@ -15,15 +15,36 @@ Implements GitHub **issue #74** (Multi-tenancy support) and **issue #148** (owne
 | 1 | `ObjectStore` + workspace-bound `WorkspaceStore` (structural prefix isolation) | ✅ shipped |
 | 1 | S3 originals adapter (minio-go; Wasabi/AWS/MinIO) behind `ORIGINALS_STORAGE` | ✅ shipped |
 | 2 | Workspace CRUD + membership API; `workspaceMiddleware` (server-side resolution, fail-closed) | ✅ shipped |
+| 2 | Per-workspace WebSocket delivery (hub no longer broadcasts tenant events to all clients) | ✅ shipped |
+| 2 | No-auth `GET /api/album/:id` closed (D3: auth required, not deleted — the webapp uses it) | ✅ shipped |
 | 2 | **Query-scoping sweep**: every repository query filtered by workspace | ⬜ pending |
 | 2 | HTTP upload route; originals/regen cutover to S3; cache-key namespacing | ⬜ pending |
 | 2 | Webapp `X-Workspace-ID` header + `<img src>` capability thumbnails | ⬜ pending |
-| 2 | Cross-tenant content matrix (403/404 on every endpoint) | ⬜ pending |
+| 2 | Cross-tenant content matrix (403/404 on every endpoint) | 🟡 harness shipped, **6 leaks open** |
 | 3 | Per-workspace cron/WS; orphan sweep; backup key split | ⬜ pending |
 | 4 | Postgres RLS hardening | ⬜ pending |
 | 5 | Multi-member product UI, invitations, paid tiers | ⬜ pending |
 
 **Enforcement boundary:** the workspace *identity* layer is complete and tested, but content queries are not yet filtered by workspace. Until the Phase 2 sweep lands, a caller cannot act outside a workspace they belong to, but a query inside their own workspace can still return rows belonging to another workspace. Do not enable open signup until the sweep and its cross-tenant matrix are green.
+
+#### Measured leak surface (matrix run, 2026-09-09)
+
+`TENANCY_MATRIX=1 go test -tags=integration -run TestCrossTenantContentMatrix ./test/integration/ -v` — tenant A targeting tenant B's resources. Confirmed breaches:
+
+| Endpoint | Result | Impact |
+|---|---|---|
+| `GET /api/photo/info/{id}` | 200, B's photo | read |
+| `GET /api/photo/thumbnail/{id}` | 200, B's thumbnail | read |
+| `PATCH /api/photos/{id}/favorite` | 200 | **mutation** |
+| `GET /api/album/{id}` | 200, B's album | read |
+| `DELETE /api/albums/{id}` | 200 | **destructive** |
+| `GET /api/photos/trash` | B's photo in response | read |
+
+The remaining matrix cases returned no other-tenant marker, which is **not** proof of isolation — the matrix logs them as `UNVERIFIED`. The matrix is gated behind `TENANCY_MATRIX=1` so CI stays green while the gap is tracked; drop the gate when the sweep lands.
+
+#### Deferred: thumbnail/cache key namespacing
+
+Photo IDs are already globally unique (`base64(path)` on the home instance, UUIDv4 on SaaS uploads), so namespacing thumbnail and cache keys adds no isolation — a key collision across tenants is impossible. It would also force an extra DB read on the thumbnail hot path (~80% of reads) to learn a photo's workspace, and a full thumbnail re-layout/regen. The S3 *originals* layout already namespaces via `WorkspaceStore` (`originals/{ws}/{id}`). Revisit only if photo IDs ever become workspace-relative.
 
 Supersedes the tenancy sketches in `plans/ideas-implementation-plan.md` §1 and `plans/CLOUD_HOSTING_PLAN.md` §7. Design direction from Rich: **authN/authZ built through the product so users only ever access their own media, with credentials applied at the resource layer** (the AWS Cognito pattern: identity pool + scoped credentials against `s3:prefix/{customer-id}/*`).
 

@@ -153,7 +153,7 @@ func defineResources(
 	// client-visible break.
 	router.GET(fmt.Sprintf("%s/album/:id", urlBasePath), authMiddleware(token), workspaceMiddleware(workspaceService), albumHandler.GetAlbum)
 
-	albums := router.Group(fmt.Sprintf("%s/albums", urlBasePath)).Use(authMiddleware(token))
+	albums := router.Group(fmt.Sprintf("%s/albums", urlBasePath)).Use(authMiddleware(token), workspaceMiddleware(workspaceService))
 	{
 		albums.GET("", albumHandler.ListAlbums)
 		albums.GET("/count", albumHandler.AlbumCount)
@@ -165,7 +165,7 @@ func defineResources(
 		albums.DELETE("/:id", albumHandler.DeleteAlbum)
 	}
 
-	photo := router.Group(fmt.Sprintf("%s/photo", urlBasePath)).Use(authMiddleware(token))
+	photo := router.Group(fmt.Sprintf("%s/photo", urlBasePath)).Use(authMiddleware(token), workspaceMiddleware(workspaceService))
 	{
 		photo.GET("/info/*id", photoHandler.GetPhoto)
 		photo.GET("/bin/*id", photoHandler.GetPhotoBin)
@@ -173,14 +173,14 @@ func defineResources(
 	}
 
 	// Thumbnail endpoint with dedicated stricter rate limiter
-	router.GET(fmt.Sprintf("%s/photo/thumbnail/*id", urlBasePath), authMiddleware(token), rateLimitMiddleware(thumbnailLimiter), photoHandler.GetPhotoThumbnail)
+	router.GET(fmt.Sprintf("%s/photo/thumbnail/*id", urlBasePath), authMiddleware(token), workspaceMiddleware(workspaceService), rateLimitMiddleware(thumbnailLimiter), photoHandler.GetPhotoThumbnail)
 
 	// Capability-URL thumbnails (issue #74 D1): unauthenticated by design —
 	// the random thumb_cap is the credential. Immutable-cacheable so a CDN
 	// edge can absorb thumbnail reads.
 	router.GET(fmt.Sprintf("%s/t/:cap/:size", urlBasePath), photoHandler.GetThumbnailByCap)
 
-	photos := router.Group(fmt.Sprintf("%s/photos", urlBasePath)).Use(authMiddleware(token))
+	photos := router.Group(fmt.Sprintf("%s/photos", urlBasePath)).Use(authMiddleware(token), workspaceMiddleware(workspaceService))
 	{
 		photos.GET("", photoHandler.ListPhotos)
 		photos.GET("/count", photoHandler.GetPhotoCount)
@@ -198,15 +198,15 @@ func defineResources(
 	}
 
 	// Individual photo actions
-	router.DELETE(fmt.Sprintf("%s/photos/:id", urlBasePath), authMiddleware(token), photoHandler.DeletePhoto)
-	router.PATCH(fmt.Sprintf("%s/photos/:id/favorite", urlBasePath), authMiddleware(token), photoHandler.SetFavorite)
-	router.PATCH(fmt.Sprintf("%s/photos/:id/tags", urlBasePath), authMiddleware(token), photoHandler.UpdatePhotoTags)
-	router.PATCH(fmt.Sprintf("%s/photos/:id/metadata", urlBasePath), authMiddleware(token), photoHandler.UpdatePhotoMetadata)
-	router.GET(fmt.Sprintf("%s/photos/:id/live-video", urlBasePath), authMiddleware(token), rateLimitMiddleware(thumbnailLimiter), photoHandler.GetPhotoLiveVideo)
-	router.GET(fmt.Sprintf("%s/photos/:id/location", urlBasePath), authMiddleware(token), photoHandler.GetPhotoLocation)
-	router.POST(fmt.Sprintf("%s/photos/:id/edit", urlBasePath), authMiddleware(token), photoHandler.EditPhoto)
-	router.DELETE(fmt.Sprintf("%s/photos/:id/edit", urlBasePath), authMiddleware(token), photoHandler.ClearEdits)
-	router.POST(fmt.Sprintf("%s/photos/:id/rotate", urlBasePath), authMiddleware(token), photoHandler.RotatePhoto)
+	router.DELETE(fmt.Sprintf("%s/photos/:id", urlBasePath), authMiddleware(token), workspaceMiddleware(workspaceService), photoHandler.DeletePhoto)
+	router.PATCH(fmt.Sprintf("%s/photos/:id/favorite", urlBasePath), authMiddleware(token), workspaceMiddleware(workspaceService), photoHandler.SetFavorite)
+	router.PATCH(fmt.Sprintf("%s/photos/:id/tags", urlBasePath), authMiddleware(token), workspaceMiddleware(workspaceService), photoHandler.UpdatePhotoTags)
+	router.PATCH(fmt.Sprintf("%s/photos/:id/metadata", urlBasePath), authMiddleware(token), workspaceMiddleware(workspaceService), photoHandler.UpdatePhotoMetadata)
+	router.GET(fmt.Sprintf("%s/photos/:id/live-video", urlBasePath), authMiddleware(token), workspaceMiddleware(workspaceService), rateLimitMiddleware(thumbnailLimiter), photoHandler.GetPhotoLiveVideo)
+	router.GET(fmt.Sprintf("%s/photos/:id/location", urlBasePath), authMiddleware(token), workspaceMiddleware(workspaceService), photoHandler.GetPhotoLocation)
+	router.POST(fmt.Sprintf("%s/photos/:id/edit", urlBasePath), authMiddleware(token), workspaceMiddleware(workspaceService), photoHandler.EditPhoto)
+	router.DELETE(fmt.Sprintf("%s/photos/:id/edit", urlBasePath), authMiddleware(token), workspaceMiddleware(workspaceService), photoHandler.ClearEdits)
+	router.POST(fmt.Sprintf("%s/photos/:id/rotate", urlBasePath), authMiddleware(token), workspaceMiddleware(workspaceService), photoHandler.RotatePhoto)
 
 	// Photo system jobs (admin-only)
 	router.POST(fmt.Sprintf("%s/photos/jobs/:type/start", urlBasePath), authMiddleware(token), requireRole(domain.ADMINISTRATOR), photoHandler.StartJob)

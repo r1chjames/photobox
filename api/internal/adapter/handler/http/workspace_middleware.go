@@ -27,6 +27,17 @@ type WorkspaceContext struct {
 	Role        domain.WorkspaceRole
 }
 
+// isAPIKeyRequest reports whether the request was authenticated with an API
+// key rather than a user session.
+func isAPIKeyRequest(ctx *gin.Context) bool {
+	v, ok := ctx.Get(apiKeyAuthContextKey)
+	if !ok {
+		return false
+	}
+	b, _ := v.(bool)
+	return b
+}
+
 // GetWorkspaceContext returns the resolved workspace context, or nil when the
 // request was not scoped to a workspace.
 func GetWorkspaceContext(ctx *gin.Context) *WorkspaceContext {
@@ -55,6 +66,28 @@ func GetWorkspaceContext(ctx *gin.Context) *WorkspaceContext {
 // caller can never act outside a workspace they belong to.
 func workspaceMiddleware(wsSvc port.WorkspaceService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		// API keys are deployment-level credentials, not user sessions: they
+		// carry no user ID or workspace membership, so they resolve directly
+		// to a workspace (issue #74). This must run before the user-ID check
+		// below, which API-key payloads intentionally fail.
+		if isAPIKeyRequest(ctx) {
+			requested := ctx.GetHeader(workspaceHeaderKey)
+			if requested == "" {
+				requested = ctx.Query(workspaceQueryKey)
+			}
+			if requested == "" {
+				requested = domain.DefaultWorkspaceID
+			}
+			exists, err := wsSvc.WorkspaceExists(requested)
+			if err != nil || !exists {
+				ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "No access to workspace"})
+				return
+			}
+			ctx.Set(workspaceContextKey, &WorkspaceContext{WorkspaceID: requested, Role: domain.WorkspaceAdmin})
+			ctx.Next()
+			return
+		}
+
 		payload := GetAuthPayload(ctx)
 		if payload == nil || payload.UserID == "" {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
